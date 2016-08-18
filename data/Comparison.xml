@@ -1,0 +1,100 @@
+<!--
+  For more information, see
+    https://github.com/larsga/Duke/wiki/
+
+  Improvements needed:
+   - some area numbers have spaces in them
+   - not stripping accents from names
+-->
+<duke> 
+
+
+
+  <object class="no.priv.garshol.duke.comparators.GeopositionComparator"
+          name="GeoComparator">
+    <param name="max-distance" value="5000"/>
+  </object>
+
+  <schema>
+    <threshold>0.985</threshold>
+
+    <property type="id">
+      <name>ID</name>
+    </property>
+    <property>
+      <name>NAME</name> 
+      <comparator>no.priv.garshol.duke.comparators.JaroWinklerTokenized</comparator>
+      <low>0.09</low>
+      <high>0.99</high>
+    </property>    
+    <property>
+      <name>FUELTYPE</name> 
+      <comparator>no.priv.garshol.duke.comparators.QGramComparator</comparator>
+      <low>0.09</low>
+      <high>0.7</high>
+    </property> 
+    <property>
+      <name>COUNTRY</name> 
+      <comparator>no.priv.garshol.duke.comparators.QGramComparator</comparator>
+      <low>0.01</low>
+      <high>0.53</high>
+    </property>   
+    <property>
+      <name>CAPACITY</name> 
+      <comparator>no.priv.garshol.duke.comparators.NumericComparator</comparator>
+      <low>0.1</low>
+      <high>0.75</high>
+    </property> 
+    <property>
+      <name>GEOPOSITION</name> 
+      <comparator>GeoComparator</comparator>
+      <low>0.1</low>
+      <high>0.85</high>
+    </property>   
+  </schema>
+
+  <database class="no.priv.garshol.duke.databases.InMemoryDatabase">    
+  </database>
+  
+  <group>
+    <csv>
+      <param name="input-file" value="Data_to_Match2.csv"/>
+
+      <column name="id" property="ID"/>
+      <column name="Name" 
+              property="NAME"
+              cleaner="no.priv.garshol.duke.cleaners.LowerCaseNormalizeCleaner"/>
+      <column name="Fueltype"
+              property="FUELTYPE"
+              cleaner="no.priv.garshol.duke.cleaners.LowerCaseNormalizeCleaner"/>
+      <column name="Country"
+              property="COUNTRY"/>
+      <column name="Capacity"
+              property="CAPACITY"/>
+      <column name="Geoposition"
+              property="GEOPOSITION"/>
+    </csv>
+  </group>
+
+  <group>
+    <csv>
+      <param name="input-file" value="Data_to_Match1.csv"/>
+
+      <column name="id" property="ID"/>
+      <column name="Name" 
+              property="NAME"
+              cleaner="no.priv.garshol.duke.cleaners.LowerCaseNormalizeCleaner"/>
+      <column name="Fueltype"
+              property="FUELTYPE"
+              cleaner="no.priv.garshol.duke.cleaners.LowerCaseNormalizeCleaner"/>
+      <column name="Country"
+              property="COUNTRY"/>
+      <column name="Capacity"
+              property="CAPACITY"/>
+      <column name="Geoposition"
+              property="GEOPOSITION"/>
+    </csv>
+  </group>
+
+  
+</duke>
