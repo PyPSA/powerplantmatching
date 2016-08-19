@@ -1,21 +1,18 @@
-#Embedded file name: /Users/godula/vres/py/vresutils/powerplant_collection.py
-"""
-Created on Mon Aug  8 11:48:40 2016
 
-@author: godula
-"""
+
+
 import numpy as np
 import pandas as pd
 import re
 import networkx as nx
-from geopy.geocoders import Nominatim
 from countrycode import countrycode
 import subprocess as sub
 import itertools
 import os
-from vresutils import dispatch as vdispatch
 
-
+def bla():
+    x=2
+    return os.path.dirname(__file__)
 
 def geo_data():
     """
@@ -23,6 +20,7 @@ def geo_data():
     Only includes powerplants with capacity > 4 MW.
     
     """
+    from vresutils import dispatch as vdispatch
     GEOdata = vdispatch.read_globalenergyobservatory()
     eucountries = europeancountries()
     GEOdata = GEOdata[GEOdata['Country'].isin(eucountries)]
@@ -31,9 +29,10 @@ def geo_data():
     GEOdata.rename_axis({'Type': 'Fueltype'}, axis='columns', inplace=True)
     GEOdata.replace({'Gas': 'Natural Gas'}, inplace=True)
     GEOdata = clean_powerplantname(GEOdata)
-    GEOdata = GEOdata.fillna(0).groupby(['Name', 'Country', 'Fueltype']).agg({'Capacity': sum,
-     'lat': np.mean,
-     'lon': np.mean}).reset_index()
+    GEOdata = GEOdata.fillna(0).groupby(['Name', 'Country', 'Fueltype'])\
+    .agg({'Capacity': sum,
+          'lat': np.mean,
+          'lon': np.mean}).reset_index()
     GEOdata.replace(0, np.NaN, inplace=True)
     return add_geoposition(GEOdata)
 
@@ -44,7 +43,8 @@ def carma_data():
     Only includes powerplants with capacity > 4 MW.
     
     """
-    carmadata = pd.read_csv('Full_CARMA_2009_Dataset_1.csv', sep=',')
+    carmadata = pd.read_csv('%s/data/Full_CARMA_2009_Dataset_1.csv'\
+    %os.path.dirname(__file__))
     d = {'COAL': 'Coal',
      'WAT': 'Hydro',
      'FGAS': 'Natural Gas',
@@ -92,7 +92,7 @@ def entsoe_data():
     
     
     """
-    opsd = pd.read_csv('aggregated_capacity.csv')
+    opsd = pd.read_csv('%s/data/aggregated_capacity.csv'%os.path.dirname(__file__))
     entsoedata = opsd[opsd['source'].isin(['entsoe']) & opsd['year'].isin([2014])]
     cCodes = list(entsoedata.country)
     countries = countrycode(codes=cCodes, target='country_name', origin='iso2c')
@@ -367,7 +367,8 @@ def duke(config, linkfile = None, singlematch = False, showmatches = False, wait
         
     
     """
-    os.environ['CLASSPATH'] = ":".join(os.listdir("duke_binaries/"))
+    os.environ['CLASSPATH'] = ":".join(os.listdir("%s/duke_binaries/"\
+    %os.path.dirname(__file__)))
     args = []
     if linkfile is not None:
         args.append('--linkfile=%s' % linkfile)
@@ -481,6 +482,7 @@ def parse_Geoposition(loc, country):
     
     
     """
+    from geopy.geocoders import Nominatim
     if loc != None and loc != float:
         gdata = Nominatim(timeout=100, country_bias=str.lower(countrycode(codes=[country], origin='country_name', target='iso2c')[0])).geocode(loc)
         if gdata != None:
