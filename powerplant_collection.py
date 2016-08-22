@@ -10,9 +10,6 @@ import subprocess as sub
 import itertools
 import os
 
-def bla():
-    x=2
-    return os.path.dirname(__file__)
 
 def geo_data():
     """
