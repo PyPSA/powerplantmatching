@@ -18,7 +18,7 @@ def geo_data():
     
     """
     from vresutils import dispatch as vdispatch
-    GEOdata = vdispatch.read_globalenergyobservatory()
+    GEOdata = vdispatch.read_globalenergyobservatory_detailed()
     eucountries = europeancountries()
     GEOdata = GEOdata[GEOdata['Country'].isin(eucountries)]
     GEOdata.drop_duplicates(inplace=True)
@@ -26,12 +26,13 @@ def geo_data():
     GEOdata.rename_axis({'Type': 'Fueltype'}, axis='columns', inplace=True)
     GEOdata.replace({'Gas': 'Natural Gas'}, inplace=True)
     GEOdata = clean_powerplantname(GEOdata)
-    GEOdata = GEOdata.fillna(0).groupby(['Name', 'Country', 'Fueltype'])\
+    GEOdata = GEOdata.fillna(0).groupby(['Name', 'Country', 'Fueltype', 'Classification'])\
     .agg({'Capacity': sum,
           'lat': np.mean,
           'lon': np.mean}).reset_index()
     GEOdata.replace(0, np.NaN, inplace=True)
-    return add_geoposition(GEOdata)
+    GEOdata = add_geoposition(GEOdata)
+    return GEOdata.loc[:,target_columns()]
 
 
 def carma_data():
@@ -70,17 +71,18 @@ def carma_data():
     carmadata.drop_duplicates(inplace=True)
     carmadata = carmadata.replace(d)
     carmadata = carmadata[carmadata.Country.isin(europeancountries())]
-    carmadata = carmadata.loc[:, ['Name',
-     'Fueltype',
-     'Country',
-     'Capacity',
-     'location',
-     'lon',
-     'lat']]
+    carmadata = carmadata.loc[:, target_columns()]
     carmadata = clean_powerplantname(carmadata)
     carmadata.reset_index(drop=True, inplace=True)
     carmadata = add_geoposition(carmadata)
-    return carmadata
+    return carmadata.loc[:,target_columns()]
+
+
+def energy_storage_exchange_data():
+    return pd.read_csv('%s/data/energy_storage_exchange.csv'%os.path.dirname(__file__), index_col='id')
+    
+def FIAS_data():
+    return pd.read_csv('%s/data/FiasHydro.csv'%os.path.dirname(__file__), index_col='id')
 
 
 def entsoe_data():
@@ -212,6 +214,7 @@ def target_columns():
     """
     return ['Name',
      'Fueltype',
+     'Classification',
      'Country',
      'Capacity',
      'lat',
@@ -240,8 +243,9 @@ def prop_for_groups(x):
     results = {'Name': x.Name.value_counts().index[0],
      'Country': x.Country.value_counts().index[0],
      'Fueltype': x.Fueltype.value_counts().index[0] if x.Fueltype.notnull().any(axis=0) else np.NaN,
+     'Classification': '/'.join(x[x.Classification.notnull()].Classification.unique()),
      'File': x.File.value_counts().index[0] if x.File.notnull().any(axis=0) else np.NaN,
-     'Capacity': x['Capacity'].sum(),
+     'Capacity': x['Capacity'].sum() if x.Capacity.notnull().any(axis=0) else np.NaN,
      'lat': x['lat'].mean(),
      'lon': x['lon'].mean(),
      'ids': list(x.index)}
@@ -333,13 +337,22 @@ def clean_powerplantname(df):
      ')'] ])
     df.Name.replace(regex=True, value=' ', to_replace=list('-/'), inplace=True)
     df.Name.replace(regex=False, value='', to_replace=list('1234567890&$'), inplace=True)
-    df.Name = df.Name.str.replace(patterns, '', case=False).str.strip().str.replace('\\s\\s+', ' ').str.title()
+    df.Name = df.Name.str.replace(patterns, '', case=False).str.strip().str.replace('\\s\\s+', ' ').str.capitalize()
     df = df[df.Name != ''].reset_index(drop=True)
     return df
 
 
 def most_frequent(df):
-    return df.value_counts().idxmax()
+    if df.isnull().all():
+        return np.nan
+    else:
+        return df.value_counts().idxmax()
+        
+def concat_strings(df):
+    if df.isnull().all():
+        return np.nan
+    else:
+        return df[df.notnull()].str.cat(sep = ' / ')
 
 
 def duke(config, linkfile = None, singlematch = False, showmatches = False, wait = True):
@@ -432,7 +445,8 @@ def cross_matches(list_of_matches):
 
     matches = matches.drop_duplicates().reset_index(drop=True)
     for i in all_databases:
-        matches = pd.concat([matches.groupby(i, as_index=False, sort=False).apply(lambda x: x.ix[x.isnull().sum(axis=1).idxmin()]), matches[matches[i].isnull()]]).reset_index(drop=True)
+        matches = pd.concat([matches.groupby(i, as_index=False, sort=False).apply(lambda x: x.ix[x.isnull().sum(axis=1).idxmin()]),\
+        matches[matches[i].isnull()]]).reset_index(drop=True)
 
     return matches
 
@@ -459,7 +473,7 @@ def matched_dataframe(cross_matches, list_of_databases):
     df = pd.concat(datasets, axis=1, keys=cross_matches.columns.tolist())
     df = df.reorder_levels([1, 0], axis=1)
     df = df[df.columns.levels[0]]
-    df = df[target_columns()]
+    df = df.loc[:,target_columns()]
     return df
 
 
@@ -518,7 +532,7 @@ def match_two_datasets(datasets, labels):
     """
     Duke-based horizontal match of two databases. Returns the matched dataframe including only the 
     matched entries in a multi-indexed pandas.Dataframe. Compares all properties of the
-    given columns ['Name','Fueltype', 'Country', 'Capacity','Geoposition'] in order 
+    given columns ['Name','Fueltype', 'Classification', 'Country', 'Capacity','Geoposition'] in order 
     to determine the same powerplant in different two datasets. The match is in one-to-one mode,
     that is every entry of the initial databases has maximally one link in order to obtain  
     unique entries in the resulting dataframe. 
@@ -546,7 +560,7 @@ def match_multiple_datasets(datasets, labels):
     """
     Duke-based horizontal match of multiple databases. Returns the matched dataframe including 
     only the matched entries in a multi-indexed pandas.Dataframe. Compares all properties of the
-    given columns ['Name','Fueltype', 'Country', 'Capacity','Geoposition'] in order 
+    given columns ['Name','Fueltype', 'Classification', 'Country', 'Capacity','Geoposition'] in order 
     to determine the same powerplant in different datasets. The match is in one-to-one mode,
     that is every entry of the initial databases has maximally one link in order to obtain  
     unique entries in the resulting dataframe.
@@ -556,7 +570,7 @@ def match_multiple_datasets(datasets, labels):
     datasets : list of pandas.Dataframe or strings
         dataframes or csv-files to use for the matching
     labels : list of strings 
-        Names of the databases for the resulting dataframe 
+        Names of the databases in alphabetical order and corresponding order to the datasets
         
     
     """
@@ -574,7 +588,7 @@ def match_multiple_datasets(datasets, labels):
 def reduce_matched_dataframe(df):
     """
     Returns a new dataframe with all names of the powerplants, but the Capacity on average
-    as well as longitude and lattitude. In the Country and Fueltype column the most common
+    as well as longitude and lattitude. In the Country, Fueltype and Classification column the most common
     value is returned. 
     
     Parameters
@@ -588,7 +602,25 @@ def reduce_matched_dataframe(df):
     sdf = df.Name
     sdf.loc[:, 'Country'] = df.Country.apply(most_frequent, axis=1)
     sdf.loc[:, 'Fueltype'] = df.Fueltype.apply(most_frequent, axis=1)
-    sdf.loc[:, 'Capacity'] = df.Capacity.mean(axis=1)
+    sdf.loc[:, 'Classification'] = df.Classification.apply(concat_strings, axis=1)
+    if 'Geo' in df.Name:
+        sdf.loc[df.Name.Geo.notnull(), 'Capacity'] = df[df.Name.Geo.notnull()].Capacity.Geo
+        sdf.loc[df.Name.Geo.isnull(), 'Capacity'] = df[df.Name.Geo.isnull()].Capacity.max(axis=1)
+    else:
+        sdf.loc[:, 'Capacity'] = df.Capacity.max(axis=1)
     sdf.loc[:, 'lat'] = df.lat.mean(axis=1)
     sdf.loc[:, 'lon'] = df.lon.mean(axis=1)
+    sdf.loc[:, 'File'] = df.File.apply(concat_strings, axis=1)    
     return sdf
+
+
+def WRI_GEO_Carma_matched():
+    return pd.read_csv('%s/data/WRI_GEO_Carma_matched.csv'%os.path.dirname(__file__),index_col='id')
+    
+
+def FIAS_WRI_GEO_Carma_matched():
+    return pd.read_csv('%s/data/carma_fias_geo_wri_match.csv'%os.path.dirname(__file__),index_col='id')
+    
+def aggregated_hydro():
+    return pd.read_csv('%s/data/hydro_aggregation.csv'%os.path.dirname(__file__),index_col='id')
+    
