@@ -23,7 +23,7 @@ def geo_data():
     GEOdata = GEOdata[GEOdata['Country'].isin(eucountries)]
     GEOdata.drop_duplicates(inplace=True)
     GEOdata.reset_index(drop=True)
-    GEOdata.rename_axis({'Type': 'Fueltype'}, axis='columns', inplace=True)
+    GEOdata.rename(columns={'Type': 'Fueltype'}, inplace=True)
     GEOdata.replace({'Gas': 'Natural Gas'}, inplace=True)
     GEOdata = clean_powerplantname(GEOdata)
     GEOdata = GEOdata.fillna(0).groupby(['Name', 'Country', 'Fueltype', 'Classification'])\
@@ -66,7 +66,7 @@ def carma_data():
      'lat': 'lat',
      'lon': 'lon',
      'plant': 'Name'}
-    carmadata.rename_axis(rename, axis='columns', inplace=True)
+    carmadata.rename(columns=rename, inplace=True)
     carmadata = carmadata[carmadata.Capacity > 4]
     carmadata.drop_duplicates(inplace=True)
     carmadata = carmadata.replace(d)
@@ -107,7 +107,7 @@ def entsoe_data():
     entsoedata.country = countries
     entsoedata.country = entsoedata.country.str.title()
     entsoedata = entsoedata[entsoedata['technology_level_2'] == True]
-    entsoedata.rename_axis({'technology': 'Fueltype'}, axis='columns', inplace=True)
+    entsoedata.rename(columns={'technology': 'Fueltype'}, inplace=True)
     entsoedata.columns = entsoedata.columns.str.title()
     return entsoedata
 
@@ -209,7 +209,7 @@ def target_fueltypes():
 def target_columns():
     """
     Returns a list of columns to which the powerplants should be standardized. For renaming 
-    columns use df.rename_axis(dic, axis="columns", inplace=True) with dic being a dictionary
+    columns use df.rename(columns=dic, inplace=True) with dic being a dictionary
     of the replacements
     """
     return ['Name',
