@@ -1,4 +1,4 @@
-## Copyright 2015-2016 Fabian Hoffmann (FIAS), Jonas Hoersch (FIAS)
+## Copyright 2015-2016 Fabian Hofmann (FIAS), Jonas Hoersch (FIAS)
 
 ## This program is free software; you can redistribute it and/or
 ## modify it under the terms of the GNU General Public License as
