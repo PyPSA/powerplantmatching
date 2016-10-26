@@ -13,6 +13,7 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import print_function
 
 
 import numpy as np
@@ -23,6 +24,7 @@ from countrycode import countrycode
 import subprocess as sub
 import itertools
 import os
+from six.moves import map
 import six
 
 def geo_data():
@@ -40,10 +42,10 @@ def geo_data():
     GEOdata.rename(columns={'Type': 'Fueltype'}, inplace=True)
     GEOdata.replace({'Gas': 'Natural Gas'}, inplace=True)
     GEOdata = clean_powerplantname(GEOdata)
-    GEOdata = GEOdata.fillna(0).groupby(['Name', 'Country', 'Fueltype', 'Classification'])\
-    .agg({'Capacity': sum,
-          'lat': np.mean,
-          'lon': np.mean}).reset_index()
+    GEOdata = (GEOdata.fillna(0).groupby(['Name', 'Country', 'Fueltype', 'Classification'])
+               .agg({'Capacity': np.sum,
+                     'lat': np.mean,
+                     'lon': np.mean}).reset_index())
     GEOdata.replace(0, np.NaN, inplace=True)
     GEOdata = add_geoposition(GEOdata)
     return GEOdata.loc[:,target_columns()]
@@ -53,7 +55,6 @@ def carma_data():
     """
     Return standardized Carma database with target column names and fueltypes.
     Only includes powerplants with capacity > 4 MW.
-
     """
     carmadata = pd.read_csv('%s/data/Full_CARMA_2009_Dataset_1.csv'\
     %os.path.dirname(__file__))
@@ -98,12 +99,9 @@ def energy_storage_exchange_data():
 def FIAS_data():
     return pd.read_csv('%s/data/FiasHydro.csv'%os.path.dirname(__file__), index_col='id')
 
-
 def entsoe_data():
     """
-    Standardize the enstoe database for statistical use.
-
-
+    Standardize the entsoe database for statistical use.
     """
     opsd = pd.read_csv('%s/data/aggregated_capacity.csv'%os.path.dirname(__file__))
     entsoedata = opsd[opsd['source'].isin(['entsoe']) & opsd['year'].isin([2014])]
@@ -126,7 +124,7 @@ def entsoe_data():
     return entsoedata
 
 
-def lookup(df, by = 'Country, Fueltype', keys = None, exclude = None):
+def lookup(df, by='Country, Fueltype', keys=None, exclude=None):
     """
     Returns a lookup table of the dataframe df with rounded numbers. Use different lookups
     as "Country", "Fueltype" for the different lookups.
@@ -136,8 +134,8 @@ def lookup(df, by = 'Country, Fueltype', keys = None, exclude = None):
     df : pandas.Dataframe or list of pandas.Dataframe's
         powerplant databases to be analysed. If multiple dataframes are passed
         the lookup table will dusplay them in a MulitIndex
-    by : string
-        Define the type pf lookup table you want to obtain
+    by : string out of 'Country, Fueltype', 'Country' or 'Fueltype'
+        Define the type pf lookup table you want to obtain.
     keys : list of strings
         labels of the different datasets, only nescessary if multiple dataframes
         passed
@@ -146,16 +144,18 @@ def lookup(df, by = 'Country, Fueltype', keys = None, exclude = None):
 
     """
 
-    def lookup_single(df, by = by, exclude = exclude):
+    def lookup_single(df, by=by, exclude=exclude):
         df = read_csv_if_string(df)
-        if exclude != None:
+        if exclude is not None:
             df = df[~df.Fueltype.isin(exclude)]
         if by == 'Country, Fueltype':
             return df.groupby(['Country', 'Fueltype']).Capacity.sum().unstack(0).fillna(0).astype(int)
-        if by == 'Country':
+        elif by == 'Country':
             return df.groupby(['Country']).Capacity.sum().astype(int)
-        if by == 'Fueltype':
+        elif by == 'Fueltype':
             return df.groupby(['Fueltype']).Capacity.sum().astype(int)
+        else:
+            raise ArgumentError("``by` must be one of 'Country, Fueltype' or 'Country' or 'Fueltype'")
 
     if isinstance(df, list):
         dfs = pd.concat([lookup_single(a) for a in df], axis=1, keys=keys)
@@ -174,51 +174,20 @@ def europeancountries():
     """
     Returns a list of countries in Europe
     """
-    return ['Austria',
-     'Belgium',
-     'Bulgaria',
-     'Croatia',
-     'Czech Republic',
-     'Denmark',
-     'Estonia',
-     'Finland',
-     'France',
-     'Germany',
-     'Greece',
-     'Hungary',
-     'Ireland',
-     'Italy',
-     'Latvia',
-     'Lithuania',
-     'Luxembourg',
-     'Netherlands',
-     'Norway',
-     'Poland',
-     'Portugal',
-     'Romania',
-     'Slovakia',
-     'Slovenia',
-     'Spain',
-     'Sweden',
-     'Switzerland',
-     'United Kingdom']
+    return ['Austria', 'Belgium', 'Bulgaria', 'Croatia', 'Czech Republic',
+            'Denmark', 'Estonia', 'Finland', 'France', 'Germany',
+            'Greece', 'Hungary', 'Ireland', 'Italy', 'Latvia',
+            'Lithuania', 'Luxembourg', 'Netherlands', 'Norway',
+            'Poland', 'Portugal', 'Romania', 'Slovakia', 'Slovenia',
+            'Spain', 'Sweden', 'Switzerland', 'United Kingdom']
 
 
 def target_fueltypes():
     """
     Returns a list of fueltypes to which the powerplants should be standardized
     """
-    return ['Natural Gas',
-     'Wind',
-     'Hydro',
-     'Oil',
-     'Waste',
-     'Coal',
-     'Nuclear',
-     'Other',
-     'Solar',
-     'Mixed fuel types',
-     'Geothermal']
+    return ['Natural Gas', 'Wind', 'Hydro', 'Oil', 'Waste', 'Coal',
+            'Nuclear', 'Other', 'Solar', 'Mixed fuel types', 'Geothermal']
 
 
 def target_columns():
@@ -227,15 +196,8 @@ def target_columns():
     columns use df.rename(columns=dic, inplace=True) with dic being a dictionary
     of the replacements
     """
-    return ['Name',
-     'Fueltype',
-     'Classification',
-     'Country',
-     'Capacity',
-     'lat',
-     'lon',
-     'Geoposition',
-     'File']
+    return ['Name', 'Fueltype', 'Classification', 'Country',
+            'Capacity', 'lat', 'lon', 'Geoposition', 'File']
 
 
 def add_geoposition(df):
@@ -256,14 +218,14 @@ def prop_for_groups(x):
 
     """
     results = {'Name': x.Name.value_counts().index[0],
-     'Country': x.Country.value_counts().index[0],
-     'Fueltype': x.Fueltype.value_counts().index[0] if x.Fueltype.notnull().any(axis=0) else np.NaN,
-     'Classification': '/'.join(x[x.Classification.notnull()].Classification.unique()),
-     'File': x.File.value_counts().index[0] if x.File.notnull().any(axis=0) else np.NaN,
-     'Capacity': x['Capacity'].sum() if x.Capacity.notnull().any(axis=0) else np.NaN,
-     'lat': x['lat'].mean(),
-     'lon': x['lon'].mean(),
-     'ids': list(x.index)}
+               'Country': x.Country.value_counts().index[0],
+               'Fueltype': x.Fueltype.value_counts().index[0] if x.Fueltype.notnull().any(axis=0) else np.NaN,
+               'Classification': '/'.join(x[x.Classification.notnull()].Classification.unique()),
+               'File': x.File.value_counts().index[0] if x.File.notnull().any(axis=0) else np.NaN,
+               'Capacity': x['Capacity'].sum() if x.Capacity.notnull().any(axis=0) else np.NaN,
+               'lat': x['lat'].mean(),
+               'lon': x['lon'].mean(),
+               'ids': list(x.index)}
     return pd.Series(results)
 
 
@@ -287,7 +249,7 @@ def cliques(df, dataduplicates):
         dataduplicates = pd.read_csv(dataduplicates, usecols=[1, 2], names=['one', 'two'])
     G = nx.DiGraph()
     G.add_nodes_from(df.index)
-    G.add_edges_from(((r.one, r.two) for r in dataduplicates.itertuples()))
+    G.add_edges_from((r.one, r.two) for r in dataduplicates.itertuples())
     H = G.to_undirected(reciprocal=True)
     for i, inds in enumerate(nx.algorithms.clique.find_cliques(H)):
         df.loc[inds, 'grouped'] = i
@@ -370,9 +332,9 @@ def concat_strings(df):
         return df[df.notnull()].str.cat(sep = ' / ')
 
 
-def duke(config, linkfile = None, singlematch = False, showmatches = False, wait = True):
+def duke(config, linkfile=None, singlematch=False, showmatches=False, wait=True):
     """
-    Run duke in different modes (Deduplication or Record Linkage Mode) for either
+    Run duke in different modes (Deduplication or Record Linkage Mode) to either
     locate duplicates in one database or find the similar entries in two different datasets.
     In RecordLinkagesMode (match two databases) please set singlematch=True and use
     best_matches() afterwards
@@ -385,15 +347,15 @@ def duke(config, linkfile = None, singlematch = False, showmatches = False, wait
     linkfile : str, default None
         txt-file where to record the links
     singlematch: boolean, default False
-        Only in Record Linkage Mode. Search for the best match for each entry of the first named
+        Only in Record Linkage Mode. Only report the best match for each entry of the first named
         dataset. This does not guarantee a unique match in the second named dataset.
     wait : boolean, default True
-        wait untill the process is finished
+        wait until the process is finished
 
 
     """
-    os.environ['CLASSPATH'] = ":".join(os.listdir("%s/duke_binaries/"\
-    %os.path.dirname(__file__)))
+    os.environ['CLASSPATH'] = ":".join(os.listdir(os.path.join(os.path.dirname(__file__), "duke_binaries")))
+
     args = []
     if linkfile is not None:
         args.append('--linkfile=%s' % linkfile)
@@ -402,12 +364,12 @@ def duke(config, linkfile = None, singlematch = False, showmatches = False, wait
     if showmatches:
         args.append('--showmatches')
     run = sub.Popen(['java', 'no.priv.garshol.duke.Duke'] + args + [config], stdout=sub.PIPE)
-    if wait == False:
-        print "\n The process will continue in the background, type '_.kill()' to abord "
-    if showmatches == True:
-        print "\n For display matches run: 'for line in _.stdout: print line'"
-    if wait == True:
+    if showmatches:
+        print("\n For displaying matches run: 'for line in _.stdout: print line'")
+    if wait:
         run.wait()
+    else:
+        print("\n The process will continue in the background, type '_.kill()' to abort ")
     return run
 
 
@@ -433,10 +395,10 @@ def best_matches(linkfile, labels):
 
     """
     matches = pd.read_csv(linkfile, usecols=[1, 2, 3], names=[labels[0], labels[1], 'scores'])
-    return matches.groupby(matches.ix[:, 1], as_index=False, sort=False).apply(lambda x: x.ix[x.scores.idxmax(), 0:2])
+    return matches.groupby(matches.iloc[:, 1], as_index=False, sort=False).apply(lambda x: x.ix[x.scores.idxmax(), 0:2])
 
 
-def cross_matches(list_of_matches):
+def cross_matches(datasets):
     """
     Combines multiple sets of pairs and returns one consistent dataframe. Identifiers of two
     datasets can appear in one row even though they did not match directly but indirectly
@@ -444,29 +406,29 @@ def cross_matches(list_of_matches):
 
     Parameters
     ----------
-    list_of_databases : list
+    datasets : list
         list of pd.Dataframe's containing only the matches (without scores), obtained from the
         linkfile (duke() and best_matches())
 
 
     """
-    m_all = list_of_matches
-    all_databases = np.unique([ x.columns for x in m_all ])
+    m_all = datasets
+    all_databases = np.unique([x.columns for x in m_all])
     matches = pd.DataFrame(columns=all_databases)
     for i in all_databases:
-        base = [ m.set_index(i) for m in m_all if i in m ]
+        base = [m.set_index(i) for m in m_all if i in m]
         match_base = pd.concat(base, axis=1).reset_index()
         matches = pd.concat([matches, match_base])
 
     matches = matches.drop_duplicates().reset_index(drop=True)
     for i in all_databases:
-        matches = pd.concat([matches.groupby(i, as_index=False, sort=False).apply(lambda x: x.ix[x.isnull().sum(axis=1).idxmin()]),\
+        matches = pd.concat([matches.groupby(i, as_index=False, sort=False).apply(lambda x: x.loc[x.isnull().sum(axis=1).idxmin()]),\
         matches[matches[i].isnull()]]).reset_index(drop=True)
 
     return matches
 
 
-def matched_dataframe(cross_matches, list_of_databases):
+def matched_dataframe(cross_matches, datasets):
     """
     Use this function to create a matched dataframe on base of the cross matches
     and a list of the databases. Always order the database alphabetically.
@@ -475,13 +437,12 @@ def matched_dataframe(cross_matches, list_of_databases):
     ----------
     cross_matches : pandas.Dataframe of the matching indexes of the databases,
         created with powerplant_collection.cross_matches()
-    list_of_databases : list of pandas.Dataframes or csv-files in the same
+    datasets : list of pandas.Dataframes or csv-files in the same
         order as in cross_matches
 
 
     """
-    datasets = list_of_databases
-    datasets = [ read_csv_if_string(data) for data in datasets ]
+    datasets = list(map(read_csv_if_string, datasets))
     for i, data in enumerate(datasets):
         datasets[i] = data.loc[cross_matches.ix[:, i]].reset_index(drop=True)
 
@@ -563,7 +524,7 @@ def match_two_datasets(datasets, labels):
 
 
     """
-    datasets = [ read_csv_if_string(data) for data in datasets ]
+    datasets = list(map(read_csv_if_string, datasets))
     datasets[0].to_csv('Data_to_Match1.csv', encoding='utf-8', index_label='id')
     datasets[1].to_csv('Data_to_Match2.csv', encoding='utf-8', index_label='id')
     duke('Comparison.xml', linkfile='matches.txt', singlematch=True)
@@ -586,10 +547,8 @@ def match_multiple_datasets(datasets, labels):
         dataframes or csv-files to use for the matching
     labels : list of strings
         Names of the databases in alphabetical order and corresponding order to the datasets
-
-
     """
-    datasets = [ read_csv_if_string(data) for data in datasets ]
+    datasets = list(map(read_csv_if_string, datasets))
     combinations = list(itertools.combinations(range(len(labels)), 2))
     all_matches = []
     for c in combinations:
@@ -611,8 +570,6 @@ def reduce_matched_dataframe(df):
     df : pandas.Dataframe
         MultiIndex dataframe with the matched powerplants, as obatained from
         matched_dataframe() or match_multiple_datasets()
-
-
     """
     sdf = df.Name
     sdf.loc[:, 'Country'] = df.Country.apply(most_frequent, axis=1)
@@ -629,12 +586,39 @@ def reduce_matched_dataframe(df):
     return sdf
 
 
-def WRI_GEO_Carma_matched():
-    return pd.read_csv('%s/data/WRI_GEO_Carma_matched.csv'%os.path.dirname(__file__),index_col='id')
+def WRI_GEO_Carma_matched(update=False):
+    outfn = os.path.join(os.path.dirname(__file__), data, 'WRI_GEO_Carma_matched.csv')
+    if update or not os.path.exists(outfn):
+        # Generate the matched database
+        raise NotImplemented
+        # matched_df = ...
+
+        # matched_df.to_csv(outfn)
+        # return matched_df
+    else:
+        return pd.read_csv(outfn, index_col='id')
 
 
-def FIAS_WRI_GEO_Carma_matched():
-    return pd.read_csv('%s/data/carma_fias_geo_wri_match.csv'%os.path.dirname(__file__),index_col='id')
+def FIAS_WRI_GEO_Carma_matched(update=False):
+    outfn = os.path.join(os.path.dirname(__file__), data, 'carma_fias_geo_wri_match.csv')
+    if update or not os.path.exists(outfn):
+        # Generate the matched database
+        raise NotImplemented
+        # matched_df = ...
 
-def aggregated_hydro():
-    return pd.read_csv('%s/data/hydro_aggregation.csv'%os.path.dirname(__file__),index_col='id')
+        # matched_df.to_csv(outfn)
+        # return matched_df
+    else:
+        return pd.read_csv(outfn, index_col='id')
+
+def aggregated_hydro(update=False):
+    outfn = os.path.join(os.path.dirname(__file__), data, 'hydro_aggregation.csv')
+    if update or not os.path.exists(outfn):
+        # Generate the matched database
+        raise NotImplemented
+        # matched_df = ...
+
+        # matched_df.to_csv(outfn)
+        # return matched_df
+    else:
+        return pd.read_csv(outfn, index_col='id')
