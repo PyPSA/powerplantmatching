@@ -23,7 +23,7 @@ from countrycode import countrycode
 import subprocess as sub
 import itertools
 import os
-
+import six
 
 def geo_data():
     """
@@ -157,16 +157,17 @@ def lookup(df, by = 'Country, Fueltype', keys = None, exclude = None):
         if by == 'Fueltype':
             return df.groupby(['Fueltype']).Capacity.sum().astype(int)
 
-    if type(df) != list:
-        return lookup_single(df)
-    if type(df) == list:
-        dfs = pd.concat([ lookup_single(a) for a in df ], axis=1, keys=keys)
+    if isinstance(df, list):
+        dfs = pd.concat([lookup_single(a) for a in df], axis=1, keys=keys)
         if by == 'Country, Fueltype':
             dfs = dfs.reorder_levels([1, 0], axis=1)
             dfs = dfs[dfs.columns.levels[0]]
         dfs = dfs.fillna(0)
         dfs.loc['Total'] = dfs.sum()
         return dfs
+    else:
+        return lookup_single(df)
+
 
 
 def europeancountries():
@@ -282,7 +283,7 @@ def cliques(df, dataduplicates):
 
     """
     df = read_csv_if_string(df)
-    if type(dataduplicates) == str:
+    if isinstance(dataduplicates, six.string_types):
         dataduplicates = pd.read_csv(dataduplicates, usecols=[1, 2], names=['one', 'two'])
     G = nx.DiGraph()
     G.add_nodes_from(df.index)
@@ -411,7 +412,7 @@ def duke(config, linkfile = None, singlematch = False, showmatches = False, wait
 
 
 def read_csv_if_string(data):
-    if type(data) == str:
+    if isinstance(data, six.string_types):
         data = pd.read_csv(data, index_col='id')
     return data
 
