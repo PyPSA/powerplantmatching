@@ -99,12 +99,7 @@ def Energy_storage_exchange_data():
 def FIAS_data():
     return pd.read_csv('%s/data/FiasHydro.csv'%os.path.dirname(__file__), index_col='id')
 
-<<<<<<< HEAD
-
 def ENTSOE_data():
-=======
-def entsoe_data():
->>>>>>> a0eb176d06d23e4804d37dbf49ab02368dacb49b
     """
     Standardize the entsoe database for statistical use.
     """
@@ -201,26 +196,13 @@ def target_columns():
     columns use df.rename(columns=dic, inplace=True) with dic being a dictionary
     of the replacements
     """
-<<<<<<< HEAD
-    return ['Name',
-     'Fueltype',
-     'Classification',
-     'Country',
-     'Capacity',
-     'lat',
-     'lon',
-     'Geoposition',
-     'File']
-     
+    return ['Name', 'Fueltype', 'Classification', 'Country',
+            'Capacity', 'lat', 'lon', 'Geoposition', 'File']
+
 def main_fueltypes(df):
     df.loc[(df.Fueltype=='Geothermal')|(df.Fueltype=='Mixed fuel types')|
            (df.Fueltype=='Waste') , 'Fueltype']='Other'
     return df
-=======
-    return ['Name', 'Fueltype', 'Classification', 'Country',
-            'Capacity', 'lat', 'lon', 'Geoposition', 'File']
-
->>>>>>> a0eb176d06d23e4804d37dbf49ab02368dacb49b
 
 def add_geoposition(df):
     """
@@ -614,14 +596,11 @@ def WRI_GEO_Carma_matched(update=False):
         # Generate the matched database
         raise NotImplemented
         # matched_df = ...
+        # matched_df.to_csv(outfn)
+        # return matched_df
+    else:
+        return pd.read_csv(outfn, index_col='id')
 
-<<<<<<< HEAD
-def FIAS_WRI_GEO_Carma_matched():
-    return pd.read_csv('%s/data/carma_fias_geo_wri_match.csv'%os.path.dirname(__file__),index_col='id')
-    
-def Aggregated_hydro():
-    return pd.read_csv('%s/data/hydro_aggregation.csv'%os.path.dirname(__file__),index_col='id')
-    
 def WRI_data():
     return pd.read_csv('%s/data/WRIdata.csv'%os.path.dirname(__file__),index_col='id')
     
@@ -653,11 +632,7 @@ def MATCHED_DATABASE(artificials=True, mainfueltypes=False):
     if mainfueltypes:
         matched=main_fueltypes(matched)
     return pd.concat([matched, hydro])
-=======
-        # matched_df.to_csv(outfn)
-        # return matched_df
-    else:
-        return pd.read_csv(outfn, index_col='id')
+
 
 
 def FIAS_WRI_GEO_Carma_matched(update=False):
@@ -672,7 +647,7 @@ def FIAS_WRI_GEO_Carma_matched(update=False):
     else:
         return pd.read_csv(outfn, index_col='id')
 
-def aggregated_hydro(update=False):
+def Aggregated_hydro(update=False):
     outfn = os.path.join(os.path.dirname(__file__), data, 'hydro_aggregation.csv')
     if update or not os.path.exists(outfn):
         # Generate the matched database
@@ -683,4 +658,4 @@ def aggregated_hydro(update=False):
         # return matched_df
     else:
         return pd.read_csv(outfn, index_col='id')
->>>>>>> a0eb176d06d23e4804d37dbf49ab02368dacb49b
+
