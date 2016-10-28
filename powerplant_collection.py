@@ -11,7 +11,7 @@ import itertools
 import os
 
 
-def geo_data():
+def GEO_data():
     """
     Return standardized Carma database with target column names and fueltypes. 
     Only includes powerplants with capacity > 4 MW.
@@ -35,7 +35,7 @@ def geo_data():
     return GEOdata.loc[:,target_columns()]
 
 
-def carma_data():
+def CARMA_data():
     """
     Return standardized Carma database with target column names and fueltypes. 
     Only includes powerplants with capacity > 4 MW.
@@ -78,14 +78,14 @@ def carma_data():
     return carmadata.loc[:,target_columns()]
 
 
-def energy_storage_exchange_data():
+def Energy_storage_exchange_data():
     return pd.read_csv('%s/data/energy_storage_exchange.csv'%os.path.dirname(__file__), index_col='id')
     
 def FIAS_data():
     return pd.read_csv('%s/data/FiasHydro.csv'%os.path.dirname(__file__), index_col='id')
 
 
-def entsoe_data():
+def ENTSOE_data():
     """
     Standardize the enstoe database for statistical use. 
     
@@ -221,7 +221,11 @@ def target_columns():
      'lon',
      'Geoposition',
      'File']
-
+     
+def main_fueltypes(df):
+    df.loc[(df.Fueltype=='Geothermal')|(df.Fueltype=='Mixed fuel types')|
+           (df.Fueltype=='Waste') , 'Fueltype']='Other'
+    return df
 
 def add_geoposition(df):
     """
@@ -621,6 +625,37 @@ def WRI_GEO_Carma_matched():
 def FIAS_WRI_GEO_Carma_matched():
     return pd.read_csv('%s/data/carma_fias_geo_wri_match.csv'%os.path.dirname(__file__),index_col='id')
     
-def aggregated_hydro():
+def Aggregated_hydro():
     return pd.read_csv('%s/data/hydro_aggregation.csv'%os.path.dirname(__file__),index_col='id')
     
+def WRI_data():
+    return pd.read_csv('%s/data/WRIdata.csv'%os.path.dirname(__file__),index_col='id')
+    
+def MATCHED_DATABASE(artificials=True, mainfueltypes=False):
+    """
+    This returns the actual match between the Carma-data, GEO-data, WRI-data, 
+    FIAS-data and the ESE-data with an additional manipulation on the hydro powerplants. 
+    The latter were adapted in terms of the power plant classification (Run-of-river, 
+    Reservoir, Pumped-Storage) and were quantitatively  adjusted to the ENTSOE-
+    statistics. For more information about the classification and adjustment, 
+    see the hydro-aggreation.py file.
+    
+    Parameters
+    ----------
+    artificials : Boolean, defaut True
+            Wether to include 210 artificial hydro powerplants in order to fulfill the 
+            statistics of the ENTSOE-data and receive better covering of the country 
+            totals
+    mainfueltypes : Boolean, default False
+            Wether to reduce the fueltype specification such that "Geothermal", "Waste"
+            and "Mixed Fueltypes" are declared as "Other"
+            
+    """
+    hydro = Aggregated_hydro()
+    matched = FIAS_WRI_GEO_Carma_matched()
+    matched = matched[matched.Fueltype != 'Hydro']
+    if artificials==False:
+        hydro=hydro[hydro.Fias!="Artificial Powerplant"]
+    if mainfueltypes:
+        matched=main_fueltypes(matched)
+    return pd.concat([matched, hydro])
