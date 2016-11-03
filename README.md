@@ -12,11 +12,32 @@ power plant. Secondly, we provide functions to horizontally merge
 different databases in order to check their consistency and improve
 the reliability.
 
-https://github.com/FRESNA/powerplantmatching/files/566627/countrytotals.pdf
+
+## Usage 
+
+If you are just interested in the power plant data, we provide 
+our actual match between five databases here 
+This set combines the data of all our data sources (see below) 
+giving the following information:
+
+- Name
+- Fueltype
+- Classification
+- Capacity
+- Geoposition
+- Country
+
+
+We roughly keep the names giving by the different databases.
+However, the other quantities consist of combinations of 
+all the matched databases, e.g. average of claimed capacities. 
+
+If you further interested in a modified database, we provide an adapted 
+dataset which fulfills the statitics of the ENTSOe 
 
 
 
-# Data-Sources: 
+## Data-Sources: 
 
 OPSD - Open Power System Data, provide data on 
 	http://data.open-power-system-data.org/conventional_power_plants/
