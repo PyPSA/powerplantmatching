@@ -23,8 +23,7 @@ from sklearn import linear_model, datasets
 
 #%% Expand the database with non-matches
 
-data= pc.FIAS_WRI_GEO_Carma_matched()[lambda df: df.loc[:,["lat", "lon"]].notnull().all(axis=1)]
-data.loc[data.Classification == 'Run-of-river', 'Classification'] = 'Ror'
+data= pc.Carma_FIAS_GEO_OPSD_WRI_matched()[lambda df: df.loc[:,["lat", "lon"]].notnull().all(axis=1)]
 hydro = data[data.Fueltype=="Hydro"]
 
 entsoestats = pd.read_excel('StatisticsHydro.xls')
@@ -40,24 +39,24 @@ entsoestats = entsoestats.sort_values(by='country')
 entsoestats = entsoestats.set_index('country')
 
 
-GEO = pd.read_csv('/Users/godula/Desktop/EuropeanPowerGrid/DukeOnPowerplants/GEOdataDuked.csv', index_col='id')
-FIAS = pd.read_csv('/Users/godula/Desktop/EuropeanPowerGrid/DukeOnPowerplants/FiasHydro.csv', index_col='id')
+GEO = pc.GEO_data()
+FIAS = pc.FIAS_data()
 
 GEO = GEO[GEO.Fueltype=='Hydro']
 #FIAS = FIAS[FIAS.Country=='Sweden']
 
 
-GEO[~GEO.Name.isin(hydro.Geo)].Capacity.sum()
+GEO[~GEO.Name.isin(hydro.GEO)].Capacity.sum()
 
-FIAS[~FIAS.Name.isin(hydro.Fias)].Capacity.sum()
+FIAS[~FIAS.Name.isin(hydro.FIAS)].Capacity.sum()
 
 
-GEO.loc[:,'Geo'] = GEO.Name
-FIAS.loc[:,'Fias'] = FIAS.Name
+GEO.loc[:,'GEO'] = GEO.Name
+FIAS.loc[:,'FIAS'] = FIAS.Name
 
 columns = hydro.columns
-hydro = hydro.append(GEO[~GEO.Geo.isin(hydro.Geo)])
-hydro = hydro.append(FIAS[~FIAS.Fias.isin(hydro.Fias)])
+hydro = hydro.append(GEO[~GEO.GEO.isin(hydro.GEO)])
+hydro = hydro.append(FIAS[~FIAS.FIAS.isin(hydro.FIAS)])
 hydro = hydro.loc[:,columns]
 hydro = hydro.loc[hydro.Capacity.notnull()]
 hydro = hydro.reset_index(drop=True)
@@ -75,15 +74,12 @@ hydro.loc[(hydro.Classification.str.contains('Pump|pumped', case=False)) & (hydr
 
 hydrogrouped = hydro.groupby(['Country', 'Classification']).Capacity.sum().unstack()
 
-#%%Delete some Duplicates manually
-
-hydro = hydro.loc[~(hydro.Fias=="Grand'maison dam")]
 
 #%% Scale countrywise
 
 
 
-entsoe = pc.entsoe_data()
+entsoe = pc.ENTSOE_data()
 lookup = pc.lookup([entsoe.loc[entsoe.Fueltype=='Hydro'], hydro], keys= ['ENTSOE', 'matched'], by='Country')
 lookup.loc[:,'Difference'] = lookup.ENTSOE - lookup.matched
 missingpowerplants = (lookup.Difference/120).round().astype(int)
@@ -97,7 +93,7 @@ for i in missingpowerplants[:-1].loc[missingpowerplants[:-1] > 0].index:
         hydroexp = hydroexp.append(hydro.loc[(hydro.Country == i)& (hydro.lat.notnull()),['lat', 'lon']].sample(howmany) + np.random.uniform(-.4,.4,(howmany,2)), ignore_index=True)
         hydroexp.loc[hydroexp.shape[0]-howmany:,'Country'] = i
         hydroexp.loc[hydroexp.shape[0]-howmany:,'Capacity'] = 120.
-        hydroexp.loc[hydroexp.shape[0]-howmany:,'Fias'] = 'Artificial Powerplant'
+        hydroexp.loc[hydroexp.shape[0]-howmany:,'FIAS'] = 'Artificial Powerplant'
 
         
     except: 
@@ -105,12 +101,12 @@ for i in missingpowerplants[:-1].loc[missingpowerplants[:-1] > 0].index:
             hydroexp = hydroexp.append(hydro.loc[(hydro.Country == i)& (hydro.lat.notnull()),['lat', 'lon']].sample(1) + np.random.uniform(-1,1,(1,2)), ignore_index=True)
             hydroexp.loc[hydroexp.shape[0]-1:,'Country'] = i
             hydroexp.loc[hydroexp.shape[0]-1:,'Capacity'] = 120.
-            hydroexp.loc[hydroexp.shape[0]-howmany:,'Fias'] = 'Artificial Powerplant'
+            hydroexp.loc[hydroexp.shape[0]-howmany:,'FIAS'] = 'Artificial Powerplant'
         
 for i in missingpowerplants[:-1].loc[missingpowerplants[:-1] < -1].index:
     while hydroexp.loc[hydroexp.Country == i, 'Capacity'].sum() > lookup.loc[i, 'ENTSOE'] + 300:
         try:
-            hydroexp = hydroexp.drop(hydroexp.loc[(hydroexp.Country == i)& (hydroexp.Geo.isnull())].sample(1).index)
+            hydroexp = hydroexp.drop(hydroexp.loc[(hydroexp.Country == i)& (hydroexp.GEO.isnull())].sample(1).index)
         except:
             hydroexp = hydroexp.drop(hydroexp.loc[(hydroexp.Country == i)].sample(1).index)
 
@@ -128,7 +124,7 @@ print hydro.groupby(['Country', 'Classification']).Capacity.sum().unstack()
 
 
 
-geodata = xr.open_dataset('/Users/godula/Desktop/EuropeanPowerGrid/ETOPO1_Ice_c_gmt4.grd')
+geodata = xr.open_dataset('ETOPO1_Ice_c_gmt4.grd')
 eu = geodata['z'].sel(y=slice(35, 71), x=slice(-9, 30))
 eu = eu.to_dataframe(name='height')
 eu = pd.DataFrame(eu.height).reset_index()
@@ -183,7 +179,7 @@ training = trainhydro[trainhydro.loc[:,['height', 'stdheight', 'Capacity', 'Clas
 print trainhydro.Classification.value_counts()
 
 
-hydro.to_csv('hydrotemporary.csv', index_label='id')
+hydro.to_csv('hydrotemporary.csv', index_label='id', encoding='utf-8')
 
 
 #%% Fit to database
@@ -203,18 +199,18 @@ bias.Reservoir = 1.
 bias.Ror = 1.
 
 bias.loc["Austria"]=[1.,1.]
-bias.loc["Bulgaria"]= [1.5,1.]
+bias.loc["Bulgaria"]= [1.5,.3]
 bias.loc["Croatia"] = [1.1,0.]
 bias.loc['Czech Republic'] = [1.,1.]
 bias.loc["Denmark"] = [1.,1.]
-bias.loc["France"] = [1.,1.3]
+bias.loc["France"] = [1.5,.4]
 bias.loc["Greece"] = [1.,1.]
-bias.loc["Italy"] = [1.,1.7]
+bias.loc["Italy"] = [1.4,.7]
 bias.loc["Norway"] = [1.,0.]
 bias.loc["Poland"] = [0.,1.]
 bias.loc["Portugal"] = [1.,1.3]
-bias.loc['Romania'] = [.8,1.7]
-bias.loc["Spain"] = [1.2,1.]
+bias.loc['Romania'] = [1.5,.7]
+bias.loc["Spain"] = [1.5,.4]
 bias.loc["Switzerland"] = [.8,1.4]
 
 
@@ -246,8 +242,10 @@ for c in bias.index:
 
 hydrofit = hydrofit.loc[:,columns]
 hydrofitgrouped = hydrofit.groupby(['Country', 'Classification']).Capacity.sum().unstack()
+hydrofitgrouped.loc[:,'hydro']=hydrofit.groupby('Country').Capacity.sum()
 relationsfit = hydrofitgrouped-entsoestats[entsoestats!=0]
 print relationsfit
-
+hydrofit.Classification.replace('Ror', 'Run-Of-River', regex=True, inplace=True)
+hydrofit.to_csv('hydro_aggregation.csv', index_label='id')
 
 

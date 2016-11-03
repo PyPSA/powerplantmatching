@@ -68,12 +68,24 @@ def GEO_data():
     GEOdata.reset_index(drop=True)
     GEOdata.rename(columns={'Type': 'Fueltype'}, inplace=True)
     GEOdata.replace({'Gas': 'Natural Gas'}, inplace=True)
+    GEOdata = gather_classification_info(GEOdata, search_col=['FuelClassification1'])
     GEOdata = clean_powerplantname(GEOdata)
     GEOdata = (GEOdata.fillna(0).groupby(['Name', 'Country', 'Fueltype',
                'Classification'])
                .agg({'Capacity': np.sum,
                      'lat': np.mean,
                      'lon': np.mean}).reset_index())
+    GEOdata.Classification = GEOdata.Classification.replace({
+       'Combined Cycle Gas Turbine':'CCGT',
+       'Cogeneration Power and Heat Steam Turbine':'CHP',
+       'Sub-critical Thermal|Super-critical Thermal':'Thermal',
+       'Open Cycle Gas Turbine|Power and Heat OCGT':'OCGT',
+       'Combined Cycle Gas Engine (CCGE)':'CCGE',
+    'Power and Heat Combined Cycle Gas Turbine':'CCGT',
+    'Both Sub and Super Critical Thermal|Ultra-Super-Critical Thermal':'Thermal', 
+    'Cogeneration Power and Heat Steam Turbine':'CHP', 
+    'Heat and Power Steam Turbine|Sub-critical Steam Turbine':'CHP'}
+            , regex=True).str.strip()
     GEOdata.replace(0, np.NaN, inplace=True)
     GEOdata = add_geoposition(GEOdata)
     return GEOdata.loc[:,target_columns()]
@@ -158,23 +170,28 @@ def ENTSOE_data():
 def WRI_data():
     wri = pd.read_csv('%s/data/WRIdata.csv'%os.path.dirname(__file__), 
                       index_col='id')
-    wri.Name = wri.Name.str.title()
+#    wri.Name = wri.Name.str.title()
     wri = wri.loc[:,target_columns()]
     return wri
     
 def Carma_FIAS_GEO_OPSD_WRI_matched(update=False):
-    outfn = os.path.join(os.path.dirname(__file__), data, 
-                         'Carma_FIAS_GEO_OPSD_WRI_matched.csv')
-    if update or not os.path.exists(outfn):
-        # Generate the matched database
-        raise NotImplemented
+    outfn = os.path.join(os.path.dirname(__file__), 'data', 
+                         'Matched_Carma_Fias_Geo_Opsd_Wri.csv')
+    if update: #or not os.path.exists(outfn):
+        matched = reduce_matched_dataframe(
+             match_multiple_datasets([deduplicate(CARMA_data()),
+                                    FIAS_data(), GEO_data(), 
+                                    deduplicate(OPSD_data()),
+                                    deduplicate(WRI_data())], 
+                                    ['CARMA', 'FIAS', 'GEO','OPSD','WRI']))
+#        raise NotImplemented
         # matched_df = ...
         # matched_df.to_csv(outfn)
-        # return matched_df
+        return matched
     else:
         return pd.read_csv(outfn, index_col='id')
 
-def MATCHED_DATABASE(artificials=True, mainfueltypes=False):
+def MATCHED_dataset(artificials=True, mainfueltypes=False):
     """
     This returns the actual match between the Carma-data, GEO-data, WRI-data, 
     FIAS-data and the ESE-data with an additional manipulation on the hydro powerplants. 
@@ -194,8 +211,10 @@ def MATCHED_DATABASE(artificials=True, mainfueltypes=False):
             and "Mixed Fueltypes" are declared as "Other"
             
     """
+    
     hydro = Aggregated_hydro()
-    matched = FIAS_WRI_GEO_Carma_matched()
+    matched = extend_by_non_matched(Carma_FIAS_GEO_OPSD_WRI_matched(),
+                                    GEO_data(), 'GEO')    
     matched = matched[matched.Fueltype != 'Hydro']
     if artificials==False:
         hydro=hydro[hydro.Fias!="Artificial Powerplant"]
@@ -218,7 +237,7 @@ def Aggregated_hydro(update=False):
 
 #%%Tools
     
-def lookup(df, by='Country, Fueltype', keys=None, exclude=None):
+def lookup(df, keys=None, by='Country, Fueltype', exclude=None):
     """
     Returns a lookup table of the dataframe df with rounded numbers. Use different lookups
     as "Country", "Fueltype" for the different lookups.
@@ -310,13 +329,15 @@ def add_geoposition(df):
     return df
 
 def gather_classification_info(df, search_col=['Name', 'Fueltype']):
-    pattern = '|'.join(['Lignite', 'Hard coal','CCGT', 'ccgt', 'ocgt'])
+    pattern = '|'.join(('(?i)'+x) for x in
+                       ['lignite', 'Hard coal', 'Coal hard', 'ccgt', 'ocgt', 'chp'])
     for i in search_col:
         found = df.loc[:,i].str.findall(pattern).str.join(sep=', ')
         df.loc[:, 'Classification'] = df.loc[:, 'Classification'
-                                                ].fillna('').str.cat(found, sep=', ')
-        df.Classification = df.Classification.str.replace('^ , |^,|, $', '')
-        df.Classification.replace('', np.NaN, inplace=True)
+                                                ].fillna('').str.cat(found, 
+                                                sep=', ').str.strip()
+        df.Classification = df.Classification.str.replace('^ , |^,|, $|,$', '')
+        df.Classification.replace('', np.NaN, regex=True, inplace=True)
     return df
     
 def prop_for_groups(x):
@@ -330,7 +351,8 @@ def prop_for_groups(x):
                'Country': x.Country.value_counts().index[0],
                'Fueltype': x.Fueltype.value_counts().index[0] if \
                     x.Fueltype.notnull().any(axis=0) else np.NaN,
-               'Classification': ', '.join(x[x.Classification.notnull()].Classification.unique()),
+               'Classification': ', '.join(x[x.Classification.notnull()].Classification.unique())
+                                        if x.Classification.notnull().any(axis=0) else np.NaN,
                'File': x.File.value_counts().index[0] if x.File.notnull().any(axis=0) else np.NaN,
                'Capacity': x['Capacity'].sum() if x.Capacity.notnull().any(axis=0) else np.NaN,
                'lat': x['lat'].mean(),
@@ -377,45 +399,7 @@ def cliques(df, dataduplicates):
 #
 #WRIdata["grouped"]=labelsWRI
 
-#    def clean_powerplantname(df):
-#    """
-#    Cleans the column "Name" of the database by deleting very frequent words, numericals and
-#    nonalphanumerical characters of the column. Returns a reduced dataframe with nonempty
-#    Name-column.
-#
-#    Parameters
-#    ----------
-#    df : pandas.Dataframe
-#        dataframe which should be cleaned
-#
-#    """
-#
-#    df.Name.replace(regex=True, value='', to_replace=list('1234567890&$#%'), inplace=True)
-#    df.Name.replace(regex=True, value=' ', 
-#                    to_replace=list('-/')+['\(', '\)', '\[', '\]'], inplace=True)
-#
-#    def maybe_wrap(x):
-#        return ('\\b' if x[0].isalnum() else '') + x + ('\\b' if x[-1].isalnum() else '')
-#    common_words = pd.Series(sum(df.Name.str.split(), [])).value_counts()
-#    cw = list(common_words[common_words >= 20].index)
-#
-##    patterns = '|'.join([ maybe_wrap(re.escape(x)) for x in list('1234567890%')
-#    pattern0 = '|'.join([('(^|\\s)'+x+'($|\\s)') for x in cw])
-#    pattern1 = '|'.join([('(^|\\s)'+x+'($|\\s)') for x in 
-#       ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','Grupo',
-#     'N','parque','eolico','gas','biomasa','COGENERACION'
-#     ,'gt','unnamed','tratamiento de purines','planta','de','la','station', 'power', 
-#     'storage', 'plant', 'stage', 'pumped', 'project'] ])
-#    pattern2 = '|'.join([('(^|\\s)'+x+'($|\\s)') for x in ['a','b',
-#     'c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t',
-#     'u','v','w','x','y','z'] ])
-#    df.Name = df.Name.str.replace(pattern0, '', case=False).str.strip()
-#    df.Name = df.Name.str.replace(pattern1, '\\s', case=False).str.strip()
-#    df.Name = df.Name.str.replace(pattern2, ' ', case=False).str.strip().\
-#                str.replace('\\s\\s+', ' ').str.capitalize()
-#
-#    df = df[df.Name != ''].reset_index(drop=True)
-#    return df
+
     
 def clean_powerplantname(df):
     """
@@ -449,6 +433,32 @@ def clean_powerplantname(df):
     df = df[df.Name != ''].reset_index(drop=True)
     return df    
 
+def parse_Geoposition(loc, country):
+    """
+    Nominatim request for the Geoposition of a specific location in a country.
+    Returns a tuples with (lattitude, longitude) if the request was sucessful,
+    returns None otherwise.
+
+
+    Parameters
+    ----------
+    loc : string
+        description of the location, can be city, area etc.
+    country : string
+        name of the country which will be used as a bounding area
+
+
+    """
+    from geopy.geocoders import Nominatim
+    if loc != None and loc != float:
+        gdata = Nominatim(timeout=100, country_bias=str.lower(countrycode
+              (codes=[country], origin='country_name', target='iso2c')[0])).geocode(loc)
+        if gdata != None:
+            lat = gdata.latitude
+            lon = gdata.longitude
+            return (lat, lon)
+    else:
+        return
 
 def most_frequent(df):
     if df.isnull().all():
@@ -456,12 +466,11 @@ def most_frequent(df):
     else:
         return df.value_counts().idxmax()
 
-def concat_strings(df):
-    if df.isnull().all():
-        return np.nan
-    else:
-        return df[df.notnull()].str.cat(sep = ' / ')
 
+def read_csv_if_string(data):
+    if isinstance(data, six.string_types):
+        data = pd.read_csv(data, index_col='id')
+    return data        
 
 def duke(config, linkfile=None, singlematch=False, showmatches=False, wait=True):
     """
@@ -505,12 +514,6 @@ def duke(config, linkfile=None, singlematch=False, showmatches=False, wait=True)
         print("\n The process will continue in the background, type '_.kill()' to abort ")
     return run
 
-
-def read_csv_if_string(data):
-    if isinstance(data, six.string_types):
-        data = pd.read_csv(data, index_col='id')
-    return data
-
 def best_matches(linkfile, labels):
     """
     Subsequent to powerplant_collection.duke() with singlematch=True. Returns reduced list of
@@ -530,89 +533,6 @@ def best_matches(linkfile, labels):
                                              labels[1], 'scores'])
     return matches.groupby(matches.iloc[:, 1], as_index=False, 
                            sort=False).apply(lambda x: x.ix[x.scores.idxmax(), 0:2])
-
-
-def cross_matches(datasets):
-    """
-    Combines multiple sets of pairs and returns one consistent dataframe. Identifiers of two
-    datasets can appear in one row even though they did not match directly but indirectly
-    through a connecting identifier of another database.
-
-    Parameters
-    ----------
-    datasets : list
-        list of pd.Dataframe's containing only the matches (without scores), obtained from the
-        linkfile (duke() and best_matches())
-
-
-    """
-    m_all = datasets
-    all_databases = np.unique([x.columns for x in m_all])
-    matches = pd.DataFrame(columns=all_databases)
-    for i in all_databases:
-        base = [m.set_index(i) for m in m_all if i in m]
-        match_base = pd.concat(base, axis=1).reset_index()
-        matches = pd.concat([matches, match_base])
-
-    matches = matches.drop_duplicates().reset_index(drop=True)
-    for i in all_databases:
-        matches = pd.concat([matches.groupby(i, as_index=False, sort=False).\
-                             apply(lambda x: x.loc[x.isnull().sum(axis=1).idxmin()]),\
-        matches[matches[i].isnull()]]).reset_index(drop=True)
-    return matches
-
-
-def matched_dataframe(cross_matches, datasets):
-    """
-    Use this function to create a matched dataframe on base of the cross matches
-    and a list of the databases. Always order the database alphabetically.
-
-    Parameters
-    ----------
-    cross_matches : pandas.Dataframe of the matching indexes of the databases,
-        created with powerplant_collection.cross_matches()
-    datasets : list of pandas.Dataframes or csv-files in the same
-        order as in cross_matches
-
-
-    """
-    datasets = list(map(read_csv_if_string, datasets))
-    for i, data in enumerate(datasets):
-        datasets[i] = data.loc[cross_matches.ix[:, i]].reset_index(drop=True)
-    df = pd.concat(datasets, axis=1, keys=cross_matches.columns.tolist())
-    df = df.reorder_levels([1, 0], axis=1)
-    df = df[df.columns.levels[0]]
-    df = df.loc[:,target_columns()]
-    return df
-
-
-def parse_Geoposition(loc, country):
-    """
-    Nominatim request for the Geoposition of a specific location in a country.
-    Returns a tuples with (lattitude, longitude) if the request was sucessful,
-    returns None otherwise.
-
-
-    Parameters
-    ----------
-    loc : string
-        description of the location, can be city, area etc.
-    country : string
-        name of the country which will be used as a bounding area
-
-
-    """
-    from geopy.geocoders import Nominatim
-    if loc != None and loc != float:
-        gdata = Nominatim(timeout=100, country_bias=str.lower(countrycode
-              (codes=[country], origin='country_name', target='iso2c')[0])).geocode(loc)
-        if gdata != None:
-            lat = gdata.latitude
-            lon = gdata.longitude
-            return (lat, lon)
-    else:
-        return
-
 
 def deduplicate(df):
     """
@@ -642,8 +562,7 @@ def deduplicate(df):
     df = df[target_columns()]
     return df
 
-
-def match_two_datasets(datasets, labels):
+def compare_two_datasets(datasets, labels):
     """
     Duke-based horizontal match of two databases. Returns the matched dataframe including only the
     matched entries in a multi-indexed pandas.Dataframe. Compares all properties of the
@@ -670,9 +589,64 @@ def match_two_datasets(datasets, labels):
             linkfile='/tmp/matches.txt', singlematch=True)
     matches = best_matches('/tmp/matches.txt', labels)
     return matches
+    
+def cross_matches(sets_of_pairs, labels=None):
+    """
+    Combines multiple sets of pairs and returns one consistent dataframe. Identifiers of two
+    datasets can appear in one row even though they did not match directly but indirectly
+    through a connecting identifier of another database.
+
+    Parameters
+    ----------
+    sets_of_pairs : list
+        list of pd.Dataframe's containing only the matches (without scores), obtained from the
+        linkfile (duke() and best_matches())
+    labels : list of strings
+        list of names of the databases, used for specifying the order of the output
+
+    """
+    m_all = sets_of_pairs
+    if labels is None:
+        labels = np.unique([x.columns for x in m_all])
+    matches = pd.DataFrame(columns=labels)
+    for i in labels:
+        base = [m.set_index(i) for m in m_all if i in m]
+        match_base = pd.concat(base, axis=1).reset_index()
+        matches = pd.concat([matches, match_base])
+
+    matches = matches.drop_duplicates().reset_index(drop=True)
+    for i in labels:
+        matches = pd.concat([matches.groupby(i, as_index=False, sort=False).\
+                             apply(lambda x: x.loc[x.isnull().sum(axis=1).idxmin()]),\
+        matches[matches[i].isnull()]]).reset_index(drop=True)
+    return matches.loc[:,labels]
 
 
-def match_multiple_datasets(datasets, labels, fully_include=None):
+def combined_dataframe(cross_matches, datasets):
+    """
+    Use this function to create a matched dataframe on base of the cross matches
+    and a list of the databases. Always order the database alphabetically.
+
+    Parameters
+    ----------
+    cross_matches : pandas.Dataframe of the matching indexes of the databases,
+        created with powerplant_collection.cross_matches()
+    datasets : list of pandas.Dataframes or csv-files in the same
+        order as in cross_matches
+
+
+    """
+    datasets = list(map(read_csv_if_string, datasets))
+    for i, data in enumerate(datasets):
+        datasets[i] = data.loc[cross_matches.ix[:, i]].reset_index(drop=True)
+    df = pd.concat(datasets, axis=1, keys=cross_matches.columns.tolist())
+    df = df.reorder_levels([1, 0], axis=1)
+    df = df[df.columns.levels[0]]
+    df = df.loc[:,target_columns()]
+    return df.reset_index(drop=True)
+
+
+def match_multiple_datasets(datasets, labels):
     """
     Duke-based horizontal match of multiple databases. Returns the matched dataframe including
     only the matched entries in a multi-indexed pandas.Dataframe. Compares all properties of the
@@ -689,22 +663,17 @@ def match_multiple_datasets(datasets, labels, fully_include=None):
         Names of the databases in alphabetical order and corresponding order to the datasets
     """
 #    return ArgumentError if labels not in alphabetical order
-    if labels!=list(np.unique(labels)):
-        raise NameError("'Argument 'labels' are not in alphabetical order'")
     datasets = list(map(read_csv_if_string, datasets))
     combinations = list(itertools.combinations(range(len(labels)), 2))
     all_matches = []
-    for c in combinations:
-        match = match_two_datasets([datasets[c[0]], datasets[c[1]]], 
-                                   [labels[c[0]], labels[c[1]]])
+    for c,d in combinations:
+        match = compare_two_datasets([datasets[c], datasets[d]], 
+                                   [labels[c], labels[d]])
         all_matches.append(match)
-    matches = cross_matches(all_matches)
-    matched = matched_dataframe(matches, datasets)
-    if fully_include == None:
-        return matched
-
+    matches = cross_matches(all_matches, labels=labels)
+    matched = combined_dataframe(matches, datasets)
+    return matched
         
-
 
 def reduce_matched_dataframe(df):
     """
@@ -716,8 +685,15 @@ def reduce_matched_dataframe(df):
     ----------
     df : pandas.Dataframe
         MultiIndex dataframe with the matched powerplants, as obatained from
-        matched_dataframe() or match_multiple_datasets()
+        combined_dataframe() or match_multiple_datasets()
     """
+    
+    def concat_strings(df):
+        if df.isnull().all():
+            return np.nan
+        else:
+            return df[df.notnull()].str.cat(sep = ', ')
+
     sdf = df.Name
     sdf.loc[:, 'Country'] = df.Country.apply(most_frequent, axis=1)
     sdf.loc[:, 'Fueltype'] = df.Fueltype.apply(most_frequent, axis=1)
@@ -730,9 +706,35 @@ def reduce_matched_dataframe(df):
     sdf.loc[:, 'lat'] = df.lat.mean(axis=1)
     sdf.loc[:, 'lon'] = df.lon.mean(axis=1)
     sdf.loc[:, 'File'] = df.File.apply(concat_strings, axis=1)
+    sdf.loc[np.logical_not(sdf.Classification.str.contains('OCGT|CCGT|CHP')),'Classification'] \
+            = sdf.loc[np.logical_not(sdf.Classification.str.contains('OCGT|CCGT|CHP')),
+            'Classification'].str.title()
     return sdf
 
-
+def extend_by_non_matched(df, extend_by, label):
+    """
+    Returns the matched dataframe with additional entries of non-matched powerplants
+    of a reliable source.
+    
+    Parameters
+    ----------
+    df : Pandas.DataFrame
+        Already matched dataset which should be extended
+    extend_by : pd.DataFrame
+        Database which is partially included in the matched dataset, but 
+        which should be included totally
+    label : str
+        Column name of the additional database within the matched dataset, this 
+        string is used if the columns of the additional database do not correspond
+        to the ones of the dataset
+    """
+    extend_by = read_csv_if_string(extend_by)
+    if 'Name' in extend_by.columns:
+        extend_by = extend_by.rename(columns={'Name':label})
+    return df.append(extend_by[~extend_by.loc[:, label].
+                             isin(df.loc[:,label])]).reset_index(drop=True)
+    
+    
 
         
 
