@@ -36,7 +36,7 @@
     <property>
       <name>COUNTRY</name> 
       <comparator>no.priv.garshol.duke.comparators.QGramComparator</comparator>
-      <low>0.01</low>
+      <low>0.0</low>
       <high>0.53</high>
     </property>   
     <property>
@@ -49,7 +49,7 @@
       <name>GEOPOSITION</name> 
       <comparator>GeoComparator</comparator>
       <low>0.1</low>
-      <high>0.85</high>
+      <high>0.8</high>
     </property>   
   </schema>
 
@@ -58,7 +58,7 @@
   
   <group>
     <csv>
-      <param name="input-file" value="Data_to_Match2.csv"/>
+      <param name="input-file" value="/tmp/Data_to_Match2.csv"/>
 
       <column name="id" property="ID"/>
       <column name="Name" 
@@ -78,7 +78,7 @@
 
   <group>
     <csv>
-      <param name="input-file" value="Data_to_Match1.csv"/>
+      <param name="input-file" value="/tmp/Data_to_Match1.csv"/>
 
       <column name="id" property="ID"/>
       <column name="Name" 
