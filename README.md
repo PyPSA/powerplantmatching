@@ -32,9 +32,30 @@ We roughly keep the names giving by the different databases.
 However, the other quantities consist of combinations of 
 all the matched databases, e.g. average of claimed capacities. 
 
-If you further interested in a modified database, we provide an adapted 
-dataset which fulfills the statitics of the ENTSOe 
+If you are further interested in a modified database, we provide an adapted 
+dataset which nearly covers all capacities totals claimed by the ENTSOe
+statistics. This is done by including powerplants that were not matched
+but come out of a reliable source, e.g. the GEO data. Furthermore, a
+learning algorithm was used to specify information about missing 
+Hydro classification (Run-of-River, Pumped Storage and Reservoir).
+This, database is available using the python command 
+powerplant_collection.Matched_dataset(). 
 
+
+## Combining Data From Different Sources
+
+Whereas single databases as the CARMA or the GEO database provide 
+non standardized and lacking information, the data sets can complement 
+each other and check their reliability. Therefore, we combine 
+five different databases (see below) and take only matched power plants.
+The result can be seen here:
+
+
+https://cloud.githubusercontent.com/assets/19226431/20011654/a683952c-a2ac-11e6-8ce8-8e4982fb18d1.jpg
+
+
+
+...
 
 
 ## Data-Sources: 
