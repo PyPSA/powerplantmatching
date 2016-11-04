@@ -48,12 +48,9 @@ Whereas single databases as the CARMA or the GEO database provide
 non standardized and lacking information, the data sets can complement 
 each other and check their reliability. Therefore, we combine 
 five different databases (see below) and take only matched power plants.
-The result can be seen here:
 
 
-https://cloud.githubusercontent.com/assets/19226431/20011654/a683952c-a2ac-11e6-8ce8-8e4982fb18d1.jpg
-
-
+![alt tag](https://cloud.githubusercontent.com/assets/19226431/20011654/a683952c-a2ac-11e6-8ce8-8e4982fb18d1.jpg)
 
 ...
 
