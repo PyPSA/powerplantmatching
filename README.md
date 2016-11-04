@@ -47,3 +47,6 @@ GEO - Global Energy Observatory
 WRI - World Resource Institute (http://www.wri.org), provide their data open source 
 	on https://github.com/Arjay7891/WRI-Powerplant/blob/master/output_database/powerwatch_data.csv
 
+
+ENTSOe - provides statistics :
+	https://www.entsoe.eu/db-query/miscellaneous/net-generating-capacity
