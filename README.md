@@ -1,5 +1,5 @@
 # powerplantmatching
-A set of tools for cleaning, standardising and combining multiple
+A set of tools for cleaning, standardizing and combining multiple
 power plant databases.
 
 This package helps with simplifying the data collection of power
@@ -12,14 +12,14 @@ power plant. Secondly, we provide functions to horizontally merge
 different databases in order to check their consistency and improve
 the reliability.
 
-# What this set of tools can do
+## What it can do
 
-- clean and standardize power plant datasets
+- clean and standardize power plant data sets
 - merge power plant units to one power plant
-- compare and combine different datasets
+- compare and combine different data sets
 - create lookups and give statistical insight to power plant goodness
 - provide cleaned data from different sources 
-- provide an already merged dataset of five different data-sources 
+- provide an already merged data set of five different data-sources 
 
 ## Prefabricated Data 
 
@@ -32,40 +32,42 @@ giving the following information:
 - **Fueltype** 			- Hydro, Wind, Solar, Nuclear, Natural Gas, Oil, Coal, Other
 - **Classification**		- Run-of-River, Reservoir, CCGT etc.
 - **Capacity**			- \[MW\]
-- **Geoposition**		- Lattitude, Longitude
+- **Geo-position**		- Latitude, Longitude
 - **Country** 			- EU-27 countries and UK
 
 
 We roughly keep the names stated by the different databases. The other 
 quantities are composed of the different claims of the matched
 databases: 
-Geoposition is averaged whereas for the Capacity we keep the maximum value of different claims, 
-since some datasets do not include all units of powerplants.
+Geo-position is averaged whereas for the Capacity we keep the maximum value of different claims, 
+since some data sets do not include all units of power plants.
 For the classification, all different classification claims 
-are set in a row. In case of different fueltype claims, we keep the most 
+are set in a row. In case of different fuel-type claims, we keep the most 
 frequent one. The claims for the country cannot differ, otherwise the power plants are not merged.
-The following picture show the fueltype totals of our different data sources and of their merged 
-dataset.
+The following picture show the fuel-type totals of our different data sources and of their merged 
+data set.
 
 ![alt tag](https://cloud.githubusercontent.com/assets/19226431/20011654/a683952c-a2ac-11e6-8ce8-8e4982fb18d1.jpg)
 
-### Adjusted Dataset
+### Adjusted Data set
 If you are, for scientific use, further interested in a modified database, 
-we provide an adapted dataset which nearly covers all capacities totals stated by the ENTSOe
+we provide an adapted data set which nearly covers all capacities totals stated by the ENTSOe
 statistics (except for Wind and Solar). 
 ![alt tag](https://cloud.githubusercontent.com/assets/19226431/20011650/a654e858-a2ac-11e6-93a2-2ed0e938f642.jpg)
-Here, also non-matched powerplants were included
+Here, also non-matched power plants were included
 assuming that they come out of a reliable source, mainly for the GEO data. Furthermore, a
 learning algorithm was used to specify information about missing 
 hydro classification (Run-of-River, Pumped Storage and Reservoir). 
 
 Additionally, a feature for artificial hydro power plants was included in order to fulfil all country totals. The database is available using the python command 
 ```python
-powerplant_collection.Matched_dataset() 
+from powerplantmatching import powerplant_collection as pc
+pc.Matched_dataset() 
 ```
 or 
 ```python
-powerplant_collection.Matched_dataset(artificials=False) 
+from powerplantmatching import powerplant_collection as pc
+pc.Matched_dataset(artificials=False) 
 ```
 if you do not want to include artificial powerplants.
 
@@ -78,17 +80,17 @@ five different databases (see below) and take only matched power plants.
 
 
 
-The matching itself is done by [DUKE](https://github.com/larsga/Duke), a java application specialised for
+The matching itself is done by [DUKE](https://github.com/larsga/Duke), a java application specialized for
 deduplicating and linking data. It provides many built-in comparators such as numerical, string or geoposition comparators.
-The engine does a detailed comparison for each single argument (power plant name, fueltype etc.) using adjusted 
+The engine does a detailed comparison for each single argument (power plant name, fuel-type etc.) using adjusted 
 comparators and weights. When comparing two power plants, Duke will set a matching score for each argument and 
 according to the given weights, combine those to one matching score. This global score indicates the chance 
 that the two entries relate to the same power plant. Exceeding a given threshold, the power plant entries of the two  
-datasets are linked and merged into one dataset.
+data sets are linked and merged into one data set.
 
 We specify this through the following example:
 
-Consider the following two datasets
+Consider the following two data sets
 
 Dataset 1: 
 
@@ -114,8 +116,8 @@ Dataset 2:
 |  4 | Aceca             | Oil         | CHP              | Spain          |      629   | 39.941  | -3.8569 |    nan |
 |  5 | Aceca fenosa      | Natural Gas | CCGT             | Spain          |      400   | 39.9427 | -3.8548 |    nan |
 
-Apparently the entries 0, 3 and 5 of Dataset 1 relate to the same power plants as the entries 0,1 and 2 of Dataset 2. 
-Applying the matching algorithm to the two datasets, we obtain the following set:
+Apparently the entries 0, 3 and 5 of Data set 1 relate to the same power plants as the entries 0,1 and 2 of Data set 2. 
+Applying the matching algorithm to the two data sets, we obtain the following set:
 
 |    | Dataset 1   | Dataset 2   | Country        | Fueltype   | Classification   |   Capacity |     lat |      lon |   File |
 |---:|:------------|:------------|:---------------|:-----------|:-----------------|-----------:|--------:|---------:|-------:|
@@ -123,8 +125,8 @@ Applying the matching algorithm to the two datasets, we obtain the following set
 |  1 | Aberthaw    | Aberthaw    | United Kingdom | Coal       | Thermal          |     1552.5 | 51.3874 | -3.40583 |    nan |
 |  2 | Abono       | Abono       | Spain          | Coal       | Thermal          |      921.7 | 43.5558 | -5.72299 |    nan |
 
-Note, that the names are kept from the different sources, whereas the rest is composed of the claims of the two datasets. 
-You can of course, obtain the matched dataset in a decomposed frame or create your one composition of teh different claims. 
+Note, that the names are kept from the different sources, whereas the rest is composed of the claims of the two data sets. 
+You can of course, obtain the matched data set in a decomposed frame or create your one composition of the different claims. 
 
 
 ## Vertical Matching
@@ -151,4 +153,4 @@ You can of course, obtain the matched dataset in a decomposed frame or create yo
 - ENTSOe - [European ....](), annually provides statistics about aggregated power plant 
 	capacities which is available [here](https://www.entsoe.eu/db-query/miscellaneous/net-generating-capacity)
 	Their data can be used as a validation reference. We further use their [annual energy
-	generation report]() in order to adjust hydro power plant classification2  
+	generation report]() in order to adjust hydro power plant classification
