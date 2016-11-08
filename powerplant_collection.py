@@ -25,13 +25,15 @@ import itertools
 from six.moves import map
 import six
 
-def OPSD_data():
+def OPSD_data(raw=False):
     """
     Return standardized GEO database with target column names and fueltypes.
 
     """
     opsd = pd.read_csv('%s/data/conventional_power_plants_EU.csv'%
                        os.path.dirname(__file__))
+    if raw:
+        return opsd
     opsd.columns = opsd.columns.str.title()
     opsd.rename(columns={'Lat':'lat',
                          'Lon':'lon',
@@ -51,17 +53,19 @@ def OPSD_data():
          'Other or unspecified energy sources': 'Other'}
     opsd.Fueltype = opsd.Fueltype.replace(d)
     opsd = clean_powerplantname(opsd)
-    opsd = add_geoposition(opsd)
+#    opsd = add_geoposition(opsd)
     return opsd
     
 
-def GEO_data():
+def GEO_data(raw=False):
     """
     Return standardized GEO database with target column names and fueltypes.
 
     """
     from vresutils import dispatch as vdispatch
     GEOdata = vdispatch.read_globalenergyobservatory_detailed()
+    if raw:
+        return GEOdata
     eucountries = europeancountries()
     GEOdata = GEOdata[GEOdata['Country'].isin(eucountries)]
     GEOdata.drop_duplicates(inplace=True)
@@ -87,17 +91,19 @@ def GEO_data():
     'Heat and Power Steam Turbine|Sub-critical Steam Turbine':'CHP'}
             , regex=True).str.strip()
     GEOdata.replace(0, np.NaN, inplace=True)
-    GEOdata = add_geoposition(GEOdata)
+#    GEOdata = add_geoposition(GEOdata)
     return GEOdata.loc[:,target_columns()]
 
 
-def CARMA_data():
+def CARMA_data(raw=False):
     """
     Return standardized Carma database with target column names and fueltypes.
     Only includes powerplants with capacity > 4 MW.
     """
     carmadata = pd.read_csv('%s/data/Full_CARMA_2009_Dataset_1.csv'\
     %os.path.dirname(__file__))
+    if raw:
+        return carmadata
     d = {'COAL': 'Coal',
      'WAT': 'Hydro',
      'FGAS': 'Natural Gas',
@@ -128,10 +134,11 @@ def CARMA_data():
     carmadata.drop_duplicates(inplace=True)
     carmadata = carmadata.replace(d)
     carmadata = carmadata[carmadata.Country.isin(europeancountries())]
-    carmadata = carmadata.loc[:, target_columns()]
-    carmadata = clean_powerplantname(carmadata)
+#    carmadata = carmadata.loc[:, target_columns()]
+    carmadata = clean_powerplantname(carmadata).sort_values('Name')
     carmadata.reset_index(drop=True, inplace=True)
-    return add_geoposition(carmadata)
+#    carmadata = add_geoposition(carmadata)
+    return carmadata
 
 
 def Energy_storage_exchange_data():
@@ -143,11 +150,13 @@ def FIAS_data():
     return pd.read_csv('%s/data/FiasHydro.csv'%os.path.dirname(__file__), 
                        encoding='utf-8', index_col='id')
 
-def ENTSOE_data():
+def ENTSOE_data(raw=False):
     """
     Standardize the entsoe database for statistical use.
     """
     opsd = pd.read_csv('%s/data/aggregated_capacity.csv'%os.path.dirname(__file__))
+    if raw:
+        return opsd
     entsoedata = opsd[opsd['source'].isin(['entsoe']) & opsd['year'].isin([2014])]
     cCodes = list(entsoedata.country)
     countries = countrycode(codes=cCodes, target='country_name', origin='iso2c')
@@ -311,7 +320,7 @@ def target_columns():
     of the replacements
     """
     return ['Name', 'Fueltype', 'Classification', 'Country',
-            'Capacity', 'lat', 'lon', 'Geoposition', 'File']
+            'Capacity', 'lat', 'lon', 'File']
 
 def main_fueltypes(df):
     df.loc[(df.Fueltype=='Geothermal')|(df.Fueltype=='Mixed fuel types')|
@@ -548,6 +557,7 @@ def deduplicate(df):
     """
     df = read_csv_if_string(df)
     df = clean_powerplantname(df)
+    df = add_geoposition(df)
     datadedup_path = '/tmp/DataDedup.csv'
     df.to_csv(datadedup_path, index_label='id', encoding='utf-8')
     duplicates_path = '/tmp/duplicates.txt'
@@ -583,6 +593,7 @@ def compare_two_datasets(datasets, labels):
 
     """
     datasets = list(map(read_csv_if_string, datasets))
+    datasets = list(map(add_geoposition, datasets))
     datasets[0].to_csv('/tmp/Data_to_Match1.csv', encoding='utf-8', index_label='id')
     datasets[1].to_csv('/tmp/Data_to_Match2.csv', encoding='utf-8', index_label='id')
     duke(os.path.join(os.path.dirname(__file__),'data','Comparison.xml'),
@@ -652,8 +663,8 @@ def match_multiple_datasets(datasets, labels):
     only the matched entries in a multi-indexed pandas.Dataframe. Compares all properties of the
     given columns ['Name','Fueltype', 'Classification', 'Country', 'Capacity','Geoposition'] in order
     to determine the same powerplant in different datasets. The match is in one-to-one mode,
-    that is every entry of the initial databases has maximally one link in order to obtain
-    unique entries in the resulting dataframe.
+    that is every entry of the initial databases has maximally one link to the other database. 
+    This leads to unique entries in the resulting dataframe.
 
     Parameters
     ----------
