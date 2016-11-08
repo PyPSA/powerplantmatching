@@ -42,17 +42,17 @@ frequent one. The claims for the country cannot differ, otherwise they don't mat
 ### Adjusted Dataset
 If you are, for scientific use, further interested in a modified database, 
 we provide an adapted dataset which nearly covers all capacities totals stated by the ENTSOe
-statistics (except for Wind and Solar). This was done by also including powerplants that were not matched
+statistics (except for Wind and Solar). 
+![alt tag](https://cloud.githubusercontent.com/assets/19226431/20011650/a654e858-a2ac-11e6-93a2-2ed0e938f642.jpg)
+This was done by also including powerplants that were not matched
 but come out of a reliable source, e.g. the GEO data. Furthermore, a
 learning algorithm was used to specify information about missing 
 Hydro classification (Run-of-River, Pumped Storage and Reservoir). 
+
+![alt tag](https://cloud.githubusercontent.com/assets/19226431/20104077/e0534900-a5cc-11e6-8d3f-002756cc8110.jpg)
+
 Additionally, we provide a feature for artificial hydro power plants, which can
-be used as dummies on order to fulfil all country totals. 
-
-![alt tag](https://cloud.githubusercontent.com/assets/19226431/20011650/a654e858-a2ac-11e6-93a2-2ed0e938f642.jpg)
-
-
-This database is available using the python command 
+be used as dummies on order to fulfil all country totals. The database is available using the python command 
 ```python
 powerplant_collection.Matched_dataset() 
 ```
@@ -84,6 +84,7 @@ We specify this through the following example:
 Consider the following two datasets
 
 Dataset 1: 
+
 |    | Name                | Fueltype   |   Classification | Country        |   Capacity |     lat |        lon |   File |
 |---:|:--------------------|:-----------|-----------------:|:---------------|-----------:|--------:|-----------:|-------:|
 |  0 | Aarberg             | Hydro      |              nan | Switzerland    |     14.609 | 47.0444 |  7.27578   |    nan |
@@ -96,6 +97,7 @@ Dataset 1:
 and 
 
 Dataset 2:
+
 |    | Name              | Fueltype    | Classification   | Country        |   Capacity |     lat |     lon |   File |
 |---:|:------------------|:------------|:-----------------|:---------------|-----------:|--------:|--------:|-------:|
 |  0 | Aarberg           | Hydro       | nan              | Switzerland    |       15.5 | 47.0378 |  7.272  |    nan |
@@ -118,7 +120,7 @@ Note, that the names are kept from the different sources, whereas the rest is co
 You can of course, obtain the matched dataset in a decomposed frame or create your one composition of teh different claims. 
 
 
-## Vertial Match
+## Vertical Matching
 
 
 
