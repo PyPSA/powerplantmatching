@@ -12,11 +12,19 @@ power plant. Secondly, we provide functions to horizontally merge
 different databases in order to check their consistency and improve
 the reliability.
 
+# What this set of tools can do
+
+- clean and standardize power plant datasets
+- merge power plant units to one power plant
+- compare and combine different datasets
+- create lookups and give statistical insight to power plant goodness
+- provide cleaned data from different sources 
+- provide an already merged dataset of five different data-sources 
 
 ## Prefabricated Data 
 
 If you are only interested in the power plant data, we provide 
-our actual match between five databases in a [csv-file](../blob/master/data/Matched_Carma_Fias_Geo_Opsd_Wri.csv)
+our actual match in a [csv-file](../blob/master/data/Matched_Carma_Fias_Geo_Opsd_Wri.csv)
 This set combines the data of all our data sources (see Data-Sources) 
 giving the following information:
 
@@ -28,14 +36,16 @@ giving the following information:
 - **Country** 			- EU-27 countries and UK
 
 
-We roughly keep the names statet by the different databases. The other 
-quantities are composed from the different claims of the matched
+We roughly keep the names stated by the different databases. The other 
+quantities are composed of the different claims of the matched
 databases: 
 Geoposition is averaged whereas for the Capacity we keep the maximum value of different claims, 
 since some datasets do not include all units of powerplants.
-In case of differing claims for the classification, all classification claims 
-are set in a row. In case for different claims for the fueltype, we keep the most 
-frequent one. The claims for the country cannot differ, otherwise they don't match.
+For the classification, all different classification claims 
+are set in a row. In case of different fueltype claims, we keep the most 
+frequent one. The claims for the country cannot differ, otherwise the power plants are not merged.
+The following picture show the fueltype totals of our different data sources and of their merged 
+dataset.
 
 ![alt tag](https://cloud.githubusercontent.com/assets/19226431/20011654/a683952c-a2ac-11e6-8ce8-8e4982fb18d1.jpg)
 
@@ -44,15 +54,12 @@ If you are, for scientific use, further interested in a modified database,
 we provide an adapted dataset which nearly covers all capacities totals stated by the ENTSOe
 statistics (except for Wind and Solar). 
 ![alt tag](https://cloud.githubusercontent.com/assets/19226431/20011650/a654e858-a2ac-11e6-93a2-2ed0e938f642.jpg)
-This was done by also including powerplants that were not matched
-but come out of a reliable source, e.g. the GEO data. Furthermore, a
+Here, also non-matched powerplants were included
+assuming that they come out of a reliable source, mainly for the GEO data. Furthermore, a
 learning algorithm was used to specify information about missing 
-Hydro classification (Run-of-River, Pumped Storage and Reservoir). 
+hydro classification (Run-of-River, Pumped Storage and Reservoir). 
 
-![alt tag](https://cloud.githubusercontent.com/assets/19226431/20104077/e0534900-a5cc-11e6-8d3f-002756cc8110.jpg)
-
-Additionally, we provide a feature for artificial hydro power plants, which can
-be used as dummies on order to fulfil all country totals. The database is available using the python command 
+Additionally, a feature for artificial hydro power plants was included in order to fulfil all country totals. The database is available using the python command 
 ```python
 powerplant_collection.Matched_dataset() 
 ```
