@@ -66,7 +66,7 @@ def lookup(df, keys=None, by='Country, Fueltype', exclude=None):
         dfs.loc['Total'] = dfs.sum()
         return dfs
     else:
-        return lookup_single(df)
+        return lookup_single(df).fillna(0)
 
 def set_uncommon_fueltypes_to_other(df, fueltypes={'Geothermal', 'Mixed fuel types', 'Waste'}):
     df.loc[df.Fueltype.isin(fueltypes) , 'Fueltype'] = 'Other'
