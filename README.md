@@ -24,7 +24,7 @@ the reliability.
 ## Prefabricated Data 
 
 If you are only interested in the power plant data, we provide 
-our actual match in a [csv-file](../blob/master/data/Matched_Carma_Fias_Geo_Opsd_Wri.csv)
+our actual match in a [csv-file](../master/data/Matched_Carma_Fias_Geo_Opsd_Wri.csv)
 This set combines the data of all our data sources (see Data-Sources) 
 giving the following information:
 
@@ -62,12 +62,12 @@ hydro classification (Run-of-River, Pumped Storage and Reservoir).
 Additionally, a feature for artificial hydro power plants was included in order to fulfil all country totals. The database is available using the python command 
 ```python
 from powerplantmatching import powerplant_collection as pc
-pc.Matched_dataset() 
+pc.MATCHED_dataset() 
 ```
 or 
 ```python
 from powerplantmatching import powerplant_collection as pc
-pc.Matched_dataset(artificials=False) 
+pc.MATCHED_dataset(artificials=False) 
 ```
 if you do not want to include artificial powerplants.
 
@@ -92,7 +92,7 @@ We specify this through the following example:
 
 Consider the following two data sets
 
-Dataset 1: 
+### Dataset 1: 
 
 |    | Name                | Fueltype   |   Classification | Country        |   Capacity |     lat |        lon |   File |
 |---:|:--------------------|:-----------|-----------------:|:---------------|-----------:|--------:|-----------:|-------:|
@@ -105,7 +105,7 @@ Dataset 1:
 
 and 
 
-Dataset 2:
+### Dataset 2:
 
 |    | Name              | Fueltype    | Classification   | Country        |   Capacity |     lat |     lon |   File |
 |---:|:------------------|:------------|:-----------------|:---------------|-----------:|--------:|--------:|-------:|
@@ -150,7 +150,7 @@ You can of course, obtain the matched data set in a decomposed frame or create y
 
 - FIAS - [Frankfurt Institute for Advanced Studies](https://fias.uni-frankfurt.de/de/) 
 
-- ENTSOe - [European ....](), annually provides statistics about aggregated power plant 
-	capacities which is available [here](https://www.entsoe.eu/db-query/miscellaneous/net-generating-capacity)
+- ENTSOe - [European Network of Transmission System Operators for Electricity](), annually provides statistics about aggregated power plant 
+	capacities which is available [here]()
 	Their data can be used as a validation reference. We further use their [annual energy
-	generation report]() in order to adjust hydro power plant classification
+	generation report from 2010](https://www.entsoe.eu/db-query/miscellaneous/net-generating-capacity) in order to adjust hydro power plant classification
