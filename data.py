@@ -23,7 +23,8 @@ import numpy as np
 import pandas as pd
 from countrycode import countrycode
 
-from .config import europeancountries, target_columns
+from .cleaning import clean_single
+from .config import europeancountries, target_columns, target_fueltypes
 from .cleaning import gather_classification_info, clean_powerplantname
 
 def OPSD(raw=False):
@@ -138,11 +139,6 @@ def CARMA(raw=False):
     carmadata.reset_index(drop=True, inplace=True)
     return carmadata
 
-
-def Energy_storage_exchange():
-    return pd.read_csv('%s/data/energy_storage_exchange.csv'
-                       %os.path.dirname(__file__), index_col='id')
-
 def FIAS():
     return pd.read_csv('%s/data/FiasHydro.csv'%os.path.dirname(__file__), 
                        encoding='utf-8', index_col='id')
@@ -179,3 +175,55 @@ def WRI():
 #    wri.Name = wri.Name.str.title()
     wri = wri.loc[:,target_columns()]
     return wri
+
+
+def ESE(update=False, path=None):
+    """
+    This database is not given within the repository because of open source rights. 
+    Just download the database from the link given in the README file (last section: Data Sources)
+    and set the arguments of this function to update=True and path='path/to/database/projects.xls'. This
+    will integrate the database into your local powerplantmatching/data and can then
+    be used as the other databases. 
+    
+    Parameters
+    ----------
+    update : Boolean, Default False
+        Wether to update the database according to the database given in path
+    path : str
+        location of the downloaded .xls file 
+    
+    """
+    saved_version = '%s/data/energy_storage_exchange.csv'%os.path.dirname(__file__)
+    if (not os.path.exists(saved_version)) and (update is False) and (path is None):
+        raise(NotImplemented '''
+        This database is not yet in your local repository.
+        Just download the database from the link given in the README file (last section: Data Sources)
+        and set the arguments of this function to update=True and path='path/to/database/projects.xls'. This
+        will integrate the database into your local powerplantmatching/data and can then
+        be used as the other databases. 
+        ''')
+    if os.path.exists(saved_version) and (update is False) :
+        return pd.read_csv(saved_version, index_col='id')
+    if path is None:
+        raise(ValueError('No path defined for update'))
+    if not os.path.exists(path):
+        raise(ValueError('The given path does not exist'))
+    data = pd.read_excel(path, encoding='utf-8')
+    data.loc[:,'Name'] = data.loc[:,'Project Name']
+    data.loc[:,'Classification'] = data.loc[:,'Technology Type']
+    data.loc[:, 'lon'] = data.Longitude
+    data.loc[:, 'lat'] = data.Latitude
+    data.loc[:,'Capacity'] = data.loc[:,'Rated Power in kW']/1000
+    data.loc[(data.Classification.str.contains('Pumped'))&(data.Classification.
+         notnull()), 'Classification'] = 'Pumped storage'
+    data = data.loc[data.Classification == 'Pumped storage', target_columns()]
+    data.Fueltype = 'Hydro'
+    data = data.reset_index(drop = True)
+    data = clean_single(data)
+    data.File = 'energy_storage_exchange'
+#    data.to_csv(saved_version, index_label='id',
+#            encoding='utf-8')
+    return data
+        
+        
+        

@@ -123,7 +123,6 @@ def aggregate_units(df):
 
 
     """
-        
     def prop_for_groups(x):
         """
         Function for grouping duplicates within one dataset. Sums up the capacity, takes
@@ -159,7 +158,7 @@ def aggregate_units(df):
     df = df[target_columns()]
     return df
 
-def clean_single(df, aggregate_units=True):
+def clean_single(df, aggregate_powerplant_units=True):
     """
     Vertical cleaning of the database. Cleans the "Name"-column, sums up the capacity
     of powerplant units which are determined to belong to the same plant.
@@ -176,7 +175,7 @@ def clean_single(df, aggregate_units=True):
     #df = gather_classification_info(df)
     df = clean_powerplantname(df)
     
-    if aggregate_units:
+    if aggregate_powerplant_units:
         df = aggregate_units(df)
         
     return df

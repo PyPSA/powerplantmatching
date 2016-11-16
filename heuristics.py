@@ -19,6 +19,8 @@ Functions to modify and adjust power plant datasets
 from __future__ import absolute_import, print_function
 
 from .utils import read_csv_if_string
+from .utils import lookup
+from .data import ENTSOE
 
 def extend_by_non_matched(df, extend_by, label):
     """
@@ -44,4 +46,18 @@ def extend_by_non_matched(df, extend_by, label):
               .reset_index(drop=True))
     
 def rescale_capacities_to_country_totals(df, fueltypes):
-    raise NotImplemented
+    df = df.copy()
+    stats_df = lookup(df).loc[fueltypes]
+    stats_entsoe = lookup(ENTSOE()).loc[fueltypes]
+    if ((stats_df==0)&(stats_entsoe!=0)).any().any():
+        print('Could not scale powerplants in the countries %s because of no occurring \
+power plants in these countries'%\
+              stats_df.loc[:, ((stats_df==0)&\
+                            (stats_entsoe!=0)).any()].columns.tolist())
+    ratio = (stats_entsoe/stats_df).fillna(1)
+    for country in ratio:
+        for fueltype in fueltypes:
+            df.loc[(df.Country==country)&(df.Fueltype==fueltype), 'Capacity'] *= \
+                   ratio.loc[fueltype,country]
+    return df                   
+
