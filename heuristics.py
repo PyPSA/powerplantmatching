@@ -61,3 +61,4 @@ power plants in these countries'%\
                    ratio.loc[fueltype,country]
     return df                   
 
+

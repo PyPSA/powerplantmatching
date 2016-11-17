@@ -180,10 +180,10 @@ def WRI():
 def ESE(update=False, path=None):
     """
     This database is not given within the repository because of open source rights. 
-    Just download the database from the link given in the README file (last section: Data Sources)
-    and set the arguments of this function to update=True and path='path/to/database/projects.xls'. This
-    will integrate the database into your local powerplantmatching/data and can then
-    be used as the other databases. 
+    Just download the database from the link given in the README file 
+    (last section: Data Sources) and set the arguments of this function to update=True and 
+    path='path/to/database/projects.xls'. This will integrate the database into your 
+    local powerplantmatching/data and can then be used as the other databases. 
     
     Parameters
     ----------
@@ -197,12 +197,13 @@ def ESE(update=False, path=None):
     if (not os.path.exists(saved_version)) and (update is False) and (path is None):
         raise(NotImplementedError( '''
         This database is not yet in your local repository.
-        Just download the database from the link given in the README file (last section: Data Sources)
-        (you might change the fromat of the Longitude column since there seems to be
-        a problem with the date format)
-        and set the arguments of this function to update=True and path='path/to/database/projects.xls'.
-        This will integrate the database into your local powerplantmatching/data and can then
-        be used as the other databases. 
+        Just download the database from the link given in the README file (last section: 
+        Data Sources, you might change the format of the Longitude column to number format 
+        since there seems to be a problem with the date format)
+        and set the arguments of this function to update=True and 
+        path='path/to/database/projects.xls'. This will integrate the database 
+        into your local powerplantmatching/data and can then be used as 
+        the other databases. 
         '''))
     if os.path.exists(saved_version) and (update is False) :
         return pd.read_csv(saved_version, index_col='id')
