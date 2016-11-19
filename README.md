@@ -37,11 +37,16 @@ giving the following information:
 - **Country** 			- EU-27 countries and UK
 
 
+The following picture show the fuel type totals of our different data sources and of their merged 
+data set.
+
+![alt tag](https://cloud.githubusercontent.com/assets/19226431/20011654/a683952c-a2ac-11e6-8ce8-8e4982fb18d1.jpg)
+
 There are two sets available. One bigger data set links the entries of the matched power plant and displays them in one data set.
 The other data set reduces this bigger one by applying different reduction rules in order to keep as much information as possible but
 having one dataset that can be worked with. The applied rules are the following  
 
-|:Argument       |:Rule                                       |
+|Argument        |Rule                                        |
 |:---------------|:-------------------------------------------|
 | Name           | Every name of the different databases      |
 | Fueltype       | Most frequent claimed one                  |
@@ -55,10 +60,6 @@ having one dataset that can be worked with. The applied rules are the following
 Note, that for the Capacity we keep the maximum value of different claims, 
 since some data sets do not include all units of power plants.
 The claims for the country cannot differ, otherwise the power plants cannot match.
-The following picture show the fuel type totals of our different data sources and of their merged 
-data set.
-
-![alt tag](https://cloud.githubusercontent.com/assets/19226431/20011654/a683952c-a2ac-11e6-8ce8-8e4982fb18d1.jpg)
 
 ### Modified Data set
 If you are, for scientific use, further interested in a modified database, 
@@ -85,11 +86,13 @@ if you do not want to include scaled hydros power plants.
 
 
 ##Modul Structure
-![alt tag](https://cloud.githubusercontent.com/assets/19226431/20449087/984dc0c2-ade7-11e6-96e0-f1169c9a7fef.png)
 
 The modul consists of different submoduls with different applications. If you want to create your own dataset, you will probably derive the most benefit from the 
 submoduls powerplantmatching.data, powerplantmatching.clean and powerplantmatching.match, which include data supply, vertical cleaning and 
 horizontal matching. 
+
+![alt tag](https://cloud.githubusercontent.com/assets/19226431/20449087/984dc0c2-ade7-11e6-96e0-f1169c9a7fef.png)
+
 
 
 ## Combining Data From Different Sources - Horizontal Matching
