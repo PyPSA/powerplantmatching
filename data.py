@@ -25,7 +25,7 @@ from countrycode import countrycode
 
 from .cleaning import clean_single
 from .config import europeancountries, target_columns, target_fueltypes
-from .cleaning import gather_classification_info, clean_powerplantname
+from .cleaning import gather_classification_info, clean_powerplantname, clean_classification
 
 def OPSD(raw=False):
     """
@@ -91,11 +91,11 @@ def GEO(raw=False):
     'Cogeneration Power and Heat Steam Turbine':'CHP', 
     'Heat and Power Steam Turbine|Sub-critical Steam Turbine':'CHP'}
             , regex=True).str.strip()
+    GEOdata = clean_classification(GEOdata)
     GEOdata.replace(0, np.NaN, inplace=True)
-#    GEOdata = add_geoposition(GEOdata)
     return GEOdata.loc[:,target_columns()]
-
-
+                        
+                        
 def CARMA(raw=False):
     """
     Return standardized Carma database with target column names and fueltypes.

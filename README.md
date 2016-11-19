@@ -21,7 +21,8 @@ the reliability.
 - provide cleaned data from different sources 
 - provide an already merged data set of five different data-sources 
 
-## Prefabricated Data 
+
+## Processed Data 
 
 If you are only interested in the power plant data, we provide 
 our actual match in a [csv-file](../master/data/Matched_Carma_Fias_Geo_Opsd_Wri.csv)
@@ -36,20 +37,30 @@ giving the following information:
 - **Country** 			- EU-27 countries and UK
 
 
-We roughly keep the names stated by the different databases. The other 
-quantities are composed of the different claims of the matched
-databases: 
-Geo-position is averaged whereas for the Capacity we keep the maximum value of different claims, 
+There are two sets available. One bigger data set links the entries of the matched power plant and displays them in one data set.
+The other data set reduces this bigger one by applying different reduction rules in order to keep as much information as possible but
+having one dataset that can be worked with. The applied rules are the following  
+
+|:Argument       |:Rule                                       |
+|:---------------|:-------------------------------------------|
+| Name           | Every name of the different databases      |
+| Fueltype       | Most frequent claimed one                  |
+| Classification | All _different_ Classification in a row    |
+| Country        | Take the uniquely stated country           |
+| Capacity       | Maximum of all claims                      |
+| lat            | Average                                    |
+| lon            | Average                                    |
+| File           | All files in a row                         |
+
+Note, that for the Capacity we keep the maximum value of different claims, 
 since some data sets do not include all units of power plants.
-For the classification, all different classification claims 
-are set in a row. In case of different fuel-type claims, we keep the most 
-frequent one. The claims for the country cannot differ, otherwise the power plants are not merged.
-The following picture show the fuel-type totals of our different data sources and of their merged 
+The claims for the country cannot differ, otherwise the power plants cannot match.
+The following picture show the fuel type totals of our different data sources and of their merged 
 data set.
 
 ![alt tag](https://cloud.githubusercontent.com/assets/19226431/20011654/a683952c-a2ac-11e6-8ce8-8e4982fb18d1.jpg)
 
-### Adjusted Data set
+### Modified Data set
 If you are, for scientific use, further interested in a modified database, 
 we provide an adapted data set which nearly covers all capacities totals stated by the ENTSOe
 statistics (except for Wind and Solar). 
@@ -59,7 +70,8 @@ assuming that they come out of a reliable source, mainly for the GEO data. Furth
 learning algorithm was used to specify information about missing 
 hydro classification (Run-of-River, Pumped Storage and Reservoir). 
 
-Additionally, a feature for artificial hydro power plants was included in order to fulfil all country totals. The database is available using the python command 
+Additionally, a feature for scaled hydro power plant capacities was included in order to fulfil all country totals. 
+The database is available using the python command 
 ```python
 from powerplantmatching import powerplant_collection as pc
 pc.MATCHED_dataset() 
@@ -67,15 +79,24 @@ pc.MATCHED_dataset()
 or 
 ```python
 from powerplantmatching import powerplant_collection as pc
-pc.MATCHED_dataset(artificials=False) 
+pc.MATCHED_dataset(scaled_hydros=True) 
 ```
-if you do not want to include artificial powerplants.
+if you do not want to include scaled hydros power plants.
 
-## Combining Data From Different Sources (horizontal matching)
+
+##Modul Structure
+![alt tag](https://cloud.githubusercontent.com/assets/19226431/20449087/984dc0c2-ade7-11e6-96e0-f1169c9a7fef.png)
+
+The modul consists of different submoduls with different applications. If you want to create your own dataset, you will probably derive the most benefit from the 
+submoduls powerplantmatching.data, powerplantmatching.clean and powerplantmatching.match, which include data supply, vertical cleaning and 
+horizontal matching. 
+
+
+## Combining Data From Different Sources - Horizontal Matching
 
 Whereas single databases as the CARMA or the GEO database provide 
 non standardized and lacking information, the data sets can complement 
-each other and check their reliability. Therefore, we combine 
+each other and check their reliability. For our matched data set, we combine 
 five different databases (see below) and take only matched power plants.
 
 
@@ -83,7 +104,9 @@ five different databases (see below) and take only matched power plants.
 The matching itself is done by [DUKE](https://github.com/larsga/Duke), a java application specialized for
 deduplicating and linking data. It provides many built-in comparators such as numerical, string or geoposition comparators.
 The engine does a detailed comparison for each single argument (power plant name, fuel-type etc.) using adjusted 
-comparators and weights. When comparing two power plants, Duke will set a matching score for each argument and 
+comparators and weights. When comparing two power plants, Duke will compare every single argument of each power plant of one data set against 
+every single argument of each power plant of the other data set.
+For every argument it will set a matching score and, 
 according to the given weights, combine those to one matching score. This global score indicates the chance 
 that the two entries relate to the same power plant. Exceeding a given threshold, the power plant entries of the two  
 data sets are linked and merged into one data set.
@@ -129,7 +152,7 @@ Note, that the names are kept from the different sources, whereas the rest is co
 You can of course, obtain the matched data set in a decomposed frame or create your one composition of the different claims. 
 
 
-## Vertical Matching
+## Vertical Cleaning
 
 
 
