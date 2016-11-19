@@ -59,19 +59,42 @@ def clean_powerplantname(df):
     df = df[df.Name != ''].reset_index(drop=True)
     return df    
 
+    
 def gather_classification_info(df, search_col=['Name', 'Fueltype']):
     pattern = '|'.join(('(?i)'+x) for x in
                        ['lignite', 'Hard coal', 'Coal hard', 'ccgt', 'ocgt', 'chp'])
     for i in search_col:
         found = df.loc[:,i].str.findall(pattern).str.join(sep=', ')
-        df.loc[:, 'Classification'] = (df.loc[:, 'Classification']
-                                         .fillna('')
-                                         .str.cat(found, sep=', ')
-                                         .str.strip())
+        df.loc[:, 'Classification'] = (df.loc[:, 'Classification'].fillna('')
+                            .str.cat(found.fillna(''), sep=', ').str.strip())
         df.Classification = df.Classification.str.replace('^ , |^,|, $|,$', '')
         df.Classification.replace('', np.NaN, regex=True, inplace=True)
     return df
 
+    
+def clean_classification(df, generalize_hydros=False):
+    df.loc[:,'Classification'] = df.loc[:,'Classification'].replace([' and ',
+                                ' Power Plant'],[', ', ''],regex=True )
+    if generalize_hydros:
+        df.loc[(df.Classification.str.contains('reservoir|lake', case=False)) & 
+                  (df.Classification.notnull()), 'Classification'] = 'Reservoir'
+        df.loc[(df.Classification.str.contains('run-of-river|weir|water', case=False)) & 
+                  (df.Classification.notnull()), 'Classification'] = 'Run-Of-River'
+        df.loc[(df.Classification.str.contains('dam', case=False)) & 
+                  (df.Classification.notnull()), 'Classification'] = 'Reservoir'
+        df.loc[(df.Classification.str.contains('Pump|pumped', case=False)) &
+                  (df.Classification.notnull()), 'Classification'] = 'Pumped Storage'
+                  
+    df.loc[df.Classification.notnull(),'Classification'] = df.loc[df.Classification.
+                               notnull(),'Classification'].str.split(', ')\
+                                .apply(lambda x: ', '.join(np.unique(x)))
+    df.loc[np.logical_not((df.loc[:,'Classification'].str.contains('(?i)CCGT|(?i)OCGT|(?i)CHP', regex=True)))&
+           df.loc[:, 'Classification'].notnull(),'Classification'] = \
+            df.loc[np.logical_not((df.loc[:,'Classification'].str.contains('(?i)CCGT|(?i)OCGT|(?i)CHP', regex=True)))&
+           df.loc[:, 'Classification'].notnull(),'Classification'].str.title()
+    return df
+    
+    
 def cliques(df, dataduplicates):
     """
     Locate cliques of units which are determined to belong to the same powerplant.

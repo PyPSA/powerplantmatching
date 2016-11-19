@@ -21,7 +21,7 @@ import os
 import pandas as pd
 
 from .utils import set_uncommon_fueltypes_to_other
-from .data import CARMA_data, FIAS_data, GEO_data, OPSD_data, WRI_data
+from .data import CARMA, FIAS, GEO, OPSD, WRI
 from .cleaning import clean_single
 from .matching import (combine_multiple_datasets,
                        reduce_matched_dataframe)
@@ -31,16 +31,13 @@ def Carma_FIAS_GEO_OPSD_WRI_matched(update=False):
     outfn = os.path.join(os.path.dirname(__file__), 'data', 
                          'Matched_Carma_Fias_Geo_Opsd_Wri.csv')
     if update: #or not os.path.exists(outfn):
-        datasets = [clean_single(CARMA_data()),
-                    clean_single(FIAS_data(), aggregate_units=False),
-                    clean_single(GEO_data(), aggregate_units=False), 
-                    clean_single(OPSD_data()),
-                    clean_single(WRI_data())]
+        datasets = [clean_single(CARMA()),
+                    clean_single(FIAS(), aggregate_powerplant_units=False),
+                    clean_single(GEO(), aggregate_powerplant_units=False), 
+                    clean_single(OPSD()),
+                    clean_single(WRI())]
         matched = combine_multiple_datasets(datasets, ['CARMA', 'FIAS', 'GEO','OPSD','WRI'])
-
-#        raise NotImplemented
-        # matched_df = ...
-        # matched_df.to_csv(outfn)
+        matched.to_csv(outfn, index_label='id', encoding='utf-8')
         return matched
     else:
         return pd.read_csv(outfn, index_col='id')
@@ -49,15 +46,12 @@ def Carma_GEO_OPSD_WRI_matched(update=False):
     outfn = os.path.join(os.path.dirname(__file__), 'data', 
                          'Matched_Carma_Fias_Geo_Opsd_Wri.csv')
     if update: #or not os.path.exists(outfn):
-        datasets = [clean_single(CARMA_data()),
-                    clean_single(GEO_data(), aggregate_units=False), 
-                    clean_single(OPSD_data()),
-                    clean_single(WRI_data())]
+        datasets = [clean_single(CARMA()),
+                    clean_single(GEO(), aggregate_powerplant_units=False), 
+                    clean_single(OPSD()),
+                    clean_single(WRI())]
         matched = combine_multiple_datasets(datasets, ['CARMA', 'GEO','OPSD','WRI'])
-
-#        raise NotImplemented
-        # matched_df = ...
-        # matched_df.to_csv(outfn)
+        matched.to_csv(outfn)
         return matched
     else:
         return pd.read_csv(outfn, index_col='id')
@@ -74,18 +68,18 @@ def MATCHED_dataset(artificials=True, subsume_uncommon_fueltypes=False):
     Parameters
     ----------
     artificials : Boolean, defaut True
-            Wether to include 210 artificial hydro powerplants in order to fulfill the 
+            Whether to include 210 artificial hydro powerplants in order to fulfill the 
             statistics of the ENTSOE-data and receive better covering of the country 
             totals
     subsume_uncommon_fueltypes : Boolean, default False
-            Wether to reduce the fueltype specification such that "Geothermal", "Waste"
+            Whether to reduce the fueltype specification such that "Geothermal", "Waste"
             and "Mixed Fueltypes" are declared as "Other"
             
     """
     
     hydro = Aggregated_hydro()
     matched = extend_by_non_matched(Carma_FIAS_GEO_OPSD_WRI_matched(),
-                                    GEO_data(), 'GEO')    
+                                    GEO(), 'GEO')    
     matched = matched[matched.Fueltype != 'Hydro']
     if not artificials:
         hydro = hydro[hydro.Fias!="Artificial Powerplant"]
