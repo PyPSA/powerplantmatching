@@ -35,7 +35,7 @@ as part of the
 
 If you are only interested in the power plant data, we provide our
 current merged dataset as a
-[csv-file](../master/data/Matched_Carma_Fias_Geo_Opsd_Wri.csv). This
+[csv-file](../master/data/Matched_Carma_Geo_Opsd_Wri.csv). This
 set combines the data of all the data sources listed in
 [Data-Sources](#Data-Sources) and provides the following information:
 
@@ -52,9 +52,9 @@ between the different data sources and our merged dataset.
 
 ![alt tag](https://cloud.githubusercontent.com/assets/19226431/20011654/a683952c-a2ac-11e6-8ce8-8e4982fb18d1.jpg)
 
-The merged dataset is available in two versions: The bigger dataset
+The merged dataset is available in two versions: The [bigger dataset](../master/data/Matched_Carma_Geo_Opsd_Wri.csv)
 links the entries of the matched power plant and lists all the related
-claims by the different data-sources. The smaller merged dataset
+claims by the different data-sources. The [smaller merged dataset](../master/data/Matched_Carma_Geo_Opsd_Wri_reduced.csv) 
 reduces the former by applying a set of aggregation rules (shown
 below) for deciding the power plant parameters.
 
@@ -85,6 +85,7 @@ heuristics to fill the gaps.
 
 - A learning algorithm fills the information about missing hydro
   classification (Run-of-River, Pumped Storage and Reservoir).
+
 - Additionally, a function that can be activated with a switch is
   provided that scales the hydro power plant capacities in order to
   fulfill all country totals.
