@@ -41,7 +41,7 @@ def Carma_ESE_FIAS_GEO_OPSD_WRI_matched(update=False):
         matched.to_csv(outfn, index_label='id', encoding='utf-8')
         return matched
     else:
-        return pd.read_csv(outfn, index_col='id')
+        return pd.read_csv(outfn, index_col=0, header=[0,1])
         
         
 def Carma_ESE_FIAS_GEO_OPSD_WRI_matched_reduced():
@@ -61,7 +61,7 @@ def Carma_GEO_OPSD_WRI_matched(update=False):
         matched.to_csv(outfn, index_label='id', encoding='utf-8')
         return matched
     else:
-        return pd.read_csv(outfn, index_col='id')
+        return pd.read_csv(outfn,index_col=0, header=[0,1])
         
         
 def Carma_GEO_OPSD_WRI_matched_reduced():
@@ -70,7 +70,7 @@ def Carma_GEO_OPSD_WRI_matched_reduced():
                         index_col='id')
         
         
-def MATCHED_dataset(artificials=True, subsume_uncommon_fueltypes=False):
+def MATCHED_dataset(rescaled_hydros=True, subsume_uncommon_fueltypes=False):
     """
     This returns the actual match between the Carma-data, GEO-data, WRI-data, 
     FIAS-data and the ESE-data with an additional manipulation on the hydro powerplants. 
@@ -81,8 +81,8 @@ def MATCHED_dataset(artificials=True, subsume_uncommon_fueltypes=False):
     
     Parameters
     ----------
-    artificials : Boolean, defaut True
-            Whether to include 210 artificial hydro powerplants in order to fulfill the 
+    rescaled_hydros : Boolean, defaut True
+            Whether to rescale hydro powerplant capacity in order to fulfill the 
             statistics of the ENTSOE-data and receive better covering of the country 
             totals
     subsume_uncommon_fueltypes : Boolean, default False
@@ -91,25 +91,25 @@ def MATCHED_dataset(artificials=True, subsume_uncommon_fueltypes=False):
             
     """
     
-    hydro = Aggregated_hydro()
-    matched = extend_by_non_matched(Carma_GEO_OPSD_WRI_matched(),
+    hydro = Aggregated_hydro(scaled_capacity=rescaled_hydros)
+    matched = extend_by_non_matched(Carma_GEO_OPSD_WRI_matched_reduced(),
                                     GEO(), 'GEO')    
     matched = matched[matched.Fueltype != 'Hydro']
-    if not artificials:
-        hydro = hydro[hydro.Fias!="Artificial Powerplant"]
     if subsume_uncommon_fueltypes:
         matched = set_uncommon_fueltypes_to_other(matched)
-    return pd.concat([matched, hydro])
+    return pd.concat([matched, hydro]).reset_index(drop=True)
 
-def Aggregated_hydro(update=False):
+def Aggregated_hydro(update=False, scaled_capacity=True):
     outfn = os.path.join(os.path.dirname(__file__), 'data', 
-                         'hydro_aggregation.csv')
-    if update or not os.path.exists(outfn):
-        # Generate the matched database
-        raise NotImplemented()
-        # matched_df = ...
-
-        # matched_df.to_csv(outfn)
-        # return matched_df
-    else:
-        return pd.read_csv(outfn, index_col='id')
+                         'hydro_aggregation_beta.csv')
+#    if update or not os.path.exists(outfn):
+#        # Generate the matched database
+#        raise NotImplemented()
+#        # matched_df = ...
+#
+#        # matched_df.to_csv(outfn)
+#        # return matched_df
+    hydro = pd.read_csv(outfn, index_col='id')
+    if scaled_capacity:
+        hydro.Capacity = hydro.loc[:,'Scaled Capacity']
+    return hydro.drop('Scaled Capacity', axis=1)
