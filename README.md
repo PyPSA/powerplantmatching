@@ -102,7 +102,7 @@ pc.MATCHED_dataset()
 or 
 ```python
 from powerplantmatching import powerplant_collection as pc
-pc.MATCHED_dataset(scaled_hydros=True) 
+pc.MATCHED_dataset(rescaled_hydros=True)
 ```
 if you want to scale hydro power plants.
 
