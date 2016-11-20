@@ -12,6 +12,8 @@ plant. Secondly, we provide functions to horizontally merge different
 databases in order to check their consistency and improve the
 reliability.
 
+![Map of power plants in Europe](https://cloud.githubusercontent.com/assets/2552981/20465688/b7b9d2c0-af63-11e6-964e-2f0a19d26f15.png)
+
 powerplantmatching was initially developed by the
 [Renewable Energy Group](https://fias.uni-frankfurt.de/physics/schramm/complex-renewable-energy-networks/)
 at [FIAS](https://fias.uni-frankfurt.de/) to build power plant data
@@ -21,6 +23,7 @@ financed by the
 [German Federal Ministry for Education and Research (BMBF)](https://www.bmbf.de/en/)
 as part of the
 [Stromnetze Research Initiative](http://forschung-stromnetze.info/projekte/grundlagen-und-konzepte-fuer-effiziente-dezentrale-stromnetze/).
+
 
 ## What it can do
 
@@ -50,7 +53,7 @@ set combines the data of all the data sources listed in
 The following picture compares the total capacities per fuel type
 between the different data sources and our merged dataset.
 
-![alt tag](https://cloud.githubusercontent.com/assets/19226431/20011654/a683952c-a2ac-11e6-8ce8-8e4982fb18d1.jpg)
+![Total capacities per fuel type for the different data sources and the merged dataset.](https://cloud.githubusercontent.com/assets/19226431/20011654/a683952c-a2ac-11e6-8ce8-8e4982fb18d1.jpg)
 
 The merged dataset is available in two versions: The [bigger dataset](../master/data/Matched_Carma_Geo_Opsd_Wri.csv)
 links the entries of the matched power plant and lists all the related
@@ -78,10 +81,11 @@ cannot match.
 The merged dataset is also available as a further version that uses
 heuristics to fill the gaps.
 
+![Power plant coverage](https://cloud.githubusercontent.com/assets/19226431/20011650/a654e858-a2ac-11e6-93a2-2ed0e938f642.jpg)
+
 - Unmatched power plants from the GEO data source are added so that the
   aggregated capacities per country and fueltype correspond closely to
   the ENTSOe statistics (except for Wind and Solar).
-  ![alt tag](https://cloud.githubusercontent.com/assets/19226431/20011650/a654e858-a2ac-11e6-93a2-2ed0e938f642.jpg)
 
 - A learning algorithm fills the information about missing hydro
   classification (Run-of-River, Pumped Storage and Reservoir).
@@ -110,7 +114,7 @@ can make most use of the modules data, clean and match, which provide
 you with function for data supply, vertical cleaning and horizontal
 matching, respectively.
 
-![alt tag](https://cloud.githubusercontent.com/assets/19226431/20449087/984dc0c2-ade7-11e6-96e0-f1169c9a7fef.png)
+![Modular package structure](https://cloud.githubusercontent.com/assets/19226431/20449087/984dc0c2-ade7-11e6-96e0-f1169c9a7fef.png)
 
 ## Combining Data From Different Sources - Horizontal Matching
 
