@@ -52,7 +52,7 @@ def duke(config, linkfile=None, singlematch=False, showmatches=False, wait=True)
 
     """
     os.environ['CLASSPATH'] = ":".join([os.path.join(
-                    os.path.dirname(__file__), "duke_binaries", r) 
+                    os.path.dirname(__file__), "duke_binaries", r)
                     for r in os.listdir(os.path.join(
                     os.path.dirname(__file__), "duke_binaries"))])
     args = []

@@ -6,7 +6,7 @@ Created on Fri Sep 16 10:46:33 2016
 """
 
 import matplotlib
-import pandas as pd 
+import pandas as pd
 from powerplantmatching import cleaning, utils, config, data, heuristics
 import matplotlib.pyplot as plt
 import countrycode
@@ -58,7 +58,7 @@ hydro.loc[hydro.File=='', 'File']= np.NaN
 
 
 
-#%% 
+#%%
 
 hydro = hydro.loc[:,columns]
 hydro = hydro.loc[hydro.Capacity.notnull()]
@@ -89,11 +89,11 @@ eumap= eu.pivot('x','y','height')
 
 def compute_window_mean_and_var_strided(image, window_w, window_h):
     w, h = image.shape
-    strided_image = np.lib.stride_tricks.as_strided(image, 
+    strided_image = np.lib.stride_tricks.as_strided(image,
                                                     shape=[w - window_w + 1, h - window_h + 1, window_w, window_h],
                                                     strides=image.strides + image.strides)
 
-    return strided_image.std(axis=(2,3)), strided_image.mean(axis=(2,3)) 
+    return strided_image.std(axis=(2,3)), strided_image.mean(axis=(2,3))
 
 variation, mean = compute_window_mean_and_var_strided(eumap.values,5,5)
 euslopes = pd.DataFrame(data=variation, index=eumap.index[2:-2], columns=eumap.columns[2:-2]).reindex(index=eumap.index, columns=eumap.columns)
@@ -120,9 +120,9 @@ print hydro.Classification.value_counts()
 #%% Train classification
 
 
-hydro.loc[hydro.Classification=='Run-Of-River', 'Classification']='Ror'                    
-                    
- 
+hydro.loc[hydro.Classification=='Run-Of-River', 'Classification']='Ror'
+
+
 
 # Make only classification for run-of-river and reservoir since pumped storage is already covered
 
@@ -173,19 +173,19 @@ for c in bias.index:
     data = training.loc[:,['height', 'stdheight', 'Capacity']].values
     target = training.loc[: ,'Classification'].values
     clf.fit(data, target)
-    
+
     missing_class_in_c_b = (hydrofit.Classification.isnull())&(hydrofit.Country == c)&(hydrofit.loc[:,[ 'height', 'stdheight', 'Capacity']]\
             .notnull().all(axis=1))
-    
-    
+
+
     try:
         hydrofit.loc[missing_class_in_c_b,'Classification'] = \
         clf.predict(hydrofit.loc[missing_class_in_c_b,['height', 'stdheight', 'Capacity']].values)
     except:
         None
 
-        
-        
+
+
 columnsnew = list(columns.drop('ESE_and_FIAS')) + ['Scaled Capacity']
 
 hydrofit = hydrofit.loc[:,columnsnew]
@@ -195,5 +195,3 @@ relationsfit = hydrofitgrouped-entsoestats[entsoestats!=0]
 print relationsfit
 hydrofit.Classification.replace('Ror', 'Run-Of-River', regex=True, inplace=True)
 hydrofit.to_csv('hydro_aggregation_beta.csv', index_label='id', encoding='utf-8')
-
-
