@@ -21,40 +21,54 @@ import os
 import pandas as pd
 
 from .utils import set_uncommon_fueltypes_to_other
-from .data import CARMA, FIAS, GEO, OPSD, WRI
+from .data import CARMA, FIAS, GEO, OPSD, WRI, ESE
 from .cleaning import clean_single
 from .matching import (combine_multiple_datasets,
                        reduce_matched_dataframe)
 from .heuristics import extend_by_non_matched
     
-def Carma_FIAS_GEO_OPSD_WRI_matched(update=False):
+def Carma_ESE_FIAS_GEO_OPSD_WRI_matched(update=False):
     outfn = os.path.join(os.path.dirname(__file__), 'data', 
-                         'Matched_Carma_Fias_Geo_Opsd_Wri.csv')
+                         'Matched_Carma_Ese_Fias_Geo_Opsd_Wri.csv')
     if update: #or not os.path.exists(outfn):
         datasets = [clean_single(CARMA()),
-                    clean_single(FIAS(), aggregate_powerplant_units=False),
+                    pd.concat([clean_single(FIAS(), aggregate_powerplant_units=False),
+                               ESE()]).reset_index(drop=True),
                     clean_single(GEO(), aggregate_powerplant_units=False), 
                     clean_single(OPSD()),
                     clean_single(WRI())]
-        matched = combine_multiple_datasets(datasets, ['CARMA', 'FIAS', 'GEO','OPSD','WRI'])
+        matched = combine_multiple_datasets(datasets, ['CARMA', 'ESE_FIAS', 'GEO','OPSD','WRI'])
         matched.to_csv(outfn, index_label='id', encoding='utf-8')
         return matched
     else:
         return pd.read_csv(outfn, index_col='id')
         
+        
+def Carma_ESE_FIAS_GEO_OPSD_WRI_matched_reduced():
+    return pd.read_csv(os.path.join(os.path.dirname(__file__), 'data', 
+                         'Matched_Carma_Ese_FIAS_Geo_Opsd_Wri_reduced.csv'), 
+                        index_col='id')
+        
 def Carma_GEO_OPSD_WRI_matched(update=False):
     outfn = os.path.join(os.path.dirname(__file__), 'data', 
-                         'Matched_Carma_Fias_Geo_Opsd_Wri.csv')
+                         'Matched_Carma_Geo_Opsd_Wri.csv')
     if update: #or not os.path.exists(outfn):
         datasets = [clean_single(CARMA()),
                     clean_single(GEO(), aggregate_powerplant_units=False), 
                     clean_single(OPSD()),
                     clean_single(WRI())]
         matched = combine_multiple_datasets(datasets, ['CARMA', 'GEO','OPSD','WRI'])
-        matched.to_csv(outfn)
+        matched.to_csv(outfn, index_label='id', encoding='utf-8')
         return matched
     else:
         return pd.read_csv(outfn, index_col='id')
+        
+        
+def Carma_GEO_OPSD_WRI_matched_reduced():
+    return pd.read_csv(os.path.join(os.path.dirname(__file__), 'data', 
+                         'Matched_Carma_Geo_Opsd_Wri_reduced.csv'), 
+                        index_col='id')
+        
         
 def MATCHED_dataset(artificials=True, subsume_uncommon_fueltypes=False):
     """
@@ -78,7 +92,7 @@ def MATCHED_dataset(artificials=True, subsume_uncommon_fueltypes=False):
     """
     
     hydro = Aggregated_hydro()
-    matched = extend_by_non_matched(Carma_FIAS_GEO_OPSD_WRI_matched(),
+    matched = extend_by_non_matched(Carma_GEO_OPSD_WRI_matched(),
                                     GEO(), 'GEO')    
     matched = matched[matched.Fueltype != 'Hydro']
     if not artificials:

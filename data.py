@@ -141,7 +141,7 @@ def CARMA(raw=False):
 
 def FIAS():
     return pd.read_csv('%s/data/FiasHydro.csv'%os.path.dirname(__file__), 
-                       encoding='utf-8', index_col='id')
+                       encoding='utf-8', index_col='id')[target_columns()]
 
 def ENTSOE(raw=False):
     """

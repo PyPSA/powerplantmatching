@@ -26,6 +26,7 @@ import itertools
 from .config import target_columns
 from .utils import read_csv_if_string
 from .duke import add_geoposition_for_duke, duke
+from .cleaning import clean_classification
 
 
 def best_matches(linkfile, labels):
@@ -214,8 +215,9 @@ def reduce_matched_dataframe(df):
     sdf.loc[:, 'lat'] = df.lat.mean(axis=1)
     sdf.loc[:, 'lon'] = df.lon.mean(axis=1)
     sdf.loc[:, 'File'] = df.File.apply(concat_strings, axis=1)
-    sdf.loc[np.logical_not(sdf.Classification.str.contains('OCGT|CCGT|CHP')),'Classification'] \
-            = sdf.loc[np.logical_not(sdf.Classification.str.contains('OCGT|CCGT|CHP')),
-            'Classification'].str.title()
-    return sdf
+    sdf = clean_classification(sdf, generalize_hydros=True)
+#    sdf.loc[np.logical_not(sdf.Classification.str.contains('OCGT|CCGT|CHP')),'Classification'] \
+#            = sdf.loc[np.logical_not(sdf.Classification.str.contains('OCGT|CCGT|CHP')),
+#            'Classification'].str.title()
+    return sdf.reset_index(drop=True)
 
