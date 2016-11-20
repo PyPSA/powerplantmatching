@@ -12,6 +12,16 @@ plant. Secondly, we provide functions to horizontally merge different
 databases in order to check their consistency and improve the
 reliability.
 
+powerplantmatching was initially developed by the
+[Renewable Energy Group](https://fias.uni-frankfurt.de/physics/schramm/complex-renewable-energy-networks/)
+at [FIAS](https://fias.uni-frankfurt.de/) to build power plant data
+inputs to [PyPSA](https://www.pypsa.org/)-based models for carrying
+out simulations for the [CoNDyNet project](http://condynet.de/),
+financed by the
+[German Federal Ministry for Education and Research (BMBF)](https://www.bmbf.de/en/)
+as part of the
+[Stromnetze Research Initiative](http://forschung-stromnetze.info/projekte/grundlagen-und-konzepte-fuer-effiziente-dezentrale-stromnetze/).
+
 ## What it can do
 
 - clean and standardize power plant data sets
@@ -20,7 +30,6 @@ reliability.
 - create lookups and give statistical insight to power plant goodness
 - provide cleaned data from different sources 
 - provide an already merged data set of five different data-sources 
-
 
 ## Processed Data 
 
@@ -35,15 +44,15 @@ set combines the data of all the data sources listed in
 - **Classification**		- Run-of-River, Reservoir, CCGT etc.
 - **Capacity**			- \[MW\]
 - **Geo-position**		- Latitude, Longitude
-- **Country** 			- EU-27 countries and UK
+- **Country** 			- EU-27 + CH + NO (+ UK) minus Cyprus and Malta
 
 
-The following picture compare the total capacities per fuel type for
-the different data sources and with our merged dataset.
+The following picture compares the total capacities per fuel type
+between the different data sources and our merged dataset.
 
 ![alt tag](https://cloud.githubusercontent.com/assets/19226431/20011654/a683952c-a2ac-11e6-8ce8-8e4982fb18d1.jpg)
 
-The merged datasets are available in two versions: The bigger dataset
+The merged dataset is available in two versions: The bigger dataset
 links the entries of the matched power plant and lists all the related
 claims by the different data-sources. The smaller merged dataset
 reduces the former by applying a set of aggregation rules (shown
@@ -93,7 +102,7 @@ pc.MATCHED_dataset(scaled_hydros=True)
 if you want to scale hydro power plants.
 
 
-##Module Structure
+## Module Structure
 
 The package consists of seven modules. For creating a new dataset you
 can make most use of the modules data, clean and match, which provide
@@ -101,8 +110,6 @@ you with function for data supply, vertical cleaning and horizontal
 matching, respectively.
 
 ![alt tag](https://cloud.githubusercontent.com/assets/19226431/20449087/984dc0c2-ade7-11e6-96e0-f1169c9a7fef.png)
-
-
 
 ## Combining Data From Different Sources - Horizontal Matching
 
@@ -123,7 +130,8 @@ score for the likeliness that the two powerplant records refer to the
 same powerplant. If the score exceeds a given threshold, the two
 records of the power plant are linked and merged into one data set.
 
-Let's make that a bit more concrete by giving a quick example. Consider the following two data sets
+Let's make that a bit more concrete by giving a quick
+example. Consider the following two data sets
 
 ### Dataset 1: 
 
@@ -172,22 +180,41 @@ TODO
 
 ## Data-Sources: 
 
-- OPSD - [Open Power System Data](http://data.open-power-system-data.org/), provide their data on 
-	[here](http://data.open-power-system-data.org/conventional_power_plants/)
-
-- GEO - [Global Energy Observatory](http://globalenergyobservatory.org/docs/HelpGeoPower.php#), the 
-	data is not directly available on the website, but can be obtained from [this sqlite scraper](https://morph.io/coroa/global_energy_observatory_power_plants)
-
-- WRI - [World Resource Institute](http://www.wri.org), provide their data open source 
-	on their [repository](https://github.com/Arjay7891/WRI-Powerplant/blob/master/output_database/powerwatch2_data.csv)
-
+- OPSD - [Open Power System Data](http://data.open-power-system-data.org/) publish their [data](http://data.open-power-system-data.org/conventional_power_plants/) under a free license
+- GEO - [Global Energy Observatory](http://globalenergyobservatory.org/), the data is not directly available on the website, but can be obtained from an [sqlite scraper](https://morph.io/coroa/global_energy_observatory_power_plants)
+- WRI - [World Resource Institute](http://www.wri.org) provide their data under a free license on their [powerwatch repository](https://github.com/Arjay7891/WRI-Powerplant/blob/master/output_database/powerwatch2_data.csv)
 - CARMA - [Carbon Monitoring for Action](http://carma.org/plant) 
+- ESE - [Energy Storage Exchange](http://www.energystorageexchange.org/) provide a database for storage units. Especially the hydro storage data is of big use for a combining power plant database. Since the data is not free, it is optional and can be [downloaded separately](http://www.energystorageexchange.org/projects/advanced_search?utf8=%E2%9C%93&name_eq=&country_sort_eq%5B%5D=Austria&country_sort_eq%5B%5D=Belgium&country_sort_eq%5B%5D=Bulgaria&country_sort_eq%5B%5D=Croatia&country_sort_eq%5B%5D=Czeck+Republic&country_sort_eq%5B%5D=Denmark&country_sort_eq%5B%5D=Estonia&country_sort_eq%5B%5D=Finland&country_sort_eq%5B%5D=France&country_sort_eq%5B%5D=Germany&country_sort_eq%5B%5D=Greece&country_sort_eq%5B%5D=Hungary&country_sort_eq%5B%5D=Ireland&country_sort_eq%5B%5D=Italy&country_sort_eq%5B%5D=Latvia&country_sort_eq%5B%5D=Lithuania&country_sort_eq%5B%5D=Luxembourg&country_sort_eq%5B%5D=Netherlands&country_sort_eq%5B%5D=Norway&country_sort_eq%5B%5D=Poland&country_sort_eq%5B%5D=Portugal&country_sort_eq%5B%5D=Romainia&country_sort_eq%5B%5D=Slovakia&country_sort_eq%5B%5D=Slovenia&country_sort_eq%5B%5D=Spain&country_sort_eq%5B%5D=Sweden&country_sort_eq%5B%5D=Switzerland&country_sort_eq%5B%5D=United+Kingdom&size_kw_ll=&size_kw_ul=&kW=&size_kwh_ll=&size_kwh_ul=&kWh=&%5Bannouncement_on_ll%281i%29%5D=&%5Bannouncement_on_ll%282i%29%5D=&%5Bannouncement_on_ll%283i%29%5D=1&%5Bannouncement_on_ul%281i%29%5D=&%5Bannouncement_on_ul%282i%29%5D=&%5Bannouncement_on_ul%283i%29%5D=1&%5Bconstruction_on_ll%281i%29%5D=&%5Bconstruction_on_ll%282i%29%5D=&%5Bconstruction_on_ll%283i%29%5D=1&%5Bconstruction_on_ul%281i%29%5D=&%5Bconstruction_on_ul%282i%29%5D=&%5Bconstruction_on_ul%283i%29%5D=1&%5Bcommissioning_on_ll%281i%29%5D=&%5Bcommissioning_on_ll%282i%29%5D=&%5Bcommissioning_on_ll%283i%29%5D=1&%5Bcommissioning_on_ul%281i%29%5D=&%5Bcommissioning_on_ul%282i%29%5D=&%5Bcommissioning_on_ul%283i%29%5D=1&%5Bdecommissioning_on_ll%281i%29%5D=&%5Bdecommissioning_on_ll%282i%29%5D=&%5Bdecommissioning_on_ll%283i%29%5D=1&%5Bdecommissioning_on_ul%281i%29%5D=&%5Bdecommissioning_on_ul%282i%29%5D=&%5Bdecommissioning_on_ul%283i%29%5D=1&owner_in=&vendor_company=&electronics_provider=&utility=&om_contractor=&developer=&order_by=&sort_order=&search_page=&search_search=search).
+- ENTSOe - [European Network of Transmission System Operators for Electricity](http://entsoe.eu/), annually provides statistics about aggregated power plant capacities which is available [here]() Their data can be used as a validation reference. We further use their [annual energy generation report from 2010](https://www.entsoe.eu/db-query/miscellaneous/net-generating-capacity) as an input for the hydro power plant classification.
 
-- FIAS - [Frankfurt Institute for Advanced Studies](https://fias.uni-frankfurt.de/de/) 
+## Planned changes
 
-- ESE - [Energy Storage Exchange]() provide a database for storage units. Especially the hydro storage data is of big use for a combining power plant database. Since the data is not open source, one have to download by oneself. [Here](http://www.energystorageexchange.org/projects/advanced_search?utf8=%E2%9C%93&name_eq=&country_sort_eq%5B%5D=Austria&country_sort_eq%5B%5D=Belgium&country_sort_eq%5B%5D=Bulgaria&country_sort_eq%5B%5D=Croatia&country_sort_eq%5B%5D=Czeck+Republic&country_sort_eq%5B%5D=Denmark&country_sort_eq%5B%5D=Estonia&country_sort_eq%5B%5D=Finland&country_sort_eq%5B%5D=France&country_sort_eq%5B%5D=Germany&country_sort_eq%5B%5D=Greece&country_sort_eq%5B%5D=Hungary&country_sort_eq%5B%5D=Ireland&country_sort_eq%5B%5D=Italy&country_sort_eq%5B%5D=Latvia&country_sort_eq%5B%5D=Lithuania&country_sort_eq%5B%5D=Luxembourg&country_sort_eq%5B%5D=Netherlands&country_sort_eq%5B%5D=Norway&country_sort_eq%5B%5D=Poland&country_sort_eq%5B%5D=Portugal&country_sort_eq%5B%5D=Romainia&country_sort_eq%5B%5D=Slovakia&country_sort_eq%5B%5D=Slovenia&country_sort_eq%5B%5D=Spain&country_sort_eq%5B%5D=Sweden&country_sort_eq%5B%5D=Switzerland&country_sort_eq%5B%5D=United+Kingdom&size_kw_ll=&size_kw_ul=&kW=&size_kwh_ll=&size_kwh_ul=&kWh=&%5Bannouncement_on_ll%281i%29%5D=&%5Bannouncement_on_ll%282i%29%5D=&%5Bannouncement_on_ll%283i%29%5D=1&%5Bannouncement_on_ul%281i%29%5D=&%5Bannouncement_on_ul%282i%29%5D=&%5Bannouncement_on_ul%283i%29%5D=1&%5Bconstruction_on_ll%281i%29%5D=&%5Bconstruction_on_ll%282i%29%5D=&%5Bconstruction_on_ll%283i%29%5D=1&%5Bconstruction_on_ul%281i%29%5D=&%5Bconstruction_on_ul%282i%29%5D=&%5Bconstruction_on_ul%283i%29%5D=1&%5Bcommissioning_on_ll%281i%29%5D=&%5Bcommissioning_on_ll%282i%29%5D=&%5Bcommissioning_on_ll%283i%29%5D=1&%5Bcommissioning_on_ul%281i%29%5D=&%5Bcommissioning_on_ul%282i%29%5D=&%5Bcommissioning_on_ul%283i%29%5D=1&%5Bdecommissioning_on_ll%281i%29%5D=&%5Bdecommissioning_on_ll%282i%29%5D=&%5Bdecommissioning_on_ll%283i%29%5D=1&%5Bdecommissioning_on_ul%281i%29%5D=&%5Bdecommissioning_on_ul%282i%29%5D=&%5Bdecommissioning_on_ul%283i%29%5D=1&owner_in=&vendor_company=&electronics_provider=&utility=&om_contractor=&developer=&order_by=&sort_order=&search_page=&search_search=search) is the link to the european data, which can easily be downloaded and integrated into the set of module-provided databases 
+- Figuring out how to distinguish and deal with capacities given as
+  net and gross values.
+- Add additional information like build year or efficiencies where
+  available
+- Aligning closer with the fuel and technology names introduced by the
+  OPSD project (at the moment the dataset is loosely oriented to the
+  conventions of the GEO project)
 
-- ENTSOe - [European Network of Transmission System Operators for Electricity](), annually provides statistics about aggregated power plant 
-	capacities which is available [here]()
-	Their data can be used as a validation reference. We further use their [annual energy
-	generation report from 2010](https://www.entsoe.eu/db-query/miscellaneous/net-generating-capacity) in order to adjust hydro power plant classification
+and most importantly
+
+  We would welcome it, if a third-party institute with access to a
+  commercial European powerplant database like PLATTS was interested
+  in collaborating on validating the dataset against it. Please get in
+  touch if you are!
+
+
+## Acknowledgements
+
+The development of powerplantmatching was helped considerably by
+in-depth discussions and exchanges of ideas and code with
+
+- Chris Davis from University of Groningen and
+- Johannes Friedrich, Roman Hennig and Colin McCormick of the World Resources Institute
+
+## Licence
+
+powerplantmatching is released as free software under the
+[GPLv3](http://www.gnu.org/licenses/gpl-3.0.en.html), see
+[LICENSE.txt](LICENSE.txt).
