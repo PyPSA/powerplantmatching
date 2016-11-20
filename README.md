@@ -17,7 +17,7 @@ reliability.
 powerplantmatching was initially developed by the
 [Renewable Energy Group](https://fias.uni-frankfurt.de/physics/schramm/complex-renewable-energy-networks/)
 at [FIAS](https://fias.uni-frankfurt.de/) to build power plant data
-inputs to [PyPSA](https://www.pypsa.org/)-based models for carrying
+inputs to [PyPSA](http://www.pypsa.org/)-based models for carrying
 out simulations for the [CoNDyNet project](http://condynet.de/),
 financed by the
 [German Federal Ministry for Education and Research (BMBF)](https://www.bmbf.de/en/)
@@ -222,4 +222,4 @@ in-depth discussions and exchanges of ideas and code with
 
 powerplantmatching is released as free software under the
 [GPLv3](http://www.gnu.org/licenses/gpl-3.0.en.html), see
-[LICENSE.txt](LICENSE.txt).
+[LICENSE](LICENSE).
