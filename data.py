@@ -139,8 +139,11 @@ def CARMA(raw=False):
     carmadata.reset_index(drop=True, inplace=True)
     return carmadata
 
-def FIAS():
-    return pd.read_csv('%s/data/FiasHydro.csv'%os.path.dirname(__file__), 
+def Oldenburgdata():
+    """
+    This data is not yet available.
+    """
+    return pd.read_csv('%s/data/OldenburgHydro.csv'%os.path.dirname(__file__), 
                        encoding='utf-8', index_col='id')[target_columns()]
 
 def ENTSOE(raw=False):
