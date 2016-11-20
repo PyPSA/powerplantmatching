@@ -63,7 +63,7 @@ def GEO(raw=False):
     Return standardized GEO database with target column names and fueltypes.
 
     """
-    def read_globalenergyobservatory_detailed():
+    def read_globalenergyobservatory():
         import pandas as pd
         import sqlite3
 
@@ -85,7 +85,7 @@ def GEO(raw=False):
 
         return pd.DataFrame(cur.fetchall(), columns=["Name", "Type","Classification","FuelClassification1","FuelClassification2", "Country", "Capacity", "lon", "lat"])
 
-    GEOdata = read_globalenergyobservatory_detailed()
+    GEOdata = read_globalenergyobservatory()
     if raw:
         return GEOdata
     eucountries = europeancountries()
