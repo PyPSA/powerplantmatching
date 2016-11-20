@@ -21,7 +21,7 @@ import os
 import pandas as pd
 
 from .utils import set_uncommon_fueltypes_to_other
-from .data import CARMA, FIAS, GEO, OPSD, WRI, ESE
+from .data import CARMA, GEO, OPSD, WRI, ESE
 from .cleaning import clean_single
 from .matching import (combine_multiple_datasets,
                        reduce_matched_dataframe)
