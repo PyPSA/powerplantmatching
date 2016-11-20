@@ -70,7 +70,7 @@ def Carma_GEO_OPSD_WRI_matched_reduced():
                         index_col='id')
 
 
-def MATCHED_dataset(rescaled_hydros=True, subsume_uncommon_fueltypes=False):
+def MATCHED_dataset(rescaled_hydros=False, subsume_uncommon_fueltypes=False):
     """
     This returns the actual match between the Carma-data, GEO-data, WRI-data,
     FIAS-data and the ESE-data with an additional manipulation on the hydro powerplants.
