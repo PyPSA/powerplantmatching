@@ -63,8 +63,29 @@ def GEO(raw=False):
     Return standardized GEO database with target column names and fueltypes.
 
     """
-    from vresutils import dispatch as vdispatch
-    GEOdata = vdispatch.read_globalenergyobservatory_detailed()
+    def read_globalenergyobservatory_detailed():
+        import pandas as pd
+        import sqlite3
+
+        db = sqlite3.connect('%s/data/global_energy_observatory_power_plants.sqlite'%
+                       os.path.dirname(__file__))
+        cur = db.execute(
+        "select"
+        "   name, type, Type_of_Plant_rng1 , Type_of_Fuel_rng1_Primary, Type_of_Fuel_rng2_Secondary ,country, design_capacity_mwe_nbr,"
+        "   CAST(longitude_start AS REAL) as lon,"
+        "   CAST(latitude_start AS REAL) as lat "
+        "from"
+        "   powerplants "
+        "where"
+        "   lat between 33 and 71 and"
+        "   lon between -12 and 41 and"
+        "   status_of_plant_itf=='Operating Fully' and"
+        "   design_capacity_mwe_nbr > 0"
+    )
+
+        return pd.DataFrame(cur.fetchall(), columns=["Name", "Type","Classification","FuelClassification1","FuelClassification2", "Country", "Capacity", "lon", "lat"])
+
+    GEOdata = read_globalenergyobservatory_detailed()
     if raw:
         return GEOdata
     eucountries = europeancountries()
