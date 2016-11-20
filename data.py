@@ -45,7 +45,7 @@ def OPSD(raw=False):
                          }, inplace=True)
     opsd = opsd.loc[:,target_columns()]
     opsd = gather_classification_info(opsd)
-    opsd.Country = countrycode(codes=opsd.Country.tolist(), 
+    opsd.Country = countrycode(codes=opsd.Country.tolist(),
                                target='country_name', origin='iso2c')
     opsd.Country = opsd.Country.str.title()
     d = {'Hard coal': 'Coal',
@@ -56,7 +56,7 @@ def OPSD(raw=False):
     opsd.Fueltype = opsd.Fueltype.replace(d)
 #    opsd = add_geoposition(opsd)
     return opsd
-    
+
 
 def GEO(raw=False):
     """
@@ -87,15 +87,15 @@ def GEO(raw=False):
        'Open Cycle Gas Turbine|Power and Heat OCGT':'OCGT',
        'Combined Cycle Gas Engine (CCGE)':'CCGE',
     'Power and Heat Combined Cycle Gas Turbine':'CCGT',
-    'Both Sub and Super Critical Thermal|Ultra-Super-Critical Thermal':'Thermal', 
-    'Cogeneration Power and Heat Steam Turbine':'CHP', 
+    'Both Sub and Super Critical Thermal|Ultra-Super-Critical Thermal':'Thermal',
+    'Cogeneration Power and Heat Steam Turbine':'CHP',
     'Heat and Power Steam Turbine|Sub-critical Steam Turbine':'CHP'}
             , regex=True).str.strip()
     GEOdata = clean_classification(GEOdata)
     GEOdata.replace(0, np.NaN, inplace=True)
     return GEOdata.loc[:,target_columns()]
-                        
-                        
+
+
 def CARMA(raw=False):
     """
     Return standardized Carma database with target column names and fueltypes.
@@ -143,7 +143,7 @@ def Oldenburgdata():
     """
     This data is not yet available.
     """
-    return pd.read_csv('%s/data/OldenburgHydro.csv'%os.path.dirname(__file__), 
+    return pd.read_csv('%s/data/OldenburgHydro.csv'%os.path.dirname(__file__),
                        encoding='utf-8', index_col='id')[target_columns()]
 
 def ENTSOE(raw=False):
@@ -173,7 +173,7 @@ def ENTSOE(raw=False):
     return entsoedata
 
 def WRI():
-    wri = pd.read_csv('%s/data/WRIdata.csv'%os.path.dirname(__file__), 
+    wri = pd.read_csv('%s/data/WRIdata.csv'%os.path.dirname(__file__),
                       index_col='id')
 #    wri.Name = wri.Name.str.title()
     wri = wri.loc[:,target_columns()]
@@ -182,31 +182,31 @@ def WRI():
 
 def ESE(update=False, path=None):
     """
-    This database is not given within the repository because of open source rights. 
-    Just download the database from the link given in the README file 
-    (last section: Data Sources) and set the arguments of this function to update=True and 
-    path='path/to/database/projects.xls'. This will integrate the database into your 
-    local powerplantmatching/data and can then be used as the other databases. 
-    
+    This database is not given within the repository because of open source rights.
+    Just download the database from the link given in the README file
+    (last section: Data Sources) and set the arguments of this function to update=True and
+    path='path/to/database/projects.xls'. This will integrate the database into your
+    local powerplantmatching/data and can then be used as the other databases.
+
     Parameters
     ----------
     update : Boolean, Default False
         Wether to update the database according to the database given in path
     path : str
-        location of the downloaded .xls file 
-    
+        location of the downloaded .xls file
+
     """
     saved_version = '%s/data/energy_storage_exchange.csv'%os.path.dirname(__file__)
     if (not os.path.exists(saved_version)) and (update is False) and (path is None):
         raise(NotImplementedError( '''
         This database is not yet in your local repository.
-        Just download the database from the link given in the README file (last section: 
-        Data Sources, you might change the format of the Longitude column to number format 
+        Just download the database from the link given in the README file (last section:
+        Data Sources, you might change the format of the Longitude column to number format
         since there seems to be a problem with the date format)
-        and set the arguments of this function to update=True and 
-        path='path/to/database/projects.xls'. This will integrate the database 
-        into your local powerplantmatching/data and can then be used as 
-        the other databases. 
+        and set the arguments of this function to update=True and
+        path='path/to/database/projects.xls'. This will integrate the database
+        into your local powerplantmatching/data and can then be used as
+        the other databases.
         '''))
     if os.path.exists(saved_version) and (update is False) :
         return pd.read_csv(saved_version, index_col='id')
@@ -230,6 +230,3 @@ def ESE(update=False, path=None):
     data.to_csv(saved_version, index_label='id',
             encoding='utf-8')
     return data
-        
-        
-        

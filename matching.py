@@ -13,7 +13,7 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-Functions for linking and combining different datasets 
+Functions for linking and combining different datasets
 """
 
 from __future__ import absolute_import, print_function
@@ -46,7 +46,7 @@ def best_matches(linkfile, labels):
     """
     matches = pd.read_csv(linkfile, usecols=[1, 2, 3], names=[labels[0],
                                              labels[1], 'scores'])
-    return matches.groupby(matches.iloc[:, 1], as_index=False, 
+    return matches.groupby(matches.iloc[:, 1], as_index=False,
                            sort=False).apply(lambda x: x.loc[x.scores.idxmax(), labels])
 
 def compare_two_datasets(datasets, labels):
@@ -77,7 +77,7 @@ def compare_two_datasets(datasets, labels):
             linkfile='/tmp/matches.txt', singlematch=True)
     matches = best_matches('/tmp/matches.txt', labels)
     return matches
-    
+
 def cross_matches(sets_of_pairs, labels=None):
     """
     Combines multiple sets of pairs and returns one consistent dataframe. Identifiers of two
@@ -111,11 +111,11 @@ def cross_matches(sets_of_pairs, labels=None):
 
 def link_multiple_datasets(datasets, labels):
     """
-    Duke-based horizontal match of multiple databases. Returns the matching 
+    Duke-based horizontal match of multiple databases. Returns the matching
     indices of the datasets. Compares all properties of the
     given columns ['Name','Fueltype', 'Classification', 'Country', 'Capacity','Geoposition'] in order
     to determine the same powerplant in different datasets. The match is in one-to-one mode,
-    that is every entry of the initial databases has maximally one link to the other database. 
+    that is every entry of the initial databases has maximally one link to the other database.
     This leads to unique entries in the resulting dataframe.
 
     Parameters
@@ -130,19 +130,19 @@ def link_multiple_datasets(datasets, labels):
     combinations = list(itertools.combinations(range(len(labels)), 2))
     all_matches = []
     for c,d in combinations:
-        match = compare_two_datasets([datasets[c], datasets[d]], 
+        match = compare_two_datasets([datasets[c], datasets[d]],
                                    [labels[c], labels[d]])
         all_matches.append(match)
     return cross_matches(all_matches, labels=labels)
 
-    
+
 def combine_multiple_datasets(datasets, labels):
     """
     Duke-based horizontal match of multiple databases. Returns the matched dataframe including
     only the matched entries in a multi-indexed pandas.Dataframe. Compares all properties of the
     given columns ['Name','Fueltype', 'Classification', 'Country', 'Capacity','Geoposition'] in order
     to determine the same powerplant in different datasets. The match is in one-to-one mode,
-    that is every entry of the initial databases has maximally one link to the other database. 
+    that is every entry of the initial databases has maximally one link to the other database.
     This leads to unique entries in the resulting dataframe.
 
     Parameters
@@ -156,15 +156,15 @@ def combine_multiple_datasets(datasets, labels):
         """
         Use this function to create a matched dataframe on base of the cross matches
         and a list of the databases. Always order the database alphabetically.
-    
+
         Parameters
         ----------
         cross_matches : pandas.Dataframe of the matching indexes of the databases,
             created with powerplant_collection.cross_matches()
         datasets : list of pandas.Dataframes or csv-files in the same
             order as in cross_matches
-    
-    
+
+
         """
         datasets = list(map(read_csv_if_string, datasets))
         for i, data in enumerate(datasets):
@@ -175,13 +175,13 @@ def combine_multiple_datasets(datasets, labels):
         df = df.loc[:,target_columns()]
         return df.reset_index(drop=True)
     crossmatches = link_multiple_datasets(datasets, labels)
-    return combined_dataframe(crossmatches, datasets)    
-    
+    return combined_dataframe(crossmatches, datasets)
+
 
 def reduce_matched_dataframe(df):
     """
     Returns a new dataframe with all names of the powerplants, but the Capacity on average
-    as well as longitude and lattitude. In the Country, Fueltype and Classification 
+    as well as longitude and lattitude. In the Country, Fueltype and Classification
     column the most common value is returned.
 
     Parameters
@@ -196,7 +196,7 @@ def reduce_matched_dataframe(df):
             return np.nan
         else:
             return df.value_counts().idxmax()
-            
+
     def concat_strings(df):
         if df.isnull().all():
             return np.nan
@@ -220,4 +220,3 @@ def reduce_matched_dataframe(df):
 #            = sdf.loc[np.logical_not(sdf.Classification.str.contains('OCGT|CCGT|CHP')),
 #            'Classification'].str.title()
     return sdf.reset_index(drop=True)
-

@@ -13,7 +13,7 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-Utility functions for checking data completness and supporting other functions 
+Utility functions for checking data completness and supporting other functions
 """
 
 from __future__ import print_function, absolute_import
@@ -21,7 +21,7 @@ from __future__ import print_function, absolute_import
 import pandas as pd
 import six
 from countrycode import countrycode
-    
+
 
 def lookup(df, keys=None, by='Country, Fueltype', exclude=None):
     """
@@ -75,8 +75,8 @@ def set_uncommon_fueltypes_to_other(df, fueltypes={'Geothermal', 'Mixed fuel typ
 def read_csv_if_string(data):
     if isinstance(data, six.string_types):
         data = pd.read_csv(data, index_col='id')
-    return data   
-    
+    return data
+
 def parse_Geoposition(loc, country):
     """
     Nominatim request for the Geoposition of a specific location in a country.

@@ -39,8 +39,8 @@ def clean_powerplantname(df):
         dataframe which should be cleaned
 
     """
-    df.Name.replace(regex=True, value=' ', 
-                    to_replace=list('-/')+['\(', '\)', '\[', '\]', '[0-9]'], 
+    df.Name.replace(regex=True, value=' ',
+                    to_replace=list('-/')+['\(', '\)', '\[', '\]', '[0-9]'],
                     inplace=True)
 
     common_words = pd.Series(sum(df.Name.str.split(), [])).value_counts()
@@ -49,17 +49,17 @@ def clean_powerplantname(df):
     pattern = [('(?i)(^|\s)'+x+'($|\s)') for x in cw + \
        ['[a-z]','I','II','III','IV','V','VI','VII','VIII','IX','X','XI','Grupo',
      'parque','eolico','gas','biomasa','COGENERACION'
-     ,'gt','unnamed','tratamiento de purines','planta','de','la','station', 'power', 
+     ,'gt','unnamed','tratamiento de purines','planta','de','la','station', 'power',
      'storage', 'plant', 'stage', 'pumped', 'project'] ]
     df.Name = df.Name.replace(regex=True, to_replace=pattern, value=' ').str.strip().\
                 str.replace('\\s\\s+', ' ')
-    #do it twise to cach all single letters 
+    #do it twise to cach all single letters
     df.Name = df.Name.replace(regex=True, to_replace=pattern, value=' ').str.strip().\
                 str.replace('\\s\\s+', ' ').str.capitalize()
     df = df[df.Name != ''].reset_index(drop=True)
-    return df    
+    return df
 
-    
+
 def gather_classification_info(df, search_col=['Name', 'Fueltype']):
     pattern = '|'.join(('(?i)'+x) for x in
                        ['lignite', 'Hard coal', 'Coal hard', 'ccgt', 'ocgt', 'chp'])
@@ -71,20 +71,20 @@ def gather_classification_info(df, search_col=['Name', 'Fueltype']):
         df.Classification.replace('', np.NaN, regex=True, inplace=True)
     return df
 
-    
+
 def clean_classification(df, generalize_hydros=False):
     df.loc[:,'Classification'] = df.loc[:,'Classification'].replace([' and ',
                                 ' Power Plant'],[', ', ''],regex=True )
     if generalize_hydros:
-        df.loc[(df.Classification.str.contains('reservoir|lake', case=False)) & 
+        df.loc[(df.Classification.str.contains('reservoir|lake', case=False)) &
                   (df.Classification.notnull()), 'Classification'] = 'Reservoir'
-        df.loc[(df.Classification.str.contains('run-of-river|weir|water', case=False)) & 
+        df.loc[(df.Classification.str.contains('run-of-river|weir|water', case=False)) &
                   (df.Classification.notnull()), 'Classification'] = 'Run-Of-River'
-        df.loc[(df.Classification.str.contains('dam', case=False)) & 
+        df.loc[(df.Classification.str.contains('dam', case=False)) &
                   (df.Classification.notnull()), 'Classification'] = 'Reservoir'
         df.loc[(df.Classification.str.contains('Pump|pumped', case=False)) &
                   (df.Classification.notnull()), 'Classification'] = 'Pumped Storage'
-                  
+
     df.loc[df.Classification.notnull(),'Classification'] = df.loc[df.Classification.
                                notnull(),'Classification'].str.split(', ')\
                                 .apply(lambda x: ', '.join(np.unique(x)))
@@ -93,8 +93,8 @@ def clean_classification(df, generalize_hydros=False):
             df.loc[np.logical_not((df.loc[:,'Classification'].str.contains('(?i)CCGT|(?i)OCGT|(?i)CHP', regex=True)))&
            df.loc[:, 'Classification'].notnull(),'Classification'].str.title()
     return df
-    
-    
+
+
 def cliques(df, dataduplicates):
     """
     Locate cliques of units which are determined to belong to the same powerplant.
@@ -112,7 +112,7 @@ def cliques(df, dataduplicates):
     """
     df = read_csv_if_string(df)
     if isinstance(dataduplicates, six.string_types):
-        dataduplicates = pd.read_csv(dataduplicates, 
+        dataduplicates = pd.read_csv(dataduplicates,
                                      usecols=[1, 2], names=['one', 'two'])
     G = nx.DiGraph()
     G.add_nodes_from(df.index)
@@ -151,7 +151,7 @@ def aggregate_units(df):
         Function for grouping duplicates within one dataset. Sums up the capacity, takes
         mean from lattitude and longitude, takes the most frequent values for the rest of the
         columns
-    
+
         """
         results = {'Name': x.Name.value_counts().index[0],
                    'Country': x.Country.value_counts().index[0],
@@ -193,12 +193,12 @@ def clean_single(df, aggregate_powerplant_units=True):
 
     aggregate_units : Boolean, default True
         Wether or not the power plant units should be aggregated
-        
+
     """
     #df = gather_classification_info(df)
     df = clean_powerplantname(df)
-    
+
     if aggregate_powerplant_units:
         df = aggregate_units(df)
-        
+
     return df

@@ -26,16 +26,16 @@ def extend_by_non_matched(df, extend_by, label):
     """
     Returns the matched dataframe with additional entries of non-matched powerplants
     of a reliable source.
-    
+
     Parameters
     ----------
     df : Pandas.DataFrame
         Already matched dataset which should be extended
     extend_by : pd.DataFrame
-        Database which is partially included in the matched dataset, but 
+        Database which is partially included in the matched dataset, but
         which should be included totally
     label : str
-        Column name of the additional database within the matched dataset, this 
+        Column name of the additional database within the matched dataset, this
         string is used if the columns of the additional database do not correspond
         to the ones of the dataset
     """
@@ -45,24 +45,24 @@ def extend_by_non_matched(df, extend_by, label):
         extend_by = extend_by.rename(columns={'Name':label})
     return (df.append(extend_by[~extend_by.loc[:, label].isin(df.loc[:,label])])
               .reset_index(drop=True))[columns]
-    
+
 def rescale_capacities_to_country_totals(df, fueltypes):
     """
-    Returns a extra column 'Scaled Capacity' with an up or down scaled capacity in 
+    Returns a extra column 'Scaled Capacity' with an up or down scaled capacity in
     order to match the statistics of the ENTSOe country totals. For every
-    country the information about the total capacity of each fueltype is given. 
-    The scaling factor is determined by the ratio of the aggregated capacity of the 
+    country the information about the total capacity of each fueltype is given.
+    The scaling factor is determined by the ratio of the aggregated capacity of the
     fueltype within each coutry and the ENTSOe statistics about the fueltype capacity
     total wothin each country.
-    
+
     Parameters
     ----------
     df : Pandas.DataFrame
         Data set that should be modified
     fueltype : str or list of strings
         fueltype that should be scaled
-    
-    
+
+
     """
     df = df.copy()
     if isinstance(fueltypes, str):
@@ -80,11 +80,11 @@ power plants in these countries'%\
         for fueltype in fueltypes:
             df.loc[(df.Country==country)&(df.Fueltype==fueltype), 'Scaled Capacity'] *= \
                    ratio.loc[fueltype,country]
-    return df                   
+    return df
 
 
-    
-#add artificial powerplants 
+
+#add artificial powerplants
 #entsoe = pc.ENTSOE_data()
 #lookup = pc.lookup([entsoe.loc[entsoe.Fueltype=='Hydro'], hydro], keys= ['ENTSOE', 'matched'], by='Country')
 #lookup.loc[:,'Difference'] = lookup.ENTSOE - lookup.matched
@@ -101,14 +101,14 @@ power plants in these countries'%\
 #        hydroexp.loc[hydroexp.shape[0]-howmany:,'Capacity'] = 120.
 #        hydroexp.loc[hydroexp.shape[0]-howmany:,'FIAS'] = 'Artificial Powerplant'
 #
-#        
-#    except: 
+#
+#    except:
 #        for j in range(missingpowerplants.loc[i]):
 #            hydroexp = hydroexp.append(hydro.loc[(hydro.Country == i)& (hydro.lat.notnull()),['lat', 'lon']].sample(1) + np.random.uniform(-1,1,(1,2)), ignore_index=True)
 #            hydroexp.loc[hydroexp.shape[0]-1:,'Country'] = i
 #            hydroexp.loc[hydroexp.shape[0]-1:,'Capacity'] = 120.
 #            hydroexp.loc[hydroexp.shape[0]-howmany:,'FIAS'] = 'Artificial Powerplant'
-#        
+#
 #for i in missingpowerplants[:-1].loc[missingpowerplants[:-1] < -1].index:
 #    while hydroexp.loc[hydroexp.Country == i, 'Capacity'].sum() > lookup.loc[i, 'ENTSOE'] + 300:
 #        try:
@@ -123,4 +123,3 @@ power plants in these countries'%\
 #hydro = hydroexp
 #
 #print hydro.groupby(['Country', 'Classification']).Capacity.sum().unstack()
-
