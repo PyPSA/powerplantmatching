@@ -58,7 +58,7 @@
   
   <group>
     <csv>
-      <param name="input-file" value="/tmp/Data_to_Match2.csv"/>
+      <param name="input-file" value="file1.csv"/>
 
       <column name="id" property="ID"/>
       <column name="Name" 
@@ -78,7 +78,7 @@
 
   <group>
     <csv>
-      <param name="input-file" value="/tmp/Data_to_Match1.csv"/>
+      <param name="input-file" value="file2.csv"/>
 
       <column name="id" property="ID"/>
       <column name="Name" 

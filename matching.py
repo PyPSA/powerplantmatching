@@ -22,32 +22,28 @@ import os
 import pandas as pd
 import numpy as np
 import itertools
+import tempfile
 
 from .config import target_columns
 from .utils import read_csv_if_string
-from .duke import add_geoposition_for_duke, duke
+from .duke import duke
 from .cleaning import clean_classification
 
 
-def best_matches(linkfile, labels):
+def best_matches(links):
     """
-    Subsequent to powerplant_collection.duke() with singlematch=True. Returns reduced list of
+    Subsequent to duke() with singlematch=True. Returns reduced list of
     matches on the base of the highest score for each duplicated entry.
 
     Parameters
     ----------
-
-    linkfile : string
-        txt-file with the recorded links
-    labels : list of strings
-        Names of the databases for the resulting dataframe
-
-
+    links : pd.DataFrame
+        Links as returned by duke
     """
-    matches = pd.read_csv(linkfile, usecols=[1, 2, 3], names=[labels[0],
-                                             labels[1], 'scores'])
-    return matches.groupby(matches.iloc[:, 1], as_index=False,
-                           sort=False).apply(lambda x: x.loc[x.scores.idxmax(), labels])
+    labels = links.columns.difference({'scores'})
+    return (links
+            .groupby(links.iloc[:, 1], as_index=False, sort=False)
+            .apply(lambda x: x.loc[x.scores.idxmax(), labels]))
 
 def compare_two_datasets(datasets, labels):
     """
@@ -70,12 +66,8 @@ def compare_two_datasets(datasets, labels):
 
     """
     datasets = list(map(read_csv_if_string, datasets))
-    datasets = list(map(add_geoposition_for_duke, datasets))
-    datasets[0].to_csv('/tmp/Data_to_Match1.csv', encoding='utf-8', index_label='id')
-    datasets[1].to_csv('/tmp/Data_to_Match2.csv', encoding='utf-8', index_label='id')
-    duke(os.path.join(os.path.dirname(__file__),'data','Comparison.xml'),
-            linkfile='/tmp/matches.txt', singlematch=True)
-    matches = best_matches('/tmp/matches.txt', labels)
+    links = duke(datasets, labels=labels, singlematch=True)
+    matches = best_matches(links)
     return matches
 
 def cross_matches(sets_of_pairs, labels=None):
