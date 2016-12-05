@@ -14,9 +14,15 @@
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import absolute_import, print_function
+import logging
+
+logger = logging.getLogger(__name__)
 
 import os
 import subprocess as sub
+import shutil
+import tempfile
+import pandas as pd
 
 def add_geoposition_for_duke(df):
     """
@@ -29,7 +35,8 @@ def add_geoposition_for_duke(df):
     return df
 
 
-def duke(config, linkfile=None, singlematch=False, showmatches=False, wait=True):
+def duke(datasets, labels=['one', 'two'], singlematch=False,
+         showmatches=False, keepfiles=False):
     """
     Run duke in different modes (Deduplication or Record Linkage Mode) to either
     locate duplicates in one database or find the similar entries in two different datasets.
@@ -39,34 +46,61 @@ def duke(config, linkfile=None, singlematch=False, showmatches=False, wait=True)
     Parameters
     ----------
 
-    config : str
-        Configruation file (.xml) for the Duke process
-    linkfile : str, default None
-        txt-file where to record the links
+    datasets : pd.DataFrame or [pd.DataFrame]
+        A single dataframe is run in deduplication mode, while multiple ones are linked
+    labels : [str], default ['one', 'two']
+        Labels for the linked dataframe
     singlematch: boolean, default False
         Only in Record Linkage Mode. Only report the best match for each entry of the first named
         dataset. This does not guarantee a unique match in the second named dataset.
-    wait : boolean, default True
-        wait until the process is finished
-
-
+    keepfiles : boolean, default False
+        If true, do not delete temporary files
     """
-    os.environ['CLASSPATH'] = ":".join([os.path.join(
-                    os.path.dirname(__file__), "duke_binaries", r)
-                    for r in os.listdir(os.path.join(
-                    os.path.dirname(__file__), "duke_binaries"))])
-    args = []
-    if linkfile is not None:
-        args.append('--linkfile=%s' % linkfile)
-    if singlematch:
-        args.append('--singlematch')
-    if showmatches:
-        args.append('--showmatches')
-    run = sub.Popen(['java', 'no.priv.garshol.duke.Duke'] + args + [config], stdout=sub.PIPE)
-    if showmatches:
-        print("\n For displaying matches run: 'for line in _.stdout: print line'")
-    if wait:
-        run.wait()
+
+    dedup = isinstance(datasets, pd.DataFrame)
+    if dedup:
+        # Deduplication mode
+        config = "Deleteduplicates.xml"
+        datasets = [datasets]
     else:
-        print("\n The process will continue in the background, type '_.kill()' to abort ")
-    return run
+        config = "Comparison.xml"
+
+    duke_bin_dir = os.path.join(os.path.dirname(__file__), "duke_binaries")
+    os.environ['CLASSPATH'] = os.pathsep.join([os.path.join(duke_bin_dir, r)
+                                               for r in os.listdir(duke_bin_dir)])
+
+    tmpdir = tempfile.mkdtemp()
+
+    try:
+        shutil.copyfile(os.path.join(os.path.dirname(__file__), "data", config),
+                        os.path.join(tmpdir, "config.xml"))
+
+        for n, df in enumerate(datasets):
+            df = add_geoposition_for_duke(df)
+            df.to_csv(os.path.join(tmpdir, "file{}.csv".format(n+1)), index_label='id', encoding='utf-8')
+
+        args = ['java', 'no.priv.garshol.duke.Duke', '--linkfile=linkfile.txt']
+        if singlematch:
+            args.append('--singlematch')
+        if showmatches:
+            args.append('--showmatches')
+        args.append('config.xml')
+
+        run = sub.Popen(args, stderr=sub.PIPE, cwd=tmpdir)
+        _, stderr = run.communicate()
+
+        logger.debug("Stderr: {}".format(stderr))
+        if 'ERROR' in stderr:
+            raise RuntimeError("duke failed: {}".format(stderr))
+
+        if dedup:
+            return pd.read_csv(os.path.join(tmpdir, 'linkfile.txt'),
+                                  usecols=[1, 2], names=labels)
+        else:
+            return pd.read_csv(os.path.join(tmpdir, 'linkfile.txt'),
+                                  usecols=[1, 2, 3], names=labels + ['scores'])
+    finally:
+        if keepfiles:
+            logger.debug("Files of the duke run are kept in {}", tmpdir)
+        else:
+            shutil.rmtree(tmpdir)

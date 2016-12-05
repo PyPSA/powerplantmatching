@@ -25,7 +25,7 @@ import six
 
 from .config import target_columns
 from .utils import read_csv_if_string
-from .duke import add_geoposition_for_duke, duke
+from .duke import duke
 
 def clean_powerplantname(df):
     """
@@ -111,9 +111,6 @@ def cliques(df, dataduplicates):
 
     """
     df = read_csv_if_string(df)
-    if isinstance(dataduplicates, six.string_types):
-        dataduplicates = pd.read_csv(dataduplicates,
-                                     usecols=[1, 2], names=['one', 'two'])
     G = nx.DiGraph()
     G.add_nodes_from(df.index)
     G.add_edges_from((r.one, r.two) for r in dataduplicates.itertuples())
@@ -166,16 +163,9 @@ def aggregate_units(df):
                    'ids': list(x.index)}
         return pd.Series(results)
 
-    df = read_csv_if_string(df)
-    df = add_geoposition_for_duke(df)
-    datadedup_path = '/tmp/DataDedup.csv'
-    df.to_csv(datadedup_path, index_label='id', encoding='utf-8')
-    duplicates_path = '/tmp/duplicates.txt'
-    duke(os.path.join(os.path.dirname(__file__),'data','Deleteduplicates.xml'),
-                      linkfile=duplicates_path)
-    df = cliques(df, duplicates_path)
-    os.remove(datadedup_path)
-    os.remove(duplicates_path)
+    duplicates = duke(read_csv_if_string(df))
+    df = cliques(df, duplicates)
+
     df = df.groupby('grouped').apply(prop_for_groups)
     df.reset_index(drop=True, inplace=True)
     df = df[target_columns()]
