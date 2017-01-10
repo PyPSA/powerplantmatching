@@ -32,12 +32,14 @@ def Carma_ESE_FIAS_GEO_OPSD_WRI_matched(update=False):
                          'Matched_Carma_Ese_Fias_Geo_Opsd_Wri.csv')
     if update: #or not os.path.exists(outfn):
         datasets = [clean_single(CARMA()),
-                    pd.concat([clean_single(FIAS(), aggregate_powerplant_units=False),
+                    pd.concat([clean_single(FIAS(), 
+                                            aggregate_powerplant_units=False),
                                ESE()]).reset_index(drop=True),
                     clean_single(GEO(), aggregate_powerplant_units=False),
                     clean_single(OPSD()),
                     clean_single(WRI())]
-        matched = combine_multiple_datasets(datasets, ['CARMA', 'ESE_FIAS', 'GEO','OPSD','WRI'])
+        matched = combine_multiple_datasets(datasets, ['CARMA', 'ESE_FIAS', 
+                                                       'GEO','OPSD','WRI'])
         matched.to_csv(outfn, index_label='id', encoding='utf-8')
         return matched
     else:
@@ -57,7 +59,8 @@ def Carma_GEO_OPSD_WRI_matched(update=False):
                     clean_single(GEO(), aggregate_powerplant_units=False),
                     clean_single(OPSD()),
                     clean_single(WRI())]
-        matched = combine_multiple_datasets(datasets, ['CARMA', 'GEO','OPSD','WRI'])
+        matched = combine_multiple_datasets(datasets, ['CARMA', 'GEO',
+                                                       'OPSD','WRI'])
         matched.to_csv(outfn, index_label='id', encoding='utf-8')
         return matched
     else:
@@ -70,14 +73,15 @@ def Carma_GEO_OPSD_WRI_matched_reduced():
                         index_col='id')
 
 
-def MATCHED_dataset(rescaled_hydros=False, subsume_uncommon_fueltypes=False):
+def MATCHED_dataset(rescaled_hydros=False, subsume_uncommon_fueltypes=False, 
+                    include_unavailables=False):
     """
     This returns the actual match between the Carma-data, GEO-data, WRI-data,
-    FIAS-data and the ESE-data with an additional manipulation on the hydro powerplants.
-    The latter were adapted in terms of the power plant classification (Run-of-river,
-    Reservoir, Pumped-Storage) and were quantitatively  adjusted to the ENTSOE-
-    statistics. For more information about the classification and adjustment,
-    see the hydro-aggreation.py file.
+    FIAS-data and the ESE-data with an additional manipulation on the hydro 
+    powerplants. The latter were adapted in terms of the power plant 
+    classification (Run-of-river, Reservoir, Pumped-Storage) and were 
+    quantitatively  adjusted to the ENTSOE-statistics. For more information 
+    about the classification and adjustment, see the hydro-aggreation.py file.
 
     Parameters
     ----------
@@ -86,14 +90,18 @@ def MATCHED_dataset(rescaled_hydros=False, subsume_uncommon_fueltypes=False):
             statistics of the ENTSOE-data and receive better covering of the country
             totals
     subsume_uncommon_fueltypes : Boolean, default False
-            Whether to reduce the fueltype specification such that "Geothermal", "Waste"
-            and "Mixed Fueltypes" are declared as "Other"
+            Whether to reduce the fueltype specification such that "Geothermal",
+            "Waste" and "Mixed Fueltypes" are declared as "Other"
 
     """
 
     hydro = Aggregated_hydro(scaled_capacity=rescaled_hydros)
     matched = extend_by_non_matched(Carma_GEO_OPSD_WRI_matched_reduced(),
                                     GEO(), 'GEO')
+    if include_unavailables:
+        matched = extend_by_non_matched(
+                                Carma_ESE_FIAS_GEO_OPSD_WRI_matched_reduced(),
+                                GEO(), 'GEO')
     matched = matched[matched.Fueltype != 'Hydro']
     if subsume_uncommon_fueltypes:
         matched = set_uncommon_fueltypes_to_other(matched)
