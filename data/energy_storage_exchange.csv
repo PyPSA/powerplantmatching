@@ -1,0 +1,161 @@
+id,Name,Fueltype,Classification,Country,Capacity,lat,lon,File
+0,Dinorwig,Hydro,Pumped storage,United Kingdom,1728.0,53.1340503,-4.1139368,energy_storage_exchange
+1,Grand'maison dam,Hydro,Pumped storage,France,1820.0,45.205931,6.117151,energy_storage_exchange
+2,Coo trois ponts,Hydro,Pumped storage,Belgium,1164.0,50.3717154,5.8703455,energy_storage_exchange
+3,Edolo,Hydro,Pumped storage,Italy,1000.0,46.1804266,10.3298933,energy_storage_exchange
+4,Chiotas entracque,Hydro,Pumped storage,Italy,1184.0,44.1775758,7.4165053,energy_storage_exchange
+5,Goldisthal,Hydro,Pumped storage,Germany,1060.0,50.5,11.1666667,energy_storage_exchange
+6,Reisseck,Hydro,Pumped storage,Austria,430.0,47.0791667,13.3391667,energy_storage_exchange
+7,Markersbach,Hydro,Pumped storage,Germany,1050.0,50.53528,12.8641046,energy_storage_exchange
+8,Vianden,Hydro,Pumped storage,Luxembourg,1096.0,49.9341924,6.2019917,energy_storage_exchange
+9,Roncovalgrande lago delio,Hydro,Pumped storage,Italy,1000.0,46.0033754,8.6875771,energy_storage_exchange
+10,Domenico cimarosa presenzano,Hydro,Pumped storage,Italy,1000.0,41.3766245,14.088517,energy_storage_exchange
+11,Ffestiniog,Hydro,Pumped storage,United Kingdom,360.0,52.959065,-3.933458,energy_storage_exchange
+12,Cruachan,Hydro,Pumped storage,United Kingdom,440.0,56.406482,-5.112735,energy_storage_exchange
+13,Foyers,Hydro,Pumped storage,United Kingdom,300.0,57.3228575,-4.4243817,energy_storage_exchange
+14,Linth–limmern scheme,Hydro,Pumped storage,Switzerland,480.0,47.0404265,9.0672085,energy_storage_exchange
+15,Turlough hill,Hydro,Pumped storage,Ireland,292.0,53.0280556,-6.3930556,energy_storage_exchange
+16,Alqueva,Hydro,Pumped storage,Portugal,520.0,38.197508,-7.496394,energy_storage_exchange
+17,Bleiloch,Hydro,Pumped storage,Germany,80.0,50.5166667,11.7166667,energy_storage_exchange
+18,Hohenwarte scheme,Hydro,Pumped storage,Germany,383.0,50.6492736,11.3661502,energy_storage_exchange
+19,Geesthacht,Hydro,Pumped storage,Germany,120.0,53.4379562,10.3611665,energy_storage_exchange
+20,Wendefurth,Hydro,Pumped storage,Germany,80.0,51.7422639,10.9189303,energy_storage_exchange
+21,Niederwartha,Hydro,Pumped storage,Germany,40.0,51.093356,13.6037314,energy_storage_exchange
+22,Witznau,Hydro,Pumped storage,Germany,220.0,47.68774,8.2516,energy_storage_exchange
+23,Wehr,Hydro,Pumped storage,Germany,910.0,47.6363693,7.9114875,energy_storage_exchange
+24,Säckingen,Hydro,Pumped storage,Germany,360.0,47.5656,7.95418,energy_storage_exchange
+25,Waldshut,Hydro,Pumped storage,Germany,150.0,47.6184,8.19367,energy_storage_exchange
+26,Häusern,Hydro,Pumped storage,Germany,100.0,47.75523,8.1879,energy_storage_exchange
+27,Kirchentellinsfurt,Hydro,Pumped storage,Germany,1.3,48.601961,9.1009866,energy_storage_exchange
+28,Erzhausen,Hydro,Pumped storage,Germany,220.0,51.8989299,9.9261805,energy_storage_exchange
+29,Glems,Hydro,Pumped storage,Germany,90.0,48.5071632,9.2854502,energy_storage_exchange
+30,Happurg,Hydro,Pumped storage,Germany,160.0,49.48711,11.47441,energy_storage_exchange
+31,Herdecke,Hydro,Pumped storage,Germany,153.0,51.4031667,7.4328376,energy_storage_exchange
+32,Langenprozelten,Hydro,Pumped storage,Germany,164.0,50.059739,9.6269733,energy_storage_exchange
+33,Leitzachwerk,Hydro,Pumped storage,Germany,98.2,47.8483283,11.857491,energy_storage_exchange
+34,Ruselkraftwerke,Hydro,Pumped storage,Germany,3.5,48.8555897,12.9970816,energy_storage_exchange
+35,Reisach,Hydro,Pumped storage,Germany,99.0,49.529869,12.2858418,energy_storage_exchange
+36,Rönkhausen,Hydro,Pumped storage,Germany,140.0,51.1736091,7.9739149,energy_storage_exchange
+37,Schwarzenbach,Hydro,Pumped storage,Germany,44.0,48.6559308,8.3262275,energy_storage_exchange
+38,Sorpesee,Hydro,Pumped storage,Germany,7.42,51.3510404,7.9680569,energy_storage_exchange
+39,Tanzmühle,Hydro,Pumped storage,Germany,35.0,49.552216,12.281256,energy_storage_exchange
+40,Waldeck,Hydro,Pumped storage,Germany,620.0,51.1624468,9.064572,energy_storage_exchange
+41,Alrance,Hydro,Pumped storage,France,11.0,44.1035517,2.6946591,energy_storage_exchange
+42,Le pouget,Hydro,Pumped storage,France,445.0,44.059565,2.768856,energy_storage_exchange
+43,Argentat,Hydro,Pumped storage,France,48.0,45.10418,1.953746,energy_storage_exchange
+44,Montézic,Hydro,Pumped storage,France,910.0,44.709426,2.640329,energy_storage_exchange
+45,Revin,Hydro,Pumped storage,France,800.0,49.9218041,4.6036679,energy_storage_exchange
+46,Super bissorte,Hydro,Pumped storage,France,748.0,45.183414,6.478624,energy_storage_exchange
+47,Le cheylas,Hydro,Pumped storage,France,480.0,45.3815081,5.9869144,energy_storage_exchange
+48,Coche,Hydro,Pumped storage,France,310.0,45.4824436,6.5338786,energy_storage_exchange
+49,Rance tidal,Hydro,Pumped storage,France,240.0,48.6180022,-2.0238876,energy_storage_exchange
+50,Lac noir,Hydro,Pumped storage,France,82.0,48.109765,7.103163,energy_storage_exchange
+51,Plate taille,Hydro,Pumped storage,Belgium,143.0,50.1857528,4.3823302,energy_storage_exchange
+52,Feldsee,Hydro,Pumped storage,Austria,140.0,46.9985746,13.0418733,energy_storage_exchange
+53,Koralpe,Hydro,Pumped storage,Austria,50.0,46.6407766,14.9488018,energy_storage_exchange
+54,Kops,Hydro,Pumped storage,Austria,525.0,46.9858102,10.0265864,energy_storage_exchange
+55,Rodundwerk,Hydro,Pumped storage,Austria,493.0,47.08513265,9.88276775,energy_storage_exchange
+56,Limberg,Hydro,Pumped storage,Austria,480.0,47.1592991,12.7125707,energy_storage_exchange
+57,Oschenik innerfragant,Hydro,Pumped storage,Austria,108.0,47.1374819,12.3273397,energy_storage_exchange
+58,Čierny váh,Hydro,Pumped storage,Slovakia,735.16,49.011138,19.9273911,energy_storage_exchange
+59,Dobšiná,Hydro,Pumped storage,Slovakia,24.0,48.8207511,20.3656619,energy_storage_exchange
+60,Liptovská mara,Hydro,Pumped storage,Slovakia,198.0,49.0986111,19.4888889,energy_storage_exchange
+61,Ružín,Hydro,Pumped storage,Slovakia,60.0,48.86311,21.0926599,energy_storage_exchange
+62,Solina,Hydro,Pumped storage,Poland,200.0,49.3958323,22.4606916,energy_storage_exchange
+63,Żarnowiec,Hydro,Pumped storage,Poland,716.0,54.7697655,18.0466655,energy_storage_exchange
+64,Żydowo,Hydro,Pumped storage,Poland,156.0,54.0216713,16.7385445,energy_storage_exchange
+65,Torrão,Hydro,Pumped storage,Portugal,140.0,41.097355,-8.261137,energy_storage_exchange
+66,Estany gento sallente,Hydro,Pumped storage,Spain,468.0,42.5104171,1.0029834,energy_storage_exchange
+67,Aguayo,Hydro,Pumped storage,Spain,360.0,43.092929,-4.015202,energy_storage_exchange
+68,Aguayo,Hydro,Pumped storage,Spain,1014.0,43.1276249,-4.055505,energy_storage_exchange
+69,Muela,Hydro,Pumped storage,Spain,2000.0,39.2408334,-0.9429902,energy_storage_exchange
+70,Chaira,Hydro,Pumped storage,Bulgaria,788.0,42.1927654,24.3335662,energy_storage_exchange
+71,Belmeken,Hydro,Pumped storage,Bulgaria,104.0,42.1666667,23.8,energy_storage_exchange
+72,Riedl energy,Hydro,Pumped storage,Germany,300.0,48.5750459,13.6694984,energy_storage_exchange
+73,Malta main,Hydro,Pumped storage,Austria,730.0,46.87241,13.32653,energy_storage_exchange
+74,Kaprun upper,Hydro,Pumped storage,Austria,113.0,47.3648489,12.6417225,energy_storage_exchange
+75,Häusling,Hydro,Pumped storage,Austria,360.0,47.14584,11.96699,energy_storage_exchange
+76,Roßhag,Hydro,Pumped storage,Austria,231.0,47.0867914,11.7738871,energy_storage_exchange
+77,Malta upper,Hydro,Pumped storage,Austria,120.0,47.0791667,13.3391667,energy_storage_exchange
+78,Kruonis & extension,Hydro,Pumped storage,Lithuania,900.0,54.797866,24.248169,energy_storage_exchange
+79,Nant drance,Hydro,Pumped storage,Switzerland,900.0,46.1025948,7.0770551,energy_storage_exchange
+80,Ova spin,Hydro,Pumped storage,Switzerland,47.0,46.7004826,10.0949116,energy_storage_exchange
+81,Lago bianco,Hydro,Pumped storage,Switzerland,1000.0,46.3265,10.0567,energy_storage_exchange
+82,Ferrera,Hydro,Pumped storage,Switzerland,185.0,46.5301934,9.4535904,energy_storage_exchange
+83,Mapragg,Hydro,Pumped storage,Switzerland,370.0,46.9429623,9.4798893,energy_storage_exchange
+84,Linthal linth limmern expansion,Hydro,Pumped storage,Switzerland,1000.0,46.9218287,8.9996438,energy_storage_exchange
+85,Tierfehd nestil,Hydro,Pumped storage,Switzerland,141.0,46.8784824,8.9820654,energy_storage_exchange
+86,Etzelwerk,Hydro,Pumped storage,Switzerland,135.0,47.1369626,8.7800626,energy_storage_exchange
+87,Robiei,Hydro,Pumped storage,Switzerland,160.0,46.3367938,8.6092811,energy_storage_exchange
+88,Handeck,Hydro,Pumped storage,Switzerland,55.0,46.65532,8.28872,energy_storage_exchange
+89,Grimsel,Hydro,Pumped storage,Switzerland,950.0,46.65532,8.28872,energy_storage_exchange
+90,Gougra,Hydro,Pumped storage,Switzerland,164.0,46.291289,7.53548,energy_storage_exchange
+91,Hongrin leman,Hydro,Pumped storage,Switzerland,240.0,46.4198999,6.9287696,energy_storage_exchange
+92,Emosson,Hydro,Pumped storage,Switzerland,360.0,46.1025948,7.0770551,energy_storage_exchange
+93,Veytaux fmhl+,Hydro,Pumped storage,Switzerland,240.0,46.4358779,6.9104254,energy_storage_exchange
+94,Lünerseewerk,Hydro,Pumped storage,Austria,232.0,47.0531826,9.7529724,energy_storage_exchange
+95,Rifawerk,Hydro,Pumped storage,Austria,7.0,46.9782553,10.0383768,energy_storage_exchange
+96,Rellswerk,Hydro,Pumped storage,Austria,12.0,47.0531826,9.7529724,energy_storage_exchange
+97,Campolattaro,Hydro,Pumped storage,Italy,572.0,41.2876603,14.7354961,energy_storage_exchange
+98,Venda nova,Hydro,Pumped storage,Portugal,736.0,41.692695,-8.027817,energy_storage_exchange
+99,Villarino almendra reversible,Hydro,Pumped storage,Spain,810.0,41.268575,-6.4676609,energy_storage_exchange
+100,Aldeadávila,Hydro,Pumped storage,Spain,1139.0,40.9370288,-5.6662927,energy_storage_exchange
+101,Avče,Hydro,Pumped storage,Slovenia,185.0,46.0855,13.668599,energy_storage_exchange
+102,Lepenica,Hydro,Pumped storage,Croatia,1.14,45.3049852,14.7148369,energy_storage_exchange
+103,Fužine,Hydro,Pumped storage,Croatia,4.6,45.3049852,14.7148369,energy_storage_exchange
+104,Velebit pump,Hydro,Pumped storage,Croatia,276.0,44.2007328,15.6811168,energy_storage_exchange
+105,Sfikia,Hydro,Pumped storage,Greece,315.0,40.3856573,22.2113777,energy_storage_exchange
+106,Thisavros φράγμα θησαυρού,Hydro,Pumped storage,Greece,384.0,41.267032,24.5008777,energy_storage_exchange
+107,Tajo encantada málaga,Hydro,Pumped storage,Spain,360.0,36.90817,-4.763344,energy_storage_exchange
+108,Jukla plants,Hydro,Pumped storage,Norway,40.0,59.9361331,5.9955943,energy_storage_exchange
+109,Stølsdal,Hydro,Pumped storage,Norway,17.0,59.223399,6.186539,energy_storage_exchange
+110,Saurdal,Hydro,Pumped storage,Norway,640.0,59.49881,6.526562,energy_storage_exchange
+111,Aurland,Hydro,Pumped storage,Norway,270.0,60.90357,7.201723,energy_storage_exchange
+112,Dychów,Hydro,Pumped storage,Poland,90.0,51.9863325,15.0608199,energy_storage_exchange
+113,Niedzica,Hydro,Pumped storage,Poland,82.8,49.4099645,20.3267659,energy_storage_exchange
+114,Porabka zar,Hydro,Pumped storage,Poland,500.0,49.7704966,19.2116631,energy_storage_exchange
+115,Alto rabagão,Hydro,Pumped storage,Portugal,68.0,41.737703,-7.853632,energy_storage_exchange
+116,Aguieira,Hydro,Pumped storage,Portugal,336.0,40.340285,-8.196778,energy_storage_exchange
+117,El hierro wind,Hydro,Pumped storage,Spain,11.3,27.795065,-17.923562,energy_storage_exchange
+118,Go development demonstration,Hydro,Pumped storage,Denmark,0.006,54.92273,9.6794619,energy_storage_exchange
+119,Kuhtai psh kühtai,Hydro,Pumped storage,Austria,289.0,47.2537414,11.601487,energy_storage_exchange
+120,Orphey,Hydro,Pumped storage,Bulgaria,160.0,41.7429109,24.3915387,energy_storage_exchange
+121,Anapo solarino,Hydro,Pumped storage,Italy,600.0,37.10085,15.119678,energy_storage_exchange
+122,Bargi,Hydro,Pumped storage,Italy,330.0,44.1260632,11.0588536,energy_storage_exchange
+123,Rovina entracque,Hydro,Pumped storage,Italy,134.0,44.2439659,7.3964073,energy_storage_exchange
+124,San fiorano,Hydro,Pumped storage,Italy,568.0,46.0551036,10.3501475,energy_storage_exchange
+125,Provvidenza,Hydro,Pumped storage,Italy,156.0,42.5575092,13.3690221,energy_storage_exchange
+126,Conso,Hydro,Pumped storage,Spain,228.0,42.1429146,-7.286868,energy_storage_exchange
+127,Gabriel galan,Hydro,Pumped storage,Spain,111.0,40.195346,-6.16329,energy_storage_exchange
+128,Gobantes,Hydro,Pumped storage,Spain,3.6,36.95558,-4.798108,energy_storage_exchange
+129,Guijo grandadilla,Hydro,Pumped storage,Spain,54.0,40.195346,-6.16329,energy_storage_exchange
+130,Guillena,Hydro,Pumped storage,Spain,215.0,37.5429955,-6.0568552,energy_storage_exchange
+131,Ibón ip,Hydro,Pumped storage,Spain,84.0,42.7201458,-0.4561336,energy_storage_exchange
+132,Moralets llauset lleida huesca,Hydro,Pumped storage,Spain,219.1,42.580864,0.694514,energy_storage_exchange
+133,Pintado,Hydro,Pumped storage,Spain,14.0,37.93753,-5.780025,energy_storage_exchange
+134,Puente bibey,Hydro,Pumped storage,Spain,315.0,42.310337,-7.2346105,energy_storage_exchange
+135,Tanes,Hydro,Pumped storage,Spain,133.0,43.2504393,-5.9832577,energy_storage_exchange
+136,Torrejon,Hydro,Pumped storage,Spain,132.0,40.1989768,-3.8016321,energy_storage_exchange
+137,Urdiceto,Hydro,Pumped storage,Spain,7.2,42.6334211,0.218018,energy_storage_exchange
+138,Valdencanas,Hydro,Pumped storage,Spain,225.0,40.2268415,-2.3337187,energy_storage_exchange
+139,Ponale riva del garda ledro,Hydro,Pumped storage,Italy,80.0,45.8885171,10.8426602,energy_storage_exchange
+140,Campo moro,Hydro,Pumped storage,Italy,36.5,46.2695803,9.8720987,energy_storage_exchange
+141,Capriati,Hydro,Pumped storage,Italy,115.0,41.5230896,14.1329142,energy_storage_exchange
+142,Fadalto,Hydro,Pumped storage,Italy,210.0,46.0714347,12.3411223,energy_storage_exchange
+143,Villa gargnano,Hydro,Pumped storage,Italy,137.2,45.6885992,10.6617327,energy_storage_exchange
+144,Gaudalami,Hydro,Pumped storage,Italy,80.0,37.9937488,13.2882915,energy_storage_exchange
+145,Pracomune,Hydro,Pumped storage,Italy,42.0,46.5478079,11.0070771,energy_storage_exchange
+146,Taloro,Hydro,Pumped storage,Italy,240.0,40.0948744,9.1618871,energy_storage_exchange
+147,Marex,Hydro,Pumped storage,Ireland,1.5,53.7355952,-9.5660416,energy_storage_exchange
+148,Frades voith,Hydro,Pumped storage,Portugal,778.0,39.399872,-8.224454,energy_storage_exchange
+149,Baixo sabor montante edp,Hydro,Pumped storage,Portugal,145.0,39.399872,-8.224454,energy_storage_exchange
+150,Baixo sabor jusante,Hydro,Pumped storage,Portugal,37.0,39.399872,-8.224454,energy_storage_exchange
+151,Foz tua,Hydro,Pumped storage,Portugal,259.0,41.218619,-7.422822,energy_storage_exchange
+152,Salamonde,Hydro,Pumped storage,Portugal,211.0,41.689967,-8.092345,energy_storage_exchange
+153,Frades,Hydro,Pumped storage,Portugal,191.6,41.693192,-8.027951,energy_storage_exchange
+154,Vilarinho furnas,Hydro,Pumped storage,Portugal,125.0,41.763285,-8.209765,energy_storage_exchange
+155,Pont ventoux susa,Hydro,Pumped storage,Italy,158.0,45.139117,6.965528,energy_storage_exchange
+156,Amfilochia,Hydro,Pumped storage,Greece,587.8,38.8632567,21.1666182,energy_storage_exchange
+157,Amari hybrid,Hydro,Pumped storage,Greece,50.0,35.240117,24.8092691,energy_storage_exchange
+158,Obervermuntwerk,Hydro,Pumped storage,Austria,360.0,47.0645191,9.9319848,energy_storage_exchange
+159,Cardos valley complex montamara,Hydro,Pumped storage,Spain,90.0,42.644804,1.2569148,energy_storage_exchange
