@@ -62,12 +62,14 @@ def clean_powerplantname(df):
 
 def gather_classification_info(df, search_col=['Name', 'Fueltype']):
     pattern = '|'.join(('(?i)'+x) for x in
-                       ['lignite', 'Hard coal', 'Coal hard', 'ccgt', 'ocgt', 'chp'])
+                       ['lignite', 'Hard coal', 'Coal hard', 'ccgt', 'ocgt', 'chp'
+                        'reservoir', 'pumped storage', 'run-of-river'])
     for i in search_col:
         found = df.loc[:,i].str.findall(pattern).str.join(sep=', ')
         df.loc[:, 'Classification'] = (df.loc[:, 'Classification'].fillna('')
                             .str.cat(found.fillna(''), sep=', ').str.strip())
-        df.Classification = df.Classification.str.replace('^ , |^,|, $|,$', '')
+        df.Classification = df.Classification.str.replace('^ , |^,|, $|,$', '').apply(lambda x:
+                     ', '.join(list(set(x.split(', ')))) ).str.strip()
         df.Classification.replace('', np.NaN, regex=True, inplace=True)
     return df
 
