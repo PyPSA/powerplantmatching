@@ -26,6 +26,14 @@ from countrycode import countrycode
 from .cleaning import clean_single
 from .config import europeancountries, target_columns, target_fueltypes
 from .cleaning import gather_classification_info, clean_powerplantname, clean_classification
+import requests
+import xml.etree.ElementTree as ET
+import re
+from powerplantmatching import cleaning
+from . import utils
+
+
+
 
 def OPSD(raw=False):
     """
@@ -71,7 +79,8 @@ def GEO(raw=False):
                        os.path.dirname(__file__))
         cur = db.execute(
         "select"
-        "   name, type, Type_of_Plant_rng1 , Type_of_Fuel_rng1_Primary, Type_of_Fuel_rng2_Secondary ,country, design_capacity_mwe_nbr,"
+        "   name, type, Type_of_Plant_rng1 , Type_of_Fuel_rng1_Primary, "
+        " Type_of_Fuel_rng2_Secondary ,country, design_capacity_mwe_nbr,"
         "   CAST(longitude_start AS REAL) as lon,"
         "   CAST(latitude_start AS REAL) as lat "
         "from"
@@ -83,7 +92,8 @@ def GEO(raw=False):
         "   design_capacity_mwe_nbr > 0"
     )
 
-        return pd.DataFrame(cur.fetchall(), columns=["Name", "Type","Classification","FuelClassification1","FuelClassification2", "Country", "Capacity", "lon", "lat"])
+        return pd.DataFrame(cur.fetchall(), columns=["Name", "Type","Classification",
+        "FuelClassification1","FuelClassification2", "Country", "Capacity", "lon", "lat"])
 
     GEOdata = read_globalenergyobservatory()
     if raw:
@@ -167,7 +177,7 @@ def Oldenburgdata():
     return pd.read_csv('%s/data/OldenburgHydro.csv'%os.path.dirname(__file__),
                        encoding='utf-8', index_col='id')[target_columns()]
 
-def ENTSOE(raw=False):
+def ENTSOE_stats(raw=False):
     """
     Standardize the entsoe database for statistical use.
     """
@@ -251,3 +261,132 @@ def ESE(update=False, path=None):
     data.to_csv(saved_version, index_label='id',
             encoding='utf-8')
     return data
+
+
+def ENTSOE(update=False, raw=False, entsoe_token=None):
+    """
+    Returns the list of installed generators provided by the ENTSO-E
+    Trasparency Project. Geographical information is not given.
+    If update=True, the dataset is parsed through a request to
+    'https://transparency.entsoe.eu/generation/r2/installedCapacityPerProductionUnit/show',
+    Internet connection requiered. If raw=True, the same request is done, but
+    the unprocessed data is returned.
+
+    Parameters
+    ----------
+    update : Boolean, Default False
+        Whether to update the database through a request to the ENTSO-E transparency
+        plattform
+    raw : Boolean, Default False
+        Whether to return the raw data, obtained from the request to
+        the ENTSO-E transparency platform
+    entsoe_token: String
+        Security token of the ENTSO-E Transparency platform
+
+    Note: For obtaining a security token refer to section 2 of the
+    RESTful API documentation of the ENTSOE-E Transparency platform
+    https://transparency.entsoe.eu/content/static_content/Static%20content/web%20api/Guide.html#_authentication_and_authorisation
+    """
+    if update or raw:
+        assert entsoe_token is not None, "entsoe_token is missing"
+
+        domains = pd.read_csv('%s/data/entsoe-areamap.csv' % os.path.dirname(__file__),
+                              sep=';', header=None)
+        def full_country_name(l):
+            return [country.title()
+                    for country in filter(None, countrycode(l, origin='iso2c',
+                                                            target='country_name'))]
+        pattern = '|'.join(('(?i)'+x) for x in europeancountries())
+        found = domains.loc[:,1].str.findall(pattern).str.join(sep=', ')
+        domains.loc[:, 'Country'] = found
+        found = (domains[1].replace('[0-9]', '', regex=True).str.split(' |,|\+|\-')
+                 .apply(full_country_name).str.join(sep=', ').str.findall(pattern)
+                 .str.join(sep=', ').str.strip())
+        domains.Country = (domains.loc[:, 'Country'].fillna('')
+                           .str.cat(found.fillna(''), sep=', ')
+                           .str.replace('^ ?, ?|, ?$', '').str.strip())
+        domains.Country.replace('', np.NaN, inplace=True)
+        domains.Country = (domains.loc[domains.Country.notnull(), 'Country']
+                           .apply(lambda x: ', '.join(list(set(x.split(', '))))))
+        fdict= {'A03': 'Mixed',
+                'A04': 'Generation',
+                'A05': 'Load',
+                'B01': 'Biomass',
+                'B02': 'Fossil Brown coal/Lignite',
+                'B03': 'Fossil Coal-derived gas',
+                'B04': 'Fossil Gas',
+                'B05': 'Fossil Hard coal',
+                'B06': 'Fossil Oil',
+                'B07': 'Fossil Oil shale',
+                'B08': 'Fossil Peat',
+                'B09': 'Geothermal',
+                'B10': 'Hydro Pumped Storage',
+                'B11': 'Hydro Run-of-river and poundage',
+                'B12': 'Hydro Water Reservoir',
+                'B13': 'Marine',
+                'B14': 'Nuclear',
+                'B15': 'Other renewable',
+                'B16': 'Solar',
+                'B17': 'Waste',
+                'B18': 'Wind Offshore',
+                'B19': 'Wind Onshore',
+                'B20': 'Other'}
+        level1 = ['registeredResource.name', 'registeredResource.mRID']
+        level2 = ['voltage_PowerSystemResources.highVoltageLimit','psrType']
+        level3 = ['quantity']
+        entsoe = pd.DataFrame(columns=level1+level2+level3+['Country'])
+        def namespace(element):
+            m = re.match('\{.*\}', element.tag)
+            return m.group(0) if m else ''
+        def attribute(etree_sel):
+            return etree_sel.text
+        for i in domains.index:
+            ret = requests.get('https://transparency.entsoe.eu/api',
+                               params=dict(securityToken=entsoe_token,
+                                           documentType='A71', processType='A33',
+                                           In_Domain=domains.loc[i,0],
+                                           periodStart='201512312300', periodEnd='201612312300'))
+            etree = ET.fromstring(ret.content) #create an ElementTree object
+            ns = namespace(etree)
+            df = pd.DataFrame(columns=level1+level2+level3+['Country'])
+            for arg in level1:
+                df.loc[:,arg] = map(attribute , etree.findall('*/%s%s'%(ns, arg)))
+            for arg in level2:
+                df.loc[:,arg] = map(attribute , etree.findall('*/*/%s%s'%(ns, arg)))
+            for arg in level3:
+                df.loc[:,arg] = map(attribute , etree.findall('*/*/*/%s%s'%(ns,arg)))
+            df.loc[:,'Country'] = domains.loc[i,'Country']
+            entsoe = pd.concat([entsoe,df],ignore_index=True)
+        if raw:
+            return entsoe
+        entsoe.psrType = entsoe.psrType.map(fdict)
+        entsoe.columns = ['Name', 'projectID', 'High Volage Limit', 'Fueltype',
+                          'Capacity', 'Country']
+        entsoe.loc[:,'Name'] = entsoe.loc[:,'Name'].str.title()
+        entsoe = entsoe.loc[entsoe.Country.notnull()]
+        entsoe = entsoe.loc[~((entsoe.projectID.duplicated(keep=False))&
+                              (~entsoe.Country.isin(europeancountries())))]
+        entsoe = entsoe.drop_duplicates('projectID').reset_index(drop=True)
+        entsoe.loc[:,'File'] = "https://transparency.entsoe.eu/generation/r2/\ninstalledCapacityPerProductionUnit/show"
+        entsoe = entsoe.loc[:,target_columns()]
+        entsoe = cleaning.gather_classification_info(entsoe)
+        entsoe.Fueltype.replace(to_replace=['.*Hydro.*','Fossil Gas', '(.*(?i)coal.*)|(.*Peat)',
+                                            'Biomass|Marine', 'Wind.*', '.*Oil.*'],
+                                value=['Hydro','Natural Gas', 'Coal', 'Other', 'Wind', 'Oil'],
+                                regex=True, inplace=True)
+        entsoe.Capacity = pd.to_numeric(entsoe.Capacity)
+        entsoe.loc[entsoe.Country=='Austria, Germany, Luxembourg', 'Country'] = \
+                  [utils.parse_Geoposition(powerplant , return_Country=True)
+                   for powerplant in entsoe.loc[entsoe.Country=='Austria, Germany, Luxembourg', 'Name']]
+        entsoe.Country.replace(to_replace=['Deutschland','.*sterreich' ,'L.*tzebuerg'],
+                               value=['Germany','Austria', 'Luxembourg'],
+                               regex=True, inplace=True)
+        entsoe = entsoe.loc[entsoe.Country.isin(europeancountries()+[None])]
+        entsoe.Country = entsoe.Country.astype(str)
+        entsoe.loc[entsoe.Country=='None', 'Country'] = np.NaN
+        entsoe.to_csv('%s/data/entsoe_powerplants.csv'%os.path.dirname(__file__),
+                       index_label='id', encoding='utf-8')
+        return entsoe
+    else:
+        return pd.read_csv('%s/data/entsoe_powerplants.csv'%os.path.dirname(__file__),
+                       index_col='id', encoding='utf-8')

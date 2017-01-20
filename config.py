@@ -44,4 +44,4 @@ def target_columns():
     of the replacements
     """
     return ['Name', 'Fueltype', 'Classification', 'Country',
-            'Capacity', 'lat', 'lon', 'File']
+            'Capacity', 'lat', 'lon', 'File', 'projectID']
