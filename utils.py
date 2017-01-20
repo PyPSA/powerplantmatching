@@ -21,9 +21,10 @@ from __future__ import print_function, absolute_import
 import pandas as pd
 import six
 from countrycode import countrycode
+import matplotlib.pyplot as plt
 
 
-def lookup(df, keys=None, by='Country, Fueltype', exclude=None):
+def lookup(df, keys=None, by='Country, Fueltype', exclude=None, show_totals=False):
     """
     Returns a lookup table of the dataframe df with rounded numbers. Use different lookups
     as "Country", "Fueltype" for the different lookups.
@@ -49,11 +50,11 @@ def lookup(df, keys=None, by='Country, Fueltype', exclude=None):
             df = df[~df.Fueltype.isin(exclude)]
         if by == 'Country, Fueltype':
             return df.groupby(['Country', 'Fueltype']).Capacity.sum()\
-                    .unstack(0).fillna(0).astype(int)
+                    .unstack(0).fillna(0.)
         elif by == 'Country':
-            return df.groupby(['Country']).Capacity.sum().astype(int)
+            return df.groupby(['Country']).Capacity.sum()
         elif by == 'Fueltype':
-            return df.groupby(['Fueltype']).Capacity.sum().astype(int)
+            return df.groupby(['Fueltype']).Capacity.sum()
         else:
             raise NameError("``by` must be one of 'Country, Fueltype' or 'Country' or 'Fueltype'")
 
@@ -62,11 +63,26 @@ def lookup(df, keys=None, by='Country, Fueltype', exclude=None):
         if by == 'Country, Fueltype':
             dfs = dfs.reorder_levels([1, 0], axis=1)
             dfs = dfs[dfs.columns.levels[0]]
-        dfs = dfs.fillna(0)
-        dfs.loc['Total'] = dfs.sum()
-        return dfs
+        dfs = dfs.fillna(0.)
+        if show_totals:
+            dfs.loc['Total'] = dfs.sum()
+            return dfs.round(0).astype(int)
+        else:
+            return dfs.round(0).astype(int)
     else:
-        return lookup_single(df).fillna(0)
+        if show_totals:
+            dfs = lookup_single(df).fillna(0.)
+            dfs.loc['Total'] = dfs.sum()
+            return dfs.round(0).astype(int)
+        else:
+            return lookup_single(df).fillna(0.).round(0).astype(int)
+            
+            
+def plot_fueltype_stats(df):
+    stats = lookup(df, by='Fueltype')
+    plt.pie(stats, colors=stats.index.to_series().map(tech_colors).tolist(),
+           labels=stats.index, autopct='%1.1f%%')
+
 
 def set_uncommon_fueltypes_to_other(df, fueltypes={'Geothermal', 'Mixed fuel types', 'Waste'}):
     df.loc[df.Fueltype.isin(fueltypes) , 'Fueltype'] = 'Other'
@@ -77,7 +93,7 @@ def read_csv_if_string(data):
         data = pd.read_csv(data, index_col='id')
     return data
 
-def parse_Geoposition(loc, country):
+def parse_Geoposition(loc, country=None, return_Country=False):
     """
     Nominatim request for the Geoposition of a specific location in a country.
     Returns a tuples with (lattitude, longitude) if the request was sucessful,
@@ -98,6 +114,43 @@ def parse_Geoposition(loc, country):
         country = countrycode(codes=[country], origin='country_name', target='iso2c')[0]
         gdata = Nominatim(timeout=100, country_bias=country).geocode(loc)
         if gdata != None:
+            if return_Country:
+                return gdata.address.split(', ')[-1]
             lat = gdata.latitude
             lon = gdata.longitude
             return (lat, lon)
+
+            
+            
+tech_colors = {"Wind" : "b",
+               'windoff' : "c",
+               "Hydro" : "g",
+               "ror" : "g",
+               'Solar' : "yellow",
+               "Natural Gas" : "brown",
+               "Gas" : "brown",
+               "lines" : "k",
+               "H2" : "m",
+               "battery" : "slategray",
+               "Nuclear" : "y",
+               "Nuclear marginal" : "r",
+               "Coal" : "k",
+               "Coal marginal" : "k",
+               "Waste" : "grey",
+               "Lignite marginal" : "grey",
+               "Geothermal" : "orange",
+               "CCGT marginal" : "orange",
+               "heat pumps" : "r",
+               "water tanks" : "w",
+               "PHS" : "g",
+               "Ambient" : "k",
+               "Electric load" : "b",
+               "Oil" : "r",
+               "Transport load" : "grey",
+               "heat" : "r",
+               "Li ion" : "grey",
+               "curtailment": "r",
+               "load": "k",
+               "total": "k",
+               "Other":"grey"
+               }
