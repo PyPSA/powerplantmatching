@@ -51,6 +51,7 @@ def OPSD(raw=False):
                          'Technology':'Classification',
                          'Source':'File'
                          }, inplace=True)
+    opsd.loc[:,'projectID'] = opsd.index.values
     opsd = opsd.loc[:,target_columns()]
     opsd = gather_classification_info(opsd)
     opsd.Country = countrycode(codes=opsd.Country.tolist(),
@@ -99,18 +100,19 @@ def GEO(raw=False):
     if raw:
         return GEOdata
     eucountries = europeancountries()
+    GEOdata.loc[:,'projectID'] = GEOdata.index.values
     GEOdata = GEOdata[GEOdata['Country'].isin(eucountries)]
-    GEOdata.drop_duplicates(inplace=True)
+    GEOdata.drop_duplicates(subset=GEOdata.columns.drop(['projectID']), inplace=True)
     GEOdata.reset_index(drop=True)
     GEOdata.rename(columns={'Type': 'Fueltype'}, inplace=True)
     GEOdata.replace({'Gas': 'Natural Gas'}, inplace=True)
     GEOdata = gather_classification_info(GEOdata, search_col=['FuelClassification1'])
     GEOdata = clean_powerplantname(GEOdata)
-    GEOdata = (GEOdata.fillna(0)
-               .groupby(['Name', 'Country', 'Fueltype', 'Classification'])
-               .agg({'Capacity': np.sum,
-                     'lat': np.mean,
-                     'lon': np.mean}).reset_index())
+#    GEOdata = (GEOdata.fillna(0)
+#               .groupby(['Name', 'Country', 'Fueltype', 'Classification'])
+#               .agg({'Capacity': np.sum,
+#                     'lat': np.mean,
+#                     'lon': np.mean}).reset_index())
     GEOdata.Classification = GEOdata.Classification.replace({
        'Combined Cycle Gas Turbine':'CCGT',
        'Cogeneration Power and Heat Steam Turbine':'CHP',
@@ -123,7 +125,6 @@ def GEO(raw=False):
     'Heat and Power Steam Turbine|Sub-critical Steam Turbine':'CHP'}
             , regex=True).str.strip()
     GEOdata = clean_classification(GEOdata)
-    GEOdata.replace(0, np.NaN, inplace=True)
     return GEOdata.loc[:,target_columns()]
 
 
@@ -158,7 +159,8 @@ def CARMA(raw=False):
      'fuel1': 'Fueltype',
      'lat': 'lat',
      'lon': 'lon',
-     'plant': 'Name'}
+     'plant': 'Name', 
+     'plant.id':'projectID'}
     carmadata.rename(columns=rename, inplace=True)
     carmadata =  carmadata.loc[:,target_columns()]
     carmadata = gather_classification_info(carmadata)
@@ -207,6 +209,7 @@ def WRI():
     wri = pd.read_csv('%s/data/WRIdata.csv'%os.path.dirname(__file__),
                       index_col='id')
 #    wri.Name = wri.Name.str.title()
+    wri.loc[:,'projectID'] = wri.index.values
     wri = wri.loc[:,target_columns()]
     return wri
 
@@ -251,6 +254,7 @@ def ESE(update=False, path=None):
     data.loc[:, 'lon'] = data.Longitude
     data.loc[:, 'lat'] = data.Latitude
     data.loc[:,'Capacity'] = data.loc[:,'Rated Power in kW']/1000
+    data.loc[:,'projectID'] = data.index.values
     data.loc[(data.Classification.str.contains('Pumped'))&(data.Classification.
          notnull()), 'Classification'] = 'Pumped storage'
     data = data.loc[data.Classification == 'Pumped storage', target_columns()]
