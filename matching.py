@@ -207,6 +207,8 @@ def reduce_matched_dataframe(df):
     sdf.loc[:, 'lat'] = df.lat.mean(axis=1)
     sdf.loc[:, 'lon'] = df.lon.mean(axis=1)
     sdf.loc[:, 'File'] = df.File.apply(concat_strings, axis=1)
+    sdf.loc[:,'projectID'] = df.projectID.apply(lambda x: dict(zip(df.Name, 
+                                           [x.loc[name] for name in df.Name])))
     sdf = clean_classification(sdf, generalize_hydros=True)
 #    sdf.loc[np.logical_not(sdf.Classification.str.contains('OCGT|CCGT|CHP')),'Classification'] \
 #            = sdf.loc[np.logical_not(sdf.Classification.str.contains('OCGT|CCGT|CHP')),

@@ -153,7 +153,8 @@ def aggregate_units(df):
 
         """
         results = {'Name': x.Name.value_counts().index[0],
-                   'Country': x.Country.value_counts().index[0],
+                   'Country': x.Country.value_counts().index[0] if \
+                        x.Country.notnull().any(axis=0) else np.NaN,
                    'Fueltype': x.Fueltype.value_counts().index[0] if \
                         x.Fueltype.notnull().any(axis=0) else np.NaN,
                    'Classification': ', '.join(x[x.Classification.notnull()].Classification.unique())
@@ -162,7 +163,7 @@ def aggregate_units(df):
                    'Capacity': x['Capacity'].sum() if x.Capacity.notnull().any(axis=0) else np.NaN,
                    'lat': x['lat'].mean(),
                    'lon': x['lon'].mean(),
-                   'ids': list(x.index)}
+                   'projectID': list(x.projectID)}
         return pd.Series(results)
 
     duplicates = duke(read_csv_if_string(df))
