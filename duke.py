@@ -23,6 +23,7 @@ import subprocess as sub
 import shutil
 import tempfile
 import pandas as pd
+import numpy as np
 
 def add_geoposition_for_duke(df):
     """
@@ -30,10 +31,13 @@ def add_geoposition_for_duke(df):
     concats the lattitude and longitude of the powerplant in a string
 
     """
-    df.loc[df.lat.notnull(), 'Geoposition'] = df[df.lat.notnull()].lat.apply(str)\
+    if not df.loc[:,['lat','lon']].isnull().all().all():
+        df.loc[df.lat.notnull(), 'Geoposition'] = df[df.lat.notnull()].lat.apply(str)\
            .str.cat(df[df.lat.notnull()].lon.apply(str), sep=',')
-    return df
-
+        return df
+    else:
+        df.loc[:, 'Geoposition'] = np.NaN
+        return df      
 
 def duke(datasets, labels=['one', 'two'], singlematch=False,
          showmatches=False, keepfiles=False):

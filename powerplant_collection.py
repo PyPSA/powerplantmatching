@@ -21,35 +21,12 @@ import os
 import pandas as pd
 
 from .utils import set_uncommon_fueltypes_to_other
-from .data import CARMA, GEO, OPSD, WRI, ESE
+from .data import CARMA,ENTSOE, GEO, OPSD, WRI, ESE, Oldenburgdata
 from .cleaning import clean_single
 from .matching import (combine_multiple_datasets,
                        reduce_matched_dataframe)
 from .heuristics import extend_by_non_matched
 
-def Carma_ESE_FIAS_GEO_OPSD_WRI_matched(update=False):
-    outfn = os.path.join(os.path.dirname(__file__), 'data',
-                         'Matched_Carma_Ese_Fias_Geo_Opsd_Wri.csv')
-    if update: #or not os.path.exists(outfn):
-        datasets = [clean_single(CARMA()),
-                    pd.concat([clean_single(FIAS(), 
-                                            aggregate_powerplant_units=False),
-                               ESE()]).reset_index(drop=True),
-                    clean_single(GEO(), aggregate_powerplant_units=False),
-                    clean_single(OPSD()),
-                    clean_single(WRI())]
-        matched = combine_multiple_datasets(datasets, ['CARMA', 'ESE_FIAS', 
-                                                       'GEO','OPSD','WRI'])
-        matched.to_csv(outfn, index_label='id', encoding='utf-8')
-        return matched
-    else:
-        return pd.read_csv(outfn, index_col=0, header=[0,1])
-
-
-def Carma_ESE_FIAS_GEO_OPSD_WRI_matched_reduced():
-    return pd.read_csv(os.path.join(os.path.dirname(__file__), 'data',
-                         'Matched_Carma_Ese_FIAS_Geo_Opsd_Wri_reduced.csv'),
-                        index_col='id')
 
 def Carma_GEO_OPSD_WRI_matched(update=False):
     outfn = os.path.join(os.path.dirname(__file__), 'data',
@@ -66,10 +43,51 @@ def Carma_GEO_OPSD_WRI_matched(update=False):
     else:
         return pd.read_csv(outfn,index_col=0, header=[0,1])
 
-
 def Carma_GEO_OPSD_WRI_matched_reduced():
     return pd.read_csv(os.path.join(os.path.dirname(__file__), 'data',
                          'Matched_Carma_Geo_Opsd_Wri_reduced.csv'),
+                        index_col='id')
+            
+def Carma_ENTSOE_GEO_OPSD_WRI_matched(update=False):
+    outfn = os.path.join(os.path.dirname(__file__), 'data',
+                         'Matched_Carma_Entsoe_Geo_Opsd_Wri.csv')
+    if update: #or not os.path.exists(outfn):
+        datasets = [clean_single(CARMA()),
+                    clean_single(ENTSOE()),
+                    clean_single(GEO(), aggregate_powerplant_units=False),
+                    clean_single(OPSD()),
+                    clean_single(WRI())]
+        matched = combine_multiple_datasets(datasets, ['CARMA','ENTSOE', 'GEO',
+                                                       'OPSD','WRI'])
+        matched.to_csv(outfn, index_label='id', encoding='utf-8')
+        return matched
+    else:
+        return pd.read_csv(outfn,index_col=0, header=[0,1])
+
+
+#unpublishable
+def Carma_ESE_GEO_OPSD_OLDENB_WRI_matched(update=False):
+    outfn = os.path.join(os.path.dirname(__file__), 'data',
+                         'Matched_Carma_Ese_Oldenburg_Geo_Opsd_Wri.csv')
+    if update: #or not os.path.exists(outfn):
+        datasets = [clean_single(CARMA()),
+                    pd.concat([clean_single(Oldenburgdata(), 
+                                            aggregate_powerplant_units=False),
+                               ESE()]).reset_index(drop=True),
+                    clean_single(GEO(), aggregate_powerplant_units=False),
+                    clean_single(OPSD()),
+                    clean_single(WRI())]
+        matched = combine_multiple_datasets(datasets, ['CARMA', 'ESE_Oldenburg', 
+                                                       'GEO','OPSD','WRI'])
+        matched.to_csv(outfn, index_label='id', encoding='utf-8')
+        return matched
+    else:
+        return pd.read_csv(outfn, index_col=0, header=[0,1])
+
+#unpublishable
+def Carma_ESE_GEO_OPSD_OLDENB_WRI_matched_reduced():
+    return pd.read_csv(os.path.join(os.path.dirname(__file__), 'data',
+                         'Matched_Carma_Ese_Oldenburg_Geo_Opsd_Wri_reduced.csv'),
                         index_col='id')
 
 
