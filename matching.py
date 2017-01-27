@@ -196,9 +196,9 @@ def reduce_matched_dataframe(df):
             return df[df.notnull()].str.cat(sep = ', ')
 
     sdf = df.Name
-    sdf.loc[:, 'Country'] = df.Country.apply(most_frequent, axis=1)
     sdf.loc[:, 'Fueltype'] = df.Fueltype.apply(most_frequent, axis=1)
     sdf.loc[:, 'Classification'] = df.Classification.apply(concat_strings, axis=1)
+    sdf.loc[:, 'Country'] = df.Country.apply(most_frequent, axis=1)
     if 'Geo' in df.Name:
         sdf.loc[df.Name.Geo.notnull(), 'Capacity'] = df[df.Name.Geo.notnull()].Capacity.Geo
         sdf.loc[df.Name.Geo.isnull(), 'Capacity'] = df[df.Name.Geo.isnull()].Capacity.max(axis=1)
@@ -207,10 +207,8 @@ def reduce_matched_dataframe(df):
     sdf.loc[:, 'lat'] = df.lat.mean(axis=1)
     sdf.loc[:, 'lon'] = df.lon.mean(axis=1)
     sdf.loc[:, 'File'] = df.File.apply(concat_strings, axis=1)
-    sdf.loc[:,'projectID'] = df.projectID.apply(lambda x: dict(zip(df.Name, 
-                                           [x.loc[name] for name in df.Name])))
+    sdf.loc[:,'projectID'] = df.projectID.apply(lambda x: dict(zip(df.columns.levels[1].values, x.values)), axis=1)
     sdf = clean_classification(sdf, generalize_hydros=True)
-#    sdf.loc[np.logical_not(sdf.Classification.str.contains('OCGT|CCGT|CHP')),'Classification'] \
-#            = sdf.loc[np.logical_not(sdf.Classification.str.contains('OCGT|CCGT|CHP')),
-#            'Classification'].str.title()
+#    return sdf.loc[:, df.columns.levels[1].tolist() + 
+#                               target_columns()[1:]].reset_index(drop=True)
     return sdf.reset_index(drop=True)

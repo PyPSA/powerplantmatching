@@ -56,7 +56,7 @@ def clean_powerplantname(df):
     #do it twise to cach all single letters
     df.Name = df.Name.replace(regex=True, to_replace=pattern, value=' ').str.strip().\
                 str.replace('\\s\\s+', ' ').str.capitalize()
-    df = df[df.Name != ''].reset_index(drop=True)
+    df = df[df.Name != ''].sort_values('Name').reset_index(drop=True)
     return df
 
 
@@ -75,7 +75,9 @@ def gather_classification_info(df, search_col=['Name', 'Fueltype']):
 
 
 def clean_classification(df, generalize_hydros=False):
-    df.loc[:,'Classification'] = df.loc[:,'Classification'].replace([' and ',
+    class_b = df.Classification.notnull()
+    df.loc[class_b,'Classification'] = df.loc[class_b
+                                ,'Classification'].replace([' and ',
                                 ' Power Plant'],[', ', ''],regex=True )
     if generalize_hydros:
         df.loc[(df.Classification.str.contains('reservoir|lake', case=False)) &
@@ -87,13 +89,15 @@ def clean_classification(df, generalize_hydros=False):
         df.loc[(df.Classification.str.contains('Pump|pumped', case=False)) &
                   (df.Classification.notnull()), 'Classification'] = 'Pumped Storage'
 
-    df.loc[df.Classification.notnull(),'Classification'] = df.loc[df.Classification.
-                               notnull(),'Classification'].str.split(', ')\
+    df.loc[class_b,'Classification'] = df.loc[class_b,
+                              'Classification'].str.split(', ')\
                                 .apply(lambda x: ', '.join(np.unique(x)))
-    df.loc[np.logical_not((df.loc[:,'Classification'].str.contains('(?i)CCGT|(?i)OCGT|(?i)CHP', regex=True)))&
-           df.loc[:, 'Classification'].notnull(),'Classification'] = \
-            df.loc[np.logical_not((df.loc[:,'Classification'].str.contains('(?i)CCGT|(?i)OCGT|(?i)CHP', regex=True)))&
-           df.loc[:, 'Classification'].notnull(),'Classification'].str.title()
+    df.loc[np.logical_not((df.loc[:,'Classification'].str.contains(
+                        '(?i)CCGT|(?i)OCGT|(?i)CHP', regex=True)))&
+                        class_b,'Classification'] = \
+            df.loc[np.logical_not((df.loc[:,'Classification'].str.contains(
+                        '(?i)CCGT|(?i)OCGT|(?i)CHP', regex=True)))&
+                        class_b,'Classification'].str.title()
     return df
 
 
@@ -161,8 +165,8 @@ def aggregate_units(df):
                                             if x.Classification.notnull().any(axis=0) else np.NaN,
                    'File': x.File.value_counts().index[0] if x.File.notnull().any(axis=0) else np.NaN,
                    'Capacity': x['Capacity'].sum() if x.Capacity.notnull().any(axis=0) else np.NaN,
-                   'lat': x['lat'].mean(),
-                   'lon': x['lon'].mean(),
+                   'lat': x['lat'].astype(float).mean(),
+                   'lon': x['lon'].astype(float).mean(),
                    'projectID': list(x.projectID)}
         return pd.Series(results)
 

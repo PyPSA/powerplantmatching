@@ -99,11 +99,9 @@ def GEO(raw=False):
     GEOdata = read_globalenergyobservatory()
     if raw:
         return GEOdata
-    eucountries = europeancountries()
     GEOdata.loc[:,'projectID'] = GEOdata.index.values
-    GEOdata = GEOdata[GEOdata['Country'].isin(eucountries)]
+    GEOdata = GEOdata[GEOdata['Country'].isin(europeancountries())]
     GEOdata.drop_duplicates(subset=GEOdata.columns.drop(['projectID']), inplace=True)
-    GEOdata.reset_index(drop=True)
     GEOdata.rename(columns={'Type': 'Fueltype'}, inplace=True)
     GEOdata.replace({'Gas': 'Natural Gas'}, inplace=True)
     GEOdata = gather_classification_info(GEOdata, search_col=['FuelClassification1'])
@@ -124,7 +122,7 @@ def GEO(raw=False):
     'Cogeneration Power and Heat Steam Turbine':'CHP',
     'Heat and Power Steam Turbine|Sub-critical Steam Turbine':'CHP'}
             , regex=True).str.strip()
-    GEOdata = clean_classification(GEOdata)
+    GEOdata = clean_classification(GEOdata, generalize_hydros=True)
     return GEOdata.loc[:,target_columns()]
 
 
@@ -161,15 +159,13 @@ def CARMA(raw=False):
      'lon': 'lon',
      'plant': 'Name', 
      'plant.id':'projectID'}
-    carmadata.rename(columns=rename, inplace=True)
-    carmadata =  carmadata.loc[:,target_columns()]
+    carmadata = carmadata.rename(columns=rename).loc[:,target_columns()]
+    carmadata = carmadata[carmadata.Capacity > 3]
+    carmadata = carmadata[carmadata.Country.isin(europeancountries())]
     carmadata = gather_classification_info(carmadata)
-    carmadata = carmadata[carmadata.Capacity > 4]
     carmadata.drop_duplicates(inplace=True)
     carmadata = carmadata.replace(d)
-    carmadata = carmadata[carmadata.Country.isin(europeancountries())]
     carmadata = clean_powerplantname(carmadata)
-    carmadata.reset_index(drop=True, inplace=True)
     return carmadata
 
 def Oldenburgdata():
