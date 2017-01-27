@@ -33,7 +33,7 @@ def target_fueltypes():
     """
     Returns a list of fueltypes to which the powerplants should be standardized
     """
-    return ['Natural Gas', 'Wind', 'Hydro', 'Oil', 'Waste', 'Coal',
+    return ['Natural Gas', 'Wind', 'Hydro', 'Oil', 'Waste', 'Hard Coal', 'Lignite',
             'Nuclear', 'Other', 'Solar', 'Mixed fuel types', 'Geothermal']
 
 
@@ -43,5 +43,7 @@ def target_columns():
     columns use df.rename(columns=dic, inplace=True) with dic being a dictionary
     of the replacements
     """
-    return ['Name', 'Fueltype', 'Classification', 'Country',
-            'Capacity', 'lat', 'lon', 'File', 'projectID']
+
+    return ['Name', 'Carrier', 'Technology', 'Set', 'Country',
+            'Capacity', 'YearCommissioned', 'lat', 'lon', 'File'
+            , 'projectID']
