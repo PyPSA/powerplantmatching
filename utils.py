@@ -96,9 +96,14 @@ def read_csv_if_string(data):
 def parse_Geoposition(loc, country=None, return_Country=False):
     """
     Nominatim request for the Geoposition of a specific location in a country.
-    Returns a tuples with (lattitude, longitude) if the request was sucessful,
+    Returns a tuples with (latitude, longitude) if the request was sucessful,
     returns None otherwise.
-
+    
+    ToDo:   There exist further online sources for lat/long data which could be
+            used, if this one fails, e.g.
+        - Google Geocoding API
+        - Yahoo! Placefinder
+        - https://askgeo.com (??)
 
     Parameters
     ----------
@@ -106,7 +111,6 @@ def parse_Geoposition(loc, country=None, return_Country=False):
         description of the location, can be city, area etc.
     country : string
         name of the country which will be used as a bounding area
-
 
     """
     from geopy.geocoders import Nominatim
@@ -126,7 +130,9 @@ tech_colors = {"Wind" : "b",
                'windoff' : "c",
                "Hydro" : "g",
                "ror" : "g",
+               "Run-Of-River" : "g",
                'Solar' : "yellow",
+               "Bioenergy" : "g",
                "Natural Gas" : "brown",
                "Gas" : "brown",
                "lines" : "k",
@@ -134,10 +140,10 @@ tech_colors = {"Wind" : "b",
                "battery" : "slategray",
                "Nuclear" : "y",
                "Nuclear marginal" : "r",
+               "Hard Coal" : "k",
                "Coal" : "k",
-               "Coal marginal" : "k",
                "Waste" : "grey",
-               "Lignite marginal" : "grey",
+               "Lignite" : "grey",
                "Geothermal" : "orange",
                "CCGT marginal" : "orange",
                "heat pumps" : "r",
