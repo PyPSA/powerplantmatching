@@ -27,7 +27,7 @@ import tempfile
 from .config import target_columns
 from .utils import read_csv_if_string
 from .duke import duke
-from .cleaning import clean_classification
+from .cleaning import clean_technology
 
 
 def best_matches(links):
@@ -45,11 +45,11 @@ def best_matches(links):
             .groupby(links.iloc[:, 1], as_index=False, sort=False)
             .apply(lambda x: x.loc[x.scores.idxmax(), labels]))
 
-def compare_two_datasets(datasets, labels):
+def compare_two_datasets(datasets, labels, generalize_coal=True):
     """
     Duke-based horizontal match of two databases. Returns the matched dataframe including only the
     matched entries in a multi-indexed pandas.Dataframe. Compares all properties of the
-    given columns ['Name','Fueltype', 'Classification', 'Country', 'Capacity','Geoposition'] in order
+    given columns ['Name','Fueltype', 'Technology', 'Country', 'Capacity','Geoposition'] in order
     to determine the same powerplant in different two datasets. The match is in one-to-one mode,
     that is every entry of the initial databases has maximally one link in order to obtain
     unique entries in the resulting dataframe.
@@ -66,6 +66,9 @@ def compare_two_datasets(datasets, labels):
 
     """
     datasets = list(map(read_csv_if_string, datasets))
+#    if generalize_coal: 
+#        datasets = [dataset.replace(['Hard coal', 'Lignite'], 'Coal', regex=True)
+#                    for dataset in datasets]
     links = duke(datasets, labels=labels, singlematch=True)
     matches = best_matches(links)
     return matches
@@ -105,7 +108,7 @@ def link_multiple_datasets(datasets, labels):
     """
     Duke-based horizontal match of multiple databases. Returns the matching
     indices of the datasets. Compares all properties of the
-    given columns ['Name','Fueltype', 'Classification', 'Country', 'Capacity','Geoposition'] in order
+    given columns ['Name','Fueltype', 'Technology', 'Country', 'Capacity','Geoposition'] in order
     to determine the same powerplant in different datasets. The match is in one-to-one mode,
     that is every entry of the initial databases has maximally one link to the other database.
     This leads to unique entries in the resulting dataframe.
@@ -132,7 +135,7 @@ def combine_multiple_datasets(datasets, labels):
     """
     Duke-based horizontal match of multiple databases. Returns the matched dataframe including
     only the matched entries in a multi-indexed pandas.Dataframe. Compares all properties of the
-    given columns ['Name','Fueltype', 'Classification', 'Country', 'Capacity','Geoposition'] in order
+    given columns ['Name','Fueltype', 'Technology', 'Country', 'Capacity','Geoposition'] in order
     to determine the same powerplant in different datasets. The match is in one-to-one mode,
     that is every entry of the initial databases has maximally one link to the other database.
     This leads to unique entries in the resulting dataframe.
@@ -175,7 +178,7 @@ def reduce_matched_dataframe(df):
     Returns a new reduced dataframe with all names of the powerplants, according 
     to the following logic:
         - Averages: Capacity, longitude and latitude
-        - Most frequent value: Country, Fueltype and Classification
+        - Most frequent value: Country, Fueltype and Technology
         - Max: YearCommissioned*
         
     * Two thinkable cases in which it both makes sense to choose the latest year:
@@ -194,31 +197,39 @@ def reduce_matched_dataframe(df):
         if df.isnull().all():
             return np.nan
         else:
-            return df.value_counts().idxmax()
+            values = df.value_counts()
+            if values.idxmax() == 'Coal' and len(values)>1:
+                return values.index[1]
+            else:
+                return values.idxmax()
 
     def concat_strings(df):
         if df.isnull().all():
             return np.nan
         else:
             return df[df.notnull()].str.cat(sep = ', ')
+        
+    def optimised_mean(df):
+        if df.notnull().sum()>2:
+            return df[~((df - df.mean()).abs()>df.std())].mean()
+        elif ('CARMA' in df and df.notnull().sum()==2):
+            return df.drop('CARMA').mean()
+        elif ('WRI' in df and df.notnull().sum()==2):
+            return df.drop('WRI').mean()
+        else:
+            return df.mean()
 
     sdf = df.Name
     sdf.loc[:, 'Fueltype'] = df.Fueltype.apply(most_frequent, axis=1)
-    sdf.loc[:, 'Classification'] = df.Classification.apply(concat_strings, axis=1)
+    sdf.loc[:, 'Technology'] = df.Technology.apply(concat_strings, axis=1)
     sdf.loc[:, 'Country'] = df.Country.apply(most_frequent, axis=1)
-	# Could anyone please describe why this GEO-specific logic has been applied here??!
-    if 'Geo' in df.Name:
-        sdf.loc[df.Name.Geo.notnull(), 'Capacity'] = df[df.Name.Geo.notnull()].Capacity.Geo
-        sdf.loc[df.Name.Geo.isnull(), 'Capacity'] = df[df.Name.Geo.isnull()].Capacity.max(axis=1)
-    else:
-        sdf.loc[:, 'Capacity'] = df.Capacity.max(axis=1)
+    sdf.loc[:, 'Set'] = df.Set.apply(most_frequent, axis=1)
+    sdf.loc[:, 'Capacity'] = df.Capacity.max(axis=1)
     sdf.loc[:, 'YearCommissioned'] = df.YearCommissioned.max(axis=1)
-    sdf.loc[:, 'lat'] = df.lat.mean(axis=1)
-    sdf.loc[:, 'lon'] = df.lon.mean(axis=1)
+    sdf.loc[:, 'lat'] = df.lat.apply(optimised_mean, axis=1)
+    sdf.loc[:, 'lon'] = df.lon.apply(optimised_mean, axis=1)
     sdf.loc[:, 'File'] = df.File.apply(concat_strings, axis=1)
     sdf.loc[:,'projectID'] = df.projectID.apply(lambda x: 
                                 dict(zip(df.columns.levels[1].values, x.values)), axis=1)
-    sdf = clean_classification(sdf, generalize_hydros=True)
-#    return sdf.loc[:, df.columns.levels[1].tolist() + 
-#                               target_columns()[1:]].reset_index(drop=True)
+    sdf = clean_technology(sdf, generalize_hydros=False)
     return sdf.reset_index(drop=True)

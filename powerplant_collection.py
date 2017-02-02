@@ -28,42 +28,48 @@ from .matching import (combine_multiple_datasets,
 from .heuristics import extend_by_non_matched
 
 
-def Carma_GEO_OPSD_WRI_matched(update=False):
+def Carma_ENTSOE_GEO_OPSD_matched(update=False, use_saved_aggregation=False):
     outfn = os.path.join(os.path.dirname(__file__), 'data',
-                         'Matched_Carma_Geo_Opsd_Wri.csv')
+                         'Matched_Carma_Entsoe_Geo_Opsd.csv')
     if update: #or not os.path.exists(outfn):
-        datasets = [clean_single(CARMA()),
+        datasets = [clean_single(CARMA(), use_saved_aggregation=use_saved_aggregation),
+                    clean_single(ENTSOE(), aggregate_powerplant_units=False),
                     clean_single(GEO(), aggregate_powerplant_units=False),
-                    clean_single(OPSD()),
-                    clean_single(WRI())]
-        matched = combine_multiple_datasets(datasets, ['CARMA', 'GEO',
+                    clean_single(OPSD(), use_saved_aggregation=use_saved_aggregation)]
+        matched = combine_multiple_datasets(datasets, ['CARMA','ENTSOE', 'GEO', 'OPSD'])
+        matched.to_csv(outfn, index_label='id', encoding='utf-8')
+        return matched
+    else:
+        return pd.read_csv(outfn,index_col=0, header=[0,1])
+
+def Carma_ENTSOE_GEO_OPSD_matched_reduced():
+    return pd.read_csv(os.path.join(os.path.dirname(__file__), 'data',
+                         'Matched_Carma_Entsoe_Geo_Opsd_reduced.csv'),
+                        index_col='id')
+
+    
+def Carma_ENTSOE_GEO_OPSD_WRI_matched(update=False, use_saved_aggregation=False):
+    outfn = os.path.join(os.path.dirname(__file__), 'data',
+                         'Matched_Carma_Entsoe_Geo_Opsd_Wri.csv')
+    if update: #or not os.path.exists(outfn):
+        datasets = [clean_single(CARMA(), use_saved_aggregation=use_saved_aggregation),
+                    clean_single(ENTSOE(), aggregate_powerplant_units=False),
+                    clean_single(GEO(), aggregate_powerplant_units=False),
+                    clean_single(OPSD(), use_saved_aggregation=use_saved_aggregation),
+                    clean_single(WRI(), use_saved_aggregation=use_saved_aggregation)]
+        matched = combine_multiple_datasets(datasets, ['CARMA','ENTSOE', 'GEO',
                                                        'OPSD','WRI'])
         matched.to_csv(outfn, index_label='id', encoding='utf-8')
         return matched
     else:
         return pd.read_csv(outfn,index_col=0, header=[0,1])
 
-def Carma_GEO_OPSD_WRI_matched_reduced():
+def Carma_ENTSOE_GEO_OPSD_WRI_matched_reduced():
     return pd.read_csv(os.path.join(os.path.dirname(__file__), 'data',
-                         'Matched_Carma_Geo_Opsd_Wri_reduced.csv'),
+                         'Matched_Carma_Entsoe_Geo_Opsd_Wri_reduced.csv'),
                         index_col='id')
-            
-def Carma_ENTSOE_GEO_OPSD_WRI_matched(update=False, clean=False):
-    outfn = os.path.join(os.path.dirname(__file__), 'data',
-                         'Matched_Carma_Entsoe_Geo_Opsd_Wri.csv')
-    if update: #or not os.path.exists(outfn):
-        datasets = [clean_single(CARMA()),
-                    clean_single(ENTSOE()),
-                    clean_single(GEO(), aggregate_powerplant_units=False),
-                    clean_single(OPSD()),
-                    clean_single(WRI())]
-        matched = combine_multiple_datasets(datasets, ['CARMA','ENTSOE', 'GEO',
-                                                       'OPSD','WRI'])
-        matched.to_csv(outfn, index_label='id', encoding='utf-8')
-        return matched
-    else:
-        if clean: print("Warning: clean=True does not have any effect, if update=False!")
-        return pd.read_csv(outfn,index_col=0, header=[0,1])
+
+
         
 def Carma_GEO_OPSD_WRI_WEPP_matched(update=False, clean=False):
     labels = ['CARMA', 'GEO','OPSD','WRI', 'WEPP']
@@ -104,18 +110,19 @@ def Carma_GEO_OPSD_WRI_WEPP_matched(update=False, clean=False):
 
 
 #unpublishable
-def Carma_ESE_GEO_OPSD_OLDENB_WRI_matched(update=False):
+def Carma_ENTSOE_ESE_GEO_OPSD_OLDENB_WRI_matched(update=False):
     outfn = os.path.join(os.path.dirname(__file__), 'data',
-                         'Matched_Carma_Ese_Oldenburg_Geo_Opsd_Wri.csv')
+                         'Matched_Carma_Entsoe_Ese_Oldenburg_Geo_Opsd_Wri.csv')
     if update: #or not os.path.exists(outfn):
         datasets = [clean_single(CARMA()),
+                    clean_single(ENTSOE(), aggregate_powerplant_units=False),
                     pd.concat([clean_single(Oldenburgdata(), 
                                             aggregate_powerplant_units=False),
                                ESE()]).reset_index(drop=True),
                     clean_single(GEO(), aggregate_powerplant_units=False),
                     clean_single(OPSD()),
                     clean_single(WRI())]
-        matched = combine_multiple_datasets(datasets, ['CARMA', 'ESE_Oldenburg', 
+        matched = combine_multiple_datasets(datasets, ['CARMA', 'ENTSOE','ESE_Oldenburg', 
                                                        'GEO','OPSD','WRI'])
         matched.to_csv(outfn, index_label='id', encoding='utf-8')
         return matched
@@ -125,7 +132,7 @@ def Carma_ESE_GEO_OPSD_OLDENB_WRI_matched(update=False):
 #unpublishable
 def Carma_ESE_GEO_OPSD_OLDENB_WRI_matched_reduced():
     return pd.read_csv(os.path.join(os.path.dirname(__file__), 'data',
-                         'Matched_Carma_Ese_Oldenburg_Geo_Opsd_Wri_reduced.csv'),
+                         'Matched_Carma_Entsoe_Ese_Oldenburg_Geo_Opsd_Wri_reduced.csv'),
                         index_col='id')
 
 
@@ -135,9 +142,9 @@ def MATCHED_dataset(rescaled_hydros=False, subsume_uncommon_fueltypes=False,
     This returns the actual match between the Carma-data, GEO-data, WRI-data,
     FIAS-data and the ESE-data with an additional manipulation on the hydro 
     powerplants. The latter were adapted in terms of the power plant 
-    classification (Run-of-river, Reservoir, Pumped-Storage) and were 
+    technology (Run-of-river, Reservoir, Pumped-Storage) and were 
     quantitatively  adjusted to the ENTSOE-statistics. For more information 
-    about the classification and adjustment, see the hydro-aggreation.py file.
+    about the technology and adjustment, see the hydro-aggreation.py file.
 
     Parameters
     ----------

@@ -25,7 +25,8 @@ from countrycode import countrycode
 
 from .cleaning import clean_single
 from .config import europeancountries, target_columns, target_fueltypes
-from .cleaning import gather_set, gather_technology_info, clean_powerplantname, clean_classification
+from .cleaning import gather_fueltype_info, gather_set_info, gather_technology_info, \
+                        clean_powerplantname, clean_technology
 import requests
 import xml.etree.ElementTree as ET
 import re
@@ -34,6 +35,11 @@ from . import utils
 from .utils import parse_Geoposition
 
 
+def pass_datasetID_as_metadata(df, ID):
+    for i in df._metadata:
+        for i in df._metadata:
+            df._metadata.remove(i)
+    df._metadata.append(ID)
 
 
 
@@ -42,63 +48,59 @@ def OPSD(rawEU=False, rawDE=False):
     Return standardized OPSD (Open Power Systems Data) database with target column names and fueltypes.
 
     """
-
     opsd_EU = pd.read_csv('%s/data/conventional_power_plants_EU.csv'%
                        os.path.dirname(__file__), encoding='utf-8')
-    
-    if rawEU:
-        if rawDE:
-            raise(NotImplementedError('''
+    opsd_DE = pd.read_csv('%s/data/conventional_power_plants_DE.csv'%
+                       os.path.dirname(__file__), encoding='utf-8')
+    if rawEU and rawDE:
+        raise(NotImplementedError('''
                 It is not possible to show both DE and EU raw databases at the 
                 same time as they have different formats. Choose only one!
                 '''))
-        else:
-            return opsd_EU
+    if rawEU:
+        return opsd_EU
+    if rawDE:
+        return opsd_DE
     opsd_EU.columns = opsd_EU.columns.str.title()
     opsd_EU.rename(columns={'Lat':'lat',
                             'Lon':'lon',
-                            'Energy_Source':'Carrier',
+                            'Energy_Source':'Fueltype',
                             'Commissioned':'YearCommissioned',
                             'Source':'File'
-                            }, inplace=True)
-	opsd_EU.loc[:,'projectID'] = opsd.index.values
+                            }, inplace=True)    
+    opsd_EU.loc[:,'projectID'] = 'OEU' + opsd_EU.index.astype(str)
     opsd_EU = opsd_EU.loc[:,target_columns()]
-    opsd_EU = gather_technology_info(opsd_EU)
-    d = {'Natural gas': 'Natural Gas',
-         'Biomass and biogas': 'Bioenergy',
-         'Other or unspecified energy sources': 'Other'}
-    opsd_EU.Carrier = opsd_EU.Carrier.replace(d)
-    #opsd = add_geoposition(opsd)
-
-    opsd_DE = pd.read_csv('%s/data/conventional_power_plants_DE.csv'%
-                       os.path.dirname(__file__), encoding='utf-8')
-    
     opsd_DE.columns = opsd_DE.columns.str.title()
-    
     # If BNetzA-Name is empty replace by company, if this is empty by city.
     opsd_DE.Name_Bnetza.fillna(opsd_DE.Company, inplace=True)
-    opsd_DE.Name_Bnetza.fillna(opsd_DE.City, inplace=True)
-    
+    opsd_DE.Name_Bnetza.fillna(opsd_DE.City, inplace=True)    
     opsd_DE.rename(columns={'Lat':'lat',
                             'Lon':'lon',
                             'Name_Bnetza':'Name',
-                            'Energy_Source_Level_2':'Carrier',
+                            'Energy_Source_Level_2':'Fueltype',
                             'Type':'Set',
                             'Country_Code':'Country',
                             'Capacity_Net_Bnetza':'Capacity',
                             'Commissioned':'YearCommissioned',
                             'Source':'File'
                             }, inplace=True)
-    opsd_DE = gather_set(opsd_DE)
+    opsd_DE.loc[:,'projectID'] = opsd_DE.Id
     opsd_DE = opsd_DE.loc[:,target_columns()]
+    opsd = pd.concat([opsd_EU, opsd_DE]).reset_index(drop=True)
+    opsd.lat.replace(' ', np.nan, inplace=True, regex=True)
     d = {'Natural gas': 'Natural Gas',
+         'Biomass and biogas': 'Bioenergy',
+         'Other or unspecified energy sources': 'Other',
          'Other fossil fuels': 'Other'}
-    opsd_DE.Carrier = opsd_DE.Carrier.replace(d)
-    
-    opsd = pd.concat([opsd_EU, opsd_DE])
+    opsd.Fueltype = opsd.Fueltype.replace(d).str.title()
+    opsd = gather_technology_info(opsd)
+    opsd = gather_set_info(opsd)    
+    opsd = clean_technology(opsd)
     opsd.Country = countrycode(codes=opsd.Country.tolist(),
                                target='country_name', origin='iso2c')
+    opsd.Name = opsd.Name.str.title()
     opsd.Country = opsd.Country.str.title()
+    pass_datasetID_as_metadata(opsd, 'OPSD')
     return opsd
 
 
@@ -121,7 +123,8 @@ def GEO(raw=False):
         
         cur = db.execute(
         "select"
-        "   name, type, Type_of_Plant_rng1 , Type_of_Fuel_rng1_Primary, Type_of_Fuel_rng2_Secondary, country, design_capacity_mwe_nbr, Year_rng2_yr1,"
+        "   name, type, Type_of_Plant_rng1 , Type_of_Fuel_rng1_Primary, "
+        "   Type_of_Fuel_rng2_Secondary, country, design_capacity_mwe_nbr, "
         "   CAST(longitude_start AS REAL) as lon,"
         "   CAST(latitude_start AS REAL) as lat "
         "from"
@@ -131,41 +134,37 @@ def GEO(raw=False):
         "   lon between -12 and 41 and"
         "   status_of_plant_itf=='Operating Fully' and"
         "   design_capacity_mwe_nbr > 0"
-    )
+        )
 
-        return pd.DataFrame(cur.fetchall(), columns=["Name", "Type","Classification",
-
+        return pd.DataFrame(cur.fetchall(), columns=["Name", "Fueltype","Technology",
+        "FuelClassification1","FuelClassification2", "Country", "Capacity", 
+        "lon", "lat"])
     GEOdata = read_globalenergyobservatory()
     if raw:
         return GEOdata
-    GEOdata.loc[:,'projectID'] = GEOdata.index.values
+    GEOdata.loc[:,'projectID'] = 'G' + GEOdata.index.astype(str)
     GEOdata = GEOdata[GEOdata['Country'].isin(europeancountries())]
     GEOdata.drop_duplicates(subset=GEOdata.columns.drop(['projectID']), inplace=True)
-    GEOdata.rename(columns={'Type': 'Fueltype'}, inplace=True)
-    GEOdata.replace({'Gas': 'Natural Gas'}, inplace=True)
-    
+    GEOdata.replace({'Gas': 'Natural Gas'}, inplace=True)    
     #coaltypes = pd.read_csv('%s/coal-types.csv'%
-    #                   os.path.dirname(__file__), sep=',')    
-    
-    GEOdata = gather_classification_info(GEOdata, search_col=['FuelClassification1'])
+    #                   os.path.dirname(__file__), sep=',')        
+    GEOdata = gather_fueltype_info(GEOdata, search_col=['FuelClassification1'])    
+    GEOdata = gather_technology_info(GEOdata, search_col=['FuelClassification1'])
+    GEOdata = gather_set_info(GEOdata)
     GEOdata = clean_powerplantname(GEOdata)
-#    GEOdata = (GEOdata.fillna(0)
-#               .groupby(['Name', 'Country', 'Fueltype', 'Classification'])
-#               .agg({'Capacity': np.sum,
-#                     'lat': np.mean,
-#                     'lon': np.mean}).reset_index())
-    GEOdata.Classification = GEOdata.Classification.replace({
-       'Combined Cycle Gas Turbine':'CCGT',
-       'Cogeneration Power and Heat Steam Turbine':'CHP',
-       'Sub-critical Thermal|Super-critical Thermal':'Thermal',
-       'Open Cycle Gas Turbine|Power and Heat OCGT':'OCGT',
-       'Combined Cycle Gas Engine (CCGE)':'CCGE',
-       'Power and Heat Combined Cycle Gas Turbine':'CCGT',
-       'Both Sub and Super Critical Thermal|Ultra-Super-Critical Thermal':'Thermal',
-       'Cogeneration Power and Heat Steam Turbine':'CHP',
-       'Heat and Power Steam Turbine|Sub-critical Steam Turbine':'CHP'}
-            , regex=True).str.strip()
-    GEOdata = clean_classification(GEOdata, generalize_hydros=True)
+#    GEOdata.Technology = GEOdata.Technology.replace({
+#       'Combined Cycle Gas Turbine':'CCGT',
+#       'Cogeneration Power and Heat Steam Turbine':'Steam Turbine',
+#       'Sub-critical Thermal|Super-critical Thermal':'Steam Turbine',
+#       'Open Cycle Gas Turbine|Power and Heat OCGT':'OCGT',
+#       'Combined Cycle Gas Engine (CCGE)':'CCGT',
+#       'Power and Heat Combined Cycle Gas Turbine':'CCGT',
+#       'Both Sub and Super Critical Thermal|Ultra-Super-Critical Thermal':'Steam Turbine',
+#       'Cogeneration Power and Heat Steam Turbine':'Steam Turbine',
+#       'Heat and Power Steam Turbine|Sub-critical Steam Turbine':'Steam Turbine'}
+#            , regex=True).str.strip()
+    GEOdata = clean_technology(GEOdata, generalize_hydros=True)
+    pass_datasetID_as_metadata(GEOdata, 'GEO')
     return GEOdata.loc[:,target_columns()]
 
 
@@ -178,7 +177,7 @@ def CARMA(raw=False):
     %os.path.dirname(__file__), encoding='utf-8')
     if raw:
         return carmadata
-    d = {'COAL': 'Coal',
+    d = {'COAL': 'Hard Coal',
          'WAT': 'Hydro',
          'FGAS': 'Natural Gas',
          'NUC': 'Nuclear',
@@ -189,9 +188,9 @@ def CARMA(raw=False):
          'GEO': 'Geothermal',
          'WSTH': 'Waste',
          'SUN': 'Solar',
-         'BLIQ': 'Waste',
-         'BGAS': 'Waste',
-         'BLIQ': 'Waste',
+         'BLIQ': 'Bioenergy',
+         'BGAS': 'Bioenergy',
+         'BLIQ': 'Bioenergy',
          'OTH': 'Other'}
     rename = {'Geoposition': 'Geoposition',
      'cap': 'Capacity',
@@ -202,14 +201,17 @@ def CARMA(raw=False):
      'lon': 'lon',
      'plant': 'Name', 
      'plant.id':'projectID'}
-    carmadata = carmadata.rename(columns=rename).loc[:,target_columns()]
+    carmadata = carmadata.rename(columns=rename).loc[:,target_columns()+['chp']]
     carmadata = carmadata[carmadata.Capacity > 3]
     carmadata = carmadata[carmadata.Country.isin(europeancountries())]
-    carmadata = gather_classification_info(carmadata)
+    carmadata = gather_technology_info(carmadata)
+    carmadata = gather_set_info(carmadata)
+    carmadata = clean_technology(carmadata)
     carmadata.drop_duplicates(inplace=True)
     carmadata = carmadata.replace(d)
     carmadata = clean_powerplantname(carmadata)
-    return carmadata
+    pass_datasetID_as_metadata(carmadata, 'CARMA')
+    return carmadata[target_columns()]
 
 def Oldenburgdata():
     """
@@ -229,15 +231,15 @@ def ENTSOE_stats(raw=False):
     entsoedata = opsd[opsd['source'].isin(['entsoe']) & opsd['year'].isin([2014])]
     cCodes = list(entsoedata.country)
     countries = countrycode(codes=cCodes, target='country_name', origin='iso2c')
-    entsoedata = entsoedata.replace({'Bioenergy and other renewable fuels': 'Natural Gas',
+    entsoedata = entsoedata.replace({'Bioenergy and other renewable fuels': 'Bioenergy',
      'Coal derivatives': 'Coal',
      'Differently categorized fossil fuels': 'Other',
-     'Hard coal': 'Coal',
+     'Hard coal': 'Hard Coal',
      'Lignite': 'Lignite',
      'Mixed fossil fuels': 'Mixed fuel types',
      'Natural gas': 'Natural Gas',
      'Other or unspecified energy sources': 'Other',
-     'Tide, wave, andcean': 'Other'})
+     'Tide, wave, and ocean': 'Other'})
     entsoedata.country = countries
     entsoedata.country = entsoedata.country.str.title()
     entsoedata = entsoedata[entsoedata['technology_level_2'] == True]
@@ -245,13 +247,18 @@ def ENTSOE_stats(raw=False):
     entsoedata.columns = entsoedata.columns.str.title()
     return entsoedata
 
-def WRI():
+def WRI(reduced_data=True):
     wri = pd.read_csv('%s/data/WRIdata.csv'%os.path.dirname(__file__),
                       encoding='utf-8', index_col='id')
 #    wri.Name = wri.Name.str.title()
     wri.loc[:,'projectID'] = wri.index.values
-    wri = wri.loc[:,target_columns()]
-    return wri
+    wri = gather_set_info(wri)
+    if reduced_data:
+        #wri data consists of ENTSOE data and OPSD, drop those:
+        wri = wri.loc[~wri.File.str.contains('ENTSOE', case=False)]
+        wri = wri.loc[~wri.Country.isin(['Germany','Poland', 'France', 'Switzerland'])]
+    pass_datasetID_as_metadata(wri, 'WRI')
+    return wri.loc[:,target_columns()]
 
 
 def ESE(update=False, path=None):
@@ -290,14 +297,15 @@ def ESE(update=False, path=None):
         raise(ValueError('The given path does not exist'))
     data = pd.read_excel(path, encoding='utf-8')
     data.loc[:,'Name'] = data.loc[:,'Project Name']
-    data.loc[:,'Classification'] = data.loc[:,'Technology Type']
+    data.loc[:,'Technology'] = data.loc[:,'Technology Type']
     data.loc[:,'lon'] = data.Longitude
     data.loc[:,'lat'] = data.Latitude
     data.loc[:,'Capacity'] = data.loc[:,'Rated Power in kW']/1000
     data.loc[:,'projectID'] = data.index.values
     # The following lambda expression doesn't work for some reason, as 
     #'np.where(type(x) is int...' doesn't filter the integers - why???
-    #         data.loc[:,'Commissioning Date'].apply(lambda x: np.where(type(x) is int, np.floor(float(str(x))/365.25+1900), x))
+    #         data.loc[:,'Commissioning Date'].apply(lambda x: np.where(type(x) 
+#               is int, np.floor(float(str(x))/365.25+1900), x))
     # That's why I wrote this (probably inefficient) workaround:
     A = []
     for x in data.loc[:,'Commissioning Date']:
@@ -313,14 +321,15 @@ def ESE(update=False, path=None):
             A.append(np.NaN)
     data.loc[:,'YearCommissioned'] = A
     
-    data.loc[(data.Classification.str.contains('Pumped'))&(data.Classification.
-         notnull()), 'Classification'] = 'Pumped storage'
-    data = data.loc[data.Classification == 'Pumped storage', target_columns()]
+    data.loc[(data.Technology.str.contains('Pumped'))&(data.Technology.
+         notnull()), 'Technology'] = 'Pumped storage'
+    data = data.loc[data.Technology == 'Pumped storage', target_columns()]
     data.Fueltype = 'Hydro'
     data = data.reset_index(drop = True)
     data = clean_single(data)
     data.File = 'energy_storage_exchange'
     data.to_csv(saved_version, index_label='id', encoding='utf-8')
+    pass_datasetID_as_metadata(data, 'ESE')
     return data
 
     
@@ -366,7 +375,7 @@ def ENTSOE(update=False, raw=False):
           'A04': 'Generation',
           'A05': 'Load',
           'B01': 'Biomass',
-          'B02': 'Fossil Brown coal/Lignite',
+          'B02': 'Lignite',              #'Fossil Brown coal/Lignite',
           'B03': 'Fossil Coal-derived gas',
           'B04': 'Fossil Gas',
           'B05': 'Fossil Hard coal',
@@ -424,26 +433,31 @@ def ENTSOE(update=False, raw=False):
         entsoe.loc[:,'File'] = '''https://transparency.entsoe.eu/generation/r2/
                                   installedCapacityPerProductionUnit/show'''
         entsoe = entsoe.loc[:,target_columns()] 
-        entsoe = cleaning.gather_classification_info(entsoe)
-        entsoe.Fueltype.replace(to_replace=['.*Hydro.*','Fossil Gas', '(.*(?i)coal.*)|(.*Peat)', 
-                                            'Biomass|Marine', 'Wind.*', '.*Oil.*'], 
-                                value=['Hydro','Natural Gas', 'Coal', 'Other', 'Wind', 'Oil']
-                                , regex=True, inplace=True)
+        entsoe = cleaning.gather_technology_info(entsoe)
+        entsoe = cleaning.gather_set_info(entsoe)
+        entsoe.Fueltype.replace(to_replace=['.*Hydro.*','Fossil Gas', '.*(?i)coal.*','.*Peat', 
+                   'Marine', 'Wind.*', '.*Oil.*', 'Biomass'], value=['Hydro','Natural Gas', 
+                   'Hard Coal', 'Lignite', 'Other', 'Wind', 'Oil', 'Bioenergy'] ,
+                                regex=True, inplace=True)
         entsoe.Capacity = pd.to_numeric(entsoe.Capacity)
         entsoe.loc[entsoe.Country=='Austria, Germany, Luxembourg', 'Country'] = \
                   [utils.parse_Geoposition(powerplant , return_Country=True) for 
                    powerplant in entsoe.loc[entsoe.Country=='Austria, Germany, Luxembourg', 'Name']]        
-        entsoe.Country.replace(to_replace=['Deutschland','.*sterreich' ,'L.*tzebuerg'], value=['Germany','Austria',
+        entsoe.Country.replace(to_replace=['Deutschland','.*sterreich' ,
+                           'L.*tzebuerg'], value=['Germany','Austria',
                         'Luxembourg'],regex=True, inplace=True)
         entsoe = entsoe.loc[entsoe.Country.isin(europeancountries()+[None])]
         entsoe.Country = entsoe.Country.astype(str)
         entsoe.loc[entsoe.Country=='None', 'Country'] = np.NaN
         entsoe.to_csv('%s/data/entsoe_powerplants.csv'%os.path.dirname(__file__), 
                        index_label='id', encoding='utf-8')
+        entsoe.datasetID = 'ENTSOE'
         return entsoe
     else:
-        return pd.read_csv('%s/data/entsoe_powerplants.csv'%os.path.dirname(__file__), 
+        entsoe = pd.read_csv('%s/data/entsoe_powerplants.csv'%os.path.dirname(__file__), 
                        index_col='id', encoding='utf-8')
+        pass_datasetID_as_metadata(entsoe, 'ENTSOE')
+        return entsoe
         
 
     
@@ -495,7 +509,7 @@ def WEPP(raw=False, parseGeoLoc=False):
     # Fit WEPP-column names to our specifications
     wepp.rename(columns={'Unit':'Name',
                          'Fuel':'Fueltype',
-                         'Fueltype':'Classification',
+                         'Fueltype':'Technology',
                          'Mw':'Capacity',
                          'Year':'YearCommissioned',
                          'Lat':'lat',
@@ -506,8 +520,8 @@ def WEPP(raw=False, parseGeoLoc=False):
     # drop any rows with countries we do not need
     wepp.Country = wepp.Country.str.title()
     #wepp = wepp[wepp.Country.isin(europeancountries())]
-    # Set classification infos, not working yet
-    wepp = gather_classification_info(wepp, search_col=['Name'])    
+    # Set Technology infos, not working yet
+    wepp = gather_technology_info(wepp, search_col=['Name'])    
     
     # Replace fueltypes
     #
@@ -519,4 +533,6 @@ def WEPP(raw=False, parseGeoLoc=False):
          'Other or unspecified energy sources': 'Other'}
     wepp.Fueltype = wepp.Fueltype.replace(d)            
     # Done!    
+    wepp.datasetID = 'WEPP'
+
     return wepp
