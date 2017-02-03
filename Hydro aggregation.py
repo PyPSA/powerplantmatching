@@ -23,7 +23,7 @@ from sklearn import linear_model, datasets
 
 #%% Expand the database with non-matches
 
-matched = pc.Carma_ESE_FIAS_GEO_OPSD_WRI_matched_reduced()[lambda df: df.loc[:,["lat", "lon"]].notnull().all(axis=1)]
+matched = pc.Carma_ENTSOE_ESE_GEO_OPSD_OLDENB_WRI_matched_reduced()[lambda df: df.loc[:,["lat", "lon"]].notnull().all(axis=1)]
 hydro = matched[matched.Fueltype=="Hydro"]
 
 entsoestats = pd.read_excel('StatisticsHydro.xls')
@@ -44,15 +44,16 @@ GEO = data.GEO()
 GEO = GEO[GEO.Fueltype=='Hydro']
 FIAS = pd.concat([cleaning.clean_single(data.FIAS(), aggregate_powerplant_units=False),
                                data.ESE()]).reset_index(drop=True)
+OPSD = cleaning.clean_single(data.OPSD(),use_saved_aggregation=True)
 
 columns = hydro.columns
-hydro = heuristics.extend_by_non_matched(hydro, GEO, 'GEO')
+hydro = heuristics.extend_by_non_matched(OPSD , 'OPSD', fueltypes=['Hydro'])
 hydro = cleaning.clean_technology(hydro, generalize_hydros=True)
 
 #%% Whether official or non-official
 
 #hydro = heuristics.extend_by_non_matched(hydro, FIAS, 'FIAS')
-hydro = hydro.drop('ESE_and_FIAS', axis=1).\
+hydro = hydro.drop('ESE_Oldenburg', axis=1).\
        replace('energy_storage_exchange, |energy_storage_exchange', '', regex=True)
 hydro.loc[hydro.File=='', 'File']= np.NaN
 
@@ -101,7 +102,7 @@ eusmeans = pd.DataFrame(data=mean, index=eumap.index[2:-2], columns=eumap.column
 coords = eu.reset_index().loc[:,['x','y']].values
 
 
-#s = sp.spatial.cKDTree(coords)
+s = sp.spatial.cKDTree(coords)
 
 #%% Add geographic properties
 
