@@ -198,4 +198,15 @@ def Carma_ENTSOE_GEO_OPSD_WEPP_WRI_matched(update=False, use_saved_aggregation=F
     else:
         return pd.read_csv(outfn,index_col=0, header=[0,1])        
             
-
+#unpublishable
+def Carma_ENTSOE_GEO_OPSD_WEPP_WRI_matched_reduced(update=False):
+    outfn = os.path.join(os.path.dirname(__file__), 'data',
+                         'Matched_Carma_Entsoe_Geo_Opsd_Wepp_Wri_reduced.csv')
+    if update:
+        sdf = reduce_matched_dataframe(Carma_ENTSOE_GEO_OPSD_WEPP_WRI_matched())
+        sdf.to_csv(outfn, index_label='id', encoding='utf-8')
+        return sdf
+    else:
+        sdf = pd.read_csv(outfn, index_col='id')
+        sdf.projectID = sdf.projectID.apply(lambda df: ast.literal_eval(df))
+        return sdf

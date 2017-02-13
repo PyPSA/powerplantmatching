@@ -93,3 +93,6 @@ data/projects - Kopie.xls
 data/projects.xls
 data/platts_wepp.csv
 data/platts_wepp_small.csv
+data/Matched_Carma_Entsoe_Geo_Opsd_Wepp_Wri.csv
+data/Matched_Carma_Entsoe_Geo_Opsd_Wepp_Wri_reduced.csv
+data/aggregation_groups_WEPP.csv
