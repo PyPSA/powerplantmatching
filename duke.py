@@ -23,7 +23,6 @@ import subprocess as sub
 import shutil
 import tempfile
 import pandas as pd
-import numpy as np
 
 def add_geoposition_for_duke(df):
     """
@@ -31,13 +30,10 @@ def add_geoposition_for_duke(df):
     concats the lattitude and longitude of the powerplant in a string
 
     """
-    if not df.loc[:,['lat','lon']].isnull().all().all():
-        df.loc[df.lat.notnull(), 'Geoposition'] = df[df.lat.notnull()].lat.apply(str)\
+    df.loc[df.lat.notnull(), 'Geoposition'] = df[df.lat.notnull()].lat.apply(str)\
            .str.cat(df[df.lat.notnull()].lon.apply(str), sep=',')
-        return df
-    else:
-        df.loc[:, 'Geoposition'] = np.NaN
-        return df      
+    return df
+
 
 def duke(datasets, labels=['one', 'two'], singlematch=False,
          showmatches=False, keepfiles=False):
@@ -79,13 +75,11 @@ def duke(datasets, labels=['one', 'two'], singlematch=False,
         shutil.copyfile(os.path.join(os.path.dirname(__file__), "data", config),
                         os.path.join(tmpdir, "config.xml"))
 
-        logger.debug("Comparing files: %s", ", ".join(labels))
-
         for n, df in enumerate(datasets):
             df = add_geoposition_for_duke(df)
             df.to_csv(os.path.join(tmpdir, "file{}.csv".format(n+1)), index_label='id', encoding='utf-8')
 
-        args = ['java', '-Dfile.encoding=UTF-8', 'no.priv.garshol.duke.Duke', '--linkfile=linkfile.txt']
+        args = ['java', 'no.priv.garshol.duke.Duke', '--linkfile=linkfile.txt']
         if singlematch:
             args.append('--singlematch')
         if showmatches:
@@ -100,10 +94,10 @@ def duke(datasets, labels=['one', 'two'], singlematch=False,
             raise RuntimeError("duke failed: {}".format(stderr))
 
         if dedup:
-            return pd.read_csv(os.path.join(tmpdir, 'linkfile.txt'), encoding='utf-8',
+            return pd.read_csv(os.path.join(tmpdir, 'linkfile.txt'),
                                   usecols=[1, 2], names=labels)
         else:
-            return pd.read_csv(os.path.join(tmpdir, 'linkfile.txt'), encoding='utf-8',
+            return pd.read_csv(os.path.join(tmpdir, 'linkfile.txt'),
                                   usecols=[1, 2, 3], names=labels + ['scores'])
     finally:
         if keepfiles:

@@ -23,7 +23,7 @@ from sklearn import linear_model, datasets
 
 #%% Expand the database with non-matches
 
-matched = pc.Carma_ENTSOE_ESE_GEO_OPSD_OLDENB_WRI_matched_reduced()[lambda df: df.loc[:,["lat", "lon"]].notnull().all(axis=1)]
+matched = pc.Carma_ESE_FIAS_GEO_OPSD_WRI_matched_reduced()[lambda df: df.loc[:,["lat", "lon"]].notnull().all(axis=1)]
 hydro = matched[matched.Fueltype=="Hydro"]
 
 entsoestats = pd.read_excel('StatisticsHydro.xls')
@@ -44,16 +44,15 @@ GEO = data.GEO()
 GEO = GEO[GEO.Fueltype=='Hydro']
 FIAS = pd.concat([cleaning.clean_single(data.FIAS(), aggregate_powerplant_units=False),
                                data.ESE()]).reset_index(drop=True)
-OPSD = cleaning.clean_single(data.OPSD(),use_saved_aggregation=True)
 
 columns = hydro.columns
-hydro = heuristics.extend_by_non_matched(OPSD , 'OPSD', fueltypes=['Hydro'])
-hydro = cleaning.clean_technology(hydro, generalize_hydros=True)
+hydro = heuristics.extend_by_non_matched(hydro, GEO, 'GEO')
+hydro = cleaning.clean_classification(hydro, generalize_hydros=True)
 
 #%% Whether official or non-official
 
 #hydro = heuristics.extend_by_non_matched(hydro, FIAS, 'FIAS')
-hydro = hydro.drop('ESE_Oldenburg', axis=1).\
+hydro = hydro.drop('ESE_and_FIAS', axis=1).\
        replace('energy_storage_exchange, |energy_storage_exchange', '', regex=True)
 hydro.loc[hydro.File=='', 'File']= np.NaN
 
@@ -65,9 +64,9 @@ hydro = hydro.loc[:,columns]
 hydro = hydro.loc[hydro.Capacity.notnull()]
 hydro = hydro.reset_index(drop=True)
 
-hydro = cleaning.clean_technology(hydro, generalize_hydros=True)
+hydro = cleaning.clean_classification(hydro, generalize_hydros=True)
 
-hydrogrouped = hydro.groupby(['Country', 'Technology']).Capacity.sum().unstack()
+hydrogrouped = hydro.groupby(['Country', 'Classification']).Capacity.sum().unstack()
 
 
 #%% Scale countrywise
@@ -102,7 +101,7 @@ eusmeans = pd.DataFrame(data=mean, index=eumap.index[2:-2], columns=eumap.column
 coords = eu.reset_index().loc[:,['x','y']].values
 
 
-s = sp.spatial.cKDTree(coords)
+#s = sp.spatial.cKDTree(coords)
 
 #%% Add geographic properties
 
@@ -114,26 +113,26 @@ spots = spots.reset_index(drop=True).loc[:,['x','y']]
 hydro.loc[:,'stdheight']= np.diag(euslopes.loc[spots.x, spots.y])
 hydro.loc[:,'height']= np.diag(eusmeans.loc[spots.x, spots.y])
 
-print hydro.Technology.value_counts()
+print hydro.Classification.value_counts()
 
 
 
 #%% Train classification
 
 
-hydro.loc[hydro.Technology=='Run-Of-River', 'Technology']='Ror'
+hydro.loc[hydro.Classification=='Run-Of-River', 'Classification']='Ror'
 
 
 
 # Make only classification for run-of-river and reservoir since pumped storage is already covered
 
-#trainhydro = hydro.loc[(~(hydro.Country == 'Sweden')) & (hydro.Technology.isin(['Ror', 'Reservoir']))].reset_index(drop = True)
-trainhydro = hydro.loc[(hydro.Technology.isin(['Ror', 'Reservoir']))].reset_index(drop = True)
+#trainhydro = hydro.loc[(~(hydro.Country == 'Sweden')) & (hydro.Classification.isin(['Ror', 'Reservoir']))].reset_index(drop = True)
+trainhydro = hydro.loc[(hydro.Classification.isin(['Ror', 'Reservoir']))].reset_index(drop = True)
 
-training = trainhydro[trainhydro.loc[:,['height', 'stdheight', 'Capacity', 'Technology']]\
+training = trainhydro[trainhydro.loc[:,['height', 'stdheight', 'Capacity', 'Classification']]\
     .notnull().all(axis=1)].reset_index(drop= True)
 
-print trainhydro.Technology.value_counts()
+print trainhydro.Classification.value_counts()
 
 
 
@@ -172,15 +171,15 @@ for c in bias.index:
                                 'Ror':bias.loc[c,'Ror']} \
                                 )
     data = training.loc[:,['height', 'stdheight', 'Capacity']].values
-    target = training.loc[: ,'Technology'].values
+    target = training.loc[: ,'Classification'].values
     clf.fit(data, target)
 
-    missing_class_in_c_b = (hydrofit.Technology.isnull())&(hydrofit.Country == c)&(hydrofit.loc[:,[ 'height', 'stdheight', 'Capacity']]\
+    missing_class_in_c_b = (hydrofit.Classification.isnull())&(hydrofit.Country == c)&(hydrofit.loc[:,[ 'height', 'stdheight', 'Capacity']]\
             .notnull().all(axis=1))
 
 
     try:
-        hydrofit.loc[missing_class_in_c_b,'Technology'] = \
+        hydrofit.loc[missing_class_in_c_b,'Classification'] = \
         clf.predict(hydrofit.loc[missing_class_in_c_b,['height', 'stdheight', 'Capacity']].values)
     except:
         None
@@ -190,9 +189,9 @@ for c in bias.index:
 columnsnew = list(columns.drop('ESE_and_FIAS')) + ['Scaled Capacity']
 
 hydrofit = hydrofit.loc[:,columnsnew]
-hydrofitgrouped = hydrofit.groupby(['Country', 'Technology'])['Scaled Capacity'].sum().unstack()
+hydrofitgrouped = hydrofit.groupby(['Country', 'Classification'])['Scaled Capacity'].sum().unstack()
 hydrofitgrouped.loc[:,'hydro']=hydrofit.groupby('Country')['Scaled Capacity'].sum()
 relationsfit = hydrofitgrouped-entsoestats[entsoestats!=0]
 print relationsfit
-hydrofit.Technology.replace('Ror', 'Run-Of-River', regex=True, inplace=True)
+hydrofit.Classification.replace('Ror', 'Run-Of-River', regex=True, inplace=True)
 hydrofit.to_csv('hydro_aggregation_beta.csv', index_label='id', encoding='utf-8')

@@ -87,9 +87,3 @@ ENV/
 
 # Rope project settings
 .ropeproject
-data/energy_storage_exchange.csv
-coal-types.xlsx
-data/projects - Kopie.xls
-data/projects.xls
-data/platts_wepp.csv
-data/platts_wepp_small.csv

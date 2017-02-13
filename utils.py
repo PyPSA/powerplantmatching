@@ -21,10 +21,9 @@ from __future__ import print_function, absolute_import
 import pandas as pd
 import six
 from countrycode import countrycode
-import matplotlib.pyplot as plt
 
 
-def lookup(df, keys=None, by='Country, Fueltype', exclude=None, show_totals=False):
+def lookup(df, keys=None, by='Country, Fueltype', exclude=None):
     """
     Returns a lookup table of the dataframe df with rounded numbers. Use different lookups
     as "Country", "Fueltype" for the different lookups.
@@ -50,11 +49,11 @@ def lookup(df, keys=None, by='Country, Fueltype', exclude=None, show_totals=Fals
             df = df[~df.Fueltype.isin(exclude)]
         if by == 'Country, Fueltype':
             return df.groupby(['Country', 'Fueltype']).Capacity.sum()\
-                    .unstack(0).fillna(0.)
+                    .unstack(0).fillna(0).astype(int)
         elif by == 'Country':
-            return df.groupby(['Country']).Capacity.sum()
+            return df.groupby(['Country']).Capacity.sum().astype(int)
         elif by == 'Fueltype':
-            return df.groupby(['Fueltype']).Capacity.sum()
+            return df.groupby(['Fueltype']).Capacity.sum().astype(int)
         else:
             raise NameError("``by` must be one of 'Country, Fueltype' or 'Country' or 'Fueltype'")
 
@@ -63,35 +62,11 @@ def lookup(df, keys=None, by='Country, Fueltype', exclude=None, show_totals=Fals
         if by == 'Country, Fueltype':
             dfs = dfs.reorder_levels([1, 0], axis=1)
             dfs = dfs[dfs.columns.levels[0]]
-        dfs = dfs.fillna(0.)
-        if show_totals:
-            dfs.loc['Total'] = dfs.sum()
-            return dfs.round(0).astype(int)
-        else:
-            return dfs.round(0).astype(int)
+        dfs = dfs.fillna(0)
+        dfs.loc['Total'] = dfs.sum()
+        return dfs
     else:
-        if show_totals:
-            dfs = lookup_single(df).fillna(0.)
-            dfs.loc['Total'] = dfs.sum()
-            return dfs.round(0).astype(int)
-        else:
-            return lookup_single(df).fillna(0.).round(0).astype(int)
-            
-            
-def pass_datasetID_as_metadata(df, ID):
-    for i in df._metadata:
-        for i in df._metadata:
-            df._metadata.remove(i)
-    df._metadata.append(ID)
-
-def get_datasetID_from_metadata(df):
-    return df._metadata[0]
-        
-def plot_fueltype_stats(df):
-    stats = lookup(df, by='Fueltype')
-    plt.pie(stats, colors=stats.index.to_series().map(tech_colors).tolist(),
-           labels=stats.index, autopct='%1.1f%%')
-
+        return lookup_single(df).fillna(0)
 
 def set_uncommon_fueltypes_to_other(df, fueltypes={'Geothermal', 'Mixed fuel types', 'Waste'}):
     df.loc[df.Fueltype.isin(fueltypes) , 'Fueltype'] = 'Other'
@@ -102,17 +77,12 @@ def read_csv_if_string(data):
         data = pd.read_csv(data, index_col='id')
     return data
 
-def parse_Geoposition(loc, country=None, return_Country=False):
+def parse_Geoposition(loc, country):
     """
     Nominatim request for the Geoposition of a specific location in a country.
-    Returns a tuples with (latitude, longitude) if the request was sucessful,
+    Returns a tuples with (lattitude, longitude) if the request was sucessful,
     returns None otherwise.
-    
-    ToDo:   There exist further online sources for lat/long data which could be
-            used, if this one fails, e.g.
-        - Google Geocoding API
-        - Yahoo! Placefinder
-        - https://askgeo.com (??)
+
 
     Parameters
     ----------
@@ -121,51 +91,13 @@ def parse_Geoposition(loc, country=None, return_Country=False):
     country : string
         name of the country which will be used as a bounding area
 
+
     """
     from geopy.geocoders import Nominatim
     if loc is not None and loc != float:
         country = countrycode(codes=[country], origin='country_name', target='iso2c')[0]
         gdata = Nominatim(timeout=100, country_bias=country).geocode(loc)
         if gdata != None:
-            if return_Country:
-                return gdata.address.split(', ')[-1]
             lat = gdata.latitude
             lon = gdata.longitude
             return (lat, lon)
-
-            
-            
-tech_colors = {"Wind" : "b",
-               'windoff' : "c",
-               "Hydro" : "g",
-               "ror" : "g",
-               "Run-Of-River" : "g",
-               'Solar' : "yellow",
-               "Bioenergy" : "g",
-               "Natural Gas" : "brown",
-               "Gas" : "brown",
-               "lines" : "k",
-               "H2" : "m",
-               "battery" : "slategray",
-               "Nuclear" : "y",
-               "Nuclear marginal" : "r",
-               "Hard Coal" : "k",
-               "Coal" : "k",
-               "Waste" : "grey",
-               "Lignite" : "grey",
-               "Geothermal" : "orange",
-               "CCGT marginal" : "orange",
-               "heat pumps" : "r",
-               "water tanks" : "w",
-               "PHS" : "g",
-               "Ambient" : "k",
-               "Electric load" : "b",
-               "Oil" : "r",
-               "Transport load" : "grey",
-               "heat" : "r",
-               "Li ion" : "grey",
-               "curtailment": "r",
-               "load": "k",
-               "total": "k",
-               "Other":"grey"
-               }
