@@ -17,12 +17,16 @@ Functions to modify and adjust power plant datasets
 """
 
 from __future__ import absolute_import, print_function
+import pandas as pd 
 
 from .utils import read_csv_if_string
 from .utils import lookup
 from .data import ENTSOE
+from .cleaning import clean_single
 
-def extend_by_non_matched(df, extend_by, label):
+
+def extend_by_non_matched(df, extend_by, label, fueltypes=None, 
+                          clean_added_data=True, by_name=False):
     """
     Returns the matched dataframe with additional entries of non-matched powerplants
     of a reliable source.
@@ -41,11 +45,26 @@ def extend_by_non_matched(df, extend_by, label):
     """
     extend_by = read_csv_if_string(extend_by)
     columns = df.columns
-    if 'Name' in extend_by.columns:
-        extend_by = extend_by.rename(columns={'Name':label})
-    return (df.append(extend_by[~extend_by.loc[:, label].isin(df.loc[:,label])])
-              .reset_index(drop=True))[columns]
-
+    is_included = df.projectID.map(lambda d: d.get(label)).dropna().astype(str)\
+                                     .str.replace('\[|\]', '').str.split(', ').sum()
+    not_included = pd.DataFrame(extend_by.projectID.tolist())
+    extend_by_b = ~ (pd.concat([not_included[i].dropna()\
+                            .isin(is_included) for i in not_included],axis=1)).any(axis=1)    
+    if by_name:
+        extend_by_b = ~extend_by.loc[:, label].isin(df.loc[:,label])
+    if fueltypes is None:
+        extend_by = extend_by[extend_by_b]
+    else:
+        extend_by = extend_by[extend_by_b & (extend_by.Fueltype.isin(fueltypes))]
+    if clean_added_data:
+        extend_by = clean_single(extend_by)
+    extend_by = extend_by.rename(columns={'Name':label})
+    extend_by.projectID = extend_by.projectID.apply(lambda x: 
+                                {label : x})
+    return df.append(extend_by, ignore_index=True)[columns]
+        
+        
+        
 def rescale_capacities_to_country_totals(df, fueltypes):
     """
     Returns a extra column 'Scaled Capacity' with an up or down scaled capacity in
@@ -122,4 +141,4 @@ power plants in these countries'%\
 #del hydro
 #hydro = hydroexp
 #
-#print hydro.groupby(['Country', 'Classification']).Capacity.sum().unstack()
+#print hydro.groupby(['Country', 'Technology']).Capacity.sum().unstack()
