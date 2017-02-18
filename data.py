@@ -542,6 +542,7 @@ def WEPP(raw=False, parseGeoLoc=False):
          'BGAS': 'Waste',
          'Other or unspecified energy sources': 'Other'}
     wepp.Fueltype = wepp.Fueltype.replace(d)            
+    wepp.Fueltype = wepp.Fueltype.str.title()
     # Done!    
     wepp.datasetID = 'WEPP'
     pass_datasetID_as_metadata(wepp, 'WEPP')
