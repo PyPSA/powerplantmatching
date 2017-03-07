@@ -78,6 +78,7 @@ def OPSD(rawEU=False, rawDE=False):
                             'Commissioned':'YearCommissioned',
                             'Source':'File'
                             }, inplace=True)
+    opsd_DE['Fueltype'].fillna(opsd_DE['Energy_Source_Level_1'], inplace=True)
     opsd_DE.loc[:,'projectID'] = opsd_DE.Id
     opsd_DE = opsd_DE.loc[:,target_columns()]
     opsd = pd.concat([opsd_EU, opsd_DE]).reset_index(drop=True)
