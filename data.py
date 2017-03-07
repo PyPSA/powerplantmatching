@@ -21,6 +21,7 @@ from __future__ import print_function, absolute_import
 import os
 import numpy as np
 import pandas as pd
+import time
 from countrycode import countrycode
 
 from .cleaning import clean_single
@@ -29,6 +30,7 @@ from .cleaning import gather_fueltype_info, gather_set_info, gather_technology_i
                         clean_powerplantname, clean_technology
 import requests
 import xml.etree.ElementTree as ET
+from xml.etree.ElementTree import ParseError
 import re
 from . import utils
 from .utils import parse_Geoposition, pass_datasetID_as_metadata, \
@@ -184,7 +186,7 @@ def CARMA(raw=False):
          'SUN': 'Solar',
          'BLIQ': 'Bioenergy',
          'BGAS': 'Bioenergy',
-         'BLIQ': 'Bioenergy',
+         'BSOL': 'Bioenergy',
          'OTH': 'Other'}
     rename = {'Geoposition': 'Geoposition',
      'cap': 'Capacity',
@@ -219,17 +221,19 @@ def Oldenburgdata():
     return oldb.loc[:,target_columns()]
 
 
-def ENTSOE_stats(raw=False):
+def ENTSOE_stats(raw=False, longcountry=True):
     """
     Standardize the entsoe database for statistical use.
     """
-    opsd = pd.read_csv('%s/data/aggregated_capacity.csv'%os.path.dirname(__file__),
+    df = pd.read_csv('%s/data/entsoe_aggregated_capacity.csv'%os.path.dirname(__file__),
                        encoding='utf-8')
     if raw:
-        return opsd
-    entsoedata = opsd[opsd['source'].isin(['entsoe']) & opsd['year'].isin([2014])]
+        return df
+    entsoedata = df[df['source'].isin(['entsoe']) & df['year'].isin([2014])]
     cCodes = list(entsoedata.country)
-    countries = countrycode(codes=cCodes, target='country_name', origin='iso2c')
+    entsoedata.country = countrycode(codes=cCodes, target='country_name', origin='iso2c')
+    entsoedata.country = entsoedata.country.str.title()
+    entsoedata = entsoedata[entsoedata.country.isin(europeancountries())]
     entsoedata = entsoedata.replace({'Bioenergy and other renewable fuels': 'Bioenergy',
      'Coal derivatives': 'Hard Coal',
      'Differently categorized fossil fuels': 'Other',
@@ -239,11 +243,12 @@ def ENTSOE_stats(raw=False):
      'Natural gas': 'Natural Gas',
      'Other or unspecified energy sources': 'Other',
      'Tide, wave, and ocean': 'Other'})
-    entsoedata.country = countries
-    entsoedata.country = entsoedata.country.str.title()
     entsoedata = entsoedata[entsoedata['technology_level_2'] == True]
     entsoedata.rename(columns={'technology': 'Fueltype'}, inplace=True)
     entsoedata.columns = entsoedata.columns.str.title()
+    if longcountry is False: 
+        cCodes = list(entsoedata.Country)
+        entsoedata.loc[:,'Country'] = countrycode(codes=cCodes, origin='country_name', target='iso2c')
     return entsoedata
 
 def WRI(reduced_data=True):
@@ -251,6 +256,7 @@ def WRI(reduced_data=True):
                       encoding='utf-8', index_col='id')
 #    wri.Name = wri.Name.str.title()
     wri.loc[:,'projectID'] = wri.index.values
+    wri.Fueltype = wri.Fueltype.replace({'Coal':'Hard Coal'})
     wri = gather_set_info(wri)
     if reduced_data:
         #wri data consists of ENTSOE data and OPSD, drop those:
@@ -333,7 +339,11 @@ def ESE(update=False, path=None, add_Oldenburgdata=False):
     data = data.loc[data.Technology == 'Pumped storage', target_columns()]
     data.Fueltype = 'Hydro'
     data = data.reset_index(drop = True)
-    data = clean_single(data)
+    if add_Oldenburgdata:
+        data = pd.concat([clean_single(Oldenburgdata(), aggregate_powerplant_units=False),
+                          clean_single(data, aggregate_powerplant_units=False)]).reset_index(drop=True)
+    else:
+        data = clean_single(data)
     data.File = 'energy_storage_exchange'
     data.loc[:,target_columns()]
     data.to_csv(saved_version, index_label='id', encoding='utf-8')
@@ -359,8 +369,7 @@ def ENTSOE(update=False, raw=False):
         the ENTSO-E transparency plattform
     """
     if update or raw:
-        Domains = pd.read_csv('/home/fabian/Desktop/EuropeanPowerGrid/ENTSO-E/areamap',
-                            sep=';', header=None)
+        Domains = pd.read_csv('%s/data/areamap'%os.path.dirname(__file__), sep=';', header=None) 
         def full_country_name(l):
             return [country.title() for country in filter(None, 
                                                 countrycode(l, origin='iso2c', 
@@ -413,22 +422,27 @@ def ENTSOE(update=False, raw=False):
         for i in Domains.index:   
             #https://transparency.entsoe.eu/content/static_content/
             #Static%20content/web%20api/Guide.html#_generation_domain
-            ret = requests.get('https://transparency.entsoe.eu/api',
-                params=dict(securityToken='42efae2a-7325-4952-9756-174713499e83',
-                documentType='A71', processType='A33',
-                In_Domain=Domains.loc[i,0],
-                periodStart='201512312300', periodEnd='201612312300'))
-            etree = ET.fromstring(ret.content) #create an ElementTree object 
-            ns = namespace(etree)
-            df = pd.DataFrame(columns=level1+level2+level3+['Country'])
-            for arg in level1:
-                df.loc[:,arg] = map(attribute , etree.findall('*/%s%s'%(ns, arg)))
-            for arg in level2:
-                df.loc[:,arg] = map(attribute , etree.findall('*/*/%s%s'%(ns, arg)))
-            for arg in level3:
-                df.loc[:,arg] = map(attribute , etree.findall('*/*/*/%s%s'%(ns,arg)))
-            df.loc[:,'Country'] = Domains.loc[i,'Country']
-            entsoe = pd.concat([entsoe,df],ignore_index=True)
+            print('Checked Domain: %s|%s'%(i, Domains.loc[i,0]))
+            try: 
+                ret = requests.get('https://transparency.entsoe.eu/api',
+                    params=dict(securityToken='e7c231dc-8111-475a-a003-2e48e8d988b1',
+                    documentType='A71', processType='A33',
+                    In_Domain=Domains.loc[i,0],
+                    periodStart='201512312300', periodEnd='201612312300'))
+                etree = ET.fromstring(ret.content) #create an ElementTree object 
+                ns = namespace(etree)
+                df = pd.DataFrame(columns=level1+level2+level3+['Country'])
+                for arg in level1:
+                    df.loc[:,arg] = map(attribute , etree.findall('*/%s%s'%(ns, arg)))
+                for arg in level2:
+                    df.loc[:,arg] = map(attribute , etree.findall('*/*/%s%s'%(ns, arg)))
+                for arg in level3:
+                    df.loc[:,arg] = map(attribute , etree.findall('*/*/*/%s%s'%(ns,arg)))
+                df.loc[:,'Country'] = Domains.loc[i,'Country']
+                entsoe = pd.concat([entsoe,df],ignore_index=True)
+            except ParseError:
+                print('---This request could not be parsed.---\
+                      Content: %s'%ret.content)
         if raw:
             return entsoe
         entsoe.psrType = entsoe.psrType.map(fdict)
@@ -492,12 +506,10 @@ def WEPP(raw=False, parseGeoLoc=False):
                 }
     # Now read the Platts WEPP Database
     filename = 'platts_wepp.csv'
-    wepp = pd.read_csv('%s/data/%s' % (os.path.dirname(__file__),filename),
-                       encoding='utf-8', dtype=datatypes)
-    
+    wepp = pd.read_csv('%s/data/%s' % (os.path.dirname(__file__),filename),dtype=datatypes)
+                       #encoding='utf-8', dtype=datatypes)
     if raw:
-        return wepp
-        
+        return wepp    
     # Try to parse lat-lon geo coordinates of each unit     
     if parseGeoLoc:
         for index, row in wepp.iterrows():
@@ -512,7 +524,9 @@ def WEPP(raw=False, parseGeoLoc=False):
             if isinstance(query, tuple):    
                 wepp.at[index, 'LAT'] = query[0] # write latitude
                 wepp.at[index, 'LON'] = query[1] # write longitude
-            
+#            if (index>0 and i%10==0):
+#                time.sleep(30)
+    #            
     # str.title(): Return a titlecased version of the string where words start
     # with an uppercase character and the remaining characters are lowercase.
     wepp.columns = wepp.columns.str.title()
@@ -522,29 +536,94 @@ def WEPP(raw=False, parseGeoLoc=False):
                          'Fueltype':'Technology',
                          'Mw':'Capacity',
                          'Year':'YearCommissioned',
+                         #'Retire':'YearDecommissioned',
                          'Lat':'lat',
-                         'Lon':'lon'
+                         'Lon':'lon',
+                         'Unitid':'projectID'
                          }, inplace=True)
-    # drop any columns we do not need
-    wepp = wepp.loc[:,target_columns()]
-    # drop any rows with countries we do not need
+    # Drop any rows with countries we do not need
     wepp.Country = wepp.Country.str.title()
-    #wepp = wepp[wepp.Country.isin(europeancountries())]
-    # Set Technology infos, not working yet
-    wepp = gather_technology_info(wepp, search_col=['Name'])    
-    
+    wepp = wepp[wepp.Country.isin(europeancountries())]
+    # Drop any rows with plants which are not: In operation (OPR) or under construction (CON)
+    wepp = wepp[wepp.Status.isin(['OPR', 'CON'])]    
     # Replace fueltypes
-    #
-    ### THIS NEEDS TO BE ENHANCED SOON!
-    #
-    d = {'WAT': 'Hydro',
-         'GAS': 'Natural Gas',
-         'BGAS': 'Waste',
-         'Other or unspecified energy sources': 'Other'}
-    wepp.Fueltype = wepp.Fueltype.replace(d)            
+    d = {'AGAS':'Bioenergy',    # Syngas from gasified agricultural waste or poultry litter
+         'BFG':'Other',         # blast furnance gas -> "Hochofengas"
+         'BGAS':'Bioenergy',
+         'BIOMASS':'Bioenergy',
+         'BL':'Bioenergy',
+         'CGAS':'Hard Coal',
+         'COAL':'Hard Coal',
+         'COG':'Other',         # coke oven gas -> deutsch: "Hochofengas"
+         'COKE':'Hard Coal',
+         'CWM':'Hard Coal',     # Coal-water mixture (aka coal-water slurry)
+         'DGAS':'Other',        # sewage digester gas -> deutsch: "Klaergas"
+         'FGAS':'Other',        # Flare gas or wellhead gas or associated gas 
+         'GAS':'Natural Gas',
+         'GEO':'Geothermal',    
+         'H2':'Other',          # Hydrogen gas
+         'HZDWST':'Waste',      # Hazardous waste
+         'INDWST':'Waste',      # Industrial waste or refinery waste
+         'JET':'Oil',           # Jet fuels
+         'KERO':'Oil',          # Kerosene
+         'LGAS':'Other',        # landfill gas -> deutsch: "Deponiegas"
+         'LIGNIN':'Bioenergy',
+         'LIQ':'Other',         # (black) liqour -> deutsch: "Schwarzlauge", die bei Papierherstellung anfaellt
+         'LNG':'Natural Gas',   # Liquified natural gas
+         'LPG':'Natural Gas',   # Liquified petroleum gas (usually butane or propane)
+         'MGAS':'Other',        # mine gas -> deutsch: "Grubengas"
+         'NAP':'Oil',           # naphta
+         'OGAS':'Oil',          # Gasified crude oil or refinery bottoms or bitumen
+         'PEAT':'Lignite',
+         'REF':'Waste',         
+         'REFGAS':'Other',      # Syngas from gasified refuse
+         'RPF':'Waste',         # Waste paper and/or waste plastic
+         'PWST':'Other',        # paper mill waste  
+         'RGAS':'Other',        # refinery off-gas -> deutsch: "Raffineriegas"
+         'SHALE':'Oil',
+         'SUN':'Solar',
+         'TGAS':'Other',        # top gas -> deutsch: "Hochofengas"
+         'TIRES':'Other',       # Scrap tires
+         'UNK':'Other',
+         'UR':'Nuclear',
+         'WAT':'Hydro',
+         'WOOD':'Bioenergy',
+         'WOODGAS':'Bioenergy',
+         'WSTGAS':'Other',      # waste gas -> deutsch: "Industrieabgas"
+         'WSTWSL':'Waste',      # Wastewater sludge
+         'WSTH':'Waste'}
+    wepp.Fueltype = wepp.Fueltype.replace(d)      
+    ## Fill NaNs to allow str actions
+    wepp.Technology.fillna('', inplace=True)    
+    wepp.Turbtype.fillna('', inplace=True)
+    # Correct technology infos:
+    wepp.loc[wepp.Technology.str.contains('LIG', case=False), 'Fueltype'] = 'Lignite'
+    wepp.loc[wepp.Turbtype.str.contains('KAPLAN|BULB', case=False), 'Technology'] = 'Run-Of-River'
+    wepp.Technology = wepp.Technology.replace({'PS':'Pumped Storage',
+                                               'CONV/PS':'Pumped Storage',
+                                               'CONV':'Reservoir'})
+    ccgt_pattern = ['CC','GT/C','GT/CP','GT/CS','GT/ST','ST/C','ST/CC/GT','ST/CD',
+                    'ST/CP','ST/CS','ST/GT','ST/GT/IC','ST/T', 'IC/CD','IC/CP','IC/GT']
+    ocgt_pattern = ['GT','GT/D','GT/H','GT/HY','GT/IC','GT/S','GT/T','GTC']
+    st_pattern = ['ST','ST/D']
+    ic_pattern = ['IC','IC/H']
+    wepp.loc[wepp.Utype.isin(ccgt_pattern), 'Technology'] = 'CCGT'
+    wepp.loc[wepp.Utype.isin(ocgt_pattern), 'Technology'] = 'OCGT'
+    wepp.loc[wepp.Utype.isin(st_pattern), 'Technology'] = 'Steam Turbine'
+    wepp.loc[wepp.Utype.isin(ic_pattern), 'Technology'] = 'Combustion Engine'    
+    wepp.loc[wepp.Utype=='WTG', 'Technology'] = 'Onshore'
+    wepp.loc[wepp.Utype=='WTG/O', 'Technology'] = 'Offshore'
+    # Derive the SET column
+    chp_pattern = ['CC/S','CC/CP','CCSS/P','GT/CP','GT/CS','GT/S','GT/H','IC/CP',
+                   'IC/H','ST/S','ST/H','ST/CP','ST/CS','ST/D']
+    wepp.loc[wepp.Utype.isin(chp_pattern), 'Set'] = 'CHP'         
+    wepp.loc[wepp.Set.isnull(), 'Set' ] = 'PP'
+    # Drop any columns we do not need
+    wepp = wepp.loc[:,target_columns()]
+    # Clean up the mess
     wepp.Fueltype = wepp.Fueltype.str.title()
+    wepp.reset_index(drop=True)
     # Done!    
     wepp.datasetID = 'WEPP'
     pass_datasetID_as_metadata(wepp, 'WEPP')
-
     return wepp

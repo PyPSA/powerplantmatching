@@ -93,7 +93,7 @@ def plot_fueltype_stats(df):
            labels=stats.index, autopct='%1.1f%%')
 
 
-def set_uncommon_fueltypes_to_other(df, fueltypes={'Geothermal', 'Mixed fuel types', 'Waste'}):
+def set_uncommon_fueltypes_to_other(df, fueltypes={'Bioenergy','Geothermal','Mixed fuel types','Waste'}):
     df.loc[df.Fueltype.isin(fueltypes) , 'Fueltype'] = 'Other'
     return df
 

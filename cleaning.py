@@ -30,7 +30,6 @@ from .duke import duke
 
 
 def clean_powerplantname(df):
-    df = df.copy()
     """
     Cleans the column "Name" of the database by deleting very frequent words, numericals and
     nonalphanumerical characters of the column. Returns a reduced dataframe with nonempty
@@ -42,6 +41,7 @@ def clean_powerplantname(df):
         dataframe which should be cleaned
 
     """
+    df = df.copy()
     df.Name.replace(regex=True, value=' ',
                     to_replace=list('-/')+['\(', '\)', '\[', '\]', '[0-9]'],
                     inplace=True)
@@ -123,7 +123,7 @@ def clean_technology(df, generalize_hydros=False):
     df.loc[tech_b,'Technology'] = df.loc[tech_b,
                               'Technology'].str.title().str.strip().str.split(', ')\
                                 .apply(lambda x: ', '.join(np.unique(x))).str.strip()
-    df.Technology[tech_b] = df.Technology[tech_b].str.title().replace(
+    df.loc[tech_b,'Technology'] = df.Technology[tech_b].str.title().replace(
                     ['Ccgt','Ocgt'], ['CCGT', 'OCGT'], regex=True)
 #    df.Technology = df.Technology[lambda df : df.notnull()].str.split(', ').apply(
 #            lambda x : ', '.join([i for i in x if i in target_technologies()]))

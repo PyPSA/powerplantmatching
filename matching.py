@@ -193,15 +193,26 @@ def reduce_matched_dataframe(df):
         combined_dataframe() or match_multiple_datasets()
     """
 
+    def most_frequent_fueltype(df):
+        if df.isnull().all():
+            return np.nan            
+        else:
+            # Priority for Lignite: If any dataset claims the fueltype is Lignite -> accept!
+            if df.isin(['Lignite']).any():
+                return 'Lignite'
+            else:
+                values = df.value_counts()
+                if values.idxmax() == 'Hard Coal' and len(values)>1:
+                    return values.index[1]
+                else:
+                    return values.idxmax()
+            
     def most_frequent(df):
         if df.isnull().all():
-            return np.nan
+            return np.nan            
         else:
             values = df.value_counts()
-            if values.idxmax() == 'Coal' and len(values)>1:
-                return values.index[1]
-            else:
-                return values.idxmax()
+            return values.idxmax()
 
     def concat_strings(df):
         if df.isnull().all():
@@ -220,7 +231,7 @@ def reduce_matched_dataframe(df):
             return df.mean()
 
     sdf = df.Name
-    sdf.loc[:, 'Fueltype'] = df.Fueltype.apply(most_frequent, axis=1)
+    sdf.loc[:, 'Fueltype'] = df.Fueltype.apply(most_frequent_fueltype, axis=1)
     sdf.loc[:, 'Technology'] = df.Technology.apply(concat_strings, axis=1)
     sdf.loc[:, 'Country'] = df.Country.apply(most_frequent, axis=1)
     sdf.loc[:, 'Set'] = df.Set.apply(most_frequent, axis=1)

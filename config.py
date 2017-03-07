@@ -21,12 +21,15 @@ def europeancountries():
     """
     Returns a list of countries in Europe
     """
-    return ['Austria', 'Belgium', 'Bulgaria', 'Croatia', 'Czech Republic',
-            'Denmark', 'Estonia', 'Finland', 'France', 'Germany',
-            'Greece', 'Hungary', 'Ireland', 'Italy', 'Latvia',
-            'Lithuania', 'Luxembourg', 'Netherlands', 'Norway',
-            'Poland', 'Portugal', 'Romania', 'Slovakia', 'Slovenia',
-            'Spain', 'Sweden', 'Switzerland', 'United Kingdom']
+    return ['Austria', 'Belgium', 'Czech Republic', 'Denmark', 'France', 'Germany',
+            'Ireland', 'Italy', 'Hungary', 'Luxembourg', 'Netherlands', 'Norway', 'Poland',
+            'Portugal', 'Slovakia', 'Slovenia', 'Spain', 'Sweden', 'Switzerland', 'United Kingdom']
+#    return ['Austria', 'Belgium', 'Bulgaria', 'Croatia', 'Czech Republic',
+#            'Denmark', 'Estonia', 'Finland', 'France', 'Germany',
+#            'Greece', 'Hungary', 'Ireland', 'Italy', 'Latvia',
+#            'Lithuania', 'Luxembourg', 'Netherlands', 'Norway',
+#            'Poland', 'Portugal', 'Romania', 'Slovakia', 'Slovenia',
+#            'Spain', 'Sweden', 'Switzerland', 'United Kingdom']
 
 
 def target_fueltypes():
@@ -36,9 +39,27 @@ def target_fueltypes():
     return ['Natural Gas', 'Wind', 'Hydro', 'Oil', 'Waste', 'Hard Coal', 'Lignite',
             'Nuclear', 'Other', 'Solar', 'Bioenergy', 'Geothermal']
     
-def fueltype_to_life():
+def fueltype_to_abbrev():
     """
-    Return the fueltype-specific technical lifetime    
+    Returns the fueltype-specific abbreviation.
+    """
+    data = {'Bioenergy':'BIO',
+            'Geothermal':'GEO',
+            'Hard Coal':'COA',
+            'Hydro':'HYD',
+            'Lignite':'LIG',
+            'Natural Gas':'NG',
+            'Nuclear':'NUC',
+            'Oil':'OIL',
+            'Other':'OTH',
+            'Solar':'SPV',
+            'Waste':'WST',
+            'Wind':'WO'}
+    return data
+    
+def timestype_to_life():
+    """
+    Returns the timestype-specific technical lifetime    
     """
     data = {'Bioenergy':20,
             'Geothermal':15,
@@ -59,8 +80,8 @@ def target_sets():
     return ['PP', 'CHP']
 
 def target_technologies():
-    return ['CCGT', 'OCGT', 'Steam Turbine', 'Combustion Engine',
-            'Run-Of-River', 'Pumped Storage', 'Reservoir']
+    return ['CCGT', 'OCGT', 'Steam Turbine', 'Combustion Engine', 'Run-Of-River',
+            'Pumped Storage', 'Reservoir', 'Onshore', 'Offshore']
     
 def target_columns():
     """
@@ -69,6 +90,9 @@ def target_columns():
     of the replacements
     """
 
-    return ['Name', 'Fueltype', 'Technology', 'Set', 'Country',
-            'Capacity', 'YearCommissioned', 'lat', 'lon', 'File'
-            , 'projectID']
+    return ['Name', 'Fueltype', 'Technology', 'Set', 'Country', 'Capacity',
+            'YearCommissioned', 'lat', 'lon', 'File',
+            'projectID']
+#    return ['Name', 'Fueltype', 'Technology', 'Set', 'Country', 'Capacity',
+#            'YearCommissioned','YearDecommissioned', 'lat', 'lon', 'File',
+#            'projectID']

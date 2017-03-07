@@ -21,7 +21,7 @@ import pandas as pd
 
 from .utils import read_csv_if_string
 from .utils import lookup
-from .data import ENTSOE
+from .data import ENTSOE, ENTSOE_stats
 from .cleaning import clean_single
 
 
@@ -72,7 +72,7 @@ def rescale_capacities_to_country_totals(df, fueltypes):
     country the information about the total capacity of each fueltype is given.
     The scaling factor is determined by the ratio of the aggregated capacity of the
     fueltype within each coutry and the ENTSOe statistics about the fueltype capacity
-    total wothin each country.
+    total within each country.
 
     Parameters
     ----------
@@ -80,14 +80,12 @@ def rescale_capacities_to_country_totals(df, fueltypes):
         Data set that should be modified
     fueltype : str or list of strings
         fueltype that should be scaled
-
-
     """
     df = df.copy()
     if isinstance(fueltypes, str):
         fueltypes = [fueltypes]
     stats_df = lookup(df).loc[fueltypes]
-    stats_entsoe = lookup(ENTSOE()).loc[fueltypes]
+    stats_entsoe = lookup(ENTSOE_stats()).loc[fueltypes]
     if ((stats_df==0)&(stats_entsoe!=0)).any().any():
         print('Could not scale powerplants in the countries %s because of no occurring \
 power plants in these countries'%\
