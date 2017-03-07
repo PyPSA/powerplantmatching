@@ -54,10 +54,10 @@ def clean_powerplantname(df):
      'parque','eolico','gas','biomasa','COGENERACION'
      ,'gt','unnamed','tratamiento de purines','planta','de','la','station', 'power',
      'storage', 'plant', 'stage', 'pumped', 'project'] ]
-    df.Name = df.Name.replace(regex=True, to_replace=pattern, value=' ').str.strip().\
+    df.loc[:,'Name'] = df.Name.replace(regex=True, to_replace=pattern, value=' ').str.strip().\
                 str.replace('\\s\\s+', ' ')
     #do it twice to catch all single letters
-    df.Name = df.Name.replace(regex=True, to_replace=pattern, value=' ').str.strip().\
+    df.loc[:,'Name'] = df.Name.replace(regex=True, to_replace=pattern, value=' ').str.strip().\
                 str.replace('\\s\\s+', ' ').str.capitalize()
     df = df[df.Name != ''].sort_values('Name').reset_index(drop=True)
     return df
@@ -79,7 +79,7 @@ def gather_technology_info(df, search_col=['Name', 'Fueltype']):
         found = df.loc[:,i].str.findall(pattern).str.join(sep=', ')
         df.loc[:, 'Technology'] = (df.loc[:, 'Technology'].fillna('')
                             .str.cat(found.fillna(''), sep=', ').str.strip())
-        df.Technology = df.Technology.str.replace('^ , |^,|, $|,$', '').apply(lambda x:
+        df.loc[:,'Technology'] = df.Technology.str.replace('^ , |^,|, $|,$', '').apply(lambda x:
                      ', '.join(list(set(x.split(', ')))) ).str.strip()
         df.Technology.replace('', np.NaN, regex=True, inplace=True)
     return df
@@ -99,7 +99,7 @@ def gather_set_info(df, search_col=['Name', 'Fueltype']):
     return df
 
 
-def clean_technology(df, generalize_hydros=True):
+def clean_technology(df, generalize_hydros=False):
     df = df.copy()
     tech_b = df.Technology.notnull()
     df.loc[tech_b,'Technology'] = df.loc[tech_b,'Technology']\
@@ -188,16 +188,15 @@ def aggregate_units(df, use_saved_aggregation=False, dataset_name=None):
 
         """
         results = {'Name': x.Name.value_counts().index[0],
-                   'Country': x.Country.value_counts().index[0] if \
-                        x.Country.notnull().any(axis=0) else np.NaN,
-                   'Fueltype': x.Fueltype.value_counts().index[0] if \
-                        x.Fueltype.notnull().any(axis=0) else np.NaN,
-                   'Technology': ', '.join(x[x.Technology.notnull()].Technology.unique())
+                   'Country': x.Country.value_counts(dropna=False).index[0] ,
+#                     if   x.Country.notnull().any(axis=0) else np.NaN,
+                   'Fueltype': x.Fueltype.value_counts(dropna=False).index[0], 
+#                       if x.Fueltype.notnull().any(axis=0) else np.NaN,
+                   'Technology': ', '.join(x.Technology.dropna().unique())
                                             if x.Technology.notnull().any(axis=0) else np.NaN,
-                   'Set' : ', '.join(x[x.Set.notnull()].Set.unique())
-                                            if x.Set.notnull().any(axis=0) else np.NaN,
-                   'File': x.File.value_counts().index[0] if x.File.notnull().any(axis=0) else np.NaN,
-                   'Capacity': x['Capacity'].sum() if x.Capacity.notnull().any(axis=0) else np.NaN,
+                   'Set' : ', '.join(x.Set.dropna().unique()), 
+                   'File': x.File.value_counts(dropna=False).index[0],
+                   'Capacity': x['Capacity'].fillna(0.).sum(),
                    'lat': x['lat'].astype(float).mean(),
                    'lon': x['lon'].astype(float).mean(),
                    'YearCommissioned': x['YearCommissioned'].min(),
@@ -211,7 +210,7 @@ def aggregate_units(df, use_saved_aggregation=False, dataset_name=None):
             duplicates = duke(read_csv_if_string(df))
             df = cliques(df, duplicates)
             df.grouped.to_csv(path_name)
-        except AttributeError:
+        except:
             duplicates = duke(read_csv_if_string(df))  
             df = cliques(df, duplicates)                      
     elif use_saved_aggregation and (dataset_name is None):
@@ -219,12 +218,18 @@ def aggregate_units(df, use_saved_aggregation=False, dataset_name=None):
             dataset_name = df._metadata[0]
             path_name = '%s/data/aggregation_groups_%s.csv'%(os.path.dirname(__file__),dataset_name)
             df.loc[:,'grouped'] = pd.read_csv(path_name, header=None,index_col=0 ).values
-        except AttributeError:
+        except:
             print('''Non-existing saved links for this dataset, continuing by 
             aggregating again''')
             duplicates = duke(read_csv_if_string(df))  
             df = cliques(df, duplicates)                                            
-#use costum dataset identifier
+            try:
+                dataset_name = df._metadata[0]
+                path_name = '%s/data/aggregation_groups_%s.csv'%(os.path.dirname(__file__),dataset_name)
+                df.grouped.to_csv(path_name)
+            except:
+                pass
+        #use costum dataset identifier
     elif use_saved_aggregation==False and (dataset_name is not None):
         path_name = '%s/data/aggregation_groups_%s.csv'%(os.path.dirname(__file__),dataset_name)
         duplicates = duke(read_csv_if_string(df))
@@ -273,5 +278,4 @@ def clean_single(df, aggregate_powerplant_units=True, use_saved_aggregation=Fals
 
     if aggregate_powerplant_units:
         df = aggregate_units(df, use_saved_aggregation=use_saved_aggregation, dataset_name=dataset_name)
-
-    return df
+    return clean_technology(df)
