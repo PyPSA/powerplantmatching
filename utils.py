@@ -23,6 +23,14 @@ import six
 from countrycode import countrycode
 import matplotlib.pyplot as plt
 
+def _data(fn):
+    return os.path.join(os.path.dirname(__file__), 'data', fn)
+
+def _data_in(fn):
+    return os.path.join(os.path.dirname(__file__), 'data', 'in', fn)
+
+def _data_out(fn):
+    return os.path.join(os.path.dirname(__file__), 'data', 'in', fn)
 
 def lookup(df, keys=None, by='Country, Fueltype', exclude=None, show_totals=False):
     """
@@ -132,7 +140,6 @@ def parse_Geoposition(loc, country=None, return_Country=False):
             lat = gdata.latitude
             lon = gdata.longitude
             return (lat, lon)
-
             
             
 tech_colors = {"Wind" : "b",
