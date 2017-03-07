@@ -53,24 +53,46 @@ def clean_powerplantname(df):
      'storage', 'plant', 'stage', 'pumped', 'project'] ]
     df.Name = df.Name.replace(regex=True, to_replace=pattern, value=' ').str.strip().\
                 str.replace('\\s\\s+', ' ')
-    #do it twise to cach all single letters
+    #do it twice to catch all single letters
     df.Name = df.Name.replace(regex=True, to_replace=pattern, value=' ').str.strip().\
                 str.replace('\\s\\s+', ' ').str.capitalize()
     df = df[df.Name != ''].sort_values('Name').reset_index(drop=True)
     return df
 
 
-def gather_classification_info(df, search_col=['Name', 'Fueltype']):
+def gather_technology_info(df, search_col=['Name', 'Carrier']):
     pattern = '|'.join(('(?i)'+x) for x in
                        ['lignite', 'Hard coal', 'Coal hard', 'ccgt', 'ocgt', 'chp'
                         'reservoir', 'pumped storage', 'run-of-river'])
     for i in search_col:
         found = df.loc[:,i].str.findall(pattern).str.join(sep=', ')
-        df.loc[:, 'Classification'] = (df.loc[:, 'Classification'].fillna('')
+        df.loc[:, 'Technology'] = (df.loc[:, 'Technology'].fillna('')
                             .str.cat(found.fillna(''), sep=', ').str.strip())
-        df.Classification = df.Classification.str.replace('^ , |^,|, $|,$', '').apply(lambda x:
+        df.Technology = df.Technology.str.replace('^ , |^,|, $|,$', '').apply(lambda x:
                      ', '.join(list(set(x.split(', ')))) ).str.strip()
-        df.Classification.replace('', np.NaN, regex=True, inplace=True)
+        df.Technology.replace('', np.NaN, regex=True, inplace=True)
+
+    return df
+
+
+def gather_set(df):
+    df.Set = df.Set.replace({'IPP':'PP'})
+    # 1.) Write those which are explicitly no
+    indices_chp_yes = df.index[df.Chp=='yes']
+    df.set_value(indices_chp_yes, 'Set', 'CHP')
+    # 2.) Write those which are explicitly no
+    indices_chp_no = df.index[df.Chp=='no']
+    df.set_value(indices_chp_no, 'Set', 'PP')
+    # 3.) Check which rows have still an empty Set and search names for indicators
+    indices_set_empty = df.index[df.Set.isnull()]
+    pattern = '|'.join(('(?i)'+x) for x in
+                       ['heizkraftwerk', 'hkw', 'chp', 'bhkw'])
+    found = df.loc[indices_set_empty,'Name'].str.findall(pattern).str.join(sep=', ')
+    found = found.index[found<>'']
+    df.set_value(indices_set_empty, 'Set', 'CHP')
+    # 4.) Override the remaining empty rows with PP
+    indices_set_empty = df.index[df.Set.isnull()]
+    df.set_value(indices_set_empty, 'Set', 'PP')
     return df
 
 
@@ -152,7 +174,7 @@ def aggregate_units(df):
     def prop_for_groups(x):
         """
         Function for grouping duplicates within one dataset. Sums up the capacity, takes
-        mean from lattitude and longitude, takes the most frequent values for the rest of the
+        mean from latitude and longitude, takes the most frequent values for the rest of the
         columns
 
         """
@@ -168,6 +190,7 @@ def aggregate_units(df):
                    'lat': x['lat'].astype(float).mean(),
                    'lon': x['lon'].astype(float).mean(),
                    'projectID': list(x.projectID)}
+                   'YearCommissioned': x['YearCommissioned'].min(),
         return pd.Series(results)
 
     duplicates = duke(read_csv_if_string(df))

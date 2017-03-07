@@ -172,14 +172,21 @@ def combine_multiple_datasets(datasets, labels):
 
 def reduce_matched_dataframe(df):
     """
-    Returns a new dataframe with all names of the powerplants, but the Capacity on average
-    as well as longitude and lattitude. In the Country, Fueltype and Classification
-    column the most common value is returned.
+    Returns a new reduced dataframe with all names of the powerplants, according 
+    to the following logic:
+        - Averages: Capacity, longitude and latitude
+        - Most frequent value: Country, Fueltype and Classification
+        - Max: YearCommissioned*
+        
+    * Two thinkable cases in which it both makes sense to choose the latest year:
+    Case A: Plant has been retrofitted (e.g. 1973,1974,1973,2008) -> Choose 2008.
+    Case B: Some dbs refer to the construction year, others to grid synchronization year.
+        (1973,1974,1973,1972) -> choose 1974.
 
     Parameters
     ----------
     df : pandas.Dataframe
-        MultiIndex dataframe with the matched powerplants, as obatained from
+        MultiIndex dataframe with the matched powerplants, as obtained from
         combined_dataframe() or match_multiple_datasets()
     """
 
@@ -199,11 +206,13 @@ def reduce_matched_dataframe(df):
     sdf.loc[:, 'Fueltype'] = df.Fueltype.apply(most_frequent, axis=1)
     sdf.loc[:, 'Classification'] = df.Classification.apply(concat_strings, axis=1)
     sdf.loc[:, 'Country'] = df.Country.apply(most_frequent, axis=1)
+	# Could anyone please describe why this GEO-specific logic has been applied here??!
     if 'Geo' in df.Name:
         sdf.loc[df.Name.Geo.notnull(), 'Capacity'] = df[df.Name.Geo.notnull()].Capacity.Geo
         sdf.loc[df.Name.Geo.isnull(), 'Capacity'] = df[df.Name.Geo.isnull()].Capacity.max(axis=1)
     else:
         sdf.loc[:, 'Capacity'] = df.Capacity.max(axis=1)
+    sdf.loc[:, 'YearCommissioned'] = df.YearCommissioned.max(axis=1)
     sdf.loc[:, 'lat'] = df.lat.mean(axis=1)
     sdf.loc[:, 'lon'] = df.lon.mean(axis=1)
     sdf.loc[:, 'File'] = df.File.apply(concat_strings, axis=1)
