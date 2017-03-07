@@ -22,7 +22,7 @@ from .utils import read_csv_if_string
 from .utils import lookup
 from .data import ENTSOE
 
-def extend_by_non_matched(df, extend_by, label):
+def extend_by_non_matched(df, extend_by, label, fueltypes=None):
     """
     Returns the matched dataframe with additional entries of non-matched powerplants
     of a reliable source.
@@ -40,11 +40,18 @@ def extend_by_non_matched(df, extend_by, label):
         to the ones of the dataset
     """
     extend_by = read_csv_if_string(extend_by)
-    columns = df.columns
+#    columns = df.columns
+    extend_by.projectID = extend_by.projectID.apply(lambda x: 
+                                {label : x})
     if 'Name' in extend_by.columns:
         extend_by = extend_by.rename(columns={'Name':label})
-    return (df.append(extend_by[~extend_by.loc[:, label].isin(df.loc[:,label])])
-              .reset_index(drop=True))[columns]
+    if fueltypes is None:
+        return df.append(extend_by[~extend_by.loc[:, label].isin(df.loc[:,label])], 
+                                    ignore_index=True)
+    else:
+        return df.append(extend_by[(~extend_by.loc[:, label].isin(df.loc[:,label]))
+                                   & (extend_by.Fueltype.isin(fueltypes))], 
+                                     ignore_index=True)
 
 def rescale_capacities_to_country_totals(df, fueltypes):
     """
@@ -122,4 +129,4 @@ power plants in these countries'%\
 #del hydro
 #hydro = hydroexp
 #
-#print hydro.groupby(['Country', 'Classification']).Capacity.sum().unstack()
+#print hydro.groupby(['Country', 'Technology']).Capacity.sum().unstack()
