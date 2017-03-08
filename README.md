@@ -2,6 +2,18 @@
 A toolset for cleaning, standardizing and combining multiple power
 plant databases.
 
+**WARNING (2017/03/08)**: To prune unvoluntarily introduced non-public
+data (copyrighted data) from our repository we were forced to
+substantially rewrite the git commit history. This means that merges
+with descendants of earlier commits will NOT apply cleanly and instead
+have to be processed manually. Also, the usual 'pull' procedure will
+fail to start working based on the new changes, you have to save your
+changes and then call either `git reset origin/master` or even `git
+reset --hard origin/master` (Note that this removes the commits on
+your current branch).  We used the opportunity to move the
+continuously updating database bits to git large files, which you will
+have to [install](https://git-lfs.github.com/).
+
 This package helps with simplifying the data collection of power
 plants. Information on power plants, particularly European ones is
 scattered over a few different projects and databases that are
