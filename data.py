@@ -31,7 +31,7 @@ from .config import europeancountries, target_columns, target_fueltypes
 from .cleaning import (gather_fueltype_info, gather_set_info, gather_technology_info,
                        clean_powerplantname, clean_technology)
 from .utils import (parse_Geoposition, pass_datasetID_as_metadata,
-                    get_datasetID_from_metadata, _data, _data_in, _data)
+                    get_datasetID_from_metadata, _data, _data_in, _data_out)
 
 data_config = {}
 
@@ -373,7 +373,7 @@ def ENTSOE(update=False, raw=False, entsoe_token=None):
     if update or raw:
         assert entsoe_token is not None, "entsoe_token is missing"
 
-        domains = pd.read_csv(_data('entsoe-areamap.csv'), sep=';', header=None)
+        domains = pd.read_csv(_data('in/entsoe-areamap.csv'), sep=';', header=None)
         def full_country_name(l):
             return [country.title()
                     for country in filter(None, countrycode(l, origin='iso2c',
@@ -430,7 +430,12 @@ def ENTSOE(update=False, raw=False, entsoe_token=None):
                                            documentType='A71', processType='A33',
                                            In_Domain=domains.loc[i,0],
                                            periodStart='201512312300', periodEnd='201612312300'))
-            etree = ET.fromstring(ret.content) #create an ElementTree object
+            try:
+                etree = ET.fromstring(ret.content) #create an ElementTree object
+            except ET.ParseError:
+                #hack for dealing with unencoded '&' in ENTSOE-API
+                etree = ET.fromstring(re.sub(r'&(?=[^;]){6}', r'&amp;', ret.text)
+                                      .encode('utf-8') )
             ns = namespace(etree)
             df = pd.DataFrame(columns=level1+level2+level3+['Country'])
             for arg in level1:

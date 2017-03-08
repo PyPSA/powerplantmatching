@@ -18,6 +18,7 @@ Utility functions for checking data completness and supporting other functions
 
 from __future__ import print_function, absolute_import
 
+import os
 import pandas as pd
 import six
 from countrycode import countrycode

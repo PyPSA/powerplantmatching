@@ -232,6 +232,6 @@ def reduce_matched_dataframe(df):
     sdf.loc[:,'projectID'] = (df.projectID
                               .apply(lambda x: dict(zip(df.columns.levels[1][x.notnull()].values,
                                                    x.dropna().values)),
-                                     axis=1)
+                                     axis=1))
     sdf = clean_technology(sdf, generalize_hydros=False)
     return sdf.reset_index(drop=True)
