@@ -27,11 +27,11 @@ import xml.etree.ElementTree as ET
 import re
 
 from .cleaning import clean_single
-from .config import europeancountries, target_columns, target_fueltypes
+from .config import europeancountries, target_columns
 from .cleaning import (gather_fueltype_info, gather_set_info, gather_technology_info,
                        clean_powerplantname, clean_technology)
 from .utils import (parse_Geoposition, pass_datasetID_as_metadata,
-                    get_datasetID_from_metadata, _data, _data_in, _data_out)
+                     _data, _data_in, _data_out)
 
 data_config = {}
 
@@ -136,23 +136,10 @@ def GEO(raw=False):
     GEOdata = GEOdata[GEOdata['Country'].isin(europeancountries())]
     GEOdata.drop_duplicates(subset=GEOdata.columns.drop(['projectID']), inplace=True)
     GEOdata.replace({'Gas': 'Natural Gas'}, inplace=True)
-    #coaltypes = pd.read_csv('%s/coal-types.csv'%
-    #                   os.path.dirname(__file__), sep=',')
     GEOdata = gather_fueltype_info(GEOdata, search_col=['FuelClassification1'])
     GEOdata = gather_technology_info(GEOdata, search_col=['FuelClassification1'])
     GEOdata = gather_set_info(GEOdata)
     GEOdata = clean_powerplantname(GEOdata)
-#    GEOdata.Technology = GEOdata.Technology.replace({
-#       'Combined Cycle Gas Turbine':'CCGT',
-#       'Cogeneration Power and Heat Steam Turbine':'Steam Turbine',
-#       'Sub-critical Thermal|Super-critical Thermal':'Steam Turbine',
-#       'Open Cycle Gas Turbine|Power and Heat OCGT':'OCGT',
-#       'Combined Cycle Gas Engine (CCGE)':'CCGT',
-#       'Power and Heat Combined Cycle Gas Turbine':'CCGT',
-#       'Both Sub and Super Critical Thermal|Ultra-Super-Critical Thermal':'Steam Turbine',
-#       'Cogeneration Power and Heat Steam Turbine':'Steam Turbine',
-#       'Heat and Power Steam Turbine|Sub-critical Steam Turbine':'Steam Turbine'}
-#            , regex=True).str.strip()
     GEOdata = clean_technology(GEOdata, generalize_hydros=True)
     pass_datasetID_as_metadata(GEOdata, 'GEO')
     return GEOdata.loc[:,target_columns()]
@@ -250,7 +237,6 @@ def ENTSOE_stats(raw=False):
 def WRI(reduced_data=True):
     wri = pd.read_csv(_data_in('WRIdata.csv'),
                       encoding='utf-8', index_col='id')
-#    wri.Name = wri.Name.str.title()
     wri.loc[:,'projectID'] = wri.index.values
     wri = gather_set_info(wri)
     if reduced_data:
@@ -424,7 +410,7 @@ def ENTSOE(update=False, raw=False, entsoe_token=None):
             return etree_sel.text
         for i in domains.index:
             #https://transparency.entsoe.eu/content/static_content/
-            #Static%20content/web%20api/Guide.html#_generation_domain
+            #Static%20content/web%20api/Guide.html_generation_domain
             ret = requests.get('https://transparency.entsoe.eu/api',
                                params=dict(securityToken=entsoe_token,
                                            documentType='A71', processType='A33',
