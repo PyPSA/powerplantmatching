@@ -156,6 +156,6 @@ def Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced(update=False, use_saved_aggreg
                       custom_config={'ESE': dict(read_kwargs={'add_Oldenburgdata': add_Oldenburgdata})})
 
 #unpublishable
-def Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched(update=False, use_saved_aggregation=False):
+def Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched(update=False, use_saved_aggregation=False):
     return Collection(['CARMA', 'ENTSOE', 'GEO', 'OPSD', 'WEPP', 'WRI'],
                       update=update, use_saved_aggregation=use_saved_aggregation, reduced=False)
