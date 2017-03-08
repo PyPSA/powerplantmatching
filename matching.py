@@ -230,7 +230,7 @@ def reduce_matched_dataframe(df):
         else:
             return df.mean()
 
-    sdf = df.Name
+    sdf = pd.DataFrame(df.Name)
     sdf.loc[:, 'Fueltype'] = df.Fueltype.apply(most_frequent_fueltype, axis=1)
     sdf.loc[:, 'Technology'] = df.Technology.apply(concat_strings, axis=1)
     sdf.loc[:, 'Country'] = df.Country.apply(most_frequent, axis=1)

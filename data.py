@@ -179,7 +179,6 @@ def CARMA(raw=False):
          'NUC': 'Nuclear',
          'FLIQ': 'Oil',
          'WIND': 'Wind',
-         'BSOL': 'Waste',
          'EMIT': 'Other',
          'GEO': 'Geothermal',
          'WSTH': 'Waste',

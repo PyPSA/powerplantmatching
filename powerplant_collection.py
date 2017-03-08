@@ -20,18 +20,16 @@ from __future__ import print_function
 import os
 import pandas as pd
 import ast
-import matplotlib.pyplot as plt
 
 from .utils import set_uncommon_fueltypes_to_other, lookup
 from .data import CARMA,ENTSOE, GEO, OPSD, WRI, ESE, Oldenburgdata, WEPP
 from .cleaning import clean_single
-from .matching import (combine_multiple_datasets,
-                       reduce_matched_dataframe)
+from .matching import (combine_multiple_datasets, reduce_matched_dataframe)
 from .heuristics import extend_by_non_matched
 
 
 def Carma_ENTSOE_GEO_OPSD_matched(update=False, use_saved_aggregation=False):
-    outfn = os.path.join(os.path.dirname(__file__), 'data',
+    outfn = os.path.join(os.path.dirname(__file__), 'output',
                          'Matched_Carma_Entsoe_Geo_Opsd.csv')
     if update: #or not os.path.exists(outfn):
         datasets = [clean_single(CARMA(), use_saved_aggregation=use_saved_aggregation),
@@ -58,7 +56,7 @@ def Carma_ENTSOE_GEO_OPSD_matched_reduced(update=True):
 
     
 def Carma_ENTSOE_GEO_OPSD_WRI_matched(update=False, use_saved_aggregation=False):
-    outfn = os.path.join(os.path.dirname(__file__), 'data',
+    outfn = os.path.join(os.path.dirname(__file__), 'output',
                          'Matched_Carma_Entsoe_Geo_Opsd_Wri.csv')
     if update: #or not os.path.exists(outfn):
         datasets = [clean_single(CARMA(), use_saved_aggregation=use_saved_aggregation),
@@ -74,7 +72,7 @@ def Carma_ENTSOE_GEO_OPSD_WRI_matched(update=False, use_saved_aggregation=False)
         return pd.read_csv(outfn,index_col=0, header=[0,1])
 
 def Carma_ENTSOE_GEO_OPSD_WRI_matched_reduced(update=False):
-    outfn = os.path.join(os.path.dirname(__file__), 'data',
+    outfn = os.path.join(os.path.dirname(__file__), 'output',
                          'Matched_Carma_Entsoe_Geo_Opsd_Wri_reduced.csv')
     if update:
         sdf = reduce_matched_dataframe(Carma_ENTSOE_GEO_OPSD_WRI_matched())
@@ -154,7 +152,7 @@ def Aggregated_hydro(update=False, scaled_capacity=True):
 #unpublishable
 def Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched(update=False, use_saved_aggregation=False,
                                                  add_Oldenburgdata=False):
-    outfn = os.path.join(os.path.dirname(__file__), 'data',
+    outfn = os.path.join(os.path.dirname(__file__), 'output',
                          'Matched_Carma_Entsoe_Ese_Geo_Opsd_Wri.csv')
     if update: #or not os.path.exists(outfn):
         datasets = [clean_single(CARMA(), use_saved_aggregation=use_saved_aggregation),
@@ -172,7 +170,7 @@ def Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched(update=False, use_saved_aggregation=Fa
 
 #unpublishable
 def Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced(update=False):
-    outfn = os.path.join(os.path.dirname(__file__), 'data',
+    outfn = os.path.join(os.path.dirname(__file__), 'output',
                          'Matched_Carma_Entsoe_Ese_Geo_Opsd_Wri_reduced.csv')
     if update:
         sdf = reduce_matched_dataframe(Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched())
@@ -185,7 +183,7 @@ def Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced(update=False):
 
 #unpublishable
 def Carma_ENTSOE_GEO_OPSD_WEPP_WRI_matched(update=False, use_saved_aggregation=False):
-    outfn = os.path.join(os.path.dirname(__file__), 'data',
+    outfn = os.path.join(os.path.dirname(__file__), 'output',
                          'Matched_Carma_Entsoe_Geo_Opsd_Wepp_Wri.csv')
     if update: #or not os.path.exists(outfn):
         datasets = [clean_single(CARMA(), use_saved_aggregation=use_saved_aggregation),
@@ -203,7 +201,7 @@ def Carma_ENTSOE_GEO_OPSD_WEPP_WRI_matched(update=False, use_saved_aggregation=F
             
 #unpublishable
 def Carma_ENTSOE_GEO_OPSD_WEPP_WRI_matched_reduced(updateReduced=False, updateMatched=False):
-    outfn = os.path.join(os.path.dirname(__file__), 'data',
+    outfn = os.path.join(os.path.dirname(__file__), 'output',
                          'Matched_Carma_Entsoe_Geo_Opsd_Wepp_Wri_reduced.csv')
     if updateReduced:
         sdf = reduce_matched_dataframe(Carma_ENTSOE_GEO_OPSD_WEPP_WRI_matched(update=updateMatched))
@@ -217,7 +215,7 @@ def Carma_ENTSOE_GEO_OPSD_WEPP_WRI_matched_reduced(updateReduced=False, updateMa
 #unpublishable
 def Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched(update=False, use_saved_aggregation=False,
                                                add_Oldenburgdata=True):
-    outfn = os.path.join(os.path.dirname(__file__), 'data',
+    outfn = os.path.join(os.path.dirname(__file__), 'output',
                          'Matched_Carma_Entsoe_Ese_Geo_Opsd_Wepp_Wri.csv')
     if update: #or not os.path.exists(outfn):
         datasets = [clean_single(CARMA(), use_saved_aggregation=use_saved_aggregation),
@@ -237,7 +235,7 @@ def Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched(update=False, use_saved_aggregati
 #unpublishable
 def Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced(updateReduced=False,
             updateMatched=False, use_saved_aggregation=False, add_Oldenburgdata=True):
-    outfn = os.path.join(os.path.dirname(__file__), 'data',
+    outfn = os.path.join(os.path.dirname(__file__), 'output',
                          'Matched_Carma_Entsoe_Ese_Geo_Opsd_Wepp_Wri_reduced.csv')
     if updateReduced:
         sdf = reduce_matched_dataframe(Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched(update=updateMatched,
@@ -248,23 +246,3 @@ def Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced(updateReduced=False,
         sdf = pd.read_csv(outfn, index_col='id')
         sdf.projectID = sdf.projectID.apply(lambda df: ast.literal_eval(df))
         return sdf
-    
-def Plot_bar_comparison_Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI(cleaned=False, use_saved_aggregation=False):    
-    if cleaned:
-        carma = clean_single(CARMA(), use_saved_aggregation=use_saved_aggregation)
-        entsoe = clean_single(ENTSOE(), use_saved_aggregation=use_saved_aggregation),
-        geo = clean_single(GEO(), aggregate_powerplant_units=False),
-        opsd = clean_single(OPSD(), use_saved_aggregation=use_saved_aggregation),
-        wepp = clean_single(WEPP(), use_saved_aggregation=use_saved_aggregation),
-        wri = clean_single(WRI(), use_saved_aggregation=use_saved_aggregation)
-    else:
-        carma = CARMA()
-        entsoe = ENTSOE()
-        geo = GEO()
-        opsd = OPSD()
-        wepp = WEPP()
-        wri = WRI()
-    ese = ESE()
-    stats = lookup([carma, entsoe, ese, geo, opsd, wepp, wri],
-                   keys=['CARMA','ENTSO-E','ESE','GEO','OPSD','WEPP','WRI'], by='Fueltype')/1000
-    stats.plot.bar(stacked=False,  legend=True, figsize=(10,5))

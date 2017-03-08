@@ -38,42 +38,6 @@ def target_fueltypes():
     """
     return ['Natural Gas', 'Wind', 'Hydro', 'Oil', 'Waste', 'Hard Coal', 'Lignite',
             'Nuclear', 'Other', 'Solar', 'Bioenergy', 'Geothermal']
-    
-def fueltype_to_abbrev():
-    """
-    Returns the fueltype-specific abbreviation.
-    """
-    data = {'Bioenergy':'BIO',
-            'Geothermal':'GEO',
-            'Hard Coal':'COA',
-            'Hydro':'HYD',
-            'Lignite':'LIG',
-            'Natural Gas':'NG',
-            'Nuclear':'NUC',
-            'Oil':'OIL',
-            'Other':'OTH',
-            'Solar':'SPV',
-            'Waste':'WST',
-            'Wind':'WO'}
-    return data
-    
-def timestype_to_life():
-    """
-    Returns the timestype-specific technical lifetime    
-    """
-    data = {'Bioenergy':20,
-            'Geothermal':15,
-            'Hard Coal':35,
-            'Hydro':75,
-            'Lignite':35,
-            'Natural Gas':25,
-            'Nuclear':50,
-            'Oil':20,
-            'Other':5,
-            'Solar':25,
-            'Waste':25,
-            'Wind':25}
-    return data
 
 
 def target_sets():

@@ -13,19 +13,22 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+## This export script is intented for the users of the VEDA-TIMES modelling
+## framework <http://iea-etsap.org/index.php/etsap-tools/data-handling-shells/veda>
+
 import os
 import pandas as pd
 import numpy as np
 
 from countrycode import countrycode
-from .powerplant_collection import Carma_ENTSOE_GEO_OPSD_WEPP_WRI_matched_reduced
-from .config import fueltype_to_abbrev, timestype_to_life, target_fueltypes
+from .powerplant_collection import Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced
 
-def Export_TIMES(df):
+def Export_TIMES(df=None, use_scaled_capacity=False):
     
-    if df is None :
-        #raise RuntimeError("The data to be exported does not yet exist.")
-        df = Carma_ENTSOE_GEO_OPSD_WEPP_WRI_matched_reduced()
+    if df is None:
+        df = Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced()
+        if df is None:
+            raise RuntimeError("The data to be exported does not yet exist.")
 
     # replace country names by iso3166-2 codes
     df.loc[:,'Country'] = countrycode(codes=df.Country, origin='country_name', target='iso2c')
@@ -53,7 +56,7 @@ def Export_TIMES(df):
 
     # add column with technical lifetime
     df.insert(12, 'Life', np.nan)
-    df.loc[:,'Life'] = df.Fueltype.map(timestype_to_life())
+    df.loc[:,'Life'] = df.TimesType.map(timestype_to_life())
     
     # add column with decommissioning year
     df.insert(13, 'YearDecommissioned', np.nan)
@@ -72,6 +75,7 @@ def Export_TIMES(df):
     timestypes = list(set(df.TimesType))
     timestypes.sort()
     data_timestypes = df.groupby(df.TimesType)
+    cap_column='Scaled Capacity' if use_scaled_capacity else 'Capacity'
     for tt in timestypes:
         tt_group = data_timestypes.get_group(tt)
         for yr in range(2010, 2055, 5):
@@ -80,11 +84,11 @@ def Export_TIMES(df):
             for ct in countries:
                 if ct in data_countries.groups:
                     ct_group = data_countries.get_group(ct)
-                    # Here the matched elements are being filtered
-                    series = ct_group.apply(lambda x: x['Scaled Capacity'] \
+                    # Here, the matched elements are being filtered
+                    series = ct_group.apply(lambda x: x[cap_column] \
                         if yr >= x['YearCommissioned'] and yr <= x['YearDecommissioned'] else 0, axis=1)
-                    # Write the sum into the export dataframe
-                    df_exp.loc[row,ct] = series.sum()/1000 # division by 1000 to convert MW -> GW
+                    # Divide the sum by 1000 (MW->GW) and write into the export dataframe
+                    df_exp.loc[row,ct] = series.sum()/1000
                 else:
                     df_exp.loc[row,ct] = 0
             df_exp.loc[row,'Pset_Pn'] = tt
@@ -94,6 +98,62 @@ def Export_TIMES(df):
     df_exp.loc[:,'LimType'] = 'FX'
     
     # Write resulting dataframe to file
-    outfn = os.path.join(os.path.dirname(__file__), 'data','Export_TIMES.xlsx')
+    outfn = os.path.join(os.path.dirname(__file__), 'output','Export_TIMES.xlsx')
     df_exp.to_excel(outfn)
-    return
+    return df_exp
+
+    
+def fueltype_to_abbrev():
+    """
+    Returns the fueltype-specific abbreviation.
+    """
+    data = {'Bioenergy':'BIO',
+            'Geothermal':'GEO',
+            'Hard Coal':'COA',
+            'Hydro':'HYD',
+            'Lignite':'LIG',
+            'Natural Gas':'NG',
+            'Nuclear':'NUC',
+            'Oil':'OIL',
+            'Other':'OTH',
+            'Solar':'SPV',
+            'Waste':'WST',
+            'Wind':'WO'}
+    return data
+    
+def timestype_to_life():
+    """
+    Returns the timestype-specific technical lifetime    
+    """
+    data = {'ConELC-PP_COA':35,
+            'ConELC-PP_LIG':35,
+            'ConELC-PP_NG-OCGT':25,
+            'ConELC-PP_NG-ST':35,
+            'ConELC-PP_NG-CCGT':25,
+            'ConELC-PP_OIL':20,
+            'ConELC-PP_NUC':50,
+            'ConELC-PP_BIO':20,
+            'ConELC-PP_HYD-ROR':75,
+            'ConELC-PP_HYD-STO':100,
+            'ConELC-PP_HYD-PST':100,
+            'ConELC-PP_WON':25,
+            'ConELC-PP_WOF':30,
+            'ConELC-PP_SPV':25,
+            'ConELC-PP_CST':25,
+            'ConELC-PP_WST':25,
+            'ConELC-PP_SYN':5,
+            'ConELC-PP_CAES':40,
+            'ConELC-PP_GEO':15,
+            'ConELC-PP_OTH':5,
+            'ConELC-CHP_COA':35,
+            'ConELC-CHP_LIG':35,
+            'ConELC-CHP_NG-OCGT':25,
+            'ConELC-CHP_NG-ST':35,
+            'ConELC-CHP_NG-CCGT':25,
+            'ConELC-CHP_OIL':20,
+            'ConELC-CHP_BIO':20,
+            'ConELC-CHP_WST':25,
+            'ConELC-CHP_SYN':5,
+            'ConELC-CHP_OTH':5,
+            }
+    return data
