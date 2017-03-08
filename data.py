@@ -94,7 +94,7 @@ def OPSD(rawEU=False, rawDE=False):
     pass_datasetID_as_metadata(opsd, 'OPSD')
     return opsd
 
-data_config['OPSD'] = {'load_function': OPSD, 'aggregate_powerplant_units': True}
+data_config['OPSD'] = {'read_function': OPSD, 'aggregate_powerplant_units': True}
 
 def GEO(raw=False):
     """
@@ -157,7 +157,7 @@ def GEO(raw=False):
     pass_datasetID_as_metadata(GEOdata, 'GEO')
     return GEOdata.loc[:,target_columns()]
 
-data_config['GEO'] = {'load_function': GEO, 'aggregate_powerplant_units': False}
+data_config['GEO'] = {'read_function': GEO}
 
 
 def CARMA(raw=False):
@@ -205,7 +205,7 @@ def CARMA(raw=False):
     pass_datasetID_as_metadata(carmadata, 'CARMA')
     return carmadata[target_columns()]
 
-data_config['CARMA'] = {'load_function': CARMA, 'aggregate_powerplant_units': True}
+data_config['CARMA'] = {'read_function': CARMA}
 
 def Oldenburgdata():
     """
@@ -218,7 +218,7 @@ def Oldenburgdata():
     oldb.loc[:, 'File'] = 'Oldenburg_' + oldb.Country + '.csv'
     return oldb.loc[:,target_columns()]
 
-data_config['Oldenburgdata'] = {'load_function': Oldenburgdata, 'aggregate_powerplant_units': True}
+data_config['Oldenburgdata'] = {'read_function': Oldenburgdata}
 
 
 def ENTSOE_stats(raw=False):
@@ -260,7 +260,7 @@ def WRI(reduced_data=True):
     pass_datasetID_as_metadata(wri, 'WRI')
     return wri.loc[:,target_columns()]
 
-data_config['WRI'] = {'load_function': WRI, 'aggregate_powerplant_units': True}
+data_config['WRI'] = {'read_function': WRI}
 
 
 def ESE(update=False, path=None, add_Oldenburgdata=False):
@@ -343,7 +343,7 @@ def ESE(update=False, path=None, add_Oldenburgdata=False):
     data.to_csv(saved_version, index_label='id', encoding='utf-8')
     return data.loc[:,target_columns()]
 
-data_config['ESE'] = {'load_function': ESE, 'skip_clean_single': True}
+data_config['ESE'] = {'read_function': ESE, 'skip_clean_single': True}
 
 
 def ENTSOE(update=False, raw=False, entsoe_token=None):
@@ -481,7 +481,7 @@ def ENTSOE(update=False, raw=False, entsoe_token=None):
         pass_datasetID_as_metadata(entsoe, 'ENTSOE')
         return entsoe
 
-data_config['ENTSOE'] = {'load_function': ENTSOE, 'aggregate_powerplant_units': True}
+data_config['ENTSOE'] = {'read_function': ENTSOE, 'aggregate_powerplant_units': True}
 
 
 def WEPP(raw=False, parseGeoLoc=False):
@@ -560,4 +560,4 @@ def WEPP(raw=False, parseGeoLoc=False):
 
     return wepp
 
-data_config['WEPP'] = {'load_function': WEPP, 'aggregate_powerplant_units': True}
+data_config['WEPP'] = {'read_function': WEPP, 'aggregate_powerplant_units': True}

@@ -81,7 +81,7 @@ def gather_technology_info(df, search_col=['Name', 'Fueltype']):
                             .str.cat(found.fillna(''), sep=', ').str.strip())
         df.loc[:,'Technology'] = df.Technology.str.replace('^ , |^,|, $|,$', '').apply(lambda x:
                      ', '.join(list(set(x.split(', ')))) ).str.strip()
-        df.Technology.replace('', np.NaN, regex=True, inplace=True)
+        df.Technology.replace('', np.NaN, inplace=True)
     return df
 
 
@@ -214,7 +214,7 @@ def aggregate_units(df, use_saved_aggregation=False, dataset_name=None):
     if use_saved_aggregation:
         # try:
         # XXX: why  .values?? and NEVER do a catchall except
-        df.loc[:, 'grouped'] = pd.read_csv(path_name, header=None,index_col=0 ).values
+        df.loc[:, 'grouped'] = pd.read_csv(path_name, header=None, index_col=0).values
         # except:
         # print("Non-existing saved links for this dataset, continuing by aggregating again")
 
