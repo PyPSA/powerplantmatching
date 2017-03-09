@@ -21,7 +21,7 @@ import os
 import pandas as pd
 import ast
 
-from .utils import set_uncommon_fueltypes_to_other, _data_out
+from .utils import set_uncommon_fueltypes_to_other, _data_in, _data_out
 from .data import data_config, OPSD, ESE
 from .cleaning import clean_single
 from .matching import (combine_multiple_datasets,
@@ -134,7 +134,7 @@ def MATCHED_dataset(aggregated_hydros=True, rescaled_hydros=False,
 
 
 def Aggregated_hydro(update=False, scaled_capacity=True):
-    outfn = _data_out('hydro_aggregation_beta.csv')
+    fn = _data_in('hydro_aggregation_beta.csv')
 #    if update or not os.path.exists(outfn):
 #        # Generate the matched database
 #        raise NotImplemented()
@@ -142,7 +142,7 @@ def Aggregated_hydro(update=False, scaled_capacity=True):
 #
 #        # matched_df.to_csv(outfn)
 #        # return matched_df
-    hydro = pd.read_csv(outfn, index_col='id')
+    hydro = pd.read_csv(fn, index_col='id')
     if scaled_capacity:
         hydro.Capacity = hydro.loc[:,'Scaled Capacity']
     return hydro.drop('Scaled Capacity', axis=1)
