@@ -32,7 +32,6 @@ from .utils import (pass_datasetID_as_metadata,
 
 
 def clean_powerplantname(df):
-    df = df.copy()
     """
     Cleans the column "Name" of the database by deleting very frequent
     words, numericals and nonalphanumerical characters of the
@@ -44,6 +43,7 @@ def clean_powerplantname(df):
         dataframe which should be cleaned
 
     """
+    df = df.copy()
     df.Name.replace(regex=True, value=' ',
                     to_replace=list('-/')+['\(', '\)', '\[', '\]', '[0-9]'],
                     inplace=True)
@@ -102,35 +102,20 @@ def gather_set_info(df, search_col=['Name', 'Fueltype']):
 
 
 def clean_technology(df, generalize_hydros=False):
-    df = df.copy()
-    tech_b = df.Technology.notnull()
-    df.loc[tech_b,'Technology'] = df.loc[tech_b,'Technology']\
-                                  .replace([' and ',' Power Plant'],[', ', ''],regex=True )
+    tech = df['Technology'].dropna()
+    tech = tech.replace({' and ': ', ', ' Power Plant': ''}, regex=True)
     if generalize_hydros:
-        df.loc[(df.Technology.fillna('').str.contains('Pump|pumped', case=False))
-               , 'Technology'] = 'Pumped Storage'
-        df.loc[(df.Technology.fillna('').str.contains('reservoir|lake', case=False))
-               , 'Technology'] = 'Reservoir'
-        df.loc[(df.Technology.fillna('').str.contains('run-of-river|weir|water', case=False))
-               , 'Technology'] = 'Run-Of-River'
-        df.loc[(df.Technology.fillna('').str.contains('dam', case=False))
-               , 'Technology'] = 'Reservoir'
-    df.loc[df.Technology == 'Gas turbine', 'Technology'] = 'OCGT'
-    df.loc[(df.Technology.fillna('').str.contains('combined cycle', case=False))
-           , 'Technology'] = 'CCGT'
-    df.loc[(df.Technology.fillna('').str.contains('steam turbine|critical thermal', case=False))
-           , 'Technology'] = 'Steam Turbine'
-    df.loc[(df.Technology.fillna('').str.contains('ocgt|open cycle', case=False))
-           , 'Technology'] = 'OCGT'
-    df.loc[tech_b,'Technology'] = df.loc[tech_b,
-                                         'Technology'].str.title().str.strip().str.split(', ')\
-                                    .apply(lambda x: ', '.join(np.unique(x))).str.strip()
-    df.Technology[tech_b] = df.Technology[tech_b].str.title().replace(
-        ['Ccgt','Ocgt'], ['CCGT', 'OCGT'], regex=True)
-    # df.Technology = df.Technology[lambda df : df.notnull()].str.split(', ').apply(
-    #         lambda x : ', '.join([i for i in x if i in target_technologies()]))
-    df.replace('', np.nan, inplace=True)
-    return df
+        tech[tech.str.contains('pump', case=False)] = 'Pumped Storage'
+        tech[tech.str.contains('reservoir|lake', case=False)] = 'Reservoir'
+        tech[tech.str.contains('run-of-river|weir|water', case=False)] = 'Run-Of-River'
+        tech[tech.str.contains('dam', case=False)] = 'Reservoir'
+    tech = tech.replace({'Gas turbine': 'OCGT'})
+    tech[tech.str.contains('combined cycle', case=False)] = 'CCGT'
+    tech[tech.str.contains('steam turbine|critical thermal', case=False)] = 'Steam Turbine'
+    tech[tech.str.contains('ocgt|open cycle', case=False)] = 'OCGT'
+    tech = tech.str.title().str.split(', ').apply(lambda x: ', '.join(map(str.strip, np.unique(x))))
+    tech = tech.replace({'Ccgt': 'CCGT', 'Ocgt': 'OCGT'}, regex=True)
+    return df.assign(Technology=tech)
 
 
 def cliques(df, dataduplicates):
