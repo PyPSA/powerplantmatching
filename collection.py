@@ -31,8 +31,10 @@ from .heuristics import extend_by_non_matched
 def Collection(datasets, update=False, use_saved_aggregation=False, reduced=True,
                custom_config={}):
     datasets = sorted(datasets)
-    outfn_matched = _data_out('Matched_{}.csv'.format('_'.join(map(str.upper, datasets))))
-    outfn_reduced = _data_out('Matched_{}_reduced.csv'.format('_'.join(map(str.upper, datasets))))
+    outfn_matched = _data_out('Matched_{}.csv'
+                              .format('_'.join(map(str.upper, datasets))))
+    outfn_reduced = _data_out('Matched_{}_reduced.csv'
+                              .format('_'.join(map(str.upper, datasets))))
     outfn = outfn_reduced if reduced else outfn_matched
 
     if update:
@@ -44,7 +46,8 @@ def Collection(datasets, update=False, use_saved_aggregation=False, reduced=True
             df = conf['read_function'](**conf.get('read_kwargs', {}))
             if not conf.get('skip_clean_single', False):
                 if conf.get('aggregate_powerplant_units', True):
-                    df = clean_single(df, use_saved_aggregation=use_saved_aggregation)
+                    df = clean_single(df, use_saved_aggregation=use_saved_aggregation, 
+                                      dataset_name=name)
                 else:
                     df = clean_single(df, aggregate_powerplant_units=False)
             dfs.append(df)
@@ -56,8 +59,11 @@ def Collection(datasets, update=False, use_saved_aggregation=False, reduced=True
 
         return reduced_df if reduced else matched
     else:
-        sdf = pd.read_csv(outfn, index_col=0, header=[0,1])
-        if 'projectID' in sdf:
+        if reduced:
+            sdf = pd.read_csv(outfn, index_col=0)
+        else:
+            sdf = pd.read_csv(outfn, index_col=0, header=[0,1])
+        if 'projectID' in sdf and reduced:
             sdf.projectID = sdf.projectID.apply(lambda df: ast.literal_eval(df))
         return sdf
 
@@ -81,7 +87,8 @@ def Carma_ENTSOE_GEO_OPSD_WRI_matched_reduced(update=False, use_saved_aggregatio
                       update=update, use_saved_aggregation=use_saved_aggregation,
                       reduced=True)
 
-def MATCHED_dataset(aggregated_hydros=True, rescaled_hydros=False, subsume_uncommon_fueltypes=False,
+def MATCHED_dataset(aggregated_hydros=True, rescaled_hydros=False, 
+                    subsume_uncommon_fueltypes=False,
                     include_unavailables=False):
     """
     This returns the actual match between the Carma-data, GEO-data, WRI-data,
@@ -146,16 +153,19 @@ def Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched(update=False, use_saved_aggregation=Fa
                                           add_Oldenburgdata=False):
     return Collection(['CARMA', 'ENTSOE', 'ESE', 'GEO', 'OPSD', 'WRI'],
                       update=update, use_saved_aggregation=use_saved_aggregation, reduced=False,
-                      custom_config={'ESE': dict(read_kwargs={'add_Oldenburgdata': add_Oldenburgdata})})
+                      custom_config={'ESE': dict(read_kwargs=
+                                                 {'add_Oldenburgdata': add_Oldenburgdata})})
 
 #unpublishable
 def Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced(update=False, use_saved_aggregation=False,
                                                   add_Oldenburgdata=False):
     return Collection(['CARMA', 'ENTSOE', 'ESE', 'GEO', 'OPSD', 'WRI'],
                       update=update, use_saved_aggregation=use_saved_aggregation, reduced=True,
-                      custom_config={'ESE': dict(read_kwargs={'add_Oldenburgdata': add_Oldenburgdata})})
+                      custom_config={'ESE': dict(read_kwargs=
+                                                 {'add_Oldenburgdata': add_Oldenburgdata})})
 
 #unpublishable
 def Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched(update=False, use_saved_aggregation=False):
     return Collection(['CARMA', 'ENTSOE', 'GEO', 'OPSD', 'WEPP', 'WRI'],
-                      update=update, use_saved_aggregation=use_saved_aggregation, reduced=False)
+                      update=update, 
+                      use_saved_aggregation=use_saved_aggregation, reduced=False)

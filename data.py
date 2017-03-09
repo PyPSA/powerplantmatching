@@ -200,9 +200,6 @@ def Oldenburgdata():
     """
     oldb = pd.read_csv(_data_in('OldenburgHydro.csv'),
                        encoding='utf-8', index_col='id')
-    oldb.loc[:,'Technology'] = oldb.Classification
-    oldb.loc[:, 'projectID'] = 'OL' + oldb.index.astype(str)
-    oldb.loc[:, 'File'] = 'Oldenburg_' + oldb.Country + '.csv'
     return oldb.loc[:,target_columns()]
 
 data_config['Oldenburgdata'] = {'read_function': Oldenburgdata}
