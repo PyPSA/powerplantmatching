@@ -113,7 +113,9 @@ def clean_technology(df, generalize_hydros=False):
     tech[tech.str.contains('combined cycle', case=False)] = 'CCGT'
     tech[tech.str.contains('steam turbine|critical thermal', case=False)] = 'Steam Turbine'
     tech[tech.str.contains('ocgt|open cycle', case=False)] = 'OCGT'
-    tech = tech.str.title().str.split(', ').apply(lambda x: ', '.join(map(str.strip, np.unique(x))))
+    tech = (tech.str.title()
+                .str.split(', ')
+                .apply(lambda x: ', '.join(i.strip() for i in np.unique(x))))
     tech = tech.replace({'Ccgt': 'CCGT', 'Ocgt': 'OCGT'}, regex=True)
     return df.assign(Technology=tech)
 
