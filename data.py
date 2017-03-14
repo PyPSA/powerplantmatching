@@ -82,18 +82,25 @@ def OPSD(rawEU=False, rawDE=False):
                             }, inplace=True)
     opsd_DE.loc[:,'projectID'] = opsd_DE.Id
     opsd_DE = opsd_DE.loc[:,target_columns()]
+    # concatenated dataset
     opsd = pd.concat([opsd_EU, opsd_DE]).reset_index(drop=True)
+    opsd.loc[:,'Country'] = countrycode(codes=opsd.Country.tolist(),
+                               target='country_name', origin='iso2c')
+    opsd.loc[:,'Country'] = opsd.Country.str.title()
+    opsd = opsd[opsd.Country.isin(europeancountries())]
     opsd.lat.replace(' ', np.nan, inplace=True, regex=True)
-    d = {'Natural gas': 'Natural Gas',
-         'Biomass and biogas': 'Bioenergy',
-         'Other or unspecified energy sources': 'Other',
+    d = {'Biomass and biogas':'Bioenergy',
+         'Fossil fuels':'Other',
+         'Mixed fossil fuels':'Other',
+         'Natural gas':'Natural Gas',
+         'Non-renewable waste':'Waste',
+         'Other bioenergy and renewable waste':'Bioenergy',
+         'Other or unspecified energy sources':'Other',
          'Other fossil fuels': 'Other'}
     opsd.Fueltype = opsd.Fueltype.replace(d).str.title()
     opsd = gather_technology_info(opsd)
     opsd = gather_set_info(opsd)    
     opsd = clean_technology(opsd)
-    opsd.Country = countrycode(codes=opsd.Country.tolist(),
-                               target='country_name', origin='iso2c')
     opsd.loc[:,'Name'] = opsd.Name.str.title()
     opsd.loc[:,'Country'] = opsd.Country.str.title()
     pass_datasetID_as_metadata(opsd, 'OPSD')
@@ -224,7 +231,7 @@ def ENTSOE_stats(raw=False, longcountry=True):
     """
     Standardize the entsoe database for statistical use.
     """
-    df = pd.read_csv('%s/data/entsoe_aggregated_capacity.csv'%os.path.dirname(__file__),
+    df = pd.read_csv('%s/data/aggregated_capacity.csv'%os.path.dirname(__file__),
                        encoding='utf-8')
     if raw:
         return df
@@ -254,6 +261,7 @@ def WRI(reduced_data=True):
     wri = pd.read_csv('%s/data/WRIdata.csv'%os.path.dirname(__file__),
                       encoding='utf-8', index_col='id')
 #    wri.Name = wri.Name.str.title()
+    wri = wri[wri.Country.isin(europeancountries())]
     wri.loc[:,'projectID'] = wri.index.values
     wri.Fueltype = wri.Fueltype.replace({'Coal':'Hard Coal'})
     wri = gather_set_info(wri)
@@ -307,6 +315,7 @@ def ESE(update=False, path=None, add_Oldenburgdata=False):
     if not os.path.exists(path):
         raise(ValueError('The given path does not exist'))
     data = pd.read_excel(path, encoding='utf-8')
+    data = data[data.Country.isin(europeancountries())]
     data.loc[:,'Name'] = data.loc[:,'Project Name']
     data.loc[:,'Technology'] = data.loc[:,'Technology Type']
     data.loc[:,'Set'] = 'PP'
@@ -345,6 +354,7 @@ def ESE(update=False, path=None, add_Oldenburgdata=False):
         data = clean_single(data)
     data.File = 'energy_storage_exchange'
     data.loc[:,target_columns()]
+    data = data[data.Country.isin(europeancountries())]
     data.to_csv(saved_version, index_label='id', encoding='utf-8')
     return data.loc[:,target_columns()]
 
@@ -479,6 +489,7 @@ def ENTSOE(update=False, raw=False):
     else:
         entsoe = pd.read_csv('%s/data/entsoe_powerplants.csv'%os.path.dirname(__file__), 
                        index_col='id', encoding='utf-8')
+        entsoe = entsoe[entsoe.Country.isin(europeancountries())]
         pass_datasetID_as_metadata(entsoe, 'ENTSOE')
         return entsoe
         

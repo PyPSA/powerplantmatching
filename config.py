@@ -60,3 +60,22 @@ def target_columns():
 #    return ['Name', 'Fueltype', 'Technology', 'Set', 'Country', 'Capacity',
 #            'YearCommissioned','YearDecommissioned', 'lat', 'lon', 'File',
 #            'projectID']
+
+def fueltype_to_life():
+    """
+    Returns an approximation for the technical lifetime of a power plant in 
+    years, depending on its fueltype.
+    """
+    data = {'Bioenergy':20,
+             'Geothermal':15,
+             'Hard Coal':35,
+             'Hydro':75,
+             'Lignite':35,
+             'Natural Gas':25,
+             'Nuclear':50,
+             'Oil':20,
+             'Other':5,
+             'Solar':25,
+             'Waste':25,
+             'Wind':25}
+    return data

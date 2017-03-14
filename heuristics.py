@@ -88,7 +88,7 @@ def rescale_capacities_to_country_totals(df, fueltypes):
     stats_entsoe = lookup(ENTSOE_stats()).loc[fueltypes]
     if ((stats_df==0)&(stats_entsoe!=0)).any().any():
         print('Could not scale powerplants in the countries %s because of no occurring \
-power plants in these countries'%\
+              power plants in these countries'%\
               stats_df.loc[:, ((stats_df==0)&\
                             (stats_entsoe!=0)).any()].columns.tolist())
     ratio = (stats_entsoe/stats_df).fillna(1)
@@ -97,6 +97,44 @@ power plants in these countries'%\
         for fueltype in fueltypes:
             df.loc[(df.Country==country)&(df.Fueltype==fueltype), 'Scaled Capacity'] *= \
                    ratio.loc[fueltype,country]
+    return df
+
+
+
+def add_missing_capacities(df, fueltypes):
+    """
+    Primarily written to add artificial missing wind- and solar capacities to 
+    match these to the statistics
+    
+    Parameters
+    ----------
+    df : Pandas.DataFrame
+        Dataframe that should be modified
+    fueltype : str or list of strings
+        fueltype that should be scaled
+    """
+    df = df.copy()
+    if isinstance(fueltypes, str):
+        fueltypes = [fueltypes]
+    stats_df = lookup(df).loc[fueltypes]
+    stats_entsoe = lookup(ENTSOE_stats()).loc[fueltypes]
+    missing = (stats_entsoe - stats_df).fillna(0.)
+    missing[missing<0] = 0
+    for country in missing:
+        for fueltype in fueltypes:
+            if missing.loc[fueltype,country] > 0:
+                row = df.index.size
+                df.loc[row, ['CARMA','ENTSOE','ESE','GEO','OPSD','WEPP','WRI']] = \
+                               'Artificial_' + fueltype + '_' + country
+                df.loc[row,'Fueltype'] = fueltype
+                df.loc[row,'Country'] = country
+                df.loc[row,'Set'] = 'PP'
+                df.loc[row,'Capacity'] = missing.loc[fueltype,country]
+                #TODO: This section needs to be enhanced, current values based on average construction year.
+                if fueltype=='Solar':
+                    df.loc[row,'YearCommissioned'] = 2011
+                if fueltype=='Wind':
+                    df.loc[row,'YearCommissioned'] = 2008
     return df
 
 

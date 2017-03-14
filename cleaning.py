@@ -202,7 +202,7 @@ def aggregate_units(df, use_saved_aggregation=False, dataset_name=None):
                    'YearCommissioned': x['YearCommissioned'].min(),
                    'projectID': list(x.projectID)}
         return pd.Series(results)
-#try to use dataset idetifier from df.datasetID
+    # Try to use dataset identifier from metadata
     if use_saved_aggregation==False and (dataset_name is None):
         try:  
             dataset_name = df._metadata[0]
@@ -219,8 +219,8 @@ def aggregate_units(df, use_saved_aggregation=False, dataset_name=None):
             path_name = '%s/data/aggregation_groups_%s.csv'%(os.path.dirname(__file__),dataset_name)
             df.loc[:,'grouped'] = pd.read_csv(path_name, header=None,index_col=0 ).values
         except:
-            print('''Non-existing saved links for this dataset, continuing by 
-            aggregating again''')
+            print('''Non-existing saved links for dataset "%s", continuing by 
+            aggregating again'''%dataset_name)
             duplicates = duke(read_csv_if_string(df))  
             df = cliques(df, duplicates)                                            
             try:
@@ -229,7 +229,7 @@ def aggregate_units(df, use_saved_aggregation=False, dataset_name=None):
                 df.grouped.to_csv(path_name)
             except:
                 pass
-        #use costum dataset identifier
+    # Use custom dataset identifier
     elif use_saved_aggregation==False and (dataset_name is not None):
         path_name = '%s/data/aggregation_groups_%s.csv'%(os.path.dirname(__file__),dataset_name)
         duplicates = duke(read_csv_if_string(df))
@@ -257,7 +257,7 @@ def clean_single(df, aggregate_powerplant_units=True, use_saved_aggregation=Fals
         dataframe or csv-file to use for the resulting database
 
     aggregate_units : Boolean, default True
-        Wether or not the power plant units should be aggregated
+        Whether or not the power plant units should be aggregated
         
     use_saved_aggregation : Boolean (default False):
         Only sensible if aggregate_units is set to True. 

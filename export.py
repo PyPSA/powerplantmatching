@@ -29,6 +29,7 @@ def Export_TIMES(df=None, use_scaled_capacity=False):
         df = Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced()
         if df is None:
             raise RuntimeError("The data to be exported does not yet exist.")
+    df = df.copy()
 
     # replace country names by iso3166-2 codes
     df.loc[:,'Country'] = countrycode(codes=df.Country, origin='country_name', target='iso2c')

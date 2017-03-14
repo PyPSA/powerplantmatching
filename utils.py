@@ -33,15 +33,14 @@ def lookup(df, keys=None, by='Country, Fueltype', exclude=None, show_totals=Fals
     ----------
     df : pandas.Dataframe or list of pandas.Dataframe's
         powerplant databases to be analysed. If multiple dataframes are passed
-        the lookup table will dusplay them in a MulitIndex
+        the lookup table will display them in a MulitIndex
     by : string out of 'Country, Fueltype', 'Country' or 'Fueltype'
-        Define the type pf lookup table you want to obtain.
+        Define the type of lookup table you want to obtain.
     keys : list of strings
-        labels of the different datasets, only nescessary if multiple dataframes
+        labels of the different datasets, only necessary if multiple dataframes
         passed
     exclude: list
         list of fueltype to exclude from the analysis
-
     """
 
     def lookup_single(df, by=by, exclude=exclude):
