@@ -39,7 +39,6 @@ def target_fueltypes():
     return ['Natural Gas', 'Wind', 'Hydro', 'Oil', 'Waste', 'Hard Coal', 'Lignite',
             'Nuclear', 'Other', 'Solar', 'Bioenergy', 'Geothermal']
 
-
 def target_sets():
     return ['PP', 'CHP']
 

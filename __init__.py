@@ -20,3 +20,4 @@ A set of tools for cleaning, standardising and combining multiple
 power plant databases.
 """
 
+from .collection import Collection, MATCHED_dataset

@@ -26,14 +26,16 @@ import six
 from .config import target_columns, target_fueltypes, target_technologies
 from .utils import read_csv_if_string
 from .duke import duke
+from .utils import (pass_datasetID_as_metadata,
+                    get_datasetID_from_metadata, _data, _data_in, _data_out)
 
 
 
 def clean_powerplantname(df):
     """
-    Cleans the column "Name" of the database by deleting very frequent words, numericals and
-    nonalphanumerical characters of the column. Returns a reduced dataframe with nonempty
-    Name-column.
+    Cleans the column "Name" of the database by deleting very frequent
+    words, numericals and nonalphanumerical characters of the
+    column. Returns a reduced dataframe with nonempty Name-column.
 
     Parameters
     ----------
@@ -63,12 +65,12 @@ def clean_powerplantname(df):
     return df
 
 
-def gather_fueltype_info(df, search_col=['Name', 'Technology']):   
+def gather_fueltype_info(df, search_col=['Name', 'Technology']):
     df = df.copy()
     for i in search_col:
         found = df.loc[:,i].fillna('').str.contains('(?i)lignite|(?i)brown')
         df.loc[found,'Fueltype'] = 'Lignite'
-    df.loc[df.Fueltype=='Coal', 'Fueltype'] = 'Hard Coal' 
+    df.loc[df.Fueltype=='Coal', 'Fueltype'] = 'Hard Coal'
     return df
 
 
@@ -81,15 +83,15 @@ def gather_technology_info(df, search_col=['Name', 'Fueltype']):
                             .str.cat(found.fillna(''), sep=', ').str.strip())
         df.loc[:,'Technology'] = df.Technology.str.replace('^ , |^,|, $|,$', '').apply(lambda x:
                      ', '.join(list(set(x.split(', ')))) ).str.strip()
-        df.Technology.replace('', np.NaN, regex=True, inplace=True)
+        df.Technology.replace('', np.NaN, inplace=True)
     return df
 
 
-def gather_set_info(df, search_col=['Name', 'Fueltype']):   
+def gather_set_info(df, search_col=['Name', 'Fueltype']):
     df = df.copy()
     if 'chp' in df:
         df.loc[df.loc[:,'chp']==(True|1), 'Set'] = 'CHP'
-    pattern = '|'.join(['heizkraftwerk', 'hkw', 'chp', 'bhkw', 'cogeneration', 
+    pattern = '|'.join(['heizkraftwerk', 'hkw', 'chp', 'bhkw', 'cogeneration',
                         'power and heat', 'heat and power'])
     for i in search_col:
         isCHP_b = df.loc[:,i].fillna('').str.contains(pattern, case=False)
@@ -100,52 +102,39 @@ def gather_set_info(df, search_col=['Name', 'Fueltype']):
 
 
 def clean_technology(df, generalize_hydros=False):
-    df = df.copy()
-    tech_b = df.Technology.notnull()
-    df.loc[tech_b,'Technology'] = df.loc[tech_b,'Technology']\
-                                  .replace([' and ',' Power Plant'],[', ', ''],regex=True )
+    tech = df['Technology'].dropna()
+    tech = tech.replace({' and ': ', ', ' Power Plant': ''}, regex=True)
     if generalize_hydros:
-        df.loc[(df.Technology.fillna('').str.contains('Pump|pumped', case=False)) 
-                  , 'Technology'] = 'Pumped Storage'
-        df.loc[(df.Technology.fillna('').str.contains('reservoir|lake', case=False)) 
-                  , 'Technology'] = 'Reservoir'
-        df.loc[(df.Technology.fillna('').str.contains('run-of-river|weir|water', case=False)) 
-                  , 'Technology'] = 'Run-Of-River'
-        df.loc[(df.Technology.fillna('').str.contains('dam', case=False)) 
-                  , 'Technology'] = 'Reservoir'      
-    df.loc[df.Technology == 'Gas turbine', 'Technology'] = 'OCGT'
-    df.loc[(df.Technology.fillna('').str.contains('combined cycle', case=False)) 
-                  , 'Technology'] = 'CCGT'
-    df.loc[(df.Technology.fillna('').str.contains('steam turbine|critical thermal', case=False)) 
-                  , 'Technology'] = 'Steam Turbine'
-    df.loc[(df.Technology.fillna('').str.contains('ocgt|open cycle', case=False)) 
-                  , 'Technology'] = 'OCGT'
-    df.loc[tech_b,'Technology'] = df.loc[tech_b,
-                              'Technology'].str.title().str.strip().str.split(', ')\
-                                .apply(lambda x: ', '.join(np.unique(x))).str.strip()
-    df.loc[tech_b,'Technology'] = df.Technology[tech_b].str.title().replace(
-                    ['Ccgt','Ocgt'], ['CCGT', 'OCGT'], regex=True)
-#    df.Technology = df.Technology[lambda df : df.notnull()].str.split(', ').apply(
-#            lambda x : ', '.join([i for i in x if i in target_technologies()]))
-    df.replace('', np.nan, regex=True, inplace=True)
-    return df
+        tech[tech.str.contains('pump', case=False)] = 'Pumped Storage'
+        tech[tech.str.contains('reservoir|lake', case=False)] = 'Reservoir'
+        tech[tech.str.contains('run-of-river|weir|water', case=False)] = 'Run-Of-River'
+        tech[tech.str.contains('dam', case=False)] = 'Reservoir'
+    tech = tech.replace({'Gas turbine': 'OCGT'})
+    tech[tech.str.contains('combined cycle', case=False)] = 'CCGT'
+    tech[tech.str.contains('steam turbine|critical thermal', case=False)] = 'Steam Turbine'
+    tech[tech.str.contains('ocgt|open cycle', case=False)] = 'OCGT'
+    tech = (tech.str.title()
+                .str.split(', ')
+                .apply(lambda x: ', '.join(i.strip() for i in np.unique(x))))
+    tech = tech.replace({'Ccgt': 'CCGT', 'Ocgt': 'OCGT'}, regex=True)
+    return df.assign(Technology=tech)
 
 
 def cliques(df, dataduplicates):
     df = df.copy()
     """
-    Locate cliques of units which are determined to belong to the same powerplant.
-    Return the same dataframe with an additional column "grouped" which indicates the
-    group that the powerplant is belonging to.
+    Locate cliques of units which are determined to belong to the same
+    powerplant.  Return the same dataframe with an additional column
+    "grouped" which indicates the group that the powerplant is
+    belonging to.
 
     Parameters
     ----------
     df : pandas.Dataframe or string
         dataframe or csv-file which should be analysed
     dataduplicates : pandas.Dataframe or string
-        dataframe or name of the csv-linkfile which determines the link within one
-        dataset
-
+        dataframe or name of the csv-linkfile which determines the
+        link within one dataset
     """
     df = read_csv_if_string(df)
     G = nx.DiGraph()
@@ -161,40 +150,35 @@ def cliques(df, dataduplicates):
 def aggregate_units(df, use_saved_aggregation=False, dataset_name=None):
     df = df.copy()
     """
-    Vertical cleaning of the database. Cleans the "Name"-column, sums up the capacity
-    of powerplant units which are determined to belong to the same plant.
+    Vertical cleaning of the database. Cleans the "Name"-column, sums
+    up the capacity of powerplant units which are determined to belong
+    to the same plant.
 
     Parameters
     ----------
     df : pandas.Dataframe or string
         dataframe or csv-file to use for the resulting database
     use_saved_aggregation : Boolean (default False):
-        Whether to use the automaticly saved aggregation file, which is stored in 
-        /powerplantmatching/data/aggregation_groups_XX.csv with XX being either 
-        a custum name for the dataset or the name passed with the metadata of 
-        the pd.DataFrame. This saves time if you want to have aggregated powerplants
-        without running the aggregation algorithm again
+        Whether to use the automaticly saved aggregation file, which
+        is stored in data/aggregation_groups_XX.csv with XX being
+        either a custum name for the dataset or the name passed with
+        the metadata of the pd.DataFrame. This saves time if you want
+        to have aggregated powerplants without running the aggregation
+        algorithm again
     dataset_name : str
-        costum name for dataset identification, choose your own identification 
-        in case no metadata is passed to the function
-
-
+        costum name for dataset identification, choose your own
+        identification in case no metadata is passed to the function
     """
-    def prop_for_groups(x): 
+    def prop_for_groups(x):
         """
-        Function for grouping duplicates within one dataset. Sums up the capacity, takes
-        mean from latitude and longitude, takes the most frequent values for the rest of the
-        columns
+        Function for grouping duplicates within one dataset. Sums up
+        the capacity, takes mean from latitude and longitude, takes
+        the most frequent values for the rest of the columns
 
         """
         results = {'Name': x.Name.value_counts().index[0],
                    'Country': x.Country.value_counts(dropna=False).index[0] ,
 #                     if   x.Country.notnull().any(axis=0) else np.NaN,
-                   'Fueltype': x.Fueltype.value_counts(dropna=False).index[0], 
-#                       if x.Fueltype.notnull().any(axis=0) else np.NaN,
-                   'Technology': ', '.join(x.Technology.dropna().unique())
-                                            if x.Technology.notnull().any(axis=0) else np.NaN,
-                   'Set' : ', '.join(x.Set.dropna().unique()), 
                    'File': x.File.value_counts(dropna=False).index[0],
                    'Capacity': x['Capacity'].fillna(0.).sum(),
                    'lat': x['lat'].astype(float).mean(),
@@ -202,44 +186,24 @@ def aggregate_units(df, use_saved_aggregation=False, dataset_name=None):
                    'YearCommissioned': x['YearCommissioned'].min(),
                    'projectID': list(x.projectID)}
         return pd.Series(results)
-    # Try to use dataset identifier from metadata
-    if use_saved_aggregation==False and (dataset_name is None):
-        try:  
-            dataset_name = df._metadata[0]
-            path_name = '%s/data/aggregation_groups_%s.csv'%(os.path.dirname(__file__),dataset_name)
-            duplicates = duke(read_csv_if_string(df))
-            df = cliques(df, duplicates)
-            df.grouped.to_csv(path_name)
-        except:
-            duplicates = duke(read_csv_if_string(df))  
-            df = cliques(df, duplicates)                      
-    elif use_saved_aggregation and (dataset_name is None):
-        try: 
-            dataset_name = df._metadata[0]
-            path_name = '%s/data/aggregation_groups_%s.csv'%(os.path.dirname(__file__),dataset_name)
-            df.loc[:,'grouped'] = pd.read_csv(path_name, header=None,index_col=0 ).values
-        except:
-            print('''Non-existing saved links for dataset "%s", continuing by 
-            aggregating again'''%dataset_name)
-            duplicates = duke(read_csv_if_string(df))  
-            df = cliques(df, duplicates)                                            
-            try:
-                dataset_name = df._metadata[0]
-                path_name = '%s/data/aggregation_groups_%s.csv'%(os.path.dirname(__file__),dataset_name)
-                df.grouped.to_csv(path_name)
-            except:
-                pass
-    # Use custom dataset identifier
-    elif use_saved_aggregation==False and (dataset_name is not None):
-        path_name = '%s/data/aggregation_groups_%s.csv'%(os.path.dirname(__file__),dataset_name)
+
+    #try to use dataset identifier from df.datasetID
+    if dataset_name is None:
+        dataset_name = df._metadata[0]
+
+    path_name = _data_out('aggregation_groups_{}.csv'.format(dataset_name))
+    if use_saved_aggregation:
+        # try:
+        # XXX: why  .values?? and NEVER do a catchall except
+        df.loc[:, 'grouped'] = pd.read_csv(path_name, header=None, index_col=0).values
+        # except:
+        # print("Non-existing saved links for this dataset, continuing by aggregating again")
+
+    if 'grouped' not in df:
         duplicates = duke(read_csv_if_string(df))
         df = cliques(df, duplicates)
         df.grouped.to_csv(path_name)
-    elif use_saved_aggregation and (dataset_name is not None):
-        path_name = '%s/data/aggregation_groups_%s.csv'%(os.path.dirname(__file__),dataset_name)
-        duplicates = pd.read_csv(path_name, header=None,index_col=0 ).values
-        df = cliques(df, duplicates)                      
-        
+
     df = df.groupby('grouped').apply(prop_for_groups)
     df.reset_index(drop=True, inplace=True)
     df = df[target_columns()]
@@ -258,20 +222,20 @@ def clean_single(df, aggregate_powerplant_units=True, use_saved_aggregation=Fals
 
     aggregate_units : Boolean, default True
         Whether or not the power plant units should be aggregated
-        
-    use_saved_aggregation : Boolean (default False):
-        Only sensible if aggregate_units is set to True. 
-        Whether to use the automaticly saved aggregation file, which is stored in 
-        /powerplantmatching/data/aggregation_groups_XX.csv with XX being either 
-        a custum name for the dataset or the name passed with the metadata of 
-        the pd.DataFrame. This saves time if you want to have aggregated powerplants
-        without running the aggregation algorithm again
-        
-    dataset_name : str
-        Only sensible if aggregate_units is set to True. 
-        costum name for dataset identification, choose your own identification 
-        in case no metadata is passed to the function
 
+    use_saved_aggregation : Boolean, default False
+        Only sensible if aggregate_units is set to True.
+        Whether to use the automatically saved aggregation file, which
+        is stored in data/aggregation_groups_XX.csv with XX
+        being either a custom name for the dataset or the name passed
+        with the metadata of the pd.DataFrame. This saves time if you
+        want to have aggregated powerplants without running the
+        aggregation algorithm again
+
+    dataset_name : str
+        Only sensible if aggregate_units is set to True.  custom name
+        for dataset identification, choose your own identification in
+        case no metadata is passed to the function
     """
     #df = gather_technology_info(df)
     df = clean_powerplantname(df)
