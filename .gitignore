@@ -84,6 +84,7 @@ ENV/
 
 # Spyder project settings
 .spyderproject
+.spyproject/
 
 # Rope project settings
 .ropeproject
@@ -93,4 +94,11 @@ data/projects - Kopie.xls
 data/projects.xls
 data/platts_wepp.csv
 data/platts_wepp_small.csv
-.spyproject/
+data/*WEPP*
+data/*wepp*
+data/in/*WEPP*
+data/in/*wepp*
+data/out/*WEPP*
+data/out/*wepp*
+data/in/energy_storage_exchange.csv
+data/in/OldenburgHydro.csv

@@ -95,7 +95,7 @@ def OPSD(rawEU=False, rawDE=False):
                                target='country_name', origin='iso2c')
     opsd.loc[:,'Name'] = opsd.Name.str.title()
     opsd.loc[:,'Country'] = opsd.Country.str.title()
-	opsd = opsd[opsd.Country.isin(europeancountries())]
+    opsd = opsd[opsd.Country.isin(europeancountries())]
     pass_datasetID_as_metadata(opsd, 'OPSD')
     return opsd
 
@@ -204,12 +204,16 @@ def Oldenburgdata():
     """
     oldb = pd.read_csv(_data_in('OldenburgHydro.csv'),
                        encoding='utf-8', index_col='id')
+    oldb = oldb[oldb.Country.isin(europeancountries())]
+    oldb.loc[:,'Technology'] = oldb.Classification
+    oldb.loc[:, 'projectID'] = 'OL' + oldb.index.astype(str)
+    oldb.loc[:, 'File'] = 'Oldenburg_' + oldb.Country + '.csv'
     return oldb.loc[:,target_columns()]
 
 data_config['Oldenburgdata'] = {'read_function': Oldenburgdata}
 
 
-def ENTSOE_stats(raw=False):
+def ENTSOE_stats(raw=False, longcountry=True):
     """
     Standardize the entsoe database for statistical use.
     """
@@ -219,7 +223,7 @@ def ENTSOE_stats(raw=False):
     entsoedata = opsd[opsd['source'].isin(['entsoe']) & opsd['year'].isin([2014])]
     cCodes = list(entsoedata.country)
     entsoedata.country = countrycode(codes=cCodes, target='country_name', origin='iso2c')
-	entsoedata.country = entsoedata.country.str.title()
+    entsoedata.country = entsoedata.country.str.title()
     entsoedata = entsoedata[entsoedata.country.isin(europeancountries())]
     entsoedata = entsoedata.replace({'Bioenergy and other renewable fuels': 'Bioenergy',
      'Coal derivatives': 'Hard Coal',
@@ -233,7 +237,7 @@ def ENTSOE_stats(raw=False):
     entsoedata = entsoedata[entsoedata['technology_level_2'] == True]
     entsoedata.rename(columns={'technology': 'Fueltype'}, inplace=True)
     entsoedata.columns = entsoedata.columns.str.title()
-	if longcountry is False: 
+    if longcountry is False: 
         cCodes = list(entsoedata.Country)
         entsoedata.loc[:,'Country'] = countrycode(codes=cCodes, origin='country_name', target='iso2c')
     return entsoedata
@@ -242,6 +246,8 @@ def WRI(reduced_data=True):
     wri = pd.read_csv(_data_in('WRIdata.csv'),
                       encoding='utf-8', index_col='id')
     wri.loc[:,'projectID'] = wri.index.values
+    wri = wri[wri.Country.isin(europeancountries())]
+    wri.Fueltype = wri.Fueltype.replace({'Coal':'Hard Coal'})
     wri = gather_set_info(wri)
     if reduced_data:
         #wri data consists of ENTSOE data and OPSD, drop those:
@@ -270,7 +276,7 @@ def ESE(update=False, path=None, add_Oldenburgdata=False):
         location of the downloaded projects.xls file
 
     """
-    saved_version = _data_out('energy_storage_exchange.csv')
+    saved_version = _data_in('energy_storage_exchange.csv')
     if (not os.path.exists(saved_version)) and (update is False) and (path is None):
         raise(NotImplementedError( '''
         This database is not yet in your local repository.
@@ -332,7 +338,7 @@ def ESE(update=False, path=None, add_Oldenburgdata=False):
     data = clean_single(data)
     data.File = 'energy_storage_exchange'
     data.loc[:,target_columns()]
-	data = data[data.Country.isin(europeancountries())]
+    data = data[data.Country.isin(europeancountries())]
     data.to_csv(saved_version, index_label='id', encoding='utf-8')
     return data.loc[:,target_columns()]
 
@@ -502,8 +508,7 @@ def WEPP(raw=False, parseGeoLoc=False):
                  'COMPID':np.int32,'LOCATIONID':np.int32,'UNITID':np.int32,
                 }
     # Now read the Platts WEPP Database
-    wepp = pd.read_csv(_data_in('platts_wepp.csv'),
-                       encoding='utf-8', dtype=datatypes)
+    wepp = pd.read_csv(_data_in('platts_wepp.csv'), dtype=datatypes)
     if raw:
         return wepp
 

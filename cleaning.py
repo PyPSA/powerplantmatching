@@ -179,6 +179,11 @@ def aggregate_units(df, use_saved_aggregation=False, dataset_name=None):
         results = {'Name': x.Name.value_counts().index[0],
                    'Country': x.Country.value_counts(dropna=False).index[0] ,
 #                     if   x.Country.notnull().any(axis=0) else np.NaN,
+                   'Fueltype': x.Fueltype.value_counts(dropna=False).index[0],
+#                       if x.Fueltype.notnull().any(axis=0) else np.NaN,
+                   'Technology': ', '.join(x.Technology.dropna().unique())
+                                            if x.Technology.notnull().any(axis=0) else np.NaN,
+                   'Set' : ', '.join(x.Set.dropna().unique()),
                    'File': x.File.value_counts(dropna=False).index[0],
                    'Capacity': x['Capacity'].fillna(0.).sum(),
                    'lat': x['lat'].astype(float).mean(),
