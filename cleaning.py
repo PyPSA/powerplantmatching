@@ -198,11 +198,12 @@ def aggregate_units(df, use_saved_aggregation=False, dataset_name=None):
 
     path_name = _data_out('aggregation_groups_{}.csv'.format(dataset_name))
     if use_saved_aggregation:
-        # try:
-        # XXX: why  .values?? and NEVER do a catchall except
-        df.loc[:, 'grouped'] = pd.read_csv(path_name, header=None, index_col=0).values
-        # except:
-        # print("Non-existing saved links for this dataset, continuing by aggregating again")
+        try:
+            print('Reading saved aggregation groups for dataset: {}'.format(dataset_name))
+            # XXX: why  .values?? and NEVER do a catchall except
+            df.loc[:, 'grouped'] = pd.read_csv(path_name, header=None, index_col=0).values
+        except ValueError:
+            print("Non-existing saved links for this dataset, continuing by aggregating again")
 
     if 'grouped' not in df:
         duplicates = duke(read_csv_if_string(df))

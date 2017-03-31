@@ -13,12 +13,12 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
 import pandas as pd
-import numpy as np
+import collections
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 
-from .config import fueltype_to_life, europeancountries
+from .config import fueltype_to_life, europeancountries, fueltype_to_color
 from .cleaning import clean_single
 from .data import CARMA, ENTSOE, ENTSOE_stats, ESE, GEO, OPSD, WEPP, WRI
 from .collection import Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced
@@ -112,11 +112,58 @@ def Plot_hbar_comparison_countries(df=None):
     return
 
 
-def Plot_bar_decomissioning_curves(df=None):
+def Plot_bar_comparison_countries_fueltypes(df=None, ylabel=None):
+    """
+    Plots per country an analysis, how the matched dataset and the statistics 
+    differ by fueltype.
+    """
+    if ylabel is None:
+        ylabel = 'Capacity [GW]'
+    if df is None:
+        df = Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced()
+        if df is None:
+            raise RuntimeError("The data to be plotted does not yet exist.")
+    df = df.copy()
+    
+    statistics = ENTSOE_stats()
+    statistics.Fueltype.replace({'Mixed fuel types':'Other'}, inplace=True)
+    stats = lookup([df, statistics], keys=['Matched dataset','Statistics ENTSO-E'],
+                   by='Country, Fueltype')/1000
+
+    # Presettings for the plots
+    font={#'family' : 'normal',
+          #'weight' : 'bold',
+          'size'   : 12}
+    plt.rc('font', **font)
+    # Loop through countries.
+    i,j = [0,0]
+    fig, ax = plt.subplots(nrows=4, ncols=5, sharex=False, sharey=False, figsize=(32,18))
+    for a, country in enumerate(europeancountries()):
+        if j==5:
+            i+=1
+            j=0
+        stats[country].plot.bar(ax=ax[i,j],stacked=False,legend=False,colormap='jet')
+        # Format the subplots nicely
+        ax[i,j].legend(fontsize=9, loc='best')
+        ax[i,j].set_facecolor('#d9d9d9')
+        ax[i,j].set_axisbelow(True)
+        ax[i,j].grid(color='white', linestyle='dotted')
+        ax[i,j].set_title(country)
+        ax[i,0].set_ylabel(ylabel)
+        ax[3,j].xaxis.label.set_visible(False)
+        j+=1
+    # After the loop, do the rest of the layouting.
+    fig.tight_layout()
+    return
+
+
+def Plot_bar_decomissioning_curves(df=None, ylabel=None, title=None, legend_in_subplots=False):
     """
     Plots per country a decommissioning curve as a bar chart with capacity on y-axis,
     period on x-axis and categorized by fueltype.
     """
+    if ylabel is None:
+        ylabel = 'Capacity [GW]'
     if df is None:
         df = Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced()
         if df is None:
@@ -137,37 +184,45 @@ def Plot_bar_decomissioning_curves(df=None):
           'size'   : 16}
     plt.rc('font', **font)
 
-    fig, ax = plt.subplots(nrows=4, ncols=5, sharex=True, sharey=False, figsize = (25,16))
+    fig, ax = plt.subplots(nrows=4, ncols=5, sharex=True, sharey=False, figsize=(32,18))
     data_countries = df.groupby(['Country'])
     i,j = [0,0]
+    labels_mpatches = collections.OrderedDict()
     for a, country in enumerate(europeancountries()):
         if j==5:
-            i=i+1
+            i+=1
             j=0
         cntry_grp = data_countries.get_group(country)
         stats = pd.DataFrame(columns=[2015,2020,2025,2030,2035,2040,2045,2050])
         for yr in range(2015, 2055, 5):
             k = cntry_grp.groupby(['Fueltype']).sum()/1000
             stats.loc[:,yr] = k[yr]
-        # ---------------------------------------------------------------------
-        # f.gotzens@fz-juelich.de: This workaround adds 'missing' fueltypes to 
-        # the stats df, such that the legend is exactly the same for each country.
-        # If there's a more elegant way to achieve this, please let me know.
-        fueltypes_in_df = set(df.Fueltype)
-        missing_fueltypes = fueltypes_in_df.difference(set(stats.index))
-        for m in missing_fueltypes:
-            stats.loc[m,:] = 0.0
-        stats.sort_index(inplace=True)
-        # ---------------------------------------------------------------------
-        stats.T.plot.bar(ax=ax[i,j],stacked=True,legend=False,colormap='Paired')
+        colors = stats.index.to_series().map(fueltype_to_color()).tolist()
+        stats.T.plot.bar(ax=ax[i,j],stacked=True,legend=False,color=colors)
+        # Pass the legend information into the Ordered Dict
+        if not legend_in_subplots:
+            stats_handle, stats_labels = ax[i,j].get_legend_handles_labels()
+            for u, v in enumerate(stats_labels):
+                if v not in labels_mpatches:
+                    labels_mpatches[v] = mpatches.Patch(color=colors[u], label=v)
+        else:
+            ax[i,j].legend(fontsize=9, loc='best')
+        # Format the subplots nicely
         ax[i,j].set_facecolor('#d9d9d9')
         ax[i,j].set_axisbelow(True)
         ax[i,j].grid(color='white', linestyle='dotted')
         ax[i,j].set_title(country)
-        ax[i,j].legend(fontsize=9, loc='upper right')
-        ax[i,0].set_ylabel('Capacity [GW]')
+        ax[i,0].set_ylabel(ylabel)
         ax[3,j].xaxis.label.set_visible(False)
-        j=j+1
+        j+=1
+    # After the loop, do the rest of the layouting.
     fig.tight_layout()
-    
+    if isinstance(title, str):
+        fig.suptitle(title, fontsize=24)
+        fig.subplots_adjust(top=0.93)
+    if not legend_in_subplots:
+        fig.subplots_adjust(bottom=0.08)
+        labels_mpatches = collections.OrderedDict(sorted(labels_mpatches.items()))
+        fig.legend(handles=labels_mpatches.values(),labels=labels_mpatches.keys(),
+                   loc=8, ncol=len(labels_mpatches), facecolor='#d9d9d9')
     return

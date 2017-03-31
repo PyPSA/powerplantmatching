@@ -18,6 +18,7 @@ Functions to modify and adjust power plant datasets
 
 from __future__ import absolute_import, print_function
 import pandas as pd 
+import numpy as np
 
 from .utils import read_csv_if_string
 from .utils import lookup
@@ -104,7 +105,7 @@ def rescale_capacities_to_country_totals(df, fueltypes):
 def add_missing_capacities(df, fueltypes):
     """
     Primarily written to add artificial missing wind- and solar capacities to 
-    match these to the statistics
+    match these to the statistics.
     
     Parameters
     ----------
@@ -136,6 +137,59 @@ def add_missing_capacities(df, fueltypes):
                 if fueltype=='Wind':
                     df.loc[row,'YearCommissioned'] = 2008
     return df
+
+def average_empty_commyears(df):
+    """
+    Fills the empty commissioning years with averages.
+    """
+    df = df.copy()
+    mean_yrs = df.groupby(['Country', 'Fueltype']).YearCommissioned.mean().unstack(0)
+    # 1st try: Fill with both country- and fueltypespecific averages
+    df.YearCommissioned.fillna(df.groupby(['Country', 'Fueltype']).YearCommissioned\
+                               .transform("mean"), inplace=True)
+    # 2nd try: Fill remaining with only fueltype-specific average
+    df.YearCommissioned.fillna(df.groupby(['Fueltype']).YearCommissioned\
+                               .transform('mean'), inplace=True)
+    # 3rd try: Fill remaining with only country-specific average 
+    df.YearCommissioned.fillna(df.groupby(['Country']).YearCommissioned\
+                               .transform('mean'), inplace=True)
+    if df.YearCommissioned.isnull().any():
+        count = len(df[df.YearCommissioned.isnull()])
+        raise(ValueError('''There are still *{0}* empty values for 'YearCommissioned'
+                            in the DataFrame. These should be either be filled 
+                            manually or dropped to continue.'''.format(count)))
+    df.loc[:,'YearCommissioned'] = df.YearCommissioned.astype(int)
+    return df
+
+
+def aggregate_RES_by_commyear(df, target_fueltypes=None):
+    """
+    Aggregates the vast number of RES units to one specific (Fueltype + Technology)
+    per commissioning year.
+    """
+    df = df.copy()
+    
+    if target_fueltypes is None:
+        target_fueltypes = ['Wind', 'Solar', 'Bioenergy']
+    df = df[df.Fueltype.isin(target_fueltypes)]
+    df = average_empty_commyears(df)
+    
+    df_exp = pd.DataFrame(columns=df.columns)
+    i = 0
+    for c, df_country in df.groupby(['Country']):
+        for yr, df_yr in df_country.groupby(['YearCommissioned']):
+            for ft, df_ft in df_yr.groupby(['Fueltype']):
+                df_ft.fillna('-', inplace=True)
+                for tech, df_tech in df_ft.groupby(['Technology']):
+                    df_exp.loc[i,'Country'] = c
+                    df_exp.loc[i,'YearCommissioned'] = yr
+                    df_exp.loc[i,'Fueltype'] = ft
+                    df_exp.loc[i,'Technology'] = tech
+                    df_exp.loc[i,'Capacity'] = df_tech.Capacity.sum()
+                    i+=1
+    df_exp.loc[:,'Set'] = 'PP'
+    df_exp.replace({'-':np.NaN}, inplace=True)
+    return df_exp
 
 
 

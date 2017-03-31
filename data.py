@@ -45,8 +45,7 @@ def OPSD(rawEU=False, rawDE=False):
     if rawEU and rawDE:
         raise(NotImplementedError('''
                 It is not possible to show both DE and EU raw databases at the
-                same time as they have different formats. Choose only one!
-                '''))
+                same time as they have different formats. Choose only one!'''))
     if rawEU:
         return opsd_EU
     if rawDE:
@@ -294,15 +293,14 @@ def ESE(update=False, path=None, add_Oldenburgdata=False):
         ese = pd.read_csv(saved_version, index_col='id')
         ese.loc[:,'projectID'] = ese.projectID.str.replace('\[|\]','').str.split(', ')
         if add_Oldenburgdata:
-            return pd.concat([clean_single(Oldenburgdata(),
-                               aggregate_powerplant_units=False), ese]
-                                ).reset_index(drop=True)
-        else:
-            return ese
+            ese = pd.concat([clean_single(Oldenburgdata(),aggregate_powerplant_units=False),
+                             ese]).reset_index(drop=True)
+        return ese[ese.Country.isin(europeancountries())]
     if path is None:
         raise(ValueError('No path defined for update'))
     if not os.path.exists(path):
         raise(ValueError('The given path does not exist'))
+        
     data = pd.read_excel(path, encoding='utf-8')
     data = data[data.Country.isin(europeancountries())]
     data.loc[:,'Name'] = data.loc[:,'Project Name']
@@ -469,8 +467,8 @@ def ENTSOE(update=False, raw=False, entsoe_token=None):
         entsoe.loc[entsoe.Country=='Austria, Germany, Luxembourg', 'Country'] = \
                   [parse_Geoposition(powerplant , return_Country=True)
                    for powerplant in entsoe.loc[entsoe.Country=='Austria, Germany, Luxembourg', 'Name']]
-        entsoe.Country.replace(to_replace=['Deutschland','.*sterreich' , 'L.*tzebuerg'],
-                               value=['Germany','Austria', 'Luxembourg'],
+        entsoe.Country.replace(to_replace=['Deutschland','.*sterreich' ,'L.*tzebuerg'],
+                               value=['Germany','Austria','Luxembourg'],
                                regex=True, inplace=True)
         entsoe = entsoe.loc[entsoe.Country.isin(europeancountries()+[None])]
         entsoe.loc[:,'Country'] = entsoe.Country.astype(str)
@@ -483,7 +481,7 @@ def ENTSOE(update=False, raw=False, entsoe_token=None):
         entsoe = pd.read_csv(_data_out('entsoe_powerplants.csv'),
                              index_col='id', encoding='utf-8')
         pass_datasetID_as_metadata(entsoe, 'ENTSOE')
-        return entsoe
+        return entsoe[entsoe.Country.isin(europeancountries())]
 
 data_config['ENTSOE'] = {'read_function': ENTSOE, 'aggregate_powerplant_units': True}
 
@@ -508,7 +506,7 @@ def WEPP(raw=False, parseGeoLoc=False):
                  'COMPID':np.int32,'LOCATIONID':np.int32,'UNITID':np.int32,
                 }
     # Now read the Platts WEPP Database
-    wepp = pd.read_csv(_data_in('platts_wepp.csv'), dtype=datatypes)
+    wepp = pd.read_csv(_data_in('platts_wepp.csv'), dtype=datatypes, encoding='utf-8')
     if raw:
         return wepp
 
@@ -542,8 +540,11 @@ def WEPP(raw=False, parseGeoLoc=False):
                          'Lon':'lon',
                          'Unitid':'projectID'
                          }, inplace=True)
-    # Drop any rows with countries we do not need
-    wepp.Country = wepp.Country.str.title()
+    # Do country transformations and drop those which are not in definded scope
+    c = {'ENGLAND & WALES':'UNITED KINGDOM',
+         'GIBRALTAR':'SPAIN',
+         'SCOTLAND':'UNITED KINGDOM'}
+    wepp.Country = wepp.Country.replace(c).str.title()
     wepp = wepp[wepp.Country.isin(europeancountries())]
     # Drop any rows with plants which are not: In operation (OPR) or under construction (CON)
     wepp = wepp[wepp.Status.isin(['OPR', 'CON'])]    
@@ -630,3 +631,56 @@ def WEPP(raw=False, parseGeoLoc=False):
     return wepp
 
 data_config['WEPP'] = {'read_function': WEPP, 'aggregate_powerplant_units': True}
+
+
+def OPSD_RES(raw=False):
+    """
+    Return standardized OPSD (Open Power Systems Data) renewables (RES)
+    database with target column names and fueltypes.
+    
+    This sqlite database is very big and therefore not part of the package.
+    It needs to be obtained here: http://data.open-power-system-data.org/renewable_power_plants/
+
+    """
+    def read_opsd_res(country):
+        import pandas as pd
+        import sqlite3
+
+        db = sqlite3.connect(_data_in('renewable_power_plants.sqlite'))
+        if country == 'DE':
+            cur = db.execute(
+            "SELECT"
+            "   substr(commissioning_date,1,4), "
+            "   energy_source_level_2, technology, electrical_capacity, lat, lon "
+            "FROM"
+            "   renewable_power_plants_DE "
+            "WHERE"
+            "   (DATE(substr(decommissioning_date,1,4)||substr(decommissioning_date,6,2)|| "
+            "   substr(decommissioning_date,9,2)) > DATE(20153112)) OR decommissioning_date=='NaT'"
+            "AND NOT"
+            "   comment LIKE '%R_%'"
+            )
+        elif country == 'DK':
+            cur = db.execute(
+            "SELECT"
+            "   substr(commissioning_date,1,4), "
+            "   energy_source_level_2, technology, electrical_capacity, lat, lon "
+            "FROM"
+            "   renewable_power_plants_DK "
+            )
+        else:
+            raise NotImplementedError("The country '{0}' is not supported yet.".format(country))
+
+        df = pd.DataFrame(cur.fetchall(),
+                          columns=["YearCommissioned","Fueltype","Technology",
+                                   "Capacity","lat","lon"])
+        df.loc[:,'Country'] = countrycode(codes=country, target='country_name', origin='iso2c')
+        return df
+        
+    df = pd.concat(read_opsd_res(r) for r in ['DE','DK']).reset_index(drop=True)
+    df.loc[:,'Country'] = df.Country.str.title()
+    df.loc[:,'Set'] = 'PP'
+    df.YearCommissioned.replace({'NaT':np.NaN}, inplace=True)
+    df.loc[:,'YearCommissioned'] = df.YearCommissioned.astype(np.float)
+    df.replace({None:np.nan}, inplace=True)
+    return df

@@ -125,6 +125,7 @@ def link_multiple_datasets(datasets, labels):
     combinations = list(itertools.combinations(range(len(labels)), 2))
     all_matches = []
     for c,d in combinations:
+        print('Comparing {0} with {1}'.format(labels[c], labels[d]))
         match = compare_two_datasets([datasets[c], datasets[d]],
                                    [labels[c], labels[d]])
         all_matches.append(match)

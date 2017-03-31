@@ -102,3 +102,4 @@ data/out/*WEPP*
 data/out/*wepp*
 data/in/energy_storage_exchange.csv
 data/in/OldenburgHydro.csv
+data/in/renewable_power_plants.sqlite

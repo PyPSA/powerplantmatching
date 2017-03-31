@@ -78,3 +78,22 @@ def fueltype_to_life():
              'Waste':25,
              'Wind':25}
     return data
+
+
+def fueltype_to_color():
+    """
+    Maps a fueltype to a specific color for the plots
+    """
+    data = {'Bioenergy':'white',
+            'Geothermal':'pink',
+            'Hard Coal':'gray',
+            'Hydro':'blue',
+            'Lignite':'brown',
+            'Natural Gas':'red',
+            'Nuclear':'orange',
+            'Oil':'black',
+            'Other':'pink',
+            'Solar':'yellow',
+            'Waste':'purple',
+            'Wind':'green'}
+    return data
