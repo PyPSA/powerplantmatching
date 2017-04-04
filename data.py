@@ -246,7 +246,7 @@ def WRI(reduced_data=True):
 data_config['WRI'] = {'read_function': WRI}
 
 
-def ESE(update=False, path=None, add_Oldenburgdata=False):
+def ESE(update=False, path=None, add_Oldenburgdata=False, raw=False):
     """
     This database is not given within the repository because of open source rights.
     Just download the database from the link given in the README file
@@ -289,7 +289,9 @@ def ESE(update=False, path=None, add_Oldenburgdata=False):
         raise(ValueError('No path defined for update'))
     if not os.path.exists(path):
         raise(ValueError('The given path does not exist'))
-    data = pd.read_excel(path, encoding='utf-8')
+    data = pd.read_excel(path, encoding='utf-8', na_values=u'n/a')
+    if raw:
+        return data
     data.loc[:,'Name'] = data.loc[:,'Project Name']
     data.loc[:,'Technology'] = data.loc[:,'Technology Type']
     data.loc[:,'Set'] = 'PP'
@@ -317,14 +319,16 @@ def ESE(update=False, path=None, add_Oldenburgdata=False):
     data.loc[:,'YearCommissioned'] = A
     data.loc[(data.Technology.str.contains('Pumped')) &
              (data.Technology.notnull()), 'Technology'] = 'Pumped storage'
-    data = data.loc[data.Technology == 'Pumped storage', target_columns()]
+    data = data.loc[data.Technology == 'Pumped storage', 
+                    target_columns(detailed_columns=True)]
     data.Fueltype = 'Hydro'
     data = data.reset_index(drop = True)
-    data = clean_single(data)
+    data = clean_single(data, dataset_name='ESE', detailed_columns=True)
     data.File = 'energy_storage_exchange'
-    data.loc[:,target_columns()]
+    data.loc[:,target_columns(detailed_columns=True)]
     data.to_csv(saved_version, index_label='id', encoding='utf-8')
-    return data.loc[:,target_columns()]
+    pass_datasetID_as_metadata(data, 'ESE')
+    return data
 
 data_config['ESE'] = {'read_function': ESE, 'skip_clean_single': True}
 

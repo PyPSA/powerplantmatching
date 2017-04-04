@@ -43,13 +43,17 @@ def target_technologies():
     return ['CCGT', 'OCGT', 'Steam Turbine', 'Combustion Engine',
             'Run-Of-River', 'Pumped Storage', 'Reservoir']
     
-def target_columns():
+def target_columns(detailed_columns=False):
     """
     Returns a list of columns to which the powerplants should be standardized. For renaming
     columns use df.rename(columns=dic, inplace=True) with dic being a dictionary
     of the replacements
     """
-
-    return ['Name', 'Fueltype', 'Technology', 'Set', 'Country',
+    if detailed_columns:
+        return ['Name', 'Fueltype', 'Technology', 'Set', 'Country',
+            'Capacity', 'Duration', 'YearCommissioned', 'lat', 'lon', 'File'
+            , 'projectID']
+    else:
+        return ['Name', 'Fueltype', 'Technology', 'Set', 'Country',
             'Capacity', 'YearCommissioned', 'lat', 'lon', 'File'
             , 'projectID']

@@ -146,7 +146,8 @@ def cliques(df, dataduplicates):
     return df
 
 
-def aggregate_units(df, use_saved_aggregation=False, dataset_name=None):
+def aggregate_units(df, use_saved_aggregation=False, dataset_name=None, 
+                    detailed_columns=False):
     df = df.copy()
     """
     Vertical cleaning of the database. Cleans the "Name"-column, sums
@@ -191,31 +192,42 @@ def aggregate_units(df, use_saved_aggregation=False, dataset_name=None):
                    'lon': x['lon'].astype(float).mean(),
                    'YearCommissioned': x['YearCommissioned'].min(),
                    'projectID': list(x.projectID)}
+        if 'Duration' in x:
+            results['Duration'] = (x.Duration*x.Capacity /x.Capacity.sum()).sum()
+
         return pd.Series(results)
 
     #try to use dataset identifier from df.datasetID
     if dataset_name is None:
-        dataset_name = df._metadata[0]
+        try: 
+            dataset_name = df._metadata[0]
+        except IndexError:
+            pass
 
     path_name = _data_out('aggregation_groups_{}.csv'.format(dataset_name))
     if use_saved_aggregation:
-        # try:
-        # XXX: why  .values?? and NEVER do a catchall except
-        df.loc[:, 'grouped'] = pd.read_csv(path_name, header=None, index_col=0).values
-        # except:
-        # print("Non-existing saved links for this dataset, continuing by aggregating again")
+        try:
+            df.loc[:, 'grouped'] = pd.read_csv(path_name, header=None, index_col=0).values
+        except IOError:
+            print("Non-existing saved links for this dataset, continuing by aggregating again")
 
     if 'grouped' not in df:
         duplicates = duke(read_csv_if_string(df))
         df = cliques(df, duplicates)
-        df.grouped.to_csv(path_name)
+        try: 
+            df.grouped.to_csv(path_name)
+        except IndexError:
+            pass
 
     df = df.groupby('grouped').apply(prop_for_groups)
+    if 'Duration' in df:
+        df.loc[:, ['Duration']] = df.loc[:, ['Duration']].replace(0.,np.nan)
     df.reset_index(drop=True, inplace=True)
-    df = df[target_columns()]
+    df = df[target_columns(detailed_columns=detailed_columns)]
     return df
 
-def clean_single(df, aggregate_powerplant_units=True, use_saved_aggregation=False, dataset_name=None):
+def clean_single(df, aggregate_powerplant_units=True, use_saved_aggregation=False, 
+                 dataset_name=None, detailed_columns=False):
     df = df.copy()
     """
     Vertical cleaning of the database. Cleans the "Name"-column, sums
@@ -249,5 +261,5 @@ def clean_single(df, aggregate_powerplant_units=True, use_saved_aggregation=Fals
 
     if aggregate_powerplant_units:
         df = aggregate_units(df, use_saved_aggregation=use_saved_aggregation,
-                             dataset_name=dataset_name)
+                             dataset_name=dataset_name, detailed_columns=detailed_columns)
     return clean_technology(df)

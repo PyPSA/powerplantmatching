@@ -35,8 +35,8 @@ def _data_out(fn):
 
 def lookup(df, keys=None, by='Country, Fueltype', exclude=None, show_totals=False):
     """
-    Returns a lookup table of the dataframe df with rounded numbers. Use different lookups
-    as "Country", "Fueltype" for the different lookups.
+    Returns a lookup table of the dataframe df with rounded numbers. 
+    Use different lookups as "Country", "Fueltype" for the different lookups.
 
     Parameters
     ----------
@@ -65,7 +65,8 @@ def lookup(df, keys=None, by='Country, Fueltype', exclude=None, show_totals=Fals
         elif by == 'Fueltype':
             return df.groupby(['Fueltype']).Capacity.sum()
         else:
-            raise NameError("``by` must be one of 'Country, Fueltype' or 'Country' or 'Fueltype'")
+            raise NameError(
+            "``by` must be one of 'Country, Fueltype' or 'Country' or 'Fueltype'")
 
     if isinstance(df, list):
         dfs = pd.concat([lookup_single(a) for a in df], axis=1, keys=keys)
@@ -102,7 +103,8 @@ def plot_fueltype_stats(df):
            labels=stats.index, autopct='%1.1f%%')
 
 
-def set_uncommon_fueltypes_to_other(df, fueltypes={'Geothermal', 'Mixed fuel types', 'Waste'}):
+def set_uncommon_fueltypes_to_other(df, fueltypes={'Geothermal', 
+                                    'Mixed fuel types', 'Waste'}):
     df.loc[df.Fueltype.isin(fueltypes) , 'Fueltype'] = 'Other'
     return df
 
@@ -143,7 +145,7 @@ def parse_Geoposition(loc, country=None, return_Country=False):
             return (lat, lon)
             
             
-tech_colors = {"Wind" : "b",
+tech_colors = pd.Series({"Wind" : "b",
                'windoff' : "c",
                "Hydro" : "g",
                "ror" : "g",
@@ -160,7 +162,7 @@ tech_colors = {"Wind" : "b",
                "Hard Coal" : "k",
                "Coal" : "k",
                "Waste" : "grey",
-               "Lignite" : "grey",
+               "Lignite" : "saddlebrown",
                "Geothermal" : "orange",
                "CCGT marginal" : "orange",
                "heat pumps" : "r",
@@ -175,5 +177,25 @@ tech_colors = {"Wind" : "b",
                "curtailment": "r",
                "load": "k",
                "total": "k",
-               "Other":"grey"
-               }
+               "Other":"grey",
+               "Total":"gold"
+               })
+
+tech_colors2 = pd.Series(data=
+          {'OCGT':'brown', 
+          'Hydro':'darkblue',
+          'Lignite':'chocolate', 
+          'Nuclear': 'yellow',
+          'solar':'gold', 
+          'windoff':'cornflowerblue', 
+          'windon':'steelblue',
+          'Wind': 'steelblue',
+          "Bioenergy" : "g", 
+          "Natural Gas" : "firebrick",
+          'CCGT':'firebrick', 
+          'Coal':'k', 
+          'Hard Coal':'k',
+          "Oil" : "r",
+          "Other":"dimgrey",
+          "Waste" : "grey",
+          "Geothermal" : "orange"})
