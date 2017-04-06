@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 ## Copyright 2015-2016 Fabian Gotzens (FZJ)
 
 ## This program is free software; you can redistribute it and/or
@@ -21,7 +22,7 @@ import matplotlib.patches as mpatches
 from .config import fueltype_to_life, europeancountries, fueltype_to_color
 from .cleaning import clean_single
 from .data import CARMA, ENTSOE, ENTSOE_stats, ESE, GEO, OPSD, WEPP, WRI
-from .collection import Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced
+from .collection import Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced_RES
 from .utils import lookup
 
 
@@ -38,7 +39,7 @@ def Plot_bar_comparison_single_matched(df=None, cleaned=True, use_saved_aggregat
     2.) Fueltypes on x-axis and capacity on y-axis, matched database
     """
     if df is None:
-        df = Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced()
+        df = Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced_RES()
         if df is None:
             raise RuntimeError("The data to be plotted does not yet exist.")
     
@@ -91,7 +92,7 @@ def Plot_hbar_comparison_countries(df=None):
     Plots a horizontal bar chart with capacity on x-axis, country on y-axis.
     """
     if df is None:
-        df = Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced()
+        df = Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced_RES()
         if df is None:
             raise RuntimeError("The data to be plotted does not yet exist.")
             
@@ -120,7 +121,7 @@ def Plot_bar_comparison_countries_fueltypes(df=None, ylabel=None):
     if ylabel is None:
         ylabel = 'Capacity [GW]'
     if df is None:
-        df = Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced()
+        df = Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced_RES()
         if df is None:
             raise RuntimeError("The data to be plotted does not yet exist.")
     df = df.copy()
@@ -142,7 +143,14 @@ def Plot_bar_comparison_countries_fueltypes(df=None, ylabel=None):
         if j==5:
             i+=1
             j=0
+        # Perform the plot
         stats[country].plot.bar(ax=ax[i,j],stacked=False,legend=False,colormap='jet')
+        # Compute coverage and show it 
+        ctry = stats[country]
+        ctry.loc[:,u'Delta_squared'] = (ctry.iloc[:,0]-ctry.iloc[:,1])**2
+        cov = 1 - ctry.Delta_squared.sum()/((ctry.iloc[:,1]**2).sum())
+        ax[i,j].text(0.0, ax[i,j].get_ylim()[1]*0.95, u'Coverage = '+unicode(round(cov, 3)),\
+          ha='left', va='top')
         # Format the subplots nicely
         ax[i,j].legend(fontsize=9, loc='best')
         ax[i,j].set_facecolor('#d9d9d9')
@@ -165,7 +173,7 @@ def Plot_bar_decomissioning_curves(df=None, ylabel=None, title=None, legend_in_s
     if ylabel is None:
         ylabel = 'Capacity [GW]'
     if df is None:
-        df = Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced()
+        df = Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced_RES()
         if df is None:
             raise RuntimeError("The data to be plotted does not yet exist.")
     df = df.copy()
@@ -225,4 +233,16 @@ def Plot_bar_decomissioning_curves(df=None, ylabel=None, title=None, legend_in_s
         labels_mpatches = collections.OrderedDict(sorted(labels_mpatches.items()))
         fig.legend(handles=labels_mpatches.values(),labels=labels_mpatches.keys(),
                    loc=8, ncol=len(labels_mpatches), facecolor='#d9d9d9')
+    return
+
+
+def Plot_matchcount_stats(df):
+    """
+    Plots the number of matches across all databases
+    """
+    df = df.copy()
+    df = df.iloc[:,0:7]
+    df.loc[:,'MatchCount'] = df.notnull().sum(axis=1)
+    stats = df.groupby(['MatchCount']).size()
+    stats.plot.bar()
     return

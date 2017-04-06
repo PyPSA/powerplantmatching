@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 ## Copyright 2015-2016 Fabian Hofmann (FIAS), Jonas Hoersch (FIAS)
 
 ## This program is free software; you can redistribute it and/or
@@ -164,16 +165,22 @@ def Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced(update=False, use_saved_aggreg
                                                  {'add_Oldenburgdata': add_Oldenburgdata})})
 
 #unpublishable
-def Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched(update=False, use_saved_aggregation=False):
+def Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched(update=False, use_saved_aggregation=False,
+                                               add_Oldenburgdata=False):
     return Collection(['CARMA', 'ENTSOE', 'ESE', 'GEO', 'OPSD', 'WEPP', 'WRI'],
                       update=update, 
-                      use_saved_aggregation=use_saved_aggregation, reduced=False)
+                      use_saved_aggregation=use_saved_aggregation, reduced=False,
+                      custom_config={'ESE': dict(read_kwargs=
+                                                 {'add_Oldenburgdata': add_Oldenburgdata})})
 
 #unpublishable
-def Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced(update=False, use_saved_aggregation=False):
+def Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced(update=False, use_saved_aggregation=False,
+                                                       add_Oldenburgdata=False):
     return Collection(['CARMA', 'ENTSOE', 'ESE', 'GEO', 'OPSD', 'WEPP', 'WRI'],
                       update=update, 
-                      use_saved_aggregation=use_saved_aggregation, reduced=True)
+                      use_saved_aggregation=use_saved_aggregation, reduced=True,
+                      custom_config={'ESE': dict(read_kwargs=
+                                                 {'add_Oldenburgdata': add_Oldenburgdata})})
     
 #unpublishable
 def Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced_RES(update=False, use_saved_aggregation=False):

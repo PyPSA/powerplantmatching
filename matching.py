@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 ## Copyright 2015-2016 Fabian Hofmann (FIAS), Jonas Hoersch (FIAS)
 
 ## This program is free software; you can redistribute it and/or
@@ -18,11 +19,9 @@ Functions for linking and combining different datasets
 
 from __future__ import absolute_import, print_function
 
-import os
 import pandas as pd
 import numpy as np
 import itertools
-import tempfile
 
 from .config import target_columns
 from .utils import read_csv_if_string
@@ -101,7 +100,7 @@ def cross_matches(sets_of_pairs, labels=None):
     for i in labels:
         matches = pd.concat([matches.groupby(i, as_index=False, sort=False).\
                              apply(lambda x: x.loc[x.isnull().sum(axis=1).idxmin()]),\
-        matches[matches[i].isnull()]]).reset_index(drop=True)
+                             matches[matches[i].isnull()]]).reset_index(drop=True)
     return matches.loc[:,labels]
 
 def link_multiple_datasets(datasets, labels):
@@ -126,8 +125,7 @@ def link_multiple_datasets(datasets, labels):
     all_matches = []
     for c,d in combinations:
         print('Comparing {0} with {1}'.format(labels[c], labels[d]))
-        match = compare_two_datasets([datasets[c], datasets[d]],
-                                   [labels[c], labels[d]])
+        match = compare_two_datasets([datasets[c],datasets[d]],[labels[c],labels[d]])
         all_matches.append(match)
     return cross_matches(all_matches, labels=labels)
 

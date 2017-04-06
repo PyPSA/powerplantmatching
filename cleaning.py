@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 ## Copyright 2015-2016 Fabian Hofmann (FIAS), Jonas Hoersch (FIAS)
 
 ## This program is free software; you can redistribute it and/or
@@ -20,14 +21,11 @@ from __future__ import absolute_import, print_function
 import numpy as np
 import pandas as pd
 import networkx as nx
-import os
-import six
 
-from .config import target_columns, target_fueltypes, target_technologies
+from .config import target_columns, target_technologies
 from .utils import read_csv_if_string
 from .duke import duke
-from .utils import (pass_datasetID_as_metadata,
-                    get_datasetID_from_metadata, _data, _data_in, _data_out)
+from .utils import _data_out
 
 
 
