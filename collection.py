@@ -195,4 +195,5 @@ def Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced_RES(update=False, use_sav
     concat = pd.concat([df, res]).reset_index(drop=True)
     concat = concat[cols]
     concat = concat[concat.YearCommissioned<=2015]
+    concat.reset_index(drop=True, inplace=True)
     return concat

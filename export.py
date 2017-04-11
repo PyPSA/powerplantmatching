@@ -22,7 +22,7 @@ import pandas as pd
 import numpy as np
 
 from countrycode import countrycode
-from .powerplant_collection import Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced
+from .collection import Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced
 
 def Export_TIMES(df=None, use_scaled_capacity=False):
     
@@ -65,8 +65,10 @@ def Export_TIMES(df=None, use_scaled_capacity=False):
     df.loc[:,'YearDecommissioned'] = df.loc[:,'YearCommissioned'] + df.loc[:,'Life']
     
     # Now create new export dataframe with headers
-    countries = list(set(df.Country))
-    countries.sort()
+    countries = sorted(set(df.Country))
+    if None in countries:
+        raise ValueError("""There are rows without a valid country identifier
+                         in the dataframe. Please check!""")
     columns = ['Attribute','*Unit','LimType','Year']
     columns.extend(countries)
     columns.append('Pset_Pn')
@@ -74,8 +76,10 @@ def Export_TIMES(df=None, use_scaled_capacity=False):
     
     # Loop stepwise through technologies, years and countries
     row = 0
-    timestypes = list(set(df.TimesType))
-    timestypes.sort()
+    timestypes = sorted(set(df.TimesType))
+    if None in timestypes:
+        raise ValueError("""There are rows without a valid TIMES-Type identifier
+                         in the dataframe. Please check!""")
     data_timestypes = df.groupby(df.TimesType)
     cap_column='Scaled Capacity' if use_scaled_capacity else 'Capacity'
     for tt in timestypes:
@@ -100,7 +104,7 @@ def Export_TIMES(df=None, use_scaled_capacity=False):
     df_exp.loc[:,'LimType'] = 'FX'
     
     # Write resulting dataframe to file
-    outfn = os.path.join(os.path.dirname(__file__), 'output','Export_TIMES.xlsx')
+    outfn = os.path.join(os.path.dirname(__file__),'data','out','Export_Stock_TIMES.xlsx')
     df_exp.to_excel(outfn)
     return df_exp
 

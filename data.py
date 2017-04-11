@@ -515,17 +515,25 @@ def WEPP(raw=False, parseGeoLoc=False):
     if parseGeoLoc:
         for index, row in wepp.iterrows():
             query = None
-            while True:
-                query = parse_Geoposition(row['UNIT'], row['COUNTRY'])      # 1st try
-                if query != None: break
-                query = parse_Geoposition(row['POSTCODE'], row['COUNTRY'])  # 2nd try
-                if query != None: break
-                query = parse_Geoposition(row['CITY'], row['COUNTRY'])      # 3rd try
-                break
-
-            if isinstance(query, tuple):
-                wepp.at[index, 'LAT'] = query[0] # write latitude
-                wepp.at[index, 'LON'] = query[1] # write longitude
+            if pd.isnull(row['LAT']):
+                while True:
+                    query = parse_Geoposition(row['UNIT'], row['COUNTRY'])      # 1st try
+                    if query != None: break
+                    query = parse_Geoposition(row['POSTCODE'], row['COUNTRY'])  # 2nd try
+                    if query != None: break
+                    query = parse_Geoposition(row['CITY'], row['COUNTRY'])      # 3rd try
+                    break
+    
+                if isinstance(query, tuple):
+                    wepp.at[index, 'LAT'] = query[0] # write latitude
+                    wepp.at[index, 'LON'] = query[1] # write longitude
+                    print(u"Index {0} | Unit '{1}' in {2} returned geoposition: ({3},{4})."\
+                          .format(index,row['UNIT'],row['COUNTRY'],query[0],query[1]))
+            else:
+                print("Index {0} | Geoposition already exists.".format(index))
+        # Loop done: Make backup of original file and save querying results
+        os.rename(_data_in('platts_wepp.csv'), _data_in('platts_wepp_backup.csv'))
+        wepp.to_csv(_data_in('platts_wepp.csv'), encoding='utf-8')
 
     # str.title(): Return a titlecased version of the string where words start
     # with an uppercase character and the remaining characters are lowercase.

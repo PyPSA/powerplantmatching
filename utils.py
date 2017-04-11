@@ -134,7 +134,7 @@ def parse_Geoposition(loc, country=None, return_Country=False):
     from geopy.geocoders import Nominatim
     if loc is not None and loc != float:
         country = countrycode(codes=[country], origin='country_name', target='iso2c')[0]
-        gdata = Nominatim(timeout=100, country_bias=country).geocode(loc)
+        gdata = Nominatim(timeout=500, country_bias=country).geocode(loc)
         if gdata != None:
             if return_Country:
                 return gdata.address.split(', ')[-1]
