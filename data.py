@@ -21,7 +21,6 @@ from __future__ import print_function, absolute_import
 import os
 import numpy as np
 import pandas as pd
-from countrycode import countrycode
 import requests
 import xml.etree.ElementTree as ET
 import re
@@ -31,7 +30,7 @@ from .config import europeancountries, target_columns
 from .cleaning import (gather_fueltype_info, gather_set_info, gather_technology_info,
                        clean_powerplantname, clean_technology)
 from .utils import (parse_Geoposition, pass_datasetID_as_metadata,
-                     _data, _data_in, _data_out)
+                     _data, _data_in, _data_out, countrycode)
 
 data_config = {}
 

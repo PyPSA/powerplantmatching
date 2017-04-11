@@ -21,7 +21,10 @@ from __future__ import print_function, absolute_import
 import os
 import pandas as pd
 import six
-from countrycode import countrycode
+if six.PY3:
+    from countrycode.countrycode import countrycode
+else:
+    from countrycode import countrycode
 import matplotlib.pyplot as plt
 
 def _data(fn):
