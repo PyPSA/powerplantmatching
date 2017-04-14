@@ -202,6 +202,7 @@ def aggregate_units(df, use_saved_aggregation=False, dataset_name=None):
             df.loc[:, 'grouped'] = pd.read_csv(path_name, header=None, index_col=0).values
         except ValueError:
             print("Non-existing saved links for this dataset, continuing by aggregating again")
+            df.drop('grouped', axis=1, inplace=True)
 
     if 'grouped' not in df:
         duplicates = duke(read_csv_if_string(df))

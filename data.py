@@ -474,6 +474,7 @@ def ENTSOE(update=False, raw=False, entsoe_token=None):
         entsoe = entsoe.loc[entsoe.Country.isin(europeancountries()+[None])]
         entsoe.loc[:,'Country'] = entsoe.Country.astype(str)
         entsoe.loc[entsoe.Country=='None', 'Country'] = np.NaN
+        entsoe.reset_index(drop=True, inplace=True)
         entsoe.to_csv(_data_out('entsoe_powerplants.csv'),
                       index_label='id', encoding='utf-8')
         pass_datasetID_as_metadata(entsoe, 'ENTSOE')
