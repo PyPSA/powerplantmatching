@@ -234,7 +234,7 @@ def reduce_matched_dataframe(df):
     sdf.loc[:, 'Technology'] = df.Technology.apply(concat_strings, axis=1)
     sdf.loc[:, 'Country'] = df.Country.apply(most_frequent, axis=1)
     sdf.loc[:, 'Set'] = df.Set.apply(most_frequent, axis=1)
-    sdf.loc[:, 'Capacity'] = df.Capacity.max(axis=1)
+    sdf.loc[:, 'Capacity'] = df.Capacity.median(axis=1)
     sdf.loc[:, 'YearCommissioned'] = df.YearCommissioned.max(axis=1)
     sdf.loc[:, 'lat'] = df.lat.apply(optimised_mean, axis=1)
     sdf.loc[:, 'lon'] = df.lon.apply(optimised_mean, axis=1)
