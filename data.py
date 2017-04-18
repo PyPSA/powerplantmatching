@@ -25,6 +25,8 @@ import pandas as pd
 import requests
 import xml.etree.ElementTree as ET
 import re
+import logging
+logger = logging.getLogger(__name__)
 
 from .cleaning import clean_single
 from .config import europeancountries, target_columns
@@ -319,7 +321,7 @@ def ESE(update=False, path=None, add_Oldenburgdata=False, raw=False):
         elif type(x) == pd.tslib.NaTType:
             A.append(np.NaN)
         else:
-            print(x)
+            logger.warning('Unknown type of date encountered: %s', x)
             A.append(np.NaN)
     data.loc[:,'YearCommissioned'] = A
     data.loc[(data.Technology.str.contains('Pumped')) &
@@ -523,10 +525,10 @@ def WEPP(raw=False, parseGeoLoc=False):
                 if isinstance(query, tuple):
                     wepp.at[index, 'LAT'] = query[0] # write latitude
                     wepp.at[index, 'LON'] = query[1] # write longitude
-                    print(u"Index {0} | Unit '{1}' in {2} returned geoposition: ({3},{4})."\
+                    logger.info(u"Index {0} | Unit '{1}' in {2} returned geoposition: ({3},{4})."\
                           .format(index,row['UNIT'],row['COUNTRY'],query[0],query[1]))
             else:
-                print("Index {0} | Geoposition already exists.".format(index))
+                ("Index {0} | Geoposition already exists.".format(index))
         # Loop done: Make backup of original file and save querying results
         os.rename(_data_in('platts_wepp.csv'), _data_in('platts_wepp_backup.csv'))
         wepp.to_csv(_data_in('platts_wepp.csv'), encoding='utf-8')

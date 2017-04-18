@@ -21,12 +21,13 @@ from __future__ import absolute_import, print_function
 import numpy as np
 import pandas as pd
 import networkx as nx
+import logging
+logger = logging.getLogger(__name__)
 
 from .config import target_columns, target_technologies
 from .utils import read_csv_if_string
 from .duke import duke
-from .utils import (pass_datasetID_as_metadata,
-                    get_datasetID_from_metadata, _data, _data_in, _data_out)
+from .utils import (_data_out)
 
 
 
@@ -205,11 +206,10 @@ def aggregate_units(df, use_saved_aggregation=False, dataset_name=None,
     path_name = _data_out('aggregation_groups_{}.csv'.format(dataset_name))
     if use_saved_aggregation:
         try:
-            print('Reading saved aggregation groups for dataset: {}'.format(dataset_name))
-            # XXX: why  .values?? and NEVER do a catchall except
+            logger.info('Reading saved aggregation groups for dataset: {}'.format(dataset_name))
             df.loc[:, 'grouped'] = pd.read_csv(path_name, header=None, index_col=0).values
         except ValueError:
-            print("Non-existing saved links for this dataset, continuing by aggregating again")
+            logger.warning("Non-existing saved links for this dataset, continuing by aggregating again")
             df.drop('grouped', axis=1, inplace=True)
 
     if 'grouped' not in df:

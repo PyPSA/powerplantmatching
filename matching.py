@@ -22,7 +22,8 @@ from __future__ import absolute_import, print_function
 import pandas as pd
 import numpy as np
 import itertools
-
+import logging
+logger = logging.getLogger(__name__)
 from .config import target_columns
 from .utils import read_csv_if_string
 from .duke import duke
@@ -124,7 +125,7 @@ def link_multiple_datasets(datasets, labels):
     combinations = list(itertools.combinations(range(len(labels)), 2))
     all_matches = []
     for c,d in combinations:
-        print('Comparing {0} with {1}'.format(labels[c], labels[d]))
+        logger.info('Comparing {0} with {1}'.format(labels[c], labels[d]))
         match = compare_two_datasets([datasets[c],datasets[d]],[labels[c],labels[d]])
         all_matches.append(match)
     return cross_matches(all_matches, labels=labels)
