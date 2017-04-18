@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 ## Copyright 2015-2016 Fabian Hofmann (FIAS), Jonas Hoersch (FIAS)
 
 ## This program is free software; you can redistribute it and/or
@@ -45,15 +46,14 @@ def lookup(df, keys=None, by='Country, Fueltype', exclude=None, show_totals=Fals
     ----------
     df : pandas.Dataframe or list of pandas.Dataframe's
         powerplant databases to be analysed. If multiple dataframes are passed
-        the lookup table will dusplay them in a MulitIndex
+        the lookup table will display them in a MulitIndex
     by : string out of 'Country, Fueltype', 'Country' or 'Fueltype'
-        Define the type pf lookup table you want to obtain.
+        Define the type of lookup table you want to obtain.
     keys : list of strings
-        labels of the different datasets, only nescessary if multiple dataframes
+        labels of the different datasets, only necessary if multiple dataframes
         passed
     exclude: list
         list of fueltype to exclude from the analysis
-
     """
 
     def lookup_single(df, by=by, exclude=exclude):
@@ -106,8 +106,7 @@ def plot_fueltype_stats(df):
            labels=stats.index, autopct='%1.1f%%')
 
 
-def set_uncommon_fueltypes_to_other(df, fueltypes={'Geothermal', 
-                                    'Mixed fuel types', 'Waste'}):
+def set_uncommon_fueltypes_to_other(df, fueltypes={'Bioenergy','Geothermal','Mixed fuel types','Waste'}):
     df.loc[df.Fueltype.isin(fueltypes) , 'Fueltype'] = 'Other'
     return df
 
@@ -139,7 +138,7 @@ def parse_Geoposition(loc, country=None, return_Country=False):
     from geopy.geocoders import Nominatim
     if loc is not None and loc != float:
         country = countrycode(codes=[country], origin='country_name', target='iso2c')[0]
-        gdata = Nominatim(timeout=100, country_bias=country).geocode(loc)
+        gdata = Nominatim(timeout=500, country_bias=country).geocode(loc)
         if gdata != None:
             if return_Country:
                 return gdata.address.split(', ')[-1]
@@ -190,6 +189,7 @@ tech_colors2 = pd.Series(data=
           'Lignite':'chocolate', 
           'Nuclear': 'yellow',
           'solar':'gold', 
+          'Solar':'gold',
           'windoff':'cornflowerblue', 
           'windon':'steelblue',
           'Wind': 'steelblue',

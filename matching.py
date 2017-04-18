@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 ## Copyright 2015-2016 Fabian Hofmann (FIAS), Jonas Hoersch (FIAS)
 
 ## This program is free software; you can redistribute it and/or
@@ -18,11 +19,9 @@ Functions for linking and combining different datasets
 
 from __future__ import absolute_import, print_function
 
-import os
 import pandas as pd
 import numpy as np
 import itertools
-import tempfile
 
 from .config import target_columns
 from .utils import read_csv_if_string
@@ -101,7 +100,7 @@ def cross_matches(sets_of_pairs, labels=None):
     for i in labels:
         matches = pd.concat([matches.groupby(i, as_index=False, sort=False).\
                              apply(lambda x: x.loc[x.isnull().sum(axis=1).idxmin()]),\
-        matches[matches[i].isnull()]]).reset_index(drop=True)
+                             matches[matches[i].isnull()]]).reset_index(drop=True)
     return matches.loc[:,labels]
 
 def link_multiple_datasets(datasets, labels):
@@ -125,8 +124,8 @@ def link_multiple_datasets(datasets, labels):
     combinations = list(itertools.combinations(range(len(labels)), 2))
     all_matches = []
     for c,d in combinations:
-        match = compare_two_datasets([datasets[c], datasets[d]],
-                                   [labels[c], labels[d]])
+        print('Comparing {0} with {1}'.format(labels[c], labels[d]))
+        match = compare_two_datasets([datasets[c],datasets[d]],[labels[c],labels[d]])
         all_matches.append(match)
     return cross_matches(all_matches, labels=labels)
 
@@ -193,15 +192,26 @@ def reduce_matched_dataframe(df):
         combined_dataframe() or match_multiple_datasets()
     """
 
+    def most_frequent_fueltype(df):
+        if df.isnull().all():
+            return np.nan            
+        else:
+            # Priority for Lignite: If any dataset claims the fueltype is Lignite -> accept!
+            if df.isin(['Lignite']).any():
+                return 'Lignite'
+            else:
+                values = df.value_counts()
+                if values.idxmax() == 'Hard Coal' and len(values)>1:
+                    return values.index[1]
+                else:
+                    return values.idxmax()
+            
     def most_frequent(df):
         if df.isnull().all():
-            return np.nan
+            return np.nan            
         else:
             values = df.value_counts()
-            if values.idxmax() == 'Coal' and len(values)>1:
-                return values.index[1]
-            else:
-                return values.idxmax()
+            return values.idxmax()
 
     def concat_strings(df):
         if df.isnull().all():
@@ -219,19 +229,18 @@ def reduce_matched_dataframe(df):
         else:
             return df.mean()
 
-    sdf = df.Name
-    sdf.loc[:, 'Fueltype'] = df.Fueltype.apply(most_frequent, axis=1)
+    sdf = pd.DataFrame(df.Name)
+    sdf.loc[:, 'Fueltype'] = df.Fueltype.apply(most_frequent_fueltype, axis=1)
     sdf.loc[:, 'Technology'] = df.Technology.apply(concat_strings, axis=1)
     sdf.loc[:, 'Country'] = df.Country.apply(most_frequent, axis=1)
     sdf.loc[:, 'Set'] = df.Set.apply(most_frequent, axis=1)
-    sdf.loc[:, 'Capacity'] = df.Capacity.max(axis=1)
+    sdf.loc[:, 'Capacity'] = df.Capacity.median(axis=1)
     sdf.loc[:, 'YearCommissioned'] = df.YearCommissioned.max(axis=1)
     sdf.loc[:, 'lat'] = df.lat.apply(optimised_mean, axis=1)
     sdf.loc[:, 'lon'] = df.lon.apply(optimised_mean, axis=1)
     sdf.loc[:, 'File'] = df.File.apply(concat_strings, axis=1)
-    sdf.loc[:,'projectID'] = (df.projectID
-                              .apply(lambda x: dict(zip(df.columns.levels[1][x.notnull()].values,
-                                                   x.dropna().values)),
-                                     axis=1))
+    sdf.loc[:,'projectID'] = df.projectID.apply(lambda x: 
+                                dict(zip(df.columns.levels[1][x.notnull()].values
+                                , x.dropna().values)), axis=1)
     sdf = clean_technology(sdf, generalize_hydros=False)
     return sdf.reset_index(drop=True)

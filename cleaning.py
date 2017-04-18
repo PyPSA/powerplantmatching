@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 ## Copyright 2015-2016 Fabian Hofmann (FIAS), Jonas Hoersch (FIAS)
 
 ## This program is free software; you can redistribute it and/or
@@ -20,10 +21,8 @@ from __future__ import absolute_import, print_function
 import numpy as np
 import pandas as pd
 import networkx as nx
-import os
-import six
 
-from .config import target_columns, target_fueltypes, target_technologies
+from .config import target_columns, target_technologies
 from .utils import read_csv_if_string
 from .duke import duke
 from .utils import (pass_datasetID_as_metadata,
@@ -135,7 +134,6 @@ def cliques(df, dataduplicates):
     dataduplicates : pandas.Dataframe or string
         dataframe or name of the csv-linkfile which determines the
         link within one dataset
-
     """
     df = read_csv_if_string(df)
     G = nx.DiGraph()
@@ -170,8 +168,6 @@ def aggregate_units(df, use_saved_aggregation=False, dataset_name=None,
     dataset_name : str
         costum name for dataset identification, choose your own
         identification in case no metadata is passed to the function
-
-
     """
     def prop_for_groups(x):
         """
@@ -209,9 +205,12 @@ def aggregate_units(df, use_saved_aggregation=False, dataset_name=None,
     path_name = _data_out('aggregation_groups_{}.csv'.format(dataset_name))
     if use_saved_aggregation:
         try:
+            print('Reading saved aggregation groups for dataset: {}'.format(dataset_name))
+            # XXX: why  .values?? and NEVER do a catchall except
             df.loc[:, 'grouped'] = pd.read_csv(path_name, header=None, index_col=0).values
-        except IOError:
+        except ValueError:
             print("Non-existing saved links for this dataset, continuing by aggregating again")
+            df.drop('grouped', axis=1, inplace=True)
 
     if 'grouped' not in df:
         duplicates = duke(read_csv_if_string(df))
@@ -242,7 +241,7 @@ def clean_single(df, aggregate_powerplant_units=True, use_saved_aggregation=Fals
         dataframe or csv-file to use for the resulting database
 
     aggregate_units : Boolean, default True
-        Wether or not the power plant units should be aggregated
+        Whether or not the power plant units should be aggregated
 
     use_saved_aggregation : Boolean, default False
         Only sensible if aggregate_units is set to True.

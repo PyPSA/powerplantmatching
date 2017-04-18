@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 ## Copyright 2015-2016 Fabian Hofmann (FIAS), Jonas Hoersch (FIAS)
 
 ## This program is free software; you can redistribute it and/or
@@ -18,10 +19,11 @@ Functions to modify and adjust power plant datasets
 
 from __future__ import absolute_import, print_function
 import pandas as pd 
+import numpy as np
 
 from .utils import read_csv_if_string
 from .utils import lookup
-from .data import ENTSOE
+from .data import ENTSOE_stats
 from .cleaning import clean_single
 
 
@@ -72,7 +74,7 @@ def rescale_capacities_to_country_totals(df, fueltypes):
     country the information about the total capacity of each fueltype is given.
     The scaling factor is determined by the ratio of the aggregated capacity of the
     fueltype within each coutry and the ENTSOe statistics about the fueltype capacity
-    total wothin each country.
+    total within each country.
 
     Parameters
     ----------
@@ -80,17 +82,15 @@ def rescale_capacities_to_country_totals(df, fueltypes):
         Data set that should be modified
     fueltype : str or list of strings
         fueltype that should be scaled
-
-
     """
     df = df.copy()
     if isinstance(fueltypes, str):
         fueltypes = [fueltypes]
     stats_df = lookup(df).loc[fueltypes]
-    stats_entsoe = lookup(ENTSOE()).loc[fueltypes]
+    stats_entsoe = lookup(ENTSOE_stats()).loc[fueltypes]
     if ((stats_df==0)&(stats_entsoe!=0)).any().any():
         print('Could not scale powerplants in the countries %s because of no occurring \
-power plants in these countries'%\
+              power plants in these countries'%\
               stats_df.loc[:, ((stats_df==0)&\
                             (stats_entsoe!=0)).any()].columns.tolist())
     ratio = (stats_entsoe/stats_df).fillna(1)
@@ -100,6 +100,97 @@ power plants in these countries'%\
             df.loc[(df.Country==country)&(df.Fueltype==fueltype), 'Scaled Capacity'] *= \
                    ratio.loc[fueltype,country]
     return df
+
+
+
+def add_missing_capacities(df, fueltypes):
+    """
+    Primarily written to add artificial missing wind- and solar capacities to 
+    match these to the statistics.
+    
+    Parameters
+    ----------
+    df : Pandas.DataFrame
+        Dataframe that should be modified
+    fueltype : str or list of strings
+        fueltype that should be scaled
+    """
+    df = df.copy()
+    if isinstance(fueltypes, str):
+        fueltypes = [fueltypes]
+    stats_df = lookup(df).loc[fueltypes]
+    stats_entsoe = lookup(ENTSOE_stats()).loc[fueltypes]
+    missing = (stats_entsoe - stats_df).fillna(0.)
+    missing[missing<0] = 0
+    for country in missing:
+        for fueltype in fueltypes:
+            if missing.loc[fueltype,country] > 0:
+                row = df.index.size
+                df.loc[row, ['CARMA','ENTSOE','ESE','GEO','OPSD','WEPP','WRI']] = \
+                               'Artificial_' + fueltype + '_' + country
+                df.loc[row,'Fueltype'] = fueltype
+                df.loc[row,'Country'] = country
+                df.loc[row,'Set'] = 'PP'
+                df.loc[row,'Capacity'] = missing.loc[fueltype,country]
+                #TODO: This section needs to be enhanced, current values based on average construction year.
+                if fueltype=='Solar':
+                    df.loc[row,'YearCommissioned'] = 2011
+                if fueltype=='Wind':
+                    df.loc[row,'YearCommissioned'] = 2008
+    return df
+
+def average_empty_commyears(df):
+    """
+    Fills the empty commissioning years with averages.
+    """
+    df = df.copy()
+    mean_yrs = df.groupby(['Country', 'Fueltype']).YearCommissioned.mean().unstack(0)
+    # 1st try: Fill with both country- and fueltypespecific averages
+    df.YearCommissioned.fillna(df.groupby(['Country', 'Fueltype']).YearCommissioned\
+                               .transform("mean"), inplace=True)
+    # 2nd try: Fill remaining with only fueltype-specific average
+    df.YearCommissioned.fillna(df.groupby(['Fueltype']).YearCommissioned\
+                               .transform('mean'), inplace=True)
+    # 3rd try: Fill remaining with only country-specific average 
+    df.YearCommissioned.fillna(df.groupby(['Country']).YearCommissioned\
+                               .transform('mean'), inplace=True)
+    if df.YearCommissioned.isnull().any():
+        count = len(df[df.YearCommissioned.isnull()])
+        raise(ValueError('''There are still *{0}* empty values for 'YearCommissioned'
+                            in the DataFrame. These should be either be filled 
+                            manually or dropped to continue.'''.format(count)))
+    df.loc[:,'YearCommissioned'] = df.YearCommissioned.astype(int)
+    return df
+
+
+def aggregate_RES_by_commyear(df, target_fueltypes=None):
+    """
+    Aggregates the vast number of RES units to one specific (Fueltype + Technology)
+    per commissioning year.
+    """
+    df = df.copy()
+    
+    if target_fueltypes is None:
+        target_fueltypes = ['Wind', 'Solar', 'Bioenergy']
+    df = df[df.Fueltype.isin(target_fueltypes)]
+    df = average_empty_commyears(df)
+    
+    df_exp = pd.DataFrame(columns=df.columns)
+    i = 0
+    for c, df_country in df.groupby(['Country']):
+        for yr, df_yr in df_country.groupby(['YearCommissioned']):
+            for ft, df_ft in df_yr.groupby(['Fueltype']):
+                df_ft.fillna('-', inplace=True)
+                for tech, df_tech in df_ft.groupby(['Technology']):
+                    df_exp.loc[i,'Country'] = c
+                    df_exp.loc[i,'YearCommissioned'] = yr
+                    df_exp.loc[i,'Fueltype'] = ft
+                    df_exp.loc[i,'Technology'] = tech
+                    df_exp.loc[i,'Capacity'] = df_tech.Capacity.sum()
+                    i+=1
+    df_exp.loc[:,'Set'] = 'PP'
+    df_exp.replace({'-':np.NaN}, inplace=True)
+    return df_exp
 
 
 

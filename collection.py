@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 ## Copyright 2015-2016 Fabian Hofmann (FIAS), Jonas Hoersch (FIAS)
 
 ## This program is free software; you can redistribute it and/or
@@ -17,16 +18,15 @@ Processed datasets of merged and/or adjusted data
 """
 from __future__ import print_function
 
-import os
 import pandas as pd
 import ast
 
 from .utils import set_uncommon_fueltypes_to_other, _data_in, _data_out
-from .data import data_config, OPSD, ESE
+from .data import data_config, OPSD, ESE, OPSD_RES
 from .cleaning import clean_single
 from .matching import (combine_multiple_datasets,
                        reduce_matched_dataframe)
-from .heuristics import extend_by_non_matched
+from .heuristics import extend_by_non_matched, aggregate_RES_by_commyear
 
 def Collection(datasets, update=False, use_saved_aggregation=False, reduced=True,
                custom_config={}):
@@ -116,7 +116,7 @@ def MATCHED_dataset(aggregated_hydros=True, rescaled_hydros=False,
 
     matched = extend_by_non_matched(matched, OPSD(), 'OPSD', clean_added_data=True)
     if include_unavailables:
-        ese = ESE()
+        # ese = ESE()
         # ese.projectID
         matched = extend_by_non_matched(matched, ESE(), 'ESE', clean_added_data=False)
 
@@ -165,7 +165,35 @@ def Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced(update=False, use_saved_aggreg
                                                  {'add_Oldenburgdata': add_Oldenburgdata})})
 
 #unpublishable
-def Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched(update=False, use_saved_aggregation=False):
-    return Collection(['CARMA', 'ENTSOE', 'GEO', 'OPSD', 'WEPP', 'WRI'],
+def Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched(update=False, use_saved_aggregation=False,
+                                               add_Oldenburgdata=False):
+    return Collection(['CARMA', 'ENTSOE', 'ESE', 'GEO', 'OPSD', 'WEPP', 'WRI'],
                       update=update, 
-                      use_saved_aggregation=use_saved_aggregation, reduced=False)
+                      use_saved_aggregation=use_saved_aggregation, reduced=False,
+                      custom_config={'ESE': dict(read_kwargs=
+                                                 {'add_Oldenburgdata': add_Oldenburgdata})})
+
+#unpublishable
+def Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced(update=False, use_saved_aggregation=False,
+                                                       add_Oldenburgdata=False):
+    return Collection(['CARMA', 'ENTSOE', 'ESE', 'GEO', 'OPSD', 'WEPP', 'WRI'],
+                      update=update, 
+                      use_saved_aggregation=use_saved_aggregation, reduced=True,
+                      custom_config={'ESE': dict(read_kwargs=
+                                                 {'add_Oldenburgdata': add_Oldenburgdata})})
+    
+#unpublishable
+def Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced_RES(update=False, use_saved_aggregation=False):
+    df = Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced(update=update,
+                                                                 use_saved_aggregation=use_saved_aggregation)
+    df = df[~((df.Country=='Germany')&((df.Fueltype=='Solar')\
+                         |(df.Fueltype=='Wind')|(df.Fueltype=='Bioenergy')))]
+    df = df[~((df.Country=='Denmark')&((df.Fueltype=='Solar')|(df.Fueltype=='Wind')))]
+    cols = df.columns
+    res = OPSD_RES()
+    res = aggregate_RES_by_commyear(res)
+    concat = pd.concat([df, res]).reset_index(drop=True)
+    concat = concat[cols]
+    concat = concat[concat.YearCommissioned<=2015]
+    concat.reset_index(drop=True, inplace=True)
+    return concat
