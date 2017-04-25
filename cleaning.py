@@ -147,7 +147,7 @@ def cliques(df, dataduplicates):
     return df
 
 
-def aggregate_units(df, use_saved_aggregation=False, dataset_name=None, 
+def aggregate_units(df, use_saved_aggregation=False, dataset_name=None,
                     detailed_columns=False):
     df = df.copy()
     """
@@ -198,7 +198,7 @@ def aggregate_units(df, use_saved_aggregation=False, dataset_name=None,
 
     #try to use dataset identifier from df.datasetID
     if dataset_name is None:
-        try: 
+        try:
             dataset_name = df._metadata[0]
         except IndexError:
             pass
@@ -215,7 +215,7 @@ def aggregate_units(df, use_saved_aggregation=False, dataset_name=None,
     if 'grouped' not in df:
         duplicates = duke(read_csv_if_string(df))
         df = cliques(df, duplicates)
-        try: 
+        try:
             df.grouped.to_csv(path_name)
         except IndexError:
             pass
@@ -227,7 +227,7 @@ def aggregate_units(df, use_saved_aggregation=False, dataset_name=None,
     df = df[target_columns(detailed_columns=detailed_columns)]
     return df
 
-def clean_single(df, aggregate_powerplant_units=True, use_saved_aggregation=False, 
+def clean_single(df, aggregate_powerplant_units=True, use_saved_aggregation=False,
                  dataset_name=None, detailed_columns=False):
     df = df.copy()
     """

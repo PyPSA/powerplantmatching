@@ -42,7 +42,7 @@ def Plot_bar_comparison_single_matched(df=None, cleaned=True, use_saved_aggregat
         df = Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced_RES()
         if df is None:
             raise RuntimeError("The data to be plotted does not yet exist.")
-    
+
     if cleaned:
         carma = clean_single(CARMA(), use_saved_aggregation=use_saved_aggregation)
         entsoe = clean_single(ENTSOE(), use_saved_aggregation=use_saved_aggregation)
@@ -69,7 +69,7 @@ def Plot_bar_comparison_single_matched(df=None, cleaned=True, use_saved_aggregat
     # Create figure with two subplots
     fig, ax = plt.subplots(nrows=1, ncols=2, sharex=False, sharey=True, figsize = (25,13))
     # 1st Plot with single datasets on the left side. The df.plot() function returns a
-    #     matplotlib.axes.AxesSubplot object. You can set the labels on that object. 
+    #     matplotlib.axes.AxesSubplot object. You can set the labels on that object.
     stats.plot.bar(ax=ax[0], stacked=False, legend=True, colormap='Accent')
     ax[0].set_ylabel('Installed Capacity [GW]')
     ax[0].set_title('Capacities of Single DBs')
@@ -95,7 +95,7 @@ def Plot_hbar_comparison_countries(df=None):
         df = Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced_RES()
         if df is None:
             raise RuntimeError("The data to be plotted does not yet exist.")
-            
+
     statistics = ENTSOE_stats()
     stats = lookup([df, statistics], keys=['Matched dataset','Statistics ENTSO-E'], by='Country')/1000
     # Presettings for the plots
@@ -115,7 +115,7 @@ def Plot_hbar_comparison_countries(df=None):
 
 def Plot_bar_comparison_countries_fueltypes(df=None, ylabel=None):
     """
-    Plots per country an analysis, how the matched dataset and the statistics 
+    Plots per country an analysis, how the matched dataset and the statistics
     differ by fueltype.
     """
     if ylabel is None:
@@ -125,7 +125,7 @@ def Plot_bar_comparison_countries_fueltypes(df=None, ylabel=None):
         if df is None:
             raise RuntimeError("The data to be plotted does not yet exist.")
     df = df.copy()
-    
+
     statistics = ENTSOE_stats()
     statistics.Fueltype.replace({'Mixed fuel types':'Other'}, inplace=True)
     stats = lookup([df, statistics], keys=['Matched dataset','Statistics ENTSO-E'],
@@ -145,7 +145,7 @@ def Plot_bar_comparison_countries_fueltypes(df=None, ylabel=None):
             j=0
         # Perform the plot
         stats[country].plot.bar(ax=ax[i,j],stacked=False,legend=False,colormap='jet')
-        # Compute coverage and show it 
+        # Compute coverage and show it
         ctry = stats[country]
         ctry.loc[:,u'Delta_squared'] = (ctry.iloc[:,0]-ctry.iloc[:,1])**2
         cov = 1 - ctry.Delta_squared.sum()/((ctry.iloc[:,1]**2).sum())
@@ -177,15 +177,15 @@ def Plot_bar_decomissioning_curves(df=None, ylabel=None, title=None, legend_in_s
         if df is None:
             raise RuntimeError("The data to be plotted does not yet exist.")
     df = df.copy()
-            
+
     df.loc[:,'Life'] = df.Fueltype.map(fueltype_to_life())
-    
+
     # Insert periodwise capacities
     df.loc[:,2015] = df.loc[:,'Capacity']
     for yr in range(2020, 2055, 5):
         df.loc[yr<=(df.loc[:,'YearCommissioned']+df.loc[:,'Life']),yr] = df.loc[:,'Capacity']
         df.loc[:,yr].fillna(0., inplace=True)
-        
+
     # Presettings for the plots
     font={#'family' : 'normal',
           #'weight' : 'bold',

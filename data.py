@@ -326,7 +326,7 @@ def ESE(update=False, path=None, add_Oldenburgdata=False, raw=False):
     data.loc[:,'YearCommissioned'] = A
     data.loc[(data.Technology.str.contains('Pumped')) &
              (data.Technology.notnull()), 'Technology'] = 'Pumped storage'
-    data = data.loc[data.Technology == 'Pumped storage', 
+    data = data.loc[data.Technology == 'Pumped storage',
                     target_columns(detailed_columns=True)]
     data.Fueltype = 'Hydro'
     data = data.reset_index(drop = True)
@@ -521,7 +521,7 @@ def WEPP(raw=False, parseGeoLoc=False):
                     if query != None: break
                     query = parse_Geoposition(row['CITY'], row['COUNTRY'])      # 3rd try
                     break
-    
+
                 if isinstance(query, tuple):
                     wepp.at[index, 'LAT'] = query[0] # write latitude
                     wepp.at[index, 'LON'] = query[1] # write longitude
@@ -554,7 +554,7 @@ def WEPP(raw=False, parseGeoLoc=False):
     wepp.Country = wepp.Country.replace(c).str.title()
     wepp = wepp[wepp.Country.isin(europeancountries())]
     # Drop any rows with plants which are not: In operation (OPR) or under construction (CON)
-    wepp = wepp[wepp.Status.isin(['OPR', 'CON'])]    
+    wepp = wepp[wepp.Status.isin(['OPR', 'CON'])]
     # Replace fueltypes
     d = {'AGAS':'Bioenergy',    # Syngas from gasified agricultural waste or poultry litter
          'BFG':'Other',         # blast furnance gas -> "Hochofengas"
@@ -567,9 +567,9 @@ def WEPP(raw=False, parseGeoLoc=False):
          'COKE':'Hard Coal',
          'CWM':'Hard Coal',     # Coal-water mixture (aka coal-water slurry)
          'DGAS':'Other',        # sewage digester gas -> deutsch: "Klaergas"
-         'FGAS':'Other',        # Flare gas or wellhead gas or associated gas 
+         'FGAS':'Other',        # Flare gas or wellhead gas or associated gas
          'GAS':'Natural Gas',
-         'GEO':'Geothermal',    
+         'GEO':'Geothermal',
          'H2':'Other',          # Hydrogen gas
          'HZDWST':'Waste',      # Hazardous waste
          'INDWST':'Waste',      # Industrial waste or refinery waste
@@ -584,10 +584,10 @@ def WEPP(raw=False, parseGeoLoc=False):
          'NAP':'Oil',           # naphta
          'OGAS':'Oil',          # Gasified crude oil or refinery bottoms or bitumen
          'PEAT':'Lignite',
-         'REF':'Waste',         
+         'REF':'Waste',
          'REFGAS':'Other',      # Syngas from gasified refuse
          'RPF':'Waste',         # Waste paper and/or waste plastic
-         'PWST':'Other',        # paper mill waste  
+         'PWST':'Other',        # paper mill waste
          'RGAS':'Other',        # refinery off-gas -> deutsch: "Raffineriegas"
          'SHALE':'Oil',
          'SUN':'Solar',
@@ -601,9 +601,9 @@ def WEPP(raw=False, parseGeoLoc=False):
          'WSTGAS':'Other',      # waste gas -> deutsch: "Industrieabgas"
          'WSTWSL':'Waste',      # Wastewater sludge
          'WSTH':'Waste'}
-    wepp.Fueltype = wepp.Fueltype.replace(d)      
+    wepp.Fueltype = wepp.Fueltype.replace(d)
     ## Fill NaNs to allow str actions
-    wepp.Technology.fillna('', inplace=True)    
+    wepp.Technology.fillna('', inplace=True)
     wepp.Turbtype.fillna('', inplace=True)
     # Correct technology infos:
     wepp.loc[wepp.Technology.str.contains('LIG', case=False), 'Fueltype'] = 'Lignite'
@@ -619,20 +619,20 @@ def WEPP(raw=False, parseGeoLoc=False):
     wepp.loc[wepp.Utype.isin(ccgt_pattern), 'Technology'] = 'CCGT'
     wepp.loc[wepp.Utype.isin(ocgt_pattern), 'Technology'] = 'OCGT'
     wepp.loc[wepp.Utype.isin(st_pattern), 'Technology'] = 'Steam Turbine'
-    wepp.loc[wepp.Utype.isin(ic_pattern), 'Technology'] = 'Combustion Engine'    
+    wepp.loc[wepp.Utype.isin(ic_pattern), 'Technology'] = 'Combustion Engine'
     wepp.loc[wepp.Utype=='WTG', 'Technology'] = 'Onshore'
     wepp.loc[wepp.Utype=='WTG/O', 'Technology'] = 'Offshore'
     # Derive the SET column
     chp_pattern = ['CC/S','CC/CP','CCSS/P','GT/CP','GT/CS','GT/S','GT/H','IC/CP',
                    'IC/H','ST/S','ST/H','ST/CP','ST/CS','ST/D']
-    wepp.loc[wepp.Utype.isin(chp_pattern), 'Set'] = 'CHP'         
+    wepp.loc[wepp.Utype.isin(chp_pattern), 'Set'] = 'CHP'
     wepp.loc[wepp.Set.isnull(), 'Set' ] = 'PP'
     # Drop any columns we do not need
     wepp = wepp.loc[:,target_columns()]
     # Clean up the mess
     wepp.Fueltype = wepp.Fueltype.str.title()
     wepp.reset_index(drop=True)
-    # Done!    
+    # Done!
     wepp.datasetID = 'WEPP'
     pass_datasetID_as_metadata(wepp, 'WEPP')
     return wepp
@@ -644,7 +644,7 @@ def OPSD_RES(raw=False):
     """
     Return standardized OPSD (Open Power Systems Data) renewables (RES)
     database with target column names and fueltypes.
-    
+
     This sqlite database is very big and therefore not part of the package.
     It needs to be obtained here: http://data.open-power-system-data.org/renewable_power_plants/
 
@@ -683,7 +683,7 @@ def OPSD_RES(raw=False):
                                    "Capacity","lat","lon"])
         df.loc[:,'Country'] = countrycode(codes=country, target='country_name', origin='iso2c')
         return df
-        
+
     df = pd.concat(read_opsd_res(r) for r in ['DE','DK']).reset_index(drop=True)
     df.loc[:,'Country'] = df.Country.str.title()
     df.loc[:,'Set'] = 'PP'

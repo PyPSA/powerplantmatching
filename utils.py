@@ -39,7 +39,7 @@ def _data_out(fn):
 
 def lookup(df, keys=None, by='Country, Fueltype', exclude=None, show_totals=False):
     """
-    Returns a lookup table of the dataframe df with rounded numbers. 
+    Returns a lookup table of the dataframe df with rounded numbers.
     Use different lookups as "Country", "Fueltype" for the different lookups.
 
     Parameters
@@ -89,8 +89,8 @@ def lookup(df, keys=None, by='Country, Fueltype', exclude=None, show_totals=Fals
             return dfs.round(0).astype(int)
         else:
             return lookup_single(df).fillna(0.).round(0).astype(int)
-            
-            
+
+
 def pass_datasetID_as_metadata(df, ID):
     for i in df._metadata:
         for i in df._metadata:
@@ -99,7 +99,7 @@ def pass_datasetID_as_metadata(df, ID):
 
 def get_datasetID_from_metadata(df):
     return df._metadata[0]
-        
+
 def plot_fueltype_stats(df):
     stats = lookup(df, by='Fueltype')
     plt.pie(stats, colors=stats.index.to_series().map(tech_colors).tolist(),
@@ -120,7 +120,7 @@ def parse_Geoposition(loc, country=None, return_Country=False):
     Nominatim request for the Geoposition of a specific location in a country.
     Returns a tuples with (latitude, longitude) if the request was sucessful,
     returns None otherwise.
-    
+
     ToDo:   There exist further online sources for lat/long data which could be
             used, if this one fails, e.g.
         - Google Geocoding API
@@ -145,8 +145,8 @@ def parse_Geoposition(loc, country=None, return_Country=False):
             lat = gdata.latitude
             lon = gdata.longitude
             return (lat, lon)
-            
-            
+
+
 tech_colors = pd.Series({"Wind" : "b",
                'windoff' : "c",
                "Hydro" : "g",
@@ -184,19 +184,19 @@ tech_colors = pd.Series({"Wind" : "b",
                })
 
 tech_colors2 = pd.Series(data=
-          {'OCGT':'brown', 
+          {'OCGT':'brown',
           'Hydro':'darkblue',
-          'Lignite':'chocolate', 
+          'Lignite':'chocolate',
           'Nuclear': 'yellow',
-          'solar':'gold', 
+          'solar':'gold',
           'Solar':'gold',
-          'windoff':'cornflowerblue', 
+          'windoff':'cornflowerblue',
           'windon':'steelblue',
           'Wind': 'steelblue',
-          "Bioenergy" : "g", 
+          "Bioenergy" : "g",
           "Natural Gas" : "firebrick",
-          'CCGT':'firebrick', 
-          'Coal':'k', 
+          'CCGT':'firebrick',
+          'Coal':'k',
           'Hard Coal':'k',
           "Oil" : "r",
           "Other":"dimgrey",

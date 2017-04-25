@@ -18,7 +18,7 @@ Functions to modify and adjust power plant datasets
 """
 
 from __future__ import absolute_import, print_function
-import pandas as pd 
+import pandas as pd
 import numpy as np
 
 from .utils import read_csv_if_string
@@ -27,7 +27,7 @@ from .data import ENTSOE_stats
 from .cleaning import clean_single
 
 
-def extend_by_non_matched(df, extend_by, label, fueltypes=None, 
+def extend_by_non_matched(df, extend_by, label, fueltypes=None,
                           clean_added_data=True, by_name=False):
     """
     Returns the matched dataframe with additional entries of non-matched powerplants
@@ -51,7 +51,7 @@ def extend_by_non_matched(df, extend_by, label, fueltypes=None,
                                      .str.replace('\[|\]', '').str.split(', ').sum()
     not_included = pd.DataFrame(extend_by.projectID.tolist())
     extend_by_b = ~ (pd.concat([not_included[i].dropna()\
-                            .isin(is_included) for i in not_included],axis=1)).any(axis=1)    
+                            .isin(is_included) for i in not_included],axis=1)).any(axis=1)
     if by_name:
         extend_by_b = ~extend_by.loc[:, label].isin(df.loc[:,label])
     if fueltypes is None:
@@ -61,12 +61,12 @@ def extend_by_non_matched(df, extend_by, label, fueltypes=None,
     if clean_added_data:
         extend_by = clean_single(extend_by)
     extend_by = extend_by.rename(columns={'Name':label})
-    extend_by.projectID = extend_by.projectID.apply(lambda x: 
+    extend_by.projectID = extend_by.projectID.apply(lambda x:
                                 {label : x})
     return df.append(extend_by, ignore_index=True)[columns]
-        
-        
-        
+
+
+
 def rescale_capacities_to_country_totals(df, fueltypes):
     """
     Returns a extra column 'Scaled Capacity' with an up or down scaled capacity in
@@ -105,9 +105,9 @@ def rescale_capacities_to_country_totals(df, fueltypes):
 
 def add_missing_capacities(df, fueltypes):
     """
-    Primarily written to add artificial missing wind- and solar capacities to 
+    Primarily written to add artificial missing wind- and solar capacities to
     match these to the statistics.
-    
+
     Parameters
     ----------
     df : Pandas.DataFrame
@@ -151,13 +151,13 @@ def average_empty_commyears(df):
     # 2nd try: Fill remaining with only fueltype-specific average
     df.YearCommissioned.fillna(df.groupby(['Fueltype']).YearCommissioned\
                                .transform('mean'), inplace=True)
-    # 3rd try: Fill remaining with only country-specific average 
+    # 3rd try: Fill remaining with only country-specific average
     df.YearCommissioned.fillna(df.groupby(['Country']).YearCommissioned\
                                .transform('mean'), inplace=True)
     if df.YearCommissioned.isnull().any():
         count = len(df[df.YearCommissioned.isnull()])
         raise(ValueError('''There are still *{0}* empty values for 'YearCommissioned'
-                            in the DataFrame. These should be either be filled 
+                            in the DataFrame. These should be either be filled
                             manually or dropped to continue.'''.format(count)))
     df.loc[:,'YearCommissioned'] = df.YearCommissioned.astype(int)
     return df
@@ -169,12 +169,12 @@ def aggregate_RES_by_commyear(df, target_fueltypes=None):
     per commissioning year.
     """
     df = df.copy()
-    
+
     if target_fueltypes is None:
         target_fueltypes = ['Wind', 'Solar', 'Bioenergy']
     df = df[df.Fueltype.isin(target_fueltypes)]
     df = average_empty_commyears(df)
-    
+
     df_exp = pd.DataFrame(columns=df.columns)
     i = 0
     for c, df_country in df.groupby(['Country']):

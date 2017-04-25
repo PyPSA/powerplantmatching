@@ -42,7 +42,7 @@ def target_sets():
 def target_technologies():
     return ['CCGT', 'OCGT', 'Steam Turbine', 'Combustion Engine',
             'Run-Of-River', 'Pumped Storage', 'Reservoir']
-    
+
 def target_columns(detailed_columns=False):
     """
     Returns a list of columns to which the powerplants should be standardized. For renaming

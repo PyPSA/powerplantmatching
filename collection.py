@@ -46,7 +46,7 @@ def Collection(datasets, update=False, use_saved_aggregation=False, reduced=True
             df = conf['read_function'](**conf.get('read_kwargs', {}))
             if not conf.get('skip_clean_single', False):
                 if conf.get('aggregate_powerplant_units', True):
-                    df = clean_single(df, use_saved_aggregation=use_saved_aggregation, 
+                    df = clean_single(df, use_saved_aggregation=use_saved_aggregation,
                                       dataset_name=name)
                 else:
                     df = clean_single(df, aggregate_powerplant_units=False)
@@ -87,7 +87,7 @@ def Carma_ENTSOE_GEO_OPSD_WRI_matched_reduced(update=False, use_saved_aggregatio
                       update=update, use_saved_aggregation=use_saved_aggregation,
                       reduced=True)
 
-def MATCHED_dataset(aggregated_hydros=True, rescaled_hydros=False, 
+def MATCHED_dataset(aggregated_hydros=True, rescaled_hydros=False,
                     subsume_uncommon_fueltypes=False,
                     include_unavailables=False):
     """
@@ -168,7 +168,7 @@ def Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced(update=False, use_saved_aggreg
 def Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched(update=False, use_saved_aggregation=False,
                                                add_Oldenburgdata=False):
     return Collection(['CARMA', 'ENTSOE', 'ESE', 'GEO', 'OPSD', 'WEPP', 'WRI'],
-                      update=update, 
+                      update=update,
                       use_saved_aggregation=use_saved_aggregation, reduced=False,
                       custom_config={'ESE': dict(read_kwargs=
                                                  {'add_Oldenburgdata': add_Oldenburgdata})})
@@ -177,11 +177,11 @@ def Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched(update=False, use_saved_aggregati
 def Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced(update=False, use_saved_aggregation=False,
                                                        add_Oldenburgdata=False):
     return Collection(['CARMA', 'ENTSOE', 'ESE', 'GEO', 'OPSD', 'WEPP', 'WRI'],
-                      update=update, 
+                      update=update,
                       use_saved_aggregation=use_saved_aggregation, reduced=True,
                       custom_config={'ESE': dict(read_kwargs=
                                                  {'add_Oldenburgdata': add_Oldenburgdata})})
-    
+
 #unpublishable
 def Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced_RES(update=False, use_saved_aggregation=False):
     df = Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced(update=update,
