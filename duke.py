@@ -38,7 +38,7 @@ def add_geoposition_for_duke(df):
         return df
     else:
         df.loc[:, 'Geoposition'] = np.NaN
-        return df      
+        return df
 
 def duke(datasets, labels=['one', 'two'], singlematch=False,
          showmatches=False, keepfiles=False):
@@ -93,7 +93,7 @@ def duke(datasets, labels=['one', 'two'], singlematch=False,
             args.append('--showmatches')
         args.append('config.xml')
 
-        run = sub.Popen(args, stderr=sub.PIPE, cwd=tmpdir)
+        run = sub.Popen(args, stderr=sub.PIPE, cwd=tmpdir, universal_newlines=True)
         _, stderr = run.communicate()
 
         logger.debug("Stderr: {}".format(stderr))
