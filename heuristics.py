@@ -45,25 +45,22 @@ def extend_by_non_matched(df, extend_by, label, fueltypes=None,
         string is used if the columns of the additional database do not correspond
         to the ones of the dataset
     """
-    extend_by = read_csv_if_string(extend_by)
-    columns = df.columns
-    is_included = df.projectID.map(lambda d: d.get(label)).dropna().astype(str)\
-                                     .str.replace('\[|\]', '').str.split(', ').sum()
-    not_included = pd.DataFrame(extend_by.projectID.tolist())
-    extend_by_b = ~ (pd.concat([not_included[i].dropna()\
-                            .isin(is_included) for i in not_included],axis=1)).any(axis=1)
-    if by_name:
-        extend_by_b = ~extend_by.loc[:, label].isin(df.loc[:,label])
-    if fueltypes is None:
-        extend_by = extend_by[extend_by_b]
-    else:
-        extend_by = extend_by[extend_by_b & (extend_by.Fueltype.isin(fueltypes))]
+    extend_by = read_csv_if_string(extend_by).set_index('projectID', drop=False)
+
+    included_ids = df.projectID.map(lambda d: d.get(label)).dropna().sum()
+    remaining_ids = extend_by.index.difference(included_ids)
+
+    extend_by = extend_by.loc[remaining_ids]
+
+    # if by_name:
+    #     extend_by_b = ~extend_by.loc[:, label].isin(df.loc[:,label])
+    if fueltypes is not None:
+        extend_by = extend_by[extend_by.Fueltype.isin(fueltypes)]
     if clean_added_data:
         extend_by = clean_single(extend_by)
     extend_by = extend_by.rename(columns={'Name':label})
-    extend_by.projectID = extend_by.projectID.apply(lambda x:
-                                {label : x})
-    return df.append(extend_by, ignore_index=True)[columns]
+    extend_by['projectID'] = extend_by.projectID.map(lambda x: {label : x})
+    return df.append(extend_by.loc[:, df.columns], ignore_index=True)
 
 
 
