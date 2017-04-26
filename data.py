@@ -118,6 +118,7 @@ def GEO(raw=False):
 
         cur = db.execute(
         "select"
+        "   GEO_Assigned_Identification_Number, "
         "   name, type, Type_of_Plant_rng1 , Type_of_Fuel_rng1_Primary, "
         "   Type_of_Fuel_rng2_Secondary, country, design_capacity_mwe_nbr, "
         "   CAST(longitude_start AS REAL) as lon,"
@@ -132,16 +133,17 @@ def GEO(raw=False):
         )
 
         return pd.DataFrame(cur.fetchall(),
-                            columns=["Name", "Fueltype","Technology",
+                            columns=["projectID", "Name", "Fueltype","Technology",
                                      "FuelClassification1","FuelClassification2",
                                      "Country", "Capacity", "lon", "lat"])
     GEOdata = read_globalenergyobservatory()
     if raw:
         return GEOdata
-    GEOdata.loc[:,'projectID'] = 'G' + GEOdata.index.astype(str)
     GEOdata = GEOdata[GEOdata['Country'].isin(europeancountries())]
     GEOdata.drop_duplicates(subset=GEOdata.columns.drop(['projectID']), inplace=True)
-    GEOdata.replace({'Gas': 'Natural Gas'}, inplace=True)
+    GEOdata.replace({col: {'Gas': 'Natural Gas'}
+                     for col in {'FuelClassification1', 'FuelClassification2'}},
+                    inplace=True)
     GEOdata = gather_fueltype_info(GEOdata, search_col=['FuelClassification1'])
     GEOdata = gather_technology_info(GEOdata, search_col=['FuelClassification1'])
     GEOdata = gather_set_info(GEOdata)
