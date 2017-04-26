@@ -162,10 +162,9 @@ def aggregate_units(df, use_saved_aggregation=False, dataset_name=None,
     use_saved_aggregation : Boolean (default False):
         Whether to use the automaticly saved aggregation file, which
         is stored in data/aggregation_groups_XX.csv with XX being
-        either a custum name for the dataset or the name passed with
-        the metadata of the pd.DataFrame. This saves time if you want
-        to have aggregated powerplants without running the aggregation
-        algorithm again
+        either a custom name for the dataset. This saves time if you
+        want to have aggregated powerplants without running the
+        aggregation algorithm again
     dataset_name : str
         costum name for dataset identification, choose your own
         identification in case no metadata is passed to the function
@@ -195,13 +194,6 @@ def aggregate_units(df, use_saved_aggregation=False, dataset_name=None,
             results['Duration'] = (x.Duration*x.Capacity /x.Capacity.sum()).sum()
 
         return pd.Series(results)
-
-    #try to use dataset identifier from df.datasetID
-    if dataset_name is None:
-        try:
-            dataset_name = df._metadata[0]
-        except IndexError:
-            pass
 
     path_name = _data_out('aggregation_groups_{}.csv'.format(dataset_name))
     if use_saved_aggregation:

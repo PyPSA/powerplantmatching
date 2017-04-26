@@ -90,16 +90,6 @@ def lookup(df, keys=None, by='Country, Fueltype', exclude=None, show_totals=Fals
         else:
             return lookup_single(df).fillna(0.).round(0).astype(int)
 
-
-def pass_datasetID_as_metadata(df, ID):
-    for i in df._metadata:
-        for i in df._metadata:
-            df._metadata.remove(i)
-    df._metadata.append(ID)
-
-def get_datasetID_from_metadata(df):
-    return df._metadata[0]
-
 def plot_fueltype_stats(df):
     stats = lookup(df, by='Fueltype')
     plt.pie(stats, colors=stats.index.to_series().map(tech_colors).tolist(),

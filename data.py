@@ -30,10 +30,10 @@ logger = logging.getLogger(__name__)
 
 from .cleaning import clean_single
 from .config import europeancountries, target_columns
-from .cleaning import (gather_fueltype_info, gather_set_info, gather_technology_info,
-                       clean_powerplantname, clean_technology)
-from .utils import (parse_Geoposition, pass_datasetID_as_metadata,
-                     _data, _data_in, _data_out, countrycode)
+from .cleaning import (gather_fueltype_info, gather_set_info,
+                       gather_technology_info, clean_powerplantname,
+                       clean_technology)
+from .utils import (parse_Geoposition _data, _data_in, _data_out, countrycode)
 
 data_config = {}
 
@@ -98,7 +98,6 @@ def OPSD(rawEU=False, rawDE=False):
     opsd.loc[:,'Name'] = opsd.Name.str.title()
     opsd.loc[:,'Country'] = opsd.Country.str.title()
     opsd = opsd[opsd.Country.isin(europeancountries())]
-    pass_datasetID_as_metadata(opsd, 'OPSD')
     return opsd
 
 data_config['OPSD'] = {'read_function': OPSD, 'aggregate_powerplant_units': True}
@@ -148,7 +147,6 @@ def GEO(raw=False):
     GEOdata = gather_set_info(GEOdata)
     GEOdata = clean_powerplantname(GEOdata)
     GEOdata = clean_technology(GEOdata, generalize_hydros=True)
-    pass_datasetID_as_metadata(GEOdata, 'GEO')
     return GEOdata.loc[:,target_columns()]
 
 data_config['GEO'] = {'read_function': GEO}
@@ -195,7 +193,6 @@ def CARMA(raw=False):
     carmadata.drop_duplicates(inplace=True)
     carmadata = carmadata.replace(d)
     carmadata = clean_powerplantname(carmadata)
-    pass_datasetID_as_metadata(carmadata, 'CARMA')
     return carmadata[target_columns()]
 
 data_config['CARMA'] = {'read_function': CARMA}
@@ -248,7 +245,6 @@ def WRI(reduced_data=True):
         #wri data consists of ENTSOE data and OPSD, drop those:
         wri = wri.loc[~wri.File.str.contains('ENTSOE', case=False)]
         wri = wri.loc[~wri.Country.isin(['Germany','Poland', 'France', 'Switzerland'])]
-    pass_datasetID_as_metadata(wri, 'WRI')
     return wri.loc[:,target_columns()]
 
 
@@ -335,7 +331,6 @@ def ESE(update=False, path=None, add_Oldenburgdata=False, raw=False):
     data.loc[:,target_columns(detailed_columns=True)]
     data = data[data.Country.isin(europeancountries())]
     data.to_csv(saved_version, index_label='id', encoding='utf-8')
-    pass_datasetID_as_metadata(data, 'ESE')
     return data
 
 data_config['ESE'] = {'read_function': ESE, 'skip_clean_single': True}
@@ -474,12 +469,10 @@ def ENTSOE(update=False, raw=False, entsoe_token=None):
         entsoe.reset_index(drop=True, inplace=True)
         entsoe.to_csv(_data_out('entsoe_powerplants.csv'),
                       index_label='id', encoding='utf-8')
-        pass_datasetID_as_metadata(entsoe, 'ENTSOE')
         return entsoe
     else:
         entsoe = pd.read_csv(_data_out('entsoe_powerplants.csv'),
                              index_col='id', encoding='utf-8')
-        pass_datasetID_as_metadata(entsoe, 'ENTSOE')
         return entsoe[entsoe.Country.isin(europeancountries())]
 
 data_config['ENTSOE'] = {'read_function': ENTSOE, 'aggregate_powerplant_units': True}
@@ -634,7 +627,6 @@ def WEPP(raw=False, parseGeoLoc=False):
     wepp.reset_index(drop=True)
     # Done!
     wepp.datasetID = 'WEPP'
-    pass_datasetID_as_metadata(wepp, 'WEPP')
     return wepp
 
 data_config['WEPP'] = {'read_function': WEPP, 'aggregate_powerplant_units': True}
