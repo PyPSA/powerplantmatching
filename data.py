@@ -33,7 +33,7 @@ from .config import europeancountries, target_columns
 from .cleaning import (gather_fueltype_info, gather_set_info,
                        gather_technology_info, clean_powerplantname,
                        clean_technology)
-from .utils import (parse_Geoposition _data, _data_in, _data_out, countrycode)
+from .utils import (parse_Geoposition, _data, _data_in, _data_out, countrycode)
 
 data_config = {}
 
