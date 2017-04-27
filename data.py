@@ -515,11 +515,11 @@ def WEPP(raw=False, parseGeoLoc=False):
             query = None
             if pd.isnull(row['LAT']):
                 while True:
-                    query = parse_Geoposition(row['UNIT'], row['COUNTRY'])      # 1st try
-                    if query != None: break
-                    query = parse_Geoposition(row['POSTCODE'], row['COUNTRY'])  # 2nd try
-                    if query != None: break
-                    query = parse_Geoposition(row['CITY'], row['COUNTRY'])      # 3rd try
+                    query = parse_Geoposition(row['UNIT'], row['POSTCODE'], row['COUNTRY'])      # 1st try
+#                    if query != None: break
+#                    query = parse_Geoposition(row['POSTCODE'], row['COUNTRY'])  # 2nd try
+#                    if query != None: break
+#                    query = parse_Geoposition(row['CITY'], row['COUNTRY'])      # 3rd try
                     break
     
                 if isinstance(query, tuple):
@@ -528,7 +528,7 @@ def WEPP(raw=False, parseGeoLoc=False):
                     logger.info(u"Index {0} | Unit '{1}' in {2} returned geoposition: ({3},{4})."\
                           .format(index,row['UNIT'],row['COUNTRY'],query[0],query[1]))
             else:
-                ("Index {0} | Geoposition already exists.".format(index))
+                logger.info("Index {0} | Geoposition already exists.".format(index))
         # Loop done: Make backup of original file and save querying results
         os.rename(_data_in('platts_wepp.csv'), _data_in('platts_wepp_backup.csv'))
         wepp.to_csv(_data_in('platts_wepp.csv'), encoding='utf-8')
@@ -619,6 +619,7 @@ def WEPP(raw=False, parseGeoLoc=False):
     wepp.loc[wepp.Utype.isin(ccgt_pattern), 'Technology'] = 'CCGT'
     wepp.loc[wepp.Utype.isin(ocgt_pattern), 'Technology'] = 'OCGT'
     wepp.loc[wepp.Utype.isin(st_pattern), 'Technology'] = 'Steam Turbine'
+    wepp.loc[(wepp.Fueltype=='Solar')&(wepp.Utype.isin(st_pattern)), 'Technology'] = 'CSP'
     wepp.loc[wepp.Utype.isin(ic_pattern), 'Technology'] = 'Combustion Engine'    
     wepp.loc[wepp.Utype=='WTG', 'Technology'] = 'Onshore'
     wepp.loc[wepp.Utype=='WTG/O', 'Technology'] = 'Offshore'
@@ -691,3 +692,53 @@ def OPSD_RES(raw=False):
     df.loc[:,'YearCommissioned'] = df.YearCommissioned.astype(np.float)
     df.replace({None:np.nan}, inplace=True)
     return df
+
+
+def IRENA_stats():
+    """
+    Reads the IRENA Capacity Statistics 2017 Database
+    """
+    # Read the raw dataset
+    df = pd.read_csv(_data_in('IRENA_CapacityStatistics2017.csv'), encoding='utf-8')
+    # "Unpivot"
+    df = pd.melt(df, id_vars=['Indicator', 'Technology', 'Country'],var_name='Year',
+                 value_vars=[unicode(i) for i in range(2000,2017,1)],value_name='Capacity')
+    # Drop empty
+    df.dropna(axis=0, subset=['Capacity'], inplace=True)
+    # Drop generations
+    df = df[df.Indicator=='Electricity capacity (MW)']
+    df.drop('Indicator', axis=1, inplace=True)
+    # Drop countries out of scope
+    df.Country.replace({'Czechia':u'Czech Republic',
+                        'UK':u'United Kingdom'}, inplace=True)
+    df = df[df.Country.isin(europeancountries())]
+    # Convert to numeric
+    df.Year = df.Year.astype(int)
+    df.Capacity = df.Capacity.str.strip().str.replace(' ','').astype(float)
+    # Handle Fueltypes and Technologies
+    d = {u'Bagasse':'Bioenergy',
+         u'Biogas':'Bioenergy',
+         u'Concentrated solar power':'Solar',
+         u'Geothermal':'Geothermal',
+         u'Hydro 1-10 MW':'Hydro',
+         u'Hydro 10+ MW':'Hydro',
+         u'Hydro <1 MW':'Hydro',
+         u'Liquid biofuels':'Bioenergy',
+         u'Marine':'Hydro',
+         u'Mixed and pumped storage':'Hydro',
+         u'Offshore wind energy':'Wind',
+         u'Onshore wind energy':'Wind',
+         u'Other solid biofuels':'Bioenergy',
+         u'Renewable municipal waste':'Bioenergy',
+         u'Solar photovoltaic':'Solar'}
+    df['Fueltype'] = df.Technology.map(d)     
+    d = {u'Concentrated solar power':'CSP',
+         u'Solar photovoltaic':'PV',
+         u'Onshore wind energy':'Onshore',
+         u'Offshore wind energy':'Offshore'}
+    df.Technology.replace(d, inplace=True)
+    df['Set'] = 'PP'
+    return df
+
+
+

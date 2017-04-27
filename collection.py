@@ -22,11 +22,11 @@ import pandas as pd
 import ast
 
 from .utils import set_uncommon_fueltypes_to_other, _data_in, _data_out
-from .data import data_config, OPSD, ESE, OPSD_RES
+from .data import data_config, OPSD, ESE, OPSD_RES, IRENA_stats
 from .cleaning import clean_single
-from .matching import (combine_multiple_datasets,
-                       reduce_matched_dataframe)
-from .heuristics import extend_by_non_matched, aggregate_RES_by_commyear
+from .matching import combine_multiple_datasets, reduce_matched_dataframe
+from .heuristics import (extend_by_non_matched, aggregate_RES_by_commyear,
+                         aggregate_RES_by_yeardiff)
 
 def Collection(datasets, update=False, use_saved_aggregation=False, reduced=True,
                custom_config={}):
@@ -184,15 +184,20 @@ def Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced(update=False, use_saved_a
     
 #unpublishable
 def Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced_RES(update=False, use_saved_aggregation=False):
+    # Base dataframe
     df = Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced(update=update,
-                                                                 use_saved_aggregation=use_saved_aggregation)
-    df = df[~((df.Country=='Germany')&((df.Fueltype=='Solar')\
-                         |(df.Fueltype=='Wind')|(df.Fueltype=='Bioenergy')))]
-    df = df[~((df.Country=='Denmark')&((df.Fueltype=='Solar')|(df.Fueltype=='Wind')))]
+                                                            use_saved_aggregation=use_saved_aggregation)
+    # Drop RES which are to be replaced
+    df = df[~(((df.Fueltype=='Solar')&(df.Technology!='CSP'))|(df.Fueltype=='Wind')|(df.Fueltype=='Bioenergy'))]
     cols = df.columns
-    res = OPSD_RES()
-    res = aggregate_RES_by_commyear(res)
-    concat = pd.concat([df, res]).reset_index(drop=True)
+    # Take DE and DK values from OPSD
+    res_DE_DK = aggregate_RES_by_commyear(OPSD_RES())
+    # Take other countries from IRENA stats without DE and DK_Wind+Solar
+    res = aggregate_RES_by_yeardiff(IRENA_stats())
+    res = res[~(res.Country=='Germany')]
+    res = res[~((res.Country=='Denmark')&((res.Fueltype=='Wind')|(res.Fueltype=='Solar')))]
+    # Concatenate
+    concat = pd.concat([df, res_DE_DK, res], ignore_index=True)
     concat = concat[cols]
     concat = concat[concat.YearCommissioned<=2015]
     concat.reset_index(drop=True, inplace=True)

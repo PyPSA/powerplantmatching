@@ -21,13 +21,16 @@ def europeancountries():
     """
     Returns a list of countries in Europe
     """
-    return ['Austria', 'Belgium', 'Bulgaria', 'Croatia', 'Czech Republic',
-            'Denmark', 'Estonia', 'Finland', 'France', 'Germany',
-            'Greece', 'Hungary', 'Ireland', 'Italy', 'Latvia',
-            'Lithuania', 'Luxembourg', 'Netherlands', 'Norway',
-            'Poland', 'Portugal', 'Romania', 'Slovakia', 'Slovenia',
-            'Spain', 'Sweden', 'Switzerland', 'United Kingdom']
-
+    c = ['Austria', 'Belgium', 'Czech Republic', 'Denmark', 'France', 'Germany',
+         'Ireland', 'Italy', 'Hungary', 'Luxembourg', 'Netherlands', 'Norway', 'Poland',
+         'Portugal', 'Slovakia', 'Slovenia', 'Spain', 'Sweden', 'Switzerland', 'United Kingdom']
+#   c = ['Austria', 'Belgium', 'Bulgaria', 'Croatia', 'Czech Republic',
+#            'Denmark', 'Estonia', 'Finland', 'France', 'Germany',
+#            'Greece', 'Hungary', 'Ireland', 'Italy', 'Latvia',
+#            'Lithuania', 'Luxembourg', 'Netherlands', 'Norway',
+#            'Poland', 'Portugal', 'Romania', 'Slovakia', 'Slovenia',
+#            'Spain', 'Sweden', 'Switzerland', 'United Kingdom']
+    return sorted(c)
 
 def target_fueltypes():
     """
@@ -40,8 +43,10 @@ def target_sets():
     return ['PP', 'CHP']
 
 def target_technologies():
-    return ['CCGT', 'OCGT', 'Steam Turbine', 'Combustion Engine',
-            'Run-Of-River', 'Pumped Storage', 'Reservoir']
+    return ['CCGT', 'OCGT', 'Steam Turbine', 'Combustion Engine', # Thermal types
+            'Run-Of-River', 'Pumped Storage', 'Reservoir', 'Marine', # Hydro types
+            'Onshore', 'Offshore', # Wind types
+            'PV', 'CSP'] # Solar types
     
 def target_columns(detailed_columns=False):
     """
@@ -51,9 +56,47 @@ def target_columns(detailed_columns=False):
     """
     if detailed_columns:
         return ['Name', 'Fueltype', 'Technology', 'Set', 'Country',
-            'Capacity', 'Duration', 'YearCommissioned', 'lat', 'lon', 'File'
-            , 'projectID']
+            'Capacity', 'Duration', 'YearCommissioned', 'lat', 'lon', 'File',
+            'projectID']
     else:
         return ['Name', 'Fueltype', 'Technology', 'Set', 'Country',
-            'Capacity', 'YearCommissioned', 'lat', 'lon', 'File'
-            , 'projectID']
+            'Capacity', 'YearCommissioned', 'lat', 'lon', 'File',
+            'projectID']
+
+def fueltype_to_life():
+    """
+    Returns an approximation for the technical lifetime of a power plant in 
+    years, depending on its fueltype.
+    """
+    data = {'Bioenergy':20,
+             'Geothermal':15,
+             'Hard Coal':35,
+             'Hydro':75,
+             'Lignite':35,
+             'Natural Gas':25,
+             'Nuclear':50,
+             'Oil':20,
+             'Other':5,
+             'Solar':25,
+             'Waste':25,
+             'Wind':25}
+    return data
+
+
+def fueltype_to_color():
+    """
+    Maps a fueltype to a specific color for the plots
+    """
+    data = {'Bioenergy':'white',
+            'Geothermal':'pink',
+            'Hard Coal':'gray',
+            'Hydro':'blue',
+            'Lignite':'brown',
+            'Natural Gas':'red',
+            'Nuclear':'orange',
+            'Oil':'black',
+            'Other':'pink',
+            'Solar':'yellow',
+            'Waste':'purple',
+            'Wind':'green'}
+    return data

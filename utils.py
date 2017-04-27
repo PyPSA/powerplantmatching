@@ -115,7 +115,7 @@ def read_csv_if_string(data):
         data = pd.read_csv(data, index_col='id')
     return data
 
-def parse_Geoposition(loc, country=None, return_Country=False):
+def parse_Geoposition(loc, zipcode=None, country=None, return_Country=False):
     """
     Nominatim request for the Geoposition of a specific location in a country.
     Returns a tuples with (latitude, longitude) if the request was sucessful,
@@ -135,10 +135,15 @@ def parse_Geoposition(loc, country=None, return_Country=False):
         name of the country which will be used as a bounding area
 
     """
-    from geopy.geocoders import Nominatim
+    from geopy.geocoders import GoogleV3 #ArcGIS  Yandex Nominatim
     if loc is not None and loc != float:
         country = countrycode(codes=[country], origin='country_name', target='iso2c')[0]
-        gdata = Nominatim(timeout=500, country_bias=country).geocode(loc)
+        #gdata = Nominatim(timeout=10, country_bias=country).geocode(loc)
+        #gdata = Yandex(timeout=10, lang='en_US').geocode(loc)
+        #gdata = ArcGIS(timeout=10).geocode(loc, exactly_one=True)
+        gdata = GoogleV3(api_key='AIzaSyCmQqxUg-0ccPbIBzsKyh_gNKBD8yVHOPc',
+                         timeout=10).geocode(query=loc, components={'country':country,
+                                   'postal_code':zipcode}, exactly_one=True)
         if gdata != None:
             if return_Country:
                 return gdata.address.split(', ')[-1]

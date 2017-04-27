@@ -165,8 +165,8 @@ def average_empty_commyears(df):
 
 def aggregate_RES_by_commyear(df, target_fueltypes=None):
     """
-    Aggregates the vast number of RES units to one specific (Fueltype + Technology)
-    per commissioning year.
+    Aggregates the vast number of RES (e.g. vom data.OPSD-RES()) units to one
+    specific (Fueltype + Technology) per commissioning year.
     """
     df = df.copy()
     
@@ -191,6 +191,31 @@ def aggregate_RES_by_commyear(df, target_fueltypes=None):
     df_exp.loc[:,'Set'] = 'PP'
     df_exp.replace({'-':np.NaN}, inplace=True)
     return df_exp
+
+
+def aggregate_RES_by_yeardiff(df, target_fueltypes=None):
+    df = df.copy()
+    
+    if target_fueltypes is None:
+        target_fueltypes = ['Wind', 'Solar', 'Bioenergy']
+    df = df[df.Fueltype.isin(target_fueltypes)]
+
+    for c, df_country in df.groupby(['Country']):
+        for tech, stats in df_country.groupby(['Technology']):
+            stats.reset_index(drop=False, inplace=True)
+            for i in stats.index:
+                if i==0:
+                    stats.loc[i,'Addition'] = stats.loc[i,'Capacity']
+                else:
+                    stats.loc[i,'Addition'] = stats.loc[i,'Capacity']-stats.loc[i-1,'Capacity']
+            stats.set_index('index', drop=True, inplace=True)
+            for i in stats.index:
+                df.loc[i, 'Addition'] = stats.loc[i,'Addition']
+                
+    df.drop(['Capacity'], axis=1, inplace=True)
+    df = df.rename(columns={'Year':'YearCommissioned',
+                            'Addition':'Capacity'})
+    return df
 
 
 
