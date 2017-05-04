@@ -20,6 +20,7 @@ Collection of power plant data bases and statistical data
 from __future__ import print_function, absolute_import
 
 import os
+import xlrd
 import numpy as np
 import pandas as pd
 import requests
@@ -294,44 +295,42 @@ def ESE(update=False, path=None, add_Oldenburgdata=False, raw=False):
         raise(ValueError('No path defined for update'))
     if not os.path.exists(path):
         raise(ValueError('The given path does not exist'))
-    data = pd.read_excel(path, encoding='utf-8', na_values=u'n/a')
+
+    # Work-around to rewrite the longitude cell types from dates to
+    # numbers, would also work the other way around, if there were
+    # numbers in a date column
+    book = xlrd.open_workbook(path)
+    sheet = book.sheets()[0]
+    col_longitude = sheet.row_values(0).index('Longitude')
+    # col_date = sheet.row_values(0).index('Commissioning Date')
+    for row in sheet._cell_types:
+        if row[col_longitude] == 3:
+            row[col_longitude] = 2
+        # if row[col_date] == 2:
+        #     row[col_date] = 3
+
+    # The longitude column has the wrong excel data type set to dates?!
+    data = pd.read_excel(book, na_values=u'n/a', engine='xlrd')
     if raw:
         return data
-    data.loc[:,'Name'] = data.loc[:,'Project Name']
-    data.loc[:,'Technology'] = data.loc[:,'Technology Type']
-    data.loc[:,'Set'] = 'PP'
-    data.loc[:,'lon'] = data.Longitude
-    data.loc[:,'lat'] = data.Latitude
-    data.loc[:,'Capacity'] = data.loc[:,'Rated Power in kW']/1000
-    data.loc[:,'projectID'] = data.index.values
-    # The following lambda expression doesn't work for some reason, as
-    #'np.where(type(x) is int...' doesn't filter the integers - why???
-    #         data.loc[:,'Commissioning Date'].apply(lambda x: np.where(type(x)
-	#               is int, np.floor(float(str(x))/365.25+1900), x))
-    # That's why I wrote this (probably inefficient) workaround:
-    A = []
-    for x in data.loc[:,'Commissioning Date']:
-        if type(x) == pd.tslib.Timestamp:
-            A.append(x.year)
-        elif type(x) == int:
-            # As Excel dates are a daily-incremented number starting on 01.01.1900
-            A.append(np.floor(float(x)/365.25+1900))
-        elif type(x) == pd.tslib.NaTType:
-            A.append(np.NaN)
-        else:
-            logger.warning('Unknown type of date encountered: %s', x)
-            A.append(np.NaN)
-    data.loc[:,'YearCommissioned'] = A
-    data.loc[(data.Technology.str.contains('Pumped')) &
-             (data.Technology.notnull()), 'Technology'] = 'Pumped storage'
+    data = (data
+            .rename(columns={'Project Name': 'Name',
+                             'Technology Type': 'Technology',
+                             'Longitude': 'lon',
+                             'Latitude': 'lat'})
+            .assign(Set='PP',
+                    Fueltype='Hydro',
+                    File='energy_storage_exchange',
+                    projectID=data.index.values,
+                    Capacity=data['Rated Power in kW']/1e3,
+                    YearCommissioned=pd.DatetimeIndex(data['Commissioning Date']).year))
+    data.loc[data.Technology.str.contains('Pumped') &
+             data.Technology.notnull(), 'Technology'] = 'Pumped storage'
     data = data.loc[data.Technology == 'Pumped storage',
                     target_columns(detailed_columns=True)]
-    data.Fueltype = 'Hydro'
     data = data.reset_index(drop = True)
     data = clean_single(data, dataset_name='ESE', detailed_columns=True)
-    data.File = 'energy_storage_exchange'
-    data.loc[:,target_columns(detailed_columns=True)]
-    data = data[data.Country.isin(europeancountries())]
+    data = data.loc[data.Country.isin(europeancountries())]
     data.to_csv(saved_version, index_label='id', encoding='utf-8')
     return data
 
