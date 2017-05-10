@@ -44,12 +44,9 @@ def Collection(datasets, update=False, use_saved_aggregation=False, reduced=True
             conf.update(custom_config.get(name, {}))
 
             df = conf['read_function'](**conf.get('read_kwargs', {}))
-            if not conf.get('skip_clean_single', False):
-                if conf.get('aggregate_powerplant_units', True):
-                    df = clean_single(df, use_saved_aggregation=use_saved_aggregation,
-                                      dataset_name=name)
-                else:
-                    df = clean_single(df, aggregate_powerplant_units=False)
+            df = clean_single(df, use_saved_aggregation=use_saved_aggregation,
+                              dataset_name=name,
+                              **conf.get('clean_single_kwargs', {}))
             dfs.append(df)
         matched = combine_multiple_datasets(dfs, datasets)
         matched.to_csv(outfn_matched, index_label='id', encoding='utf-8')
@@ -118,7 +115,7 @@ def MATCHED_dataset(aggregated_hydros=True, rescaled_hydros=False,
     if include_unavailables:
         # ese = ESE()
         # ese.projectID
-        matched = extend_by_non_matched(matched, ESE(), 'ESE', clean_added_data=False)
+        matched = extend_by_non_matched(matched, ESE(), 'ESE', clean_added_data=True)
 
 #    matched = extend_by_non_matched(matched,
 #            clean_single(WRI(), use_saved_aggregation=True), 'WRI',

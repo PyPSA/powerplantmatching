@@ -255,4 +255,6 @@ def clean_single(df, aggregate_powerplant_units=True, use_saved_aggregation=Fals
     if aggregate_powerplant_units:
         df = aggregate_units(df, use_saved_aggregation=use_saved_aggregation,
                              dataset_name=dataset_name, detailed_columns=detailed_columns)
+    else:
+        df['projectID'] = df['projectID'].dropna().map(lambda x: [x])
     return clean_technology(df)

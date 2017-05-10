@@ -101,7 +101,7 @@ def OPSD(rawEU=False, rawDE=False):
     opsd = opsd[opsd.Country.isin(europeancountries())]
     return opsd
 
-data_config['OPSD'] = {'read_function': OPSD, 'aggregate_powerplant_units': True}
+data_config['OPSD'] = {'read_function': OPSD}
 
 def GEO(raw=False):
     """
@@ -152,7 +152,8 @@ def GEO(raw=False):
     GEOdata = clean_technology(GEOdata, generalize_hydros=True)
     return GEOdata.loc[:,target_columns()]
 
-data_config['GEO'] = {'read_function': GEO}
+data_config['GEO'] = {'read_function': GEO,
+                      'clean_single_kwargs': dict(aggregate_powerplant_units=False)}
 
 
 def CARMA(raw=False):
@@ -198,7 +199,8 @@ def CARMA(raw=False):
     carmadata = clean_powerplantname(carmadata)
     return carmadata[target_columns()]
 
-data_config['CARMA'] = {'read_function': CARMA}
+data_config['CARMA'] = {'read_function': CARMA,
+                        'clean_single_kwargs': dict(aggregate_powerplant_units=False)}
 
 def Oldenburgdata():
     """
@@ -208,7 +210,8 @@ def Oldenburgdata():
                        encoding='utf-8', index_col='id')
     return oldb.loc[:,target_columns()]
 
-data_config['Oldenburgdata'] = {'read_function': Oldenburgdata}
+data_config['Oldenburgdata'] = {'read_function': Oldenburgdata,
+                                'clean_single_kwargs': dict(aggregate_powerplant_units=False)}
 
 
 def ENTSOE_stats(raw=False):
@@ -251,7 +254,8 @@ def WRI(reduced_data=True):
     return wri.loc[:,target_columns()]
 
 
-data_config['WRI'] = {'read_function': WRI}
+data_config['WRI'] = {'read_function': WRI,
+                      'clean_single_kwargs': dict(aggregate_powerplant_units=False)}
 
 
 def ESE(update=False, path=None, add_Oldenburgdata=False, raw=False):
@@ -286,11 +290,9 @@ def ESE(update=False, path=None, add_Oldenburgdata=False, raw=False):
         '''))
     if os.path.exists(saved_version) and (update is False) :
         ese = pd.read_csv(saved_version, index_col='id')
-        ese.loc[:,'projectID'] = ese.projectID.str.replace('\[|\]','').str.split(', ')
         if add_Oldenburgdata:
-            ese = pd.concat([clean_single(Oldenburgdata(),aggregate_powerplant_units=False),
-                             ese]).reset_index(drop=True)
-        return ese[ese.Country.isin(europeancountries())]
+            ese = ese.append(Oldenburgdata(), ignore_index=True)
+        return ese
     if path is None:
         raise(ValueError('No path defined for update'))
     if not os.path.exists(path):
@@ -329,12 +331,12 @@ def ESE(update=False, path=None, add_Oldenburgdata=False, raw=False):
     data = data.loc[data.Technology == 'Pumped storage',
                     target_columns(detailed_columns=True)]
     data = data.reset_index(drop = True)
-    data = clean_single(data, dataset_name='ESE', detailed_columns=True)
     data = data.loc[data.Country.isin(europeancountries())]
     data.to_csv(saved_version, index_label='id', encoding='utf-8')
     return data
 
-data_config['ESE'] = {'read_function': ESE, 'skip_clean_single': True}
+data_config['ESE'] = {'read_function': ESE,
+                      'clean_single_kwargs': dict(detailed_columns=True)}
 
 
 def ENTSOE(update=False, raw=False, entsoe_token=None):
@@ -476,7 +478,7 @@ def ENTSOE(update=False, raw=False, entsoe_token=None):
                              index_col='id', encoding='utf-8')
         return entsoe[entsoe.Country.isin(europeancountries())]
 
-data_config['ENTSOE'] = {'read_function': ENTSOE, 'aggregate_powerplant_units': True}
+data_config['ENTSOE'] = {'read_function': ENTSOE}
 
 
 def WEPP(raw=False, parseGeoLoc=False):
@@ -630,7 +632,7 @@ def WEPP(raw=False, parseGeoLoc=False):
     wepp.datasetID = 'WEPP'
     return wepp
 
-data_config['WEPP'] = {'read_function': WEPP, 'aggregate_powerplant_units': True}
+data_config['WEPP'] = {'read_function': WEPP}
 
 
 def OPSD_RES(raw=False):
