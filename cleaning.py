@@ -43,62 +43,85 @@ def clean_powerplantname(df):
         dataframe which should be cleaned
 
     """
-    df = df.copy()
-    df.Name.replace(regex=True, value=' ',
-                    to_replace=list('-/')+['\(', '\)', '\[', '\]', '[0-9]'],
-                    inplace=True)
 
-    common_words = pd.Series(sum(df.Name.str.split(), [])).value_counts()
+    name = df.Name.replace(regex=True, value=' ',
+                           to_replace=list('-/')+['\(', '\)', '\[', '\]', '[0-9]'])
+
+    common_words = pd.Series(sum(name.str.split(), [])).value_counts()
     cw = list(common_words[common_words >= 20].index)
 
-    pattern = [('(?i)(^|\s)'+x+'($|\s)') for x in cw + \
-       ['[a-z]','I','II','III','IV','V','VI','VII','VIII','IX','X','XI','Grupo',
-     'parque','eolico','gas','biomasa','COGENERACION'
-     ,'gt','unnamed','tratamiento de purines','planta','de','la','station', 'power',
-     'storage', 'plant', 'stage', 'pumped', 'project'] ]
-    df.loc[:,'Name'] = df.Name.replace(regex=True, to_replace=pattern, value=' ').str.strip().\
-                str.replace('\\s\\s+', ' ')
-    #do it twice to catch all single letters
-    df.loc[:,'Name'] = df.Name.replace(regex=True, to_replace=pattern, value=' ').str.strip().\
-                str.replace('\\s\\s+', ' ').str.capitalize()
-    df = df[df.Name != ''].sort_values('Name').reset_index(drop=True)
-    return df
+    pattern = [('(?i)(^|\s)'+x+'(?=\s|$)')
+               for x in (cw +
+                         ['[a-z]','I','II','III','IV','V','VI','VII','VIII',
+                          'IX','X','XI','Grupo','parque','eolico','gas',
+                          'biomasa','COGENERACION','gt','unnamed',
+                          'tratamiento de purines','planta','de','la','station',
+                          'power','storage','plant','stage','pumped','project'])]
+    name = (name
+            .replace(regex=True, to_replace=pattern, value=' ')
+            .str.strip().str.replace('\\s\\s+', ' ')
+            # do it twice to catch all single letters
+            # .replace(regex=True, to_replace=pattern, value=' ')
+            # .str.strip().str.replace('\\s\\s+', ' ')
+            .str.capitalize())
+
+    return (df
+            .assign(Name=name)
+            .loc[lambda x: x.Name != '']
+            .sort_values('Name')
+            .reset_index(drop=True))
 
 
 def gather_fueltype_info(df, search_col=['Name', 'Technology']):
-    df = df.copy()
+    fueltype = pd.Series(df['Fueltype'])
+
     for i in search_col:
-        found = df.loc[:,i].fillna('').str.contains('(?i)lignite|(?i)brown')
-        df.loc[found,'Fueltype'] = 'Lignite'
-    df.loc[df.Fueltype=='Coal', 'Fueltype'] = 'Hard Coal'
-    return df
+        found_b = df[i].dropna().str.contains('(?i)lignite|brown')
+        fueltype.loc[found_b.reindex(fueltype.index, fill_value=False)] = 'Lignite'
+    fueltype.replace({'Coal': 'Hard Coal'}, inplace=True)
+
+    return df.assign(Fueltype=fueltype)
+
 
 
 def gather_technology_info(df, search_col=['Name', 'Fueltype']):
-    df = df.copy()
+    technology = (df['Technology'].dropna()
+                  if 'Technology' in df
+                  else pd.Series())
+
     pattern = '|'.join(('(?i)'+x) for x in target_technologies())
     for i in search_col:
-        found = df.loc[:,i].str.findall(pattern).str.join(sep=', ')
-        df.loc[:, 'Technology'] = (df.loc[:, 'Technology'].fillna('')
-                            .str.cat(found.fillna(''), sep=', ').str.strip())
-        df.loc[:,'Technology'] = df.Technology.str.replace('^ , |^,|, $|,$', '').apply(lambda x:
-                     ', '.join(list(set(x.split(', ')))) ).str.strip()
-        df.Technology.replace('', np.NaN, inplace=True)
-    return df
+        found = (df[i].dropna()
+                 .str.findall(pattern)
+                 .loc[lambda s: s.str.len() > 0]
+                 .str.join(sep=', '))
+
+        exists_i = technology.index.intersection(found.index)
+        if len(exists_i) > 0:
+            technology.loc[exists_i] = (technology.loc[exists_i]
+                                        .str.cat(found.loc[exists_i], sep=', '))
+
+        new_i = found.index.difference(technology.index)
+        technology = technology.append(found[new_i])
+
+    return df.assign(Technology=technology)
 
 
 def gather_set_info(df, search_col=['Name', 'Fueltype']):
-    df = df.copy()
+    Set = (df['Set'].dropna()
+           if 'Set' in df
+           else pd.Series())
+
     if 'chp' in df:
-        df.loc[df.loc[:,'chp']==(True|1), 'Set'] = 'CHP'
+        Set.loc[df['chp'].isin({True, 'yes', 1.0})] = 'CHP'
+
     pattern = '|'.join(['heizkraftwerk', 'hkw', 'chp', 'bhkw', 'cogeneration',
                         'power and heat', 'heat and power'])
     for i in search_col:
-        isCHP_b = df.loc[:,i].fillna('').str.contains(pattern, case=False)
-        df.loc[isCHP_b, 'Set'] = 'CHP'
-    df.loc[df.Set.isnull(),
-           'Set' ] = 'PP'
-    return df
+        isCHP_b = df[i].dropna().str.contains(pattern, case=False)
+        Set.loc[isCHP_b] = 'CHP'
+
+    return df.assign(Set=Set.fillna('PP'))
 
 
 def clean_technology(df, generalize_hydros=False):
@@ -121,7 +144,6 @@ def clean_technology(df, generalize_hydros=False):
 
 
 def cliques(df, dataduplicates):
-    df = df.copy()
     """
     Locate cliques of units which are determined to belong to the same
     powerplant.  Return the same dataframe with an additional column
@@ -141,15 +163,16 @@ def cliques(df, dataduplicates):
     G.add_nodes_from(df.index)
     G.add_edges_from((r.one, r.two) for r in dataduplicates.itertuples())
     H = G.to_undirected(reciprocal=True)
-    for i, inds in enumerate(nx.algorithms.clique.find_cliques(H)):
-        df.loc[inds, 'grouped'] = i
 
-    return df
+    grouped = pd.Series(np.nan, index=df.index)
+    for i, inds in enumerate(nx.algorithms.clique.find_cliques(H)):
+        grouped.loc[inds] = i
+
+    return df.assign(grouped=grouped)
 
 
 def aggregate_units(df, use_saved_aggregation=False, dataset_name=None,
                     detailed_columns=False):
-    df = df.copy()
     """
     Vertical cleaning of the database. Cleans the "Name"-column, sums
     up the capacity of powerplant units which are determined to belong
@@ -199,7 +222,7 @@ def aggregate_units(df, use_saved_aggregation=False, dataset_name=None,
     if use_saved_aggregation:
         try:
             logger.info('Reading saved aggregation groups for dataset: {}'.format(dataset_name))
-            df.loc[:, 'grouped'] = pd.read_csv(path_name, header=None, index_col=0).values
+            df = df.assign(grouped=pd.read_csv(path_name, header=None, index_col=0).values)
         except ValueError:
             logger.warning("Non-existing saved links for this dataset, continuing by aggregating again")
             df.drop('grouped', axis=1, inplace=True)
@@ -214,14 +237,13 @@ def aggregate_units(df, use_saved_aggregation=False, dataset_name=None,
 
     df = df.groupby('grouped').apply(prop_for_groups)
     if 'Duration' in df:
-        df.loc[:, ['Duration']] = df.loc[:, ['Duration']].replace(0.,np.nan)
+        df['Duration'] = df['Duration'].replace(0., np.nan)
     df.reset_index(drop=True, inplace=True)
-    df = df[target_columns(detailed_columns=detailed_columns)]
+    df = df.loc[:, target_columns(detailed_columns=detailed_columns)]
     return df
 
 def clean_single(df, aggregate_powerplant_units=True, use_saved_aggregation=False,
                  dataset_name=None, detailed_columns=False):
-    df = df.copy()
     """
     Vertical cleaning of the database. Cleans the "Name"-column, sums
     up the capacity of powerplant units which are determined to belong
@@ -249,7 +271,6 @@ def clean_single(df, aggregate_powerplant_units=True, use_saved_aggregation=Fals
         for dataset identification, choose your own identification in
         case no metadata is passed to the function
     """
-    #df = gather_technology_info(df)
     df = clean_powerplantname(df)
 
     if aggregate_powerplant_units:
