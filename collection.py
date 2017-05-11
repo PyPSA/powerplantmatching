@@ -35,7 +35,6 @@ def Collection(datasets, update=False, use_saved_aggregation=False, reduced=True
                               .format('_'.join(map(str.upper, datasets))))
     outfn_reduced = _data_out('Matched_{}_reduced.csv'
                               .format('_'.join(map(str.upper, datasets))))
-    outfn = outfn_reduced if reduced else outfn_matched
 
     if update:
         dfs = []
@@ -52,14 +51,14 @@ def Collection(datasets, update=False, use_saved_aggregation=False, reduced=True
         matched.to_csv(outfn_matched, index_label='id', encoding='utf-8')
 
         reduced_df = reduce_matched_dataframe(matched)
-        reduced_df.to_csv(outfn, index_label='id', encoding='utf-8')
+        reduced_df.to_csv(outfn_reduced, index_label='id', encoding='utf-8')
 
         return reduced_df if reduced else matched
     else:
         if reduced:
-            sdf = pd.read_csv(outfn, index_col=0)
+            sdf = pd.read_csv(outfn_reduced, index_col=0, encoding='utf-8')
         else:
-            sdf = pd.read_csv(outfn, index_col=0, header=[0,1])
+            sdf = pd.read_csv(outfn_matched, index_col=0, header=[0,1], encoding='utf-8')
         if 'projectID' in sdf and reduced:
             sdf.projectID = sdf.projectID.apply(lambda df: ast.literal_eval(df))
         return sdf
