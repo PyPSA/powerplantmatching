@@ -43,8 +43,8 @@ def OPSD(rawEU=False, rawDE=False):
     Return standardized OPSD (Open Power Systems Data) database with target column names and fueltypes.
 
     """
-    opsd_EU = pd.read_csv(_data_in('conventional_power_plants_EU.csv'), na_values=' ')
-    opsd_DE = pd.read_csv(_data_in('conventional_power_plants_DE.csv'), na_values=' ')
+    opsd_EU = pd.read_csv(_data_in('conventional_power_plants_EU.csv'), na_values=' ', encoding='utf-8')
+    opsd_DE = pd.read_csv(_data_in('conventional_power_plants_DE.csv'), na_values=' ', encoding='utf-8')
     if rawEU and rawDE:
         raise(NotImplementedError('''
                 It is not possible to show both DE and EU raw databases at the
@@ -290,7 +290,7 @@ def ESE(update=False, path=None, add_Oldenburgdata=False, raw=False):
         be used as the other databases.
         '''))
     if os.path.exists(saved_version) and (update is False) :
-        ese = pd.read_csv(saved_version, index_col='id')
+        ese = pd.read_csv(saved_version, index_col='id', encoding='utf-8')
         if add_Oldenburgdata:
             ese = ese.append(Oldenburgdata(), ignore_index=True)
         return ese
