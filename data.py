@@ -43,8 +43,8 @@ def OPSD(rawEU=False, rawDE=False):
     Return standardized OPSD (Open Power Systems Data) database with target column names and fueltypes.
 
     """
-    opsd_EU = pd.read_csv(_data_in('conventional_power_plants_EU.csv'))
-    opsd_DE = pd.read_csv(_data_in('conventional_power_plants_DE.csv'))
+    opsd_EU = pd.read_csv(_data_in('conventional_power_plants_EU.csv'), na_values=' ')
+    opsd_DE = pd.read_csv(_data_in('conventional_power_plants_DE.csv'), na_values=' ')
     if rawEU and rawDE:
         raise(NotImplementedError('''
                 It is not possible to show both DE and EU raw databases at the
@@ -59,8 +59,8 @@ def OPSD(rawEU=False, rawDE=False):
                             'Lon':'lon',
                             'Energy_Source':'Fueltype',
                             'Commissioned':'YearCommissioned',
-                            'Source':'File'
-                            }, inplace=True)
+                            'Source':'File'},
+                   inplace=True)
     opsd_EU.loc[:,'projectID'] = 'OEU' + opsd_EU.index.astype(str)
     opsd_EU = opsd_EU.loc[:,target_columns()]
     opsd_DE.columns = opsd_DE.columns.str.title()
@@ -75,31 +75,31 @@ def OPSD(rawEU=False, rawDE=False):
                             'Country_Code':'Country',
                             'Capacity_Net_Bnetza':'Capacity',
                             'Commissioned':'YearCommissioned',
-                            'Source':'File'
-                            }, inplace=True)
+                            'Source':'File'},
+                   inplace=True)
     opsd_DE['Fueltype'].fillna(opsd_DE['Energy_Source_Level_1'], inplace=True)
-    opsd_DE.loc[:,'projectID'] = opsd_DE.Id
+    opsd_DE['projectID'] = opsd_DE['Id']
     opsd_DE = opsd_DE.loc[:,target_columns()]
-    opsd = pd.concat([opsd_EU, opsd_DE]).reset_index(drop=True)
-    opsd.lat.replace(' ', np.nan, inplace=True, regex=True)
-    d = {'Biomass and biogas':'Bioenergy',
-         'Fossil fuels':'Other',
-         'Mixed fossil fuels':'Other',
-         'Natural gas':'Natural Gas',
-         'Non-renewable waste':'Waste',
-         'Other bioenergy and renewable waste':'Bioenergy',
-         'Other or unspecified energy sources':'Other',
-         'Other fossil fuels': 'Other'}
-    opsd.Fueltype = opsd.Fueltype.replace(d).str.title()
-    opsd = gather_technology_info(opsd)
-    opsd = gather_set_info(opsd)
-    opsd = clean_technology(opsd)
-    opsd.Country = countrycode(codes=opsd.Country.tolist(),
-                               target='country_name', origin='iso2c')
-    opsd.loc[:,'Name'] = opsd.Name.str.title()
-    opsd.loc[:,'Country'] = opsd.Country.str.title()
-    opsd = opsd[opsd.Country.isin(europeancountries())]
-    return opsd
+    return (pd.concat([opsd_EU, opsd_DE]).reset_index(drop=True)
+            .replace(dict(Fueltype={'Biomass and biogas': 'Bioenergy',
+                                    'Fossil fuels': 'Other',
+                                    'Mixed fossil fuels': 'Other',
+                                    'Natural gas': 'Natural Gas',
+                                    'Non-renewable waste': 'Waste',
+                                    'Other bioenergy and renewable waste': 'Bioenergy',
+                                    'Other or unspecified energy sources': 'Other',
+                                    'Other fossil fuels': 'Other'}))
+            .assign(Name=lambda df: df.Name.str.title(),
+                    Fueltype=lambda df: df.Fueltype.str.title(),
+                    Country=lambda df: (pd.Series(countrycode(codes=df.Country.values,
+                                                         target='country_name',
+                                                         origin='iso2c'),
+                                             index=df.index)
+                                   .str.title()))
+            .pipe(gather_technology_info)
+            .pipe(gather_set_info)
+            .pipe(clean_technology)
+            .loc[lambda df: df.Country.isin(europeancountries())])
 
 data_config['OPSD'] = {'read_function': OPSD}
 
@@ -140,17 +140,16 @@ def GEO(raw=False):
     GEOdata = read_globalenergyobservatory()
     if raw:
         return GEOdata
-    GEOdata = GEOdata[GEOdata['Country'].isin(europeancountries())]
-    GEOdata.drop_duplicates(subset=GEOdata.columns.drop(['projectID']), inplace=True)
-    GEOdata.replace({col: {'Gas': 'Natural Gas'}
-                     for col in {'FuelClassification1', 'FuelClassification2'}},
-                    inplace=True)
-    GEOdata = gather_fueltype_info(GEOdata, search_col=['FuelClassification1'])
-    GEOdata = gather_technology_info(GEOdata, search_col=['FuelClassification1'])
-    GEOdata = gather_set_info(GEOdata)
-    GEOdata = clean_powerplantname(GEOdata)
-    GEOdata = clean_technology(GEOdata, generalize_hydros=True)
-    return GEOdata.loc[:,target_columns()]
+    return (GEOdata
+            .loc[lambda df: df.Country.isin(europeancountries())]
+            .replace({col: {'Gas': 'Natural Gas'}
+                      for col in {'FuelClassification1', 'FuelClassification2'}})
+            .pipe(gather_fueltype_info, search_col=['FuelClassification1'])
+            .pipe(gather_technology_info, search_col=['FuelClassification1'])
+            .pipe(gather_set_info)
+            .pipe(clean_powerplantname)
+            .pipe(clean_technology, generalize_hydros=True)
+            .loc[:,target_columns()])
 
 data_config['GEO'] = {'read_function': GEO,
                       'clean_single_kwargs': dict(aggregate_powerplant_units=False)}
@@ -165,39 +164,39 @@ def CARMA(raw=False):
                             encoding='utf-8', low_memory=False)
     if raw:
         return carmadata
-    d = {'COAL': 'Hard Coal',
-         'WAT': 'Hydro',
-         'FGAS': 'Natural Gas',
-         'NUC': 'Nuclear',
-         'FLIQ': 'Oil',
-         'WIND': 'Wind',
-         'EMIT': 'Other',
-         'GEO': 'Geothermal',
-         'WSTH': 'Waste',
-         'SUN': 'Solar',
-         'BLIQ': 'Bioenergy',
-         'BGAS': 'Bioenergy',
-         'BSOL': 'Bioenergy',
-         'OTH': 'Other'}
-    rename = {'Geoposition': 'Geoposition',
-     'cap': 'Capacity',
-     'city': 'location',
-     'country': 'Country',
-     'fuel1': 'Fueltype',
-     'lat': 'lat',
-     'lon': 'lon',
-     'plant': 'Name',
-     'plant.id':'projectID'}
-    carmadata = carmadata.rename(columns=rename).loc[:,target_columns()+['chp']]
-    carmadata = carmadata[carmadata.Capacity > 3]
-    carmadata = carmadata[carmadata.Country.isin(europeancountries())]
-    carmadata = gather_technology_info(carmadata)
-    carmadata = gather_set_info(carmadata)
-    carmadata = clean_technology(carmadata)
-    carmadata.drop_duplicates(inplace=True)
-    carmadata = carmadata.replace(d)
-    carmadata = clean_powerplantname(carmadata)
-    return carmadata[target_columns()]
+
+    return (carmadata
+            .rename(columns={'Geoposition': 'Geoposition',
+                             'cap': 'Capacity',
+                             'city': 'location',
+                             'country': 'Country',
+                             'fuel1': 'Fueltype',
+                             'lat': 'lat',
+                             'lon': 'lon',
+                             'plant': 'Name',
+                             'plant.id':'projectID'})
+            .loc[lambda df: df.Capacity > 3]
+            .loc[lambda df: df.Country.isin(europeancountries())]
+            .replace(dict(Fueltype={'COAL': 'Hard Coal',
+                                    'WAT': 'Hydro',
+                                    'FGAS': 'Natural Gas',
+                                    'NUC': 'Nuclear',
+                                    'FLIQ': 'Oil',
+                                    'WIND': 'Wind',
+                                    'EMIT': 'Other',
+                                    'GEO': 'Geothermal',
+                                    'WSTH': 'Waste',
+                                    'SUN': 'Solar',
+                                    'BLIQ': 'Bioenergy',
+                                    'BGAS': 'Bioenergy',
+                                    'BSOL': 'Bioenergy',
+                                    'OTH': 'Other'}))
+            .pipe(clean_powerplantname)
+            .pipe(gather_technology_info)
+            .pipe(gather_set_info)
+            .pipe(clean_technology)
+            .drop_duplicates()
+            .loc[:, target_columns()])
 
 data_config['CARMA'] = {'read_function': CARMA,
                         'clean_single_kwargs': dict(aggregate_powerplant_units=False)}
@@ -214,45 +213,47 @@ data_config['Oldenburgdata'] = {'read_function': Oldenburgdata,
                                 'clean_single_kwargs': dict(aggregate_powerplant_units=False)}
 
 
-def ENTSOE_stats(raw=False):
+def ENTSOE_stats(raw=False, year=2014):
     """
     Standardize the entsoe database for statistical use.
     """
-    opsd = pd.read_csv(_data_in('aggregated_capacity.csv'), encoding='utf-8')
+    opsd_aggregated = pd.read_csv(_data_in('aggregated_capacity.csv'), encoding='utf-8', index_col=0)
     if raw:
-        return opsd
-    entsoedata = opsd[opsd['source'].isin(['entsoe']) & opsd['year'].isin([2014])]
-    cCodes = list(entsoedata.country)
-    entsoedata.country = countrycode(codes=cCodes, target='country_name', origin='iso2c')
-    entsoedata.country = entsoedata.country.str.title()
-    entsoedata = entsoedata[entsoedata.country.isin(europeancountries())]
-    entsoedata = entsoedata.replace({'Bioenergy and other renewable fuels': 'Bioenergy',
-     'Coal derivatives': 'Hard Coal',
-     'Differently categorized fossil fuels': 'Other',
-     'Hard coal': 'Hard Coal',
-     'Lignite': 'Lignite',
-     'Mixed fossil fuels': 'Mixed fuel types',
-     'Natural gas': 'Natural Gas',
-     'Other or unspecified energy sources': 'Other',
-     'Tide, wave, and ocean': 'Other'})
-    entsoedata = entsoedata[entsoedata['technology_level_2'] == True]
-    entsoedata.rename(columns={'technology': 'Fueltype'}, inplace=True)
+        return opsd_aggregated
+    entsoedata = (opsd_aggregated
+            [lambda df: (df['source'] == 'entsoe') & (df['year'] == year) & df['technology_level_2']]
+            .assign(country=lambda df: (pd.Series(countrycode(codes=df.country.values,
+                                                         target='country_name',
+                                                         origin='iso2c'),
+                                             index=df.index)
+                                   .str.title()))
+            .loc[lambda df: df.country.isin(europeancountries())]
+            .rename(columns={'technology': 'Fueltype'})
+            .replace(dict(Fueltype={'Bioenergy and other renewable fuels': 'Bioenergy',
+                                    'Coal derivatives': 'Hard Coal',
+                                    'Differently categorized fossil fuels': 'Other',
+                                    'Hard coal': 'Hard Coal',
+                                    # 'Lignite': 'Lignite',
+                                    'Mixed fossil fuels': 'Mixed fuel types',
+                                    'Natural gas': 'Natural Gas',
+                                    'Other or unspecified energy sources': 'Other',
+                                    'Tide, wave, and ocean': 'Other'})))
     entsoedata.columns = entsoedata.columns.str.title()
     return entsoedata
 
 def WRI(reduced_data=True):
     wri = pd.read_csv(_data_in('WRIdata.csv'),
                       encoding='utf-8', index_col='id')
-    wri.loc[:,'projectID'] = wri.index.values
-    wri = wri[wri.Country.isin(europeancountries())]
-    wri.Fueltype = wri.Fueltype.replace({'Coal':'Hard Coal'})
-    wri = gather_set_info(wri)
+    wri['projectID'] = wri.index
+    wri = (wri[wri.Country.isin(europeancountries())]
+           .replace(dict(Fueltype={'Coal':'Hard Coal'}))
+           .pipe(gather_set_info))
+
     if reduced_data:
         #wri data consists of ENTSOE data and OPSD, drop those:
         wri = wri.loc[~wri.File.str.contains('ENTSOE', case=False)]
         wri = wri.loc[~wri.Country.isin(['Germany','Poland', 'France', 'Switzerland'])]
     return wri.loc[:,target_columns()]
-
 
 data_config['WRI'] = {'read_function': WRI,
                       'clean_single_kwargs': dict(aggregate_powerplant_units=False)}
@@ -432,24 +433,24 @@ def ENTSOE(update=False, raw=False, entsoe_token=None):
             ns = namespace(etree)
             df = pd.DataFrame(columns=level1+level2+level3+['Country'])
             for arg in level1:
-                df.loc[:,arg] = map(attribute , etree.findall('*/%s%s'%(ns, arg)))
+                df[arg] = map(attribute , etree.findall('*/%s%s'%(ns, arg)))
             for arg in level2:
-                df.loc[:,arg] = map(attribute , etree.findall('*/*/%s%s'%(ns, arg)))
+                df[arg] = map(attribute , etree.findall('*/*/%s%s'%(ns, arg)))
             for arg in level3:
-                df.loc[:,arg] = map(attribute , etree.findall('*/*/*/%s%s'%(ns,arg)))
-            df.loc[:,'Country'] = domains.loc[i,'Country']
+                df[arg] = map(attribute , etree.findall('*/*/*/%s%s'%(ns,arg)))
+            df['Country'] = domains.loc[i,'Country']
             entsoe = pd.concat([entsoe,df],ignore_index=True)
         if raw:
             return entsoe
-        entsoe.psrType = entsoe.psrType.map(fdict)
         entsoe.columns = ['Name', 'projectID', 'High Volage Limit', 'Fueltype',
                           'Capacity', 'Country']
-        entsoe.loc[:,'Name'] = entsoe.loc[:,'Name'].str.title()
+        entsoe.psrType = entsoe.psrType.map(fdict)
+        entsoe['Name'] = entsoe['Name'].str.title()
         entsoe = entsoe.loc[entsoe.Country.notnull()]
         entsoe = entsoe.loc[~((entsoe.projectID.duplicated(keep=False))&
                               (~entsoe.Country.isin(europeancountries())))]
         entsoe = entsoe.drop_duplicates('projectID').reset_index(drop=True)
-        entsoe.loc[:,'File'] = "https://transparency.entsoe.eu/generation/r2/\ninstalledCapacityPerProductionUnit/show"
+        entsoe['File'] = "https://transparency.entsoe.eu/generation/r2/\ninstalledCapacityPerProductionUnit/show"
         entsoe = entsoe.loc[:,target_columns()]
         entsoe = gather_technology_info(entsoe)
         entsoe = gather_set_info(entsoe)
