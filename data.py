@@ -143,7 +143,7 @@ def GEO(raw=False):
     return (GEOdata
             .loc[lambda df: df.Country.isin(europeancountries())]
             .replace({col: {'Gas': 'Natural Gas'}
-                      for col in {'FuelClassification1', 'FuelClassification2'}})
+                      for col in {'Fueltype', 'FuelClassification1', 'FuelClassification2'}})
             .pipe(gather_fueltype_info, search_col=['FuelClassification1'])
             .pipe(gather_technology_info, search_col=['FuelClassification1'])
             .pipe(gather_set_info)
