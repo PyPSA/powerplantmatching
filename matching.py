@@ -66,7 +66,7 @@ def compare_two_datasets(datasets, labels, generalize_coal=True):
 
     """
     datasets = list(map(read_csv_if_string, datasets))
-#    if generalize_coal: 
+#    if generalize_coal:
 #        datasets = [dataset.replace(['Hard coal', 'Lignite'], 'Coal', regex=True)
 #                    for dataset in datasets]
     links = duke(datasets, labels=labels, singlematch=True)
@@ -175,12 +175,12 @@ def combine_multiple_datasets(datasets, labels):
 
 def reduce_matched_dataframe(df):
     """
-    Returns a new reduced dataframe with all names of the powerplants, according 
+    Returns a new reduced dataframe with all names of the powerplants, according
     to the following logic:
         - Averages: Capacity, longitude and latitude
         - Most frequent value: Country, Fueltype and Technology
         - Max: YearCommissioned*
-        
+
     * Two thinkable cases in which it both makes sense to choose the latest year:
     Case A: Plant has been retrofitted (e.g. 1973,1974,1973,2008) -> Choose 2008.
     Case B: Some dbs refer to the construction year, others to grid synchronization year.
@@ -195,7 +195,7 @@ def reduce_matched_dataframe(df):
 
     def most_frequent_fueltype(df):
         if df.isnull().all():
-            return np.nan            
+            return np.nan
         else:
             # Priority for Lignite: If any dataset claims the fueltype is Lignite -> accept!
             if df.isin(['Lignite']).any():
@@ -206,10 +206,10 @@ def reduce_matched_dataframe(df):
                     return values.index[1]
                 else:
                     return values.idxmax()
-            
+
     def most_frequent(df):
         if df.isnull().all():
-            return np.nan            
+            return np.nan
         else:
             values = df.value_counts()
             return values.idxmax()
@@ -219,7 +219,7 @@ def reduce_matched_dataframe(df):
             return np.nan
         else:
             return df[df.notnull()].str.cat(sep = ', ')
-        
+
     def optimised_mean(df):
         if df.notnull().sum()>2:
             return df[~((df - df.mean()).abs()>df.std())].mean()
@@ -240,7 +240,7 @@ def reduce_matched_dataframe(df):
     sdf.loc[:, 'lat'] = df.lat.apply(optimised_mean, axis=1)
     sdf.loc[:, 'lon'] = df.lon.apply(optimised_mean, axis=1)
     sdf.loc[:, 'File'] = df.File.apply(concat_strings, axis=1)
-    sdf.loc[:,'projectID'] = df.projectID.apply(lambda x: 
+    sdf.loc[:,'projectID'] = df.projectID.apply(lambda x:
                                 dict(zip(df.columns.levels[1][x.notnull()].values
                                 , x.dropna().values)), axis=1)
     sdf = clean_technology(sdf, generalize_hydros=False)

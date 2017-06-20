@@ -35,7 +35,6 @@ def Collection(datasets, update=False, use_saved_aggregation=False, reduced=True
                               .format('_'.join(map(str.upper, datasets))))
     outfn_reduced = _data_out('Matched_{}_reduced.csv'
                               .format('_'.join(map(str.upper, datasets))))
-    outfn = outfn_reduced if reduced else outfn_matched
 
     if update:
         dfs = []
@@ -44,25 +43,22 @@ def Collection(datasets, update=False, use_saved_aggregation=False, reduced=True
             conf.update(custom_config.get(name, {}))
 
             df = conf['read_function'](**conf.get('read_kwargs', {}))
-            if not conf.get('skip_clean_single', False):
-                if conf.get('aggregate_powerplant_units', True):
-                    df = clean_single(df, use_saved_aggregation=use_saved_aggregation, 
-                                      dataset_name=name)
-                else:
-                    df = clean_single(df, aggregate_powerplant_units=False)
+            df = clean_single(df, use_saved_aggregation=use_saved_aggregation,
+                              dataset_name=name,
+                              **conf.get('clean_single_kwargs', {}))
             dfs.append(df)
         matched = combine_multiple_datasets(dfs, datasets)
         matched.to_csv(outfn_matched, index_label='id', encoding='utf-8')
 
         reduced_df = reduce_matched_dataframe(matched)
-        reduced_df.to_csv(outfn, index_label='id', encoding='utf-8')
+        reduced_df.to_csv(outfn_reduced, index_label='id', encoding='utf-8')
 
         return reduced_df if reduced else matched
     else:
         if reduced:
-            sdf = pd.read_csv(outfn, index_col=0)
+            sdf = pd.read_csv(outfn_reduced, index_col=0, encoding='utf-8')
         else:
-            sdf = pd.read_csv(outfn, index_col=0, header=[0,1])
+            sdf = pd.read_csv(outfn_matched, index_col=0, header=[0,1], encoding='utf-8')
         if 'projectID' in sdf and reduced:
             sdf.projectID = sdf.projectID.apply(lambda df: ast.literal_eval(df))
         return sdf
@@ -87,7 +83,7 @@ def Carma_ENTSOE_GEO_OPSD_WRI_matched_reduced(update=False, use_saved_aggregatio
                       update=update, use_saved_aggregation=use_saved_aggregation,
                       reduced=True)
 
-def MATCHED_dataset(aggregated_hydros=True, rescaled_hydros=False, 
+def MATCHED_dataset(aggregated_hydros=True, rescaled_hydros=False,
                     subsume_uncommon_fueltypes=False,
                     include_unavailables=False):
     """
@@ -118,7 +114,7 @@ def MATCHED_dataset(aggregated_hydros=True, rescaled_hydros=False,
     if include_unavailables:
         # ese = ESE()
         # ese.projectID
-        matched = extend_by_non_matched(matched, ESE(), 'ESE', clean_added_data=False)
+        matched = extend_by_non_matched(matched, ESE(), 'ESE', clean_added_data=True)
 
 #    matched = extend_by_non_matched(matched,
 #            clean_single(WRI(), use_saved_aggregation=True), 'WRI',
@@ -168,7 +164,7 @@ def Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced(update=False, use_saved_aggreg
 def Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched(update=False, use_saved_aggregation=False,
                                                add_Oldenburgdata=False):
     return Collection(['CARMA', 'ENTSOE', 'ESE', 'GEO', 'OPSD', 'WEPP', 'WRI'],
-                      update=update, 
+                      update=update,
                       use_saved_aggregation=use_saved_aggregation, reduced=False,
                       custom_config={'ESE': dict(read_kwargs=
                                                  {'add_Oldenburgdata': add_Oldenburgdata})})
@@ -177,11 +173,11 @@ def Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched(update=False, use_saved_aggregati
 def Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced(update=False, use_saved_aggregation=False,
                                                        add_Oldenburgdata=False):
     return Collection(['CARMA', 'ENTSOE', 'ESE', 'GEO', 'OPSD', 'WEPP', 'WRI'],
-                      update=update, 
+                      update=update,
                       use_saved_aggregation=use_saved_aggregation, reduced=True,
                       custom_config={'ESE': dict(read_kwargs=
                                                  {'add_Oldenburgdata': add_Oldenburgdata})})
-    
+
 #unpublishable
 def Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced_RES(update=False, use_saved_aggregation=False):
     # Base dataframe

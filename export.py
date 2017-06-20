@@ -25,7 +25,7 @@ from countrycode import countrycode
 from .collection import Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced
 
 def Export_TIMES(df=None, use_scaled_capacity=False):
-    
+
     if df is None:
         df = Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced()
         if df is None:
@@ -34,8 +34,8 @@ def Export_TIMES(df=None, use_scaled_capacity=False):
 
     # replace country names by iso3166-2 codes
     df.loc[:,'Country'] = countrycode(codes=df.Country, origin='country_name', target='iso2c')
-    
-        
+
+
     # add column with TIMES-specific type. The pattern is as follows:
     # 'ConELC-' + Set + '_' + Fueltype + '-' Technology
     df.loc[:,'Technology'].fillna('', inplace=True)
@@ -61,11 +61,11 @@ def Export_TIMES(df=None, use_scaled_capacity=False):
     # add column with technical lifetime
     df.insert(12, 'Life', np.nan)
     df.loc[:,'Life'] = df.TimesType.map(timestype_to_life())
-    
+
     # add column with decommissioning year
     df.insert(13, 'YearDecommissioned', np.nan)
     df.loc[:,'YearDecommissioned'] = df.loc[:,'YearCommissioned'] + df.loc[:,'Life']
-    
+
     # Now create new export dataframe with headers
     countries = sorted(set(df.Country))
     if None in countries:
@@ -75,7 +75,7 @@ def Export_TIMES(df=None, use_scaled_capacity=False):
     columns.extend(countries)
     columns.append('Pset_Pn')
     df_exp = pd.DataFrame(columns=columns)
-    
+
     # Loop stepwise through technologies, years and countries
     row = 0
     timestypes = sorted(set(df.TimesType))
@@ -104,13 +104,13 @@ def Export_TIMES(df=None, use_scaled_capacity=False):
     df_exp.loc[:,'Attribute'] = 'STOCK'
     df_exp.loc[:,'*Unit'] = 'GW'
     df_exp.loc[:,'LimType'] = 'FX'
-    
+
     # Write resulting dataframe to file
     outfn = os.path.join(os.path.dirname(__file__),'data','out','Export_Stock_TIMES.xlsx')
     df_exp.to_excel(outfn)
     return df_exp
 
-    
+
 def fueltype_to_abbrev():
     """
     Returns the fueltype-specific abbreviation.
@@ -128,10 +128,10 @@ def fueltype_to_abbrev():
             'Waste':'WST',
             'Wind':'WO'}
     return data
-    
+
 def timestype_to_life():
     """
-    Returns the timestype-specific technical lifetime    
+    Returns the timestype-specific technical lifetime
     """
     data = {'ConELC-PP_COA':35,
             'ConELC-PP_LIG':35,
