@@ -22,7 +22,11 @@ import matplotlib.patches as mpatches
 from .config import fueltype_to_life, europeancountries, fueltype_to_color
 from .cleaning import clean_single
 from .data import CARMA, ENTSOE, ENTSOE_stats, ESE, GEO, OPSD, WEPP, WRI
-from .collection import Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced_RES
+from .collection import (Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced_RES,
+                         Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced,
+                         #TODO: Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced_RES,
+                         Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced)
+                         
 from .utils import lookup
 
 
@@ -113,23 +117,45 @@ def Plot_hbar_comparison_countries(df=None):
     return
 
 
-def Plot_bar_comparison_countries_fueltypes(df=None, ylabel=None):
+def Plot_bar_comparison_countries_fueltypes(ylabel=None, include_WEPP=True, include_RES=False):
     """
     Plots per country an analysis, how the matched dataset and the statistics
     differ by fueltype.
     """
-    if ylabel is None:
-        ylabel = 'Capacity [GW]'
-    if df is None:
-        df = Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced_RES()
-        if df is None:
-            raise RuntimeError("The data to be plotted does not yet exist.")
-    df = df.copy()
-
+    if ylabel is None: ylabel = 'Capacity [GW]'
+    queryexpr = 'Fueltype != "Solar" and Fueltype != "Wind" and Fueltype != "Geothermal"'
+        
+    # 1: WEPP itself + Reduced w/ WEPP
+    if include_WEPP:
+        wepp = WEPP()
+        if include_RES:
+            red_w_wepp = Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced_RES()
+        else:
+            red_w_wepp = Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced()
+            red_w_wepp.query(queryexpr, inplace=True)
+            wepp.query(queryexpr, inplace=True)
+    # 2: Reduced w/o WEPP
+    if include_RES:
+        #red_wo_wepp = Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced_RES()
+        #TODO: The aforementioned one should be used, the lower is just a workaround.
+        red_wo_wepp = Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced()
+    else:
+        red_wo_wepp = Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced()
+        red_wo_wepp.query(queryexpr, inplace=True)
+    # 3: Statistics
     statistics = ENTSOE_stats()
     statistics.Fueltype.replace({'Mixed fuel types':'Other'}, inplace=True)
-    stats = lookup([df, statistics], keys=['Matched dataset','Statistics ENTSO-E'],
-                   by='Country, Fueltype')/1000
+    statistics.query(queryexpr, inplace=True)    
+    
+    if include_WEPP:
+        stats = lookup([red_w_wepp, red_wo_wepp, wepp, statistics],
+                       keys=['Matched dataset w/ WEPP', 'Matched dataset w/o WEPP',
+                             'WEPP itself', 'Statistics ENTSO-E'],
+                       by='Country, Fueltype')/1000
+    else:
+        stats = lookup([red_wo_wepp, statistics],
+                       keys=['Matched dataset w/o WEPP', 'Statistics ENTSO-E'],
+                       by='Country, Fueltype')/1000
 
     # Presettings for the plots
     font={#'family' : 'normal',

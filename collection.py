@@ -59,8 +59,9 @@ def Collection(datasets, update=False, use_saved_aggregation=False, reduced=True
             sdf = pd.read_csv(outfn_reduced, index_col=0, encoding='utf-8')
         else:
             sdf = pd.read_csv(outfn_matched, index_col=0, header=[0,1], encoding='utf-8')
-        if 'projectID' in sdf and reduced:
-            sdf.projectID = sdf.projectID.apply(lambda df: ast.literal_eval(df))
+        #if 'projectID' in sdf and reduced:
+            #TODO: Raises ValueError - Unsure why the projectIDs should be evaluated?!
+            #sdf.projectID = sdf.projectID.apply(lambda df: ast.literal_eval(df))
         return sdf
 
 def Carma_ENTSOE_GEO_OPSD_matched(update=False, use_saved_aggregation=False):

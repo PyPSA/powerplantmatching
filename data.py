@@ -29,7 +29,6 @@ import re
 import logging
 logger = logging.getLogger(__name__)
 
-from .cleaning import clean_single
 from .config import europeancountries, target_columns
 from .cleaning import (gather_fueltype_info, gather_set_info,
                        gather_technology_info, clean_powerplantname,
@@ -562,6 +561,7 @@ def WEPP(raw=False, parseGeoLoc=False):
          'COAL':'Hard Coal',
          'COG':'Other',         # coke oven gas -> deutsch: "Hochofengas"
          'COKE':'Hard Coal',
+         'CSGAS':'Hard Coal',   # Coal-seam-gas
          'CWM':'Hard Coal',     # Coal-water mixture (aka coal-water slurry)
          'DGAS':'Other',        # sewage digester gas -> deutsch: "Klaergas"
          'FGAS':'Other',        # Flare gas or wellhead gas or associated gas
@@ -577,6 +577,8 @@ def WEPP(raw=False, parseGeoLoc=False):
          'LIQ':'Other',         # (black) liqour -> deutsch: "Schwarzlauge", die bei Papierherstellung anfaellt
          'LNG':'Natural Gas',   # Liquified natural gas
          'LPG':'Natural Gas',   # Liquified petroleum gas (usually butane or propane)
+         'MBM':'Bioenergy',     # Meat and bonemeal
+         'MEDWST':'Bioenergy',  # Medical waste
          'MGAS':'Other',        # mine gas -> deutsch: "Grubengas"
          'NAP':'Oil',           # naphta
          'OGAS':'Oil',          # Gasified crude oil or refinery bottoms or bitumen
