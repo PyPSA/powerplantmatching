@@ -45,7 +45,7 @@ def Export_TIMES(df=None, use_scaled_capacity=False):
           '_' + df.loc[:,'Fueltype'].map(fueltype_to_abbrev())
     df.loc[(df['Fueltype']=='Wind') & (df['Technology'].str.contains('offshore', case=False)),'TimesType'] += 'F'
     df.loc[(df['Fueltype']=='Wind') & (df['Technology'].str.contains('offshore', case=False)==False),'TimesType'] += 'N'
-    df.loc[(df['Fueltype']=='Solar') & (df['Technology'].str.contains('CSP', case=False)),'TimesType'] += 'CST'
+    df.loc[(df['Fueltype']=='Solar') & (df['Technology'].str.contains('CSP', case=False)),'TimesType'] += 'CSP'
     df.loc[(df['Fueltype']=='Solar') & (df['Technology'].str.contains('CSP', case=False)==False),'TimesType'] += 'SPV'
     df.loc[(df['Fueltype']=='Natural Gas') & (df['Technology'].str.contains('CCGT', case=False)),'TimesType'] += '-CCGT'       
     df.loc[(df['Fueltype']=='Natural Gas') & (df['Technology'].str.contains('CCGT', case=False)==False)\
@@ -147,7 +147,7 @@ def timestype_to_life():
             'ConELC-PP_WON':25,
             'ConELC-PP_WOF':30,
             'ConELC-PP_SPV':25,
-            'ConELC-PP_CST':25,
+            'ConELC-PP_CSP':25,
             'ConELC-PP_WST':25,
             'ConELC-PP_SYN':5,
             'ConELC-PP_CAES':40,
