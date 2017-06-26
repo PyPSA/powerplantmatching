@@ -32,7 +32,8 @@ from .utils import lookup
 
 def Show_all_plots():
     Plot_bar_comparison_single_matched()
-    Plot_hbar_comparison_countries()
+    Plot_hbar_comparison_1dim(by='Country')
+    Plot_hbar_comparison_1dim(by='Fueltype')
     return
 
 
@@ -91,17 +92,28 @@ def Plot_bar_comparison_single_matched(df=None, cleaned=True, use_saved_aggregat
     return
 
 
-def Plot_hbar_comparison_countries(df=None):
+def Plot_hbar_comparison_1dim(by='Country', include_WEPP=True, include_RES=False):
     """
     Plots a horizontal bar chart with capacity on x-axis, country on y-axis.
+    
+    Parameters
+    ----------
+    by : string, defines how to group data
+        Allowed values: 'Country' or 'Fueltype'
+    
     """
-    if df is None:
-        df = Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced_RES()
-        if df is None:
-            raise RuntimeError("The data to be plotted does not yet exist.")
-
-    statistics = ENTSOE_stats()
-    stats = lookup([df, statistics], keys=['Matched dataset','Statistics ENTSO-E'], by='Country')/1000
+    red_w_wepp, red_wo_wepp, wepp, statistics = gather_comparison_data(include_WEPP=include_WEPP,
+                                                                       include_RES=include_RES)
+    
+    if include_WEPP:
+        stats = lookup([red_w_wepp, red_wo_wepp, wepp, statistics],
+                       keys=['Matched dataset w/ WEPP', 'Matched dataset w/o WEPP',
+                             'WEPP itself', 'Statistics ENTSO-E'], by=by)/1000
+    else:
+        stats = lookup([red_wo_wepp, statistics],
+                       keys=['Matched dataset w/o WEPP', 'Statistics ENTSO-E'],
+                       by=by)/1000
+        
     # Presettings for the plots
     font={#'family' : 'normal',
           #'weight' : 'bold',
@@ -123,29 +135,9 @@ def Plot_bar_comparison_countries_fueltypes(ylabel=None, include_WEPP=True, incl
     differ by fueltype.
     """
     if ylabel is None: ylabel = 'Capacity [GW]'
-    queryexpr = 'Fueltype != "Solar" and Fueltype != "Wind" and Fueltype != "Geothermal"'
         
-    # 1: WEPP itself + Reduced w/ WEPP
-    if include_WEPP:
-        wepp = WEPP()
-        if include_RES:
-            red_w_wepp = Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced_RES()
-        else:
-            red_w_wepp = Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced()
-            red_w_wepp.query(queryexpr, inplace=True)
-            wepp.query(queryexpr, inplace=True)
-    # 2: Reduced w/o WEPP
-    if include_RES:
-        #red_wo_wepp = Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced_RES()
-        #TODO: The aforementioned one should be used, the lower is just a workaround.
-        red_wo_wepp = Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced()
-    else:
-        red_wo_wepp = Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced()
-        red_wo_wepp.query(queryexpr, inplace=True)
-    # 3: Statistics
-    statistics = ENTSOE_stats()
-    statistics.Fueltype.replace({'Mixed fuel types':'Other'}, inplace=True)
-    statistics.query(queryexpr, inplace=True)    
+    red_w_wepp, red_wo_wepp, wepp, statistics = gather_comparison_data(include_WEPP=include_WEPP,
+                                                                       include_RES=include_RES)
     
     if include_WEPP:
         stats = lookup([red_w_wepp, red_wo_wepp, wepp, statistics],
@@ -189,6 +181,42 @@ def Plot_bar_comparison_countries_fueltypes(ylabel=None, include_WEPP=True, incl
     # After the loop, do the rest of the layouting.
     fig.tight_layout()
     return
+
+
+def gather_comparison_data(include_WEPP=True, include_RES=False):
+    queryexpr = 'Fueltype != "Solar" and Fueltype != "Wind" and Fueltype != "Geothermal"'
+    # 1+2: WEPP itself + Reduced w/ WEPP
+    if include_WEPP:
+        wepp = WEPP()
+        #TODO: This hack should be removed, as soon as OPSD releases its 'National Generation Capacity' update
+        wepp.query('(YearCommissioned <= 2014) or (YearCommissioned != YearCommissioned)', inplace=True)
+        
+        if include_RES:
+            red_w_wepp = Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced_RES()
+        else:
+            red_w_wepp = Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced()
+            red_w_wepp.query(queryexpr, inplace=True)
+            wepp.query(queryexpr, inplace=True)
+        #TODO: This hack should be removed, as soon as OPSD releases its 'National Generation Capacity' update
+        red_w_wepp.query('(YearCommissioned <= 2014) or (YearCommissioned != YearCommissioned)', inplace=True)
+    else:
+        wepp = None
+        red_w_wepp = None
+    # 3: Reduced w/o WEPP
+    if include_RES:
+        #red_wo_wepp = Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced_RES()
+        #TODO: The aforementioned one should be used, the lower is just a workaround.
+        red_wo_wepp = Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced()
+    else:
+        red_wo_wepp = Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced()
+        red_wo_wepp.query(queryexpr, inplace=True)
+    #TODO: This hack should be removed, as soon as OPSD releases its 'National Generation Capacity' update
+    red_wo_wepp.query('(YearCommissioned <= 2014) or (YearCommissioned != YearCommissioned)', inplace=True)
+    # 4: Statistics
+    statistics = ENTSOE_stats()
+    statistics.Fueltype.replace({'Mixed fuel types':'Other'}, inplace=True)
+    statistics.query(queryexpr, inplace=True) 
+    return red_w_wepp, red_wo_wepp, wepp, statistics
 
 
 def Plot_bar_decomissioning_curves(df=None, ylabel=None, title=None, legend_in_subplots=False):

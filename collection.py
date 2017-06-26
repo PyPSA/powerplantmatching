@@ -97,7 +97,7 @@ def MATCHED_dataset(aggregated_hydros=True, rescaled_hydros=False,
 
     Parameters
     ----------
-    rescaled_hydros : Boolean, defaut False
+    rescaled_hydros : Boolean, default False
             Whether to rescale hydro powerplant capacity in order to fulfill the
             statistics of the ENTSOE-data and receive better covering of the country
             totals.
