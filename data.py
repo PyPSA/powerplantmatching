@@ -544,9 +544,9 @@ def WEPP(raw=False, parseGeoLoc=False):
                          'Unitid':'projectID'
                          }, inplace=True)
     # Do country transformations and drop those which are not in definded scope
-    c = {'ENGLAND & WALES':'UNITED KINGDOM',
-         'GIBRALTAR':'SPAIN',
-         'SCOTLAND':'UNITED KINGDOM'}
+    c = {'ENGLAND & WALES':u'UNITED KINGDOM',
+         'GIBRALTAR':u'SPAIN',
+         'SCOTLAND':u'UNITED KINGDOM'}
     wepp.Country = wepp.Country.replace(c).str.title()
     wepp = wepp[wepp.Country.isin(europeancountries())]
     # Drop any rows with plants which are not: In operation (OPR) or under construction (CON)
