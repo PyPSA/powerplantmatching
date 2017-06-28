@@ -142,7 +142,7 @@ def Plot_bar_comparison_countries_fueltypes(ylabel=None, include_WEPP=True, incl
     if include_WEPP:
         stats = lookup([red_w_wepp, red_wo_wepp, wepp, statistics],
                        keys=['Matched dataset w/ WEPP', 'Matched dataset w/o WEPP',
-                             'WEPP itself', 'Statistics ENTSO-E'],
+                             'WEPP only', 'Statistics ENTSO-E'],
                        by='Country, Fueltype')/1000
     else:
         stats = lookup([red_wo_wepp, statistics],
