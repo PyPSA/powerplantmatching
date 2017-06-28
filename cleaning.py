@@ -126,6 +126,8 @@ def gather_set_info(df, search_col=['Name', 'Fueltype']):
 
 def clean_technology(df, generalize_hydros=False):
     tech = df['Technology'].dropna()
+    if len(tech)==0:
+        return df
     tech = tech.replace({' and ': ', ', ' Power Plant': ''}, regex=True)
     if generalize_hydros:
         tech[tech.str.contains('pump', case=False)] = 'Pumped Storage'
@@ -222,7 +224,8 @@ def aggregate_units(df, use_saved_aggregation=False, dataset_name=None,
     if use_saved_aggregation:
         try:
             logger.info('Reading saved aggregation groups for dataset: {}'.format(dataset_name))
-            df = df.assign(grouped=pd.read_csv(path_name, header=None, index_col=0).values)
+            groups = pd.read_csv(path_name, header=None, index_col=0).loc[df.index]
+            df = df.assign(grouped=groups.values)
         except ValueError:
             logger.warning("Non-existing saved links for this dataset, continuing by aggregating again")
             df.drop('grouped', axis=1, inplace=True)
