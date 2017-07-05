@@ -108,7 +108,7 @@ def Plot_hbar_comparison_1dim(by='Country', include_WEPP=True, include_RES=False
     if include_WEPP:
         stats = lookup([red_w_wepp, red_wo_wepp, wepp, statistics],
                        keys=['Matched dataset w/ WEPP', 'Matched dataset w/o WEPP',
-                             'WEPP itself', 'Statistics ENTSO-E'], by=by)/1000
+                             'WEPP only', 'Statistics ENTSO-E'], by=by)/1000
     else:
         stats = lookup([red_wo_wepp, statistics],
                        keys=['Matched dataset w/o WEPP', 'Statistics ENTSO-E'],
@@ -119,12 +119,13 @@ def Plot_hbar_comparison_1dim(by='Country', include_WEPP=True, include_RES=False
           #'weight' : 'bold',
           'size'   : 24}
     plt.rc('font', **font)
-    ax = stats.plot.barh(stacked=False, legend=True, colormap='jet', figsize = (22,13))
+    ax = stats.plot.barh(stacked=False, colormap='jet', figsize = (22,13))
     ax.set_xlabel('Installed Capacity [GW]')
     ax.yaxis.label.set_visible(False)
     ax.set_facecolor('#d9d9d9')                  # gray background
     ax.set_axisbelow(True)                       # puts the grid behind the bars
     ax.grid(color='white', linestyle='dotted')   # adds white dotted grid
+    ax.legend(loc='best')
     ax.invert_yaxis()
     return
 
