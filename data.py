@@ -272,7 +272,7 @@ data_config['WRI'] = {'read_function': WRI,
 
 def ESE(update=False, path=None, add_Oldenburgdata=False, raw=False):
     """
-    This database is not given within the repository because of open source rights.
+    This database is not given within the repository because of its restrictive license.
     Just download the database from the link given in the README file
     (last section: Data Sources) and set the arguments of this function to update=True and
     path='path/to/database/projects.xls'. This will integrate the database into your
@@ -291,10 +291,6 @@ def ESE(update=False, path=None, add_Oldenburgdata=False, raw=False):
         raise(NotImplementedError( '''
         This database is not yet in your local repository.
         Just download the database from the link given in the README file
-        (last section: Data Sources, you additionally might have to
-         change the format of the Longitude and 'Commissioning Date'
-         column to number format since there seems to be a problem
-         with the date format)
         and set the arguments of this function to update=True and
         path='path/to/database/projects.xls'. This will integrate the
         database into your local powerplantmatching/data and can then
@@ -323,7 +319,6 @@ def ESE(update=False, path=None, add_Oldenburgdata=False, raw=False):
         # if row[col_date] == 2:
         #     row[col_date] = 3
 
-    # The longitude column has the wrong excel data type set to dates?!
     data = pd.read_excel(book, na_values=u'n/a', engine='xlrd')
     if raw:
         return data
