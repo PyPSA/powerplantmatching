@@ -26,6 +26,7 @@ import pandas as pd
 import requests
 import xml.etree.ElementTree as ET
 import re
+from six import iteritems
 import logging
 logger = logging.getLogger(__name__)
 
@@ -215,15 +216,23 @@ data_config['Oldenburgdata'] = {'read_function': Oldenburgdata,
                                 'clean_single_kwargs': dict(aggregate_powerplant_units=False)}
 
 
-def ENTSOE_stats(raw=False, year=2014):
+def ENTSOE_stats(raw=False, level=2, **selectors):
     """
     Standardize the entsoe database for statistical use.
     """
-    opsd_aggregated = pd.read_csv(_data_in('aggregated_capacity.csv'), encoding='utf-8', index_col=0)
+    opsd_aggregated = pd.read_csv(_data_in('national_generation_capacity_stacked.csv'), encoding='utf-8', index_col=0)
+
+    selectors.setdefault('year', 2015)
+    selectors.setdefault('source', 'entsoe SO&AF')
+
     if raw:
         return opsd_aggregated
     entsoedata = (opsd_aggregated
-            [lambda df: (df['source'] == 'entsoe') & (df['year'] == year) & df['technology_level_2']]
+            [lambda df: reduce(lambda x, y: x&y,
+                          (df[k] == v
+                           for k, v in iteritems(selectors)
+                           if v is not None),
+                          df['energy_source_level_%d' % level])]
             .assign(country=lambda df: (pd.Series(countrycode(codes=df.country.values,
                                                          target='country_name',
                                                          origin='iso2c'),
