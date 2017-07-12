@@ -38,7 +38,7 @@ from .utils import (parse_Geoposition, _data, _data_in, _data_out, countrycode)
 
 data_config = {}
 
-def OPSD(rawEU=False, rawDE=False):
+def OPSD(rawEU=False, rawDE=False, statusDE=None):
     """
     Return standardized OPSD (Open Power Systems Data) database with target column names and fueltypes.
 
@@ -79,6 +79,8 @@ def OPSD(rawEU=False, rawDE=False):
                    inplace=True)
     opsd_DE['Fueltype'].fillna(opsd_DE['Energy_Source_Level_1'], inplace=True)
     opsd_DE['projectID'] = opsd_DE['Id']
+    if statusDE is not None:
+        opsd_DE = opsd_DE.loc[opsd_DE.Status.isin(statusDE)]
     opsd_DE = opsd_DE.loc[:,target_columns()]
     return (pd.concat([opsd_EU, opsd_DE]).reset_index(drop=True)
             .replace(dict(Fueltype={'Biomass and biogas': 'Bioenergy',
