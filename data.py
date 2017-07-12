@@ -422,7 +422,13 @@ def ENTSOE(update=False, raw=False, entsoe_token=None):
             return m.group(0) if m else ''
         def attribute(etree_sel):
             return etree_sel.text
-        for i in domains.index:
+
+        entsoe = []
+        for i in domains.index[domains.Country.notnull()]:
+            logger.info("Fetching power plants for domain %s (%s)",
+                        domains.loc[i, 0],
+                        domains.loc[i, 'Country'])
+
             #https://transparency.entsoe.eu/content/static_content/
             #Static%20content/web%20api/Guide.html_generation_domain
             ret = requests.get('https://transparency.entsoe.eu/api',
@@ -443,14 +449,16 @@ def ENTSOE(update=False, raw=False, entsoe_token=None):
             for arg in level2:
                 df[arg] = map(attribute , etree.findall('*/*/%s%s'%(ns, arg)))
             for arg in level3:
-                df[arg] = map(attribute , etree.findall('*/*/*/%s%s'%(ns,arg)))
+                df[arg] = map(attribute , etree.findall('*/*/*/%s%s'%(ns, arg)))
             df['Country'] = domains.loc[i,'Country']
-            entsoe = pd.concat([entsoe,df],ignore_index=True)
+            logger.info("Received data on %d power plants", len(df))
+            entsoe.append(df)
+        entsoe = pd.concat(entsoe, ignore_index=True)
         if raw:
             return entsoe
-        entsoe.columns = ['Name', 'projectID', 'High Volage Limit', 'Fueltype',
+        entsoe.columns = ['Name', 'projectID', 'High Voltage Limit', 'Fueltype',
                           'Capacity', 'Country']
-        entsoe.psrType = entsoe.psrType.map(fdict)
+        entsoe['Fueltype'] = entsoe['Fueltype'].map(fdict)
         entsoe['Name'] = entsoe['Name'].str.title()
         entsoe = entsoe.loc[entsoe.Country.notnull()]
         entsoe = entsoe.loc[~((entsoe.projectID.duplicated(keep=False))&
