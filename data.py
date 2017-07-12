@@ -339,6 +339,7 @@ def ESE(update=False, path=None, add_Oldenburgdata=False, raw=False):
                     target_columns(detailed_columns=True)]
     data = data.reset_index(drop = True)
     data = data.loc[data.Country.isin(europeancountries())]
+    data.projectID = 'ESE' + data.projectID.astype(str)
     data.to_csv(saved_version, index_label='id', encoding='utf-8')
     return data
 

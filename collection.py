@@ -22,7 +22,7 @@ import pandas as pd
 import ast
 
 from .utils import set_uncommon_fueltypes_to_other, _data_in, _data_out
-from .data import data_config, OPSD, ESE, OPSD_RES
+from .data import data_config, OPSD, ESE, OPSD_RES, WRI
 from .cleaning import clean_single
 from .matching import (combine_multiple_datasets,
                        reduce_matched_dataframe)
@@ -109,16 +109,15 @@ def MATCHED_dataset(aggregated_hydros=True, rescaled_hydros=False,
         matched = Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced()
     else:
         matched = Carma_ENTSOE_GEO_OPSD_WRI_matched_reduced()
-
-    matched = extend_by_non_matched(matched, OPSD(), 'OPSD', clean_added_data=True)
-    if include_unavailables:
-        # ese = ESE()
-        # ese.projectID
-        matched = extend_by_non_matched(matched, ESE(), 'ESE', clean_added_data=True)
-
-#    matched = extend_by_non_matched(matched,
-#            clean_single(WRI(), use_saved_aggregation=True), 'WRI',
-#                        fueltypes=['Wind'])
+    columns = matched.columns
+    matched = extend_by_non_matched(matched, OPSD(), 'OPSD', clean_added_data=True,
+                                    use_saved_aggregation=True)
+#    if include_unavailables:
+#        matched = extend_by_non_matched(matched, ESE(), 'ESE', clean_added_data=True, 
+#                                         use_saved_aggregation=True)
+        
+    matched = extend_by_non_matched(matched, WRI(), 'WRI', 
+            fueltypes=['Wind'], clean_added_data=True, use_saved_aggregation=True )
 
     if aggregated_hydros:
         hydro = Aggregated_hydro(scaled_capacity=rescaled_hydros)
@@ -126,10 +125,10 @@ def MATCHED_dataset(aggregated_hydros=True, rescaled_hydros=False,
         matched = pd.concat([matched, hydro]).reset_index(drop=True)
     if subsume_uncommon_fueltypes:
         matched = set_uncommon_fueltypes_to_other(matched)
-    return matched
+    return matched[columns]
 
 
-def Aggregated_hydro(update=False, scaled_capacity=True):
+def Aggregated_hydro(update=False, scaled_capacity=False):
     fn = _data_in('hydro_aggregation_beta.csv')
 #    if update or not os.path.exists(outfn):
 #        # Generate the matched database

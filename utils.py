@@ -188,7 +188,7 @@ tech_colors2 = pd.Series(data=
           'CCGT':'firebrick',
           'Coal':'k',
           'Hard Coal':'k',
-          "Oil" : "r",
+          "Oil" : "darkgreen",
           "Other":"dimgrey",
           "Waste" : "grey",
           "Geothermal" : "orange"})
