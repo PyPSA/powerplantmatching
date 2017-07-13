@@ -45,16 +45,19 @@ def best_matches(links):
             .groupby(links.iloc[:, 1], as_index=False, sort=False)
             .apply(lambda x: x.loc[x.scores.idxmax(), labels]))
 
-def compare_two_datasets(datasets, labels, generalize_coal=True):
+def compare_two_datasets(datasets, labels):
     """
-    Duke-based horizontal match of two databases. Returns the matched dataframe including only the
-    matched entries in a multi-indexed pandas.Dataframe. Compares all properties of the
-    given columns ['Name','Fueltype', 'Technology', 'Country', 'Capacity','Geoposition'] in order
-    to determine the same powerplant in different two datasets. The match is in one-to-one mode,
-    that is every entry of the initial databases has maximally one link in order to obtain
-    unique entries in the resulting dataframe.
-    Attention: When abording this command, the duke process will still continue in the background,
-    wait until the process is finished before restarting.
+    Duke-based horizontal match of two databases. Returns the matched
+    dataframe including only the matched entries in a multi-indexed
+    pandas.Dataframe. Compares all properties of the given columns
+    ['Name','Fueltype', 'Technology', 'Country',
+    'Capacity','Geoposition'] in order to determine the same
+    powerplant in different two datasets. The match is in one-to-one
+    mode, that is every entry of the initial databases has maximally
+    one link in order to obtain unique entries in the resulting
+    dataframe.  Attention: When aborting this command, the duke
+    process will still continue in the background, wait until the
+    process is finished before restarting.
 
     Parameters
     ----------
@@ -66,9 +69,6 @@ def compare_two_datasets(datasets, labels, generalize_coal=True):
 
     """
     datasets = list(map(read_csv_if_string, datasets))
-#    if generalize_coal:
-#        datasets = [dataset.replace(['Hard coal', 'Lignite'], 'Coal', regex=True)
-#                    for dataset in datasets]
     links = duke(datasets, labels=labels, singlematch=True)
     matches = best_matches(links)
     return matches
