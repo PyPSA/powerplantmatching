@@ -129,7 +129,7 @@ def MATCHED_dataset(aggregated_hydros=True, rescaled_hydros=False,
 
 
 def Aggregated_hydro(update=False, scaled_capacity=False):
-    fn = _data_in('hydro_aggregation_beta.csv')
+    fn = _data_in('hydro_aggregation.csv')
 #    if update or not os.path.exists(outfn):
 #        # Generate the matched database
 #        raise NotImplemented()
