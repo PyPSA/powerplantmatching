@@ -216,13 +216,28 @@ data_config['Oldenburgdata'] = {'read_function': Oldenburgdata,
                                 'clean_single_kwargs': dict(aggregate_powerplant_units=False)}
 
 
-def ENTSOE_stats(raw=False, level=2, **selectors):
+def Capacity_stats(raw=False, level=2, **selectors):
     """
     Standardize the entsoe database for statistical use.
+
+    Parameters
+    ----------
+    year : int
+        Year of the data (range usually 2013-2017)
+        (defaults to 2016)
+    source : str
+        Which statistics source from
+        {'entsoe SO&AF', 'entsoe Statistics', 'EUROSTAT', ...}
+        (defaults to 'entsoe SO&AF')
+
+    Returns
+    -------
+    df : pd.DataFrame
+         Capacity statistics per country and fuel-type
     """
     opsd_aggregated = pd.read_csv(_data_in('national_generation_capacity_stacked.csv'), encoding='utf-8', index_col=0)
 
-    selectors.setdefault('year', 2015)
+    selectors.setdefault('year', 2016)
     selectors.setdefault('source', 'entsoe SO&AF')
 
     if raw:
