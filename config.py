@@ -21,15 +21,15 @@ def europeancountries():
     """
     Returns a list of countries in Europe
     """
-    c = ['Austria', 'Belgium', 'Czech Republic', 'Denmark', 'France', 'Germany',
-         'Ireland', 'Italy', 'Hungary', 'Luxembourg', 'Netherlands', 'Norway', 'Poland',
-         'Portugal', 'Slovakia', 'Slovenia', 'Spain', 'Sweden', 'Switzerland', 'United Kingdom']
-#   c = ['Austria', 'Belgium', 'Bulgaria', 'Croatia', 'Czech Republic',
-#            'Denmark', 'Estonia', 'Finland', 'France', 'Germany',
-#            'Greece', 'Hungary', 'Ireland', 'Italy', 'Latvia',
-#            'Lithuania', 'Luxembourg', 'Netherlands', 'Norway',
-#            'Poland', 'Portugal', 'Romania', 'Slovakia', 'Slovenia',
-#            'Spain', 'Sweden', 'Switzerland', 'United Kingdom']
+#    c = ['Austria', 'Belgium', 'Czech Republic', 'Denmark', 'France', 'Germany',
+#         'Ireland', 'Italy', 'Hungary', 'Luxembourg', 'Netherlands', 'Norway', 'Poland',
+#         'Portugal', 'Slovakia', 'Slovenia', 'Spain', 'Sweden', 'Switzerland', 'United Kingdom']
+    c = ['Austria', 'Belgium', 'Bulgaria', 'Croatia', 'Czech Republic',
+            'Denmark', 'Estonia', 'Finland', 'France', 'Germany',
+            'Greece', 'Hungary', 'Ireland', 'Italy', 'Latvia',
+            'Lithuania', 'Luxembourg', 'Netherlands', 'Norway',
+            'Poland', 'Portugal', 'Romania', 'Slovakia', 'Slovenia',
+            'Spain', 'Sweden', 'Switzerland', 'United Kingdom']
     return sorted(c)
 
 def target_fueltypes():
