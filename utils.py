@@ -37,6 +37,20 @@ def _data_in(fn):
 def _data_out(fn):
     return os.path.join(os.path.dirname(__file__), 'data', 'out', fn)
 
+# Logging: General Settings
+import logging
+logger = logging.getLogger(__name__)
+logger.setLevel('INFO')
+# Logging: File
+logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
+fileHandler = logging.FileHandler(_data_out('PPMT.log'))
+fileHandler.setFormatter(logFormatter)
+logger.addHandler(fileHandler)
+# Logging: Console
+consoleHandler = logging.StreamHandler()
+logger.addHandler(consoleHandler)
+
+
 def lookup(df, keys=None, by='Country, Fueltype', exclude=None, show_totals=False):
     """
     Returns a lookup table of the dataframe df with rounded numbers.
