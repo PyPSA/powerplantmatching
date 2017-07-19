@@ -19,14 +19,13 @@ import collections
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
-from .config import fueltype_to_life, europeancountries, fueltype_to_color
+from .config import fueltype_to_life, fueltype_to_color
 from .cleaning import clean_single
 from .data import CARMA, ENTSOE, ENTSOE_stats, ESE, GEO, OPSD, WEPP, WRI
 from .collection import (Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced_RES,
                          Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced,
                          #TODO: Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced_RES,
                          Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced)
-                         
 from .utils import lookup
 
 
@@ -104,14 +103,13 @@ def Plot_hbar_comparison_1dim(by='Country', include_WEPP=True, include_RES=False
     """
     red_w_wepp, red_wo_wepp, wepp, statistics = gather_comparison_data(include_WEPP=include_WEPP,
                                                                        include_RES=include_RES)
-    
     if include_WEPP:
         stats = lookup([red_w_wepp, red_wo_wepp, wepp, statistics],
                        keys=['Matched dataset w/ WEPP', 'Matched dataset w/o WEPP',
-                             'WEPP only', 'Statistics ENTSO-E'], by=by)/1000
+                             'WEPP only', 'Statistics OPSD'], by=by)/1000
     else:
         stats = lookup([red_wo_wepp, statistics],
-                       keys=['Matched dataset w/o WEPP', 'Statistics ENTSO-E'],
+                       keys=['Matched dataset w/o WEPP', 'Statistics OPSD'],
                        by=by)/1000
         
     # Presettings for the plots
@@ -130,7 +128,8 @@ def Plot_hbar_comparison_1dim(by='Country', include_WEPP=True, include_RES=False
     return
 
 
-def Plot_bar_comparison_countries_fueltypes(ylabel=None, include_WEPP=True, include_RES=False):
+def Plot_bar_comparison_countries_fueltypes(ylabel=None, include_WEPP=True,
+        include_RES=False, show_coverage=True, show_legend=True):
     """
     Plots per country an analysis, how the matched dataset and the statistics
     differ by fueltype.
@@ -139,39 +138,45 @@ def Plot_bar_comparison_countries_fueltypes(ylabel=None, include_WEPP=True, incl
         
     red_w_wepp, red_wo_wepp, wepp, statistics = gather_comparison_data(include_WEPP=include_WEPP,
                                                                        include_RES=include_RES)
-    
+    countries = set()
     if include_WEPP:
         stats = lookup([red_w_wepp, red_wo_wepp, wepp, statistics],
                        keys=['Matched dataset w/ WEPP', 'Matched dataset w/o WEPP',
-                             'WEPP only', 'Statistics ENTSO-E'],
+                             'WEPP only', 'Statistics OPSD'],
                        by='Country, Fueltype')/1000
+        set.update(countries, set(red_w_wepp.Country), set(red_wo_wepp.Country),
+                   set(wepp.Country), set(statistics.Country))
     else:
         stats = lookup([red_wo_wepp, statistics],
-                       keys=['Matched dataset w/o WEPP', 'Statistics ENTSO-E'],
+                       keys=['Matched dataset w/o WEPP', 'Statistics OPSD'],
                        by='Country, Fueltype')/1000
+        set.update(countries, set(red_wo_wepp.Country), set(statistics.Country))
 
     # Presettings for the plots
     font={#'family' : 'normal',
           #'weight' : 'bold',
           'size'   : 12}
     plt.rc('font', **font)
+    
     # Loop through countries.
-    i,j = [0,0]
-    fig, ax = plt.subplots(nrows=4, ncols=5, sharex=False, sharey=False, figsize=(32,18))
-    for a, country in enumerate(europeancountries()):
-        if j==5:
+    nrows, ncols = gather_nrows_ncols(len(countries))
+    i,j = [0, 0]
+    fig, ax = plt.subplots(nrows=nrows, ncols=ncols, sharex=True, sharey=False, figsize=(32,18))
+    for country in sorted(countries):
+        if j==ncols:
             i+=1
             j=0
         # Perform the plot
-        stats[country].plot.bar(ax=ax[i,j],stacked=False,legend=False,colormap='jet')
-        # Compute coverage and show it
-        ctry = stats[country]
-        ctry.loc[:,u'Delta_squared'] = (ctry.iloc[:,0]-ctry.iloc[:,1])**2
-        cov = 1 - ctry.Delta_squared.sum()/((ctry.iloc[:,1]**2).sum())
-        ax[i,j].text(0.0, ax[i,j].get_ylim()[1]*0.95, u'Coverage = '+unicode(round(cov, 3)),\
-          ha='left', va='top')
+        stats[country].plot.bar(ax=ax[i,j], stacked=False, legend=False, colormap='jet')
         # Format the subplots nicely
-        ax[i,j].legend(fontsize=9, loc='best')
+        if show_coverage:
+            ctry = stats[country]
+            ctry.loc[:,u'Delta_squared'] = (ctry.iloc[:,0]-ctry.iloc[:,1])**2
+            cov = 1 - ctry.Delta_squared.sum()/((ctry.iloc[:,1]**2).sum())
+            ax[i,j].text(0.0, ax[i,j].get_ylim()[1]*0.95, u'Coverage = '+unicode(round(cov, 3)),
+                         ha='left', va='top')
+        if show_legend:
+            ax[i,j].legend(fontsize=9, loc='best')
         ax[i,j].set_facecolor('#d9d9d9')
         ax[i,j].set_axisbelow(True)
         ax[i,j].grid(color='white', linestyle='dotted')
@@ -179,6 +184,7 @@ def Plot_bar_comparison_countries_fueltypes(ylabel=None, include_WEPP=True, incl
         ax[i,0].set_ylabel(ylabel)
         ax[3,j].xaxis.label.set_visible(False)
         j+=1
+    ax[0,0].legend(fontsize=9, loc='best')
     # After the loop, do the rest of the layouting.
     fig.tight_layout()
     return
@@ -247,12 +253,13 @@ def Plot_bar_decomissioning_curves(df=None, ylabel=None, title=None, legend_in_s
           'size'   : 16}
     plt.rc('font', **font)
 
-    fig, ax = plt.subplots(nrows=4, ncols=5, sharex=True, sharey=False, figsize=(32,18))
+    nrows, ncols = gather_nrows_ncols(len(set(df.Country)))
+    fig, ax = plt.subplots(nrows=nrows, ncols=ncols, sharex=True, sharey=False, figsize=(32,18))
     data_countries = df.groupby(['Country'])
     i,j = [0,0]
     labels_mpatches = collections.OrderedDict()
-    for a, country in enumerate(europeancountries()):
-        if j==5:
+    for country in sorted(set(df.Country)):
+        if j==ncols:
             i+=1
             j=0
         cntry_grp = data_countries.get_group(country)
@@ -301,3 +308,38 @@ def Plot_matchcount_stats(df):
     stats = df.groupby(['MatchCount']).size()
     stats.plot.bar()
     return
+
+
+def gather_nrows_ncols(x):
+    """
+    Derives [nrows, ncols] based on x plots, so that a subplot looks nicely.
+    
+    Parameters
+    ----------
+    x : int, Number of subplots between [0, 42]
+    """
+    import math
+    def calc(n, m):
+        while (n*m < x): m += 1
+        return n, m
+    
+    if not isinstance(x, int):
+        raise ValueError('An integer needs to be passed to this function.')
+    elif x <= 0:
+        raise ValueError('The given number of subplots is less or equal zero.')
+    elif x > 42:
+        raise ValueError('Are you sure that you want to put more than 42 subplots in one diagram?\n'+\
+                         'You better don\'t, it looks squeezed. Otherwise adapt the code.')
+    k = math.sqrt(x)
+    if k.is_integer(): 
+        return [int(k), int(k)] #square format
+    else: 
+        k = int(math.floor(k))
+        # Solution 1
+        n, m = calc(k, k+1)
+        sol1 = n*m
+        # Solution 2:
+        n, m = calc(k-1, k+1)
+        sol2 = n*m        
+        if sol2 > sol1: n, m = calc(k, k+1)
+        return [n, m]
