@@ -206,6 +206,7 @@ def Oldenburgdata():
     """
     oldb = pd.read_csv(_data_in('OldenburgHydro.csv'),
                        encoding='utf-8', index_col='id')
+    oldb.loc[:,'projectID'] = oldb.index # Dirtyfix, since NaNs in projectID cause errors!
     return oldb.loc[:,target_columns()]
 
 data_config['Oldenburgdata'] = {'read_function': Oldenburgdata,
