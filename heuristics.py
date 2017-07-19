@@ -28,7 +28,7 @@ from .cleaning import clean_single
 
 
 def extend_by_non_matched(df, extend_by, label, fueltypes=None,
-                          clean_added_data=True, by_name=False):
+                          clean_added_data=True, use_saved_aggregation=False):
     """
     Returns the matched dataframe with additional entries of non-matched powerplants
     of a reliable source.
@@ -45,6 +45,7 @@ def extend_by_non_matched(df, extend_by, label, fueltypes=None,
         string is used if the columns of the additional database do not correspond
         to the ones of the dataset
     """
+    extend_by = read_csv_if_string(extend_by)#.set_index('projectID', drop=False)
     extend_by = read_csv_if_string(extend_by).set_index('projectID', drop=False)
 
     included_ids = df.projectID.map(lambda d: d.get(label)).dropna().sum()
@@ -52,12 +53,11 @@ def extend_by_non_matched(df, extend_by, label, fueltypes=None,
 
     extend_by = extend_by.loc[remaining_ids]
 
-    # if by_name:
-    #     extend_by_b = ~extend_by.loc[:, label].isin(df.loc[:,label])
     if fueltypes is not None:
         extend_by = extend_by[extend_by.Fueltype.isin(fueltypes)]
     if clean_added_data:
-        extend_by = clean_single(extend_by)
+        extend_by = clean_single(extend_by, use_saved_aggregation=use_saved_aggregation, 
+                                 dataset_name=label)
     extend_by = extend_by.rename(columns={'Name':label})
     extend_by['projectID'] = extend_by.projectID.map(lambda x: {label : x})
     return df.append(extend_by.loc[:, df.columns], ignore_index=True)

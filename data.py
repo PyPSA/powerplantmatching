@@ -26,6 +26,7 @@ import pandas as pd
 import requests
 import xml.etree.ElementTree as ET
 import re
+from six import iteritems
 import logging
 logger = logging.getLogger(__name__)
 
@@ -37,7 +38,7 @@ from .utils import (parse_Geoposition, _data, _data_in, _data_out, countrycode)
 
 data_config = {}
 
-def OPSD(rawEU=False, rawDE=False):
+def OPSD(rawEU=False, rawDE=False, statusDE=None):
     """
     Return standardized OPSD (Open Power Systems Data) database with target column names and fueltypes.
 
@@ -78,6 +79,8 @@ def OPSD(rawEU=False, rawDE=False):
                    inplace=True)
     opsd_DE['Fueltype'].fillna(opsd_DE['Energy_Source_Level_1'], inplace=True)
     opsd_DE['projectID'] = opsd_DE['Id']
+    if statusDE is not None:
+        opsd_DE = opsd_DE.loc[opsd_DE.Status.isin(statusDE)]
     opsd_DE = opsd_DE.loc[:,target_columns()]
     return (pd.concat([opsd_EU, opsd_DE]).reset_index(drop=True)
             .replace(dict(Fueltype={'Biomass and biogas': 'Bioenergy',
@@ -213,15 +216,23 @@ data_config['Oldenburgdata'] = {'read_function': Oldenburgdata,
                                 'clean_single_kwargs': dict(aggregate_powerplant_units=False)}
 
 
-def ENTSOE_stats(raw=False, year=2014):
+def ENTSOE_stats(raw=False, level=2, **selectors):
     """
     Standardize the entsoe database for statistical use.
     """
-    opsd_aggregated = pd.read_csv(_data_in('aggregated_capacity.csv'), encoding='utf-8', index_col=0)
+    opsd_aggregated = pd.read_csv(_data_in('national_generation_capacity_stacked.csv'), encoding='utf-8', index_col=0)
+
+    selectors.setdefault('year', 2015)
+    selectors.setdefault('source', 'entsoe SO&AF')
+
     if raw:
         return opsd_aggregated
     entsoedata = (opsd_aggregated
-            [lambda df: (df['source'] == 'entsoe') & (df['year'] == year) & df['technology_level_2']]
+            [lambda df: reduce(lambda x, y: x&y,
+                          (df[k] == v
+                           for k, v in iteritems(selectors)
+                           if v is not None),
+                          df['energy_source_level_%d' % level])]
             .assign(country=lambda df: (pd.Series(countrycode(codes=df.country.values,
                                                          target='country_name',
                                                          origin='iso2c'),
@@ -261,7 +272,7 @@ data_config['WRI'] = {'read_function': WRI,
 
 def ESE(update=False, path=None, add_Oldenburgdata=False, raw=False):
     """
-    This database is not given within the repository because of open source rights.
+    This database is not given within the repository because of its restrictive license.
     Just download the database from the link given in the README file
     (last section: Data Sources) and set the arguments of this function to update=True and
     path='path/to/database/projects.xls'. This will integrate the database into your
@@ -280,10 +291,6 @@ def ESE(update=False, path=None, add_Oldenburgdata=False, raw=False):
         raise(NotImplementedError( '''
         This database is not yet in your local repository.
         Just download the database from the link given in the README file
-        (last section: Data Sources, you additionally might have to
-         change the format of the Longitude and 'Commissioning Date'
-         column to number format since there seems to be a problem
-         with the date format)
         and set the arguments of this function to update=True and
         path='path/to/database/projects.xls'. This will integrate the
         database into your local powerplantmatching/data and can then
@@ -312,7 +319,6 @@ def ESE(update=False, path=None, add_Oldenburgdata=False, raw=False):
         # if row[col_date] == 2:
         #     row[col_date] = 3
 
-    # The longitude column has the wrong excel data type set to dates?!
     data = pd.read_excel(book, na_values=u'n/a', engine='xlrd')
     if raw:
         return data
@@ -333,6 +339,7 @@ def ESE(update=False, path=None, add_Oldenburgdata=False, raw=False):
                     target_columns(detailed_columns=True)]
     data = data.reset_index(drop = True)
     data = data.loc[data.Country.isin(europeancountries())]
+    data.projectID = 'ESE' + data.projectID.astype(str)
     data.to_csv(saved_version, index_label='id', encoding='utf-8')
     return data
 
@@ -416,7 +423,13 @@ def ENTSOE(update=False, raw=False, entsoe_token=None):
             return m.group(0) if m else ''
         def attribute(etree_sel):
             return etree_sel.text
-        for i in domains.index:
+
+        entsoe = []
+        for i in domains.index[domains.Country.notnull()]:
+            logger.info("Fetching power plants for domain %s (%s)",
+                        domains.loc[i, 0],
+                        domains.loc[i, 'Country'])
+
             #https://transparency.entsoe.eu/content/static_content/
             #Static%20content/web%20api/Guide.html_generation_domain
             ret = requests.get('https://transparency.entsoe.eu/api',
@@ -437,14 +450,16 @@ def ENTSOE(update=False, raw=False, entsoe_token=None):
             for arg in level2:
                 df[arg] = map(attribute , etree.findall('*/*/%s%s'%(ns, arg)))
             for arg in level3:
-                df[arg] = map(attribute , etree.findall('*/*/*/%s%s'%(ns,arg)))
+                df[arg] = map(attribute , etree.findall('*/*/*/%s%s'%(ns, arg)))
             df['Country'] = domains.loc[i,'Country']
-            entsoe = pd.concat([entsoe,df],ignore_index=True)
+            logger.info("Received data on %d power plants", len(df))
+            entsoe.append(df)
+        entsoe = pd.concat(entsoe, ignore_index=True)
         if raw:
             return entsoe
-        entsoe.columns = ['Name', 'projectID', 'High Volage Limit', 'Fueltype',
+        entsoe.columns = ['Name', 'projectID', 'High Voltage Limit', 'Fueltype',
                           'Capacity', 'Country']
-        entsoe.psrType = entsoe.psrType.map(fdict)
+        entsoe['Fueltype'] = entsoe['Fueltype'].map(fdict)
         entsoe['Name'] = entsoe['Name'].str.title()
         entsoe = entsoe.loc[entsoe.Country.notnull()]
         entsoe = entsoe.loc[~((entsoe.projectID.duplicated(keep=False))&

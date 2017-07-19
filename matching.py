@@ -45,16 +45,19 @@ def best_matches(links):
             .groupby(links.iloc[:, 1], as_index=False, sort=False)
             .apply(lambda x: x.loc[x.scores.idxmax(), labels]))
 
-def compare_two_datasets(datasets, labels, generalize_coal=True):
+def compare_two_datasets(datasets, labels):
     """
-    Duke-based horizontal match of two databases. Returns the matched dataframe including only the
-    matched entries in a multi-indexed pandas.Dataframe. Compares all properties of the
-    given columns ['Name','Fueltype', 'Technology', 'Country', 'Capacity','Geoposition'] in order
-    to determine the same powerplant in different two datasets. The match is in one-to-one mode,
-    that is every entry of the initial databases has maximally one link in order to obtain
-    unique entries in the resulting dataframe.
-    Attention: When abording this command, the duke process will still continue in the background,
-    wait until the process is finished before restarting.
+    Duke-based horizontal match of two databases. Returns the matched
+    dataframe including only the matched entries in a multi-indexed
+    pandas.Dataframe. Compares all properties of the given columns
+    ['Name','Fueltype', 'Technology', 'Country',
+    'Capacity','Geoposition'] in order to determine the same
+    powerplant in different two datasets. The match is in one-to-one
+    mode, that is every entry of the initial databases has maximally
+    one link in order to obtain unique entries in the resulting
+    dataframe.  Attention: When aborting this command, the duke
+    process will still continue in the background, wait until the
+    process is finished before restarting.
 
     Parameters
     ----------
@@ -66,26 +69,26 @@ def compare_two_datasets(datasets, labels, generalize_coal=True):
 
     """
     datasets = list(map(read_csv_if_string, datasets))
-#    if generalize_coal:
-#        datasets = [dataset.replace(['Hard coal', 'Lignite'], 'Coal', regex=True)
-#                    for dataset in datasets]
     links = duke(datasets, labels=labels, singlematch=True)
     matches = best_matches(links)
     return matches
 
 def cross_matches(sets_of_pairs, labels=None):
     """
-    Combines multiple sets of pairs and returns one consistent dataframe. Identifiers of two
-    datasets can appear in one row even though they did not match directly but indirectly
-    through a connecting identifier of another database.
+    Combines multiple sets of pairs and returns one consistent
+    dataframe. Identifiers of two datasets can appear in one row even
+    though they did not match directly but indirectly through a
+    connecting identifier of another database.
 
     Parameters
     ----------
     sets_of_pairs : list
-        list of pd.Dataframe's containing only the matches (without scores), obtained from the
-        linkfile (duke() and best_matches())
+        list of pd.Dataframe's containing only the matches (without
+        scores), obtained from the linkfile (duke() and
+        best_matches())
     labels : list of strings
-        list of names of the databases, used for specifying the order of the output
+        list of names of the databases, used for specifying the order
+        of the output
 
     """
     m_all = sets_of_pairs
@@ -99,26 +102,31 @@ def cross_matches(sets_of_pairs, labels=None):
 
     matches = matches.drop_duplicates().reset_index(drop=True)
     for i in labels:
-        matches = pd.concat([matches.groupby(i, as_index=False, sort=False).\
-                             apply(lambda x: x.loc[x.isnull().sum(axis=1).idxmin()]),\
-                             matches[matches[i].isnull()]]).reset_index(drop=True)
+        matches = pd.concat([
+            matches.groupby(i, as_index=False, sort=False)
+                   .apply(lambda x: x.loc[x.isnull().sum(axis=1).idxmin()]),
+            matches[matches[i].isnull()]
+        ]).reset_index(drop=True)
     return matches.loc[:,labels]
 
 def link_multiple_datasets(datasets, labels):
     """
-    Duke-based horizontal match of multiple databases. Returns the matching
-    indices of the datasets. Compares all properties of the
-    given columns ['Name','Fueltype', 'Technology', 'Country', 'Capacity','Geoposition'] in order
-    to determine the same powerplant in different datasets. The match is in one-to-one mode,
-    that is every entry of the initial databases has maximally one link to the other database.
-    This leads to unique entries in the resulting dataframe.
+    Duke-based horizontal match of multiple databases. Returns the
+    matching indices of the datasets. Compares all properties of the
+    given columns ['Name','Fueltype', 'Technology', 'Country',
+    'Capacity','Geoposition'] in order to determine the same
+    powerplant in different datasets. The match is in one-to-one mode,
+    that is every entry of the initial databases has maximally one
+    link to the other database.  This leads to unique entries in the
+    resulting dataframe.
 
     Parameters
     ----------
     datasets : list of pandas.Dataframe or strings
         dataframes or csv-files to use for the matching
     labels : list of strings
-        Names of the databases in alphabetical order and corresponding order to the datasets
+        Names of the databases in alphabetical order and corresponding
+        order to the datasets
     """
 #    return ArgumentError if labels not in alphabetical order
     datasets = list(map(read_csv_if_string, datasets))
@@ -133,29 +141,35 @@ def link_multiple_datasets(datasets, labels):
 
 def combine_multiple_datasets(datasets, labels):
     """
-    Duke-based horizontal match of multiple databases. Returns the matched dataframe including
-    only the matched entries in a multi-indexed pandas.Dataframe. Compares all properties of the
-    given columns ['Name','Fueltype', 'Technology', 'Country', 'Capacity','Geoposition'] in order
-    to determine the same powerplant in different datasets. The match is in one-to-one mode,
-    that is every entry of the initial databases has maximally one link to the other database.
-    This leads to unique entries in the resulting dataframe.
+    Duke-based horizontal match of multiple databases. Returns the
+    matched dataframe including only the matched entries in a
+    multi-indexed pandas.Dataframe. Compares all properties of the
+    given columns ['Name','Fueltype', 'Technology', 'Country',
+    'Capacity','Geoposition'] in order to determine the same
+    powerplant in different datasets. The match is in one-to-one mode,
+    that is every entry of the initial databases has maximally one
+    link to the other database.  This leads to unique entries in the
+    resulting dataframe.
 
     Parameters
     ----------
     datasets : list of pandas.Dataframe or strings
         dataframes or csv-files to use for the matching
     labels : list of strings
-        Names of the databases in alphabetical order and corresponding order to the datasets
+        Names of the databases in alphabetical order and corresponding
+        order to the datasets
     """
     def combined_dataframe(cross_matches, datasets):
         """
-        Use this function to create a matched dataframe on base of the cross matches
-        and a list of the databases. Always order the database alphabetically.
+        Use this function to create a matched dataframe on base of the
+        cross matches and a list of the databases. Always order the
+        database alphabetically.
 
         Parameters
         ----------
-        cross_matches : pandas.Dataframe of the matching indexes of the databases,
-            created with powerplant_collection.cross_matches()
+        cross_matches : pandas.Dataframe of the matching indexes of
+            the databases, created with
+            powerplant_collection.cross_matches()
         datasets : list of pandas.Dataframes or csv-files in the same
             order as in cross_matches
 
@@ -181,10 +195,11 @@ def reduce_matched_dataframe(df):
         - Most frequent value: Country, Fueltype and Technology
         - Max: YearCommissioned*
 
-    * Two thinkable cases in which it both makes sense to choose the latest year:
-    Case A: Plant has been retrofitted (e.g. 1973,1974,1973,2008) -> Choose 2008.
-    Case B: Some dbs refer to the construction year, others to grid synchronization year.
-        (1973,1974,1973,1972) -> choose 1974.
+    * Two cases in which it both makes sense to choose the latest year:
+    Case A: Plant has been retrofitted (e.g. 1973,1974,1973,2008)
+         -> Choose 2008.
+    Case B: Some dbs refer to the construction year, others to grid
+        synchronization year.  (1973,1974,1973,1972) -> Choose 1974.
 
     Parameters
     ----------
@@ -193,42 +208,43 @@ def reduce_matched_dataframe(df):
         combined_dataframe() or match_multiple_datasets()
     """
 
-    def most_frequent_fueltype(df):
-        if df.isnull().all():
+    def most_frequent_fueltype(s):
+        if s.isnull().all():
             return np.nan
         else:
-            # Priority for Lignite: If any dataset claims the fueltype is Lignite -> accept!
-            if df.isin(['Lignite']).any():
+            # Priority for Lignite: If any dataset claims the fueltype
+            # is Lignite -> accept!
+            if s.isin(['Lignite']).any():
                 return 'Lignite'
             else:
-                values = df.value_counts()
+                values = s.value_counts()
                 if values.idxmax() == 'Hard Coal' and len(values)>1:
                     return values.index[1]
                 else:
                     return values.idxmax()
 
-    def most_frequent(df):
-        if df.isnull().all():
+    def most_frequent(s):
+        if s.isnull().all():
             return np.nan
         else:
-            values = df.value_counts()
+            values = s.value_counts()
             return values.idxmax()
 
-    def concat_strings(df):
-        if df.isnull().all():
+    def concat_strings(s):
+        if s.isnull().all():
             return np.nan
         else:
-            return df[df.notnull()].str.cat(sep = ', ')
+            return s[s.notnull()].str.cat(sep = ', ')
 
-    def optimised_mean(df):
-        if df.notnull().sum()>2:
-            return df[~((df - df.mean()).abs()>df.std())].mean()
-        elif ('CARMA' in df and df.notnull().sum()==2):
-            return df.drop('CARMA').mean()
-        elif ('WRI' in df and df.notnull().sum()==2):
-            return df.drop('WRI').mean()
+    def optimised_mean(s):
+        if s.notnull().sum()>2:
+            return s[~((s - s.mean()).abs()>s.std())].mean()
+        elif ('CARMA' in s and s.notnull().sum()==2):
+            return s.drop('CARMA').mean()
+        elif ('WRI' in s and s.notnull().sum()==2):
+            return s.drop('WRI').mean()
         else:
-            return df.mean()
+            return s.mean()
 
     sdf = pd.DataFrame(df.Name)
     sdf.loc[:, 'Fueltype'] = df.Fueltype.apply(most_frequent_fueltype, axis=1)

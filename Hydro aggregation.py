@@ -7,12 +7,11 @@ Created on Fri Sep 16 10:46:33 2016
 
 import matplotlib
 import pandas as pd
-from powerplantmatching import cleaning, utils, config, data, heuristics
+import powerplantmatching as pm 
 import matplotlib.pyplot as plt
 import countrycode
-from powerplantmatching import powerplant_collection as pc
+
 import numpy as np
-reload(pc)
 
 import xarray as xr
 import scipy as sp, scipy.spatial
@@ -23,10 +22,12 @@ from sklearn import linear_model, datasets
 
 #%% Expand the database with non-matches
 
-matched = pc.Carma_ENTSOE_ESE_GEO_OPSD_OLDENB_WRI_matched_reduced()[lambda df: df.loc[:,["lat", "lon"]].notnull().all(axis=1)]
+matched = pm.collection.Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced(
+            add_Oldenburgdata=True)[lambda df: df.loc[:,["lat", "lon"]
+            ].notnull().all(axis=1)]
 hydro = matched[matched.Fueltype=="Hydro"]
 
-entsoestats = pd.read_excel('StatisticsHydro.xls')
+entsoestats = pd.read_excel('/home/fabian/Desktop/EuropeanPowerGrid/Hydroaggregation/StatisticsHydro.xls')
 entsoestats = entsoestats.iloc[5:,[0,2,3,4,5]]
 entsoestats.set_axis(1,entsoestats.loc[5])
 entsoestats = entsoestats[1:]
@@ -39,24 +40,23 @@ entsoestats = entsoestats.sort_values(by='country')
 entsoestats = entsoestats.set_index('country')
 
 
-
-GEO = data.GEO()
+GEO = pm.data.GEO()
 GEO = GEO[GEO.Fueltype=='Hydro']
-FIAS = pd.concat([cleaning.clean_single(data.FIAS(), aggregate_powerplant_units=False),
-                               data.ESE()]).reset_index(drop=True)
-OPSD = cleaning.clean_single(data.OPSD(),use_saved_aggregation=True)
+ESE = pm.data.ESE(add_Oldenburgdata=True)
+OPSD = pm.data.OPSD()
 
 columns = hydro.columns
-hydro = heuristics.extend_by_non_matched(OPSD , 'OPSD', fueltypes=['Hydro'])
-hydro = cleaning.clean_technology(hydro, generalize_hydros=True)
+matched = pm.heuristics.extend_by_non_matched(hydro, OPSD , 'OPSD', fueltypes=['Hydro'], clean_added_data=True)
+matched = pm.heuristics.extend_by_non_matched(hydro, ESE , 'ESE', fueltypes=['Hydro'], clean_added_data=True)
+
+hydro = pm.cleaning.clean_technology(hydro, generalize_hydros=True)
 
 #%% Whether official or non-official
 
 #hydro = heuristics.extend_by_non_matched(hydro, FIAS, 'FIAS')
-hydro = hydro.drop('ESE_Oldenburg', axis=1).\
+hydro = hydro.drop('ESE', axis=1).\
        replace('energy_storage_exchange, |energy_storage_exchange', '', regex=True)
 hydro.loc[hydro.File=='', 'File']= np.NaN
-
 
 
 #%%
@@ -65,7 +65,7 @@ hydro = hydro.loc[:,columns]
 hydro = hydro.loc[hydro.Capacity.notnull()]
 hydro = hydro.reset_index(drop=True)
 
-hydro = cleaning.clean_technology(hydro, generalize_hydros=True)
+hydro = pm.cleaning.clean_technology(hydro, generalize_hydros=True)
 
 hydrogrouped = hydro.groupby(['Country', 'Technology']).Capacity.sum().unstack()
 
@@ -73,15 +73,14 @@ hydrogrouped = hydro.groupby(['Country', 'Technology']).Capacity.sum().unstack()
 #%% Scale countrywise
 
 
-hydro = heuristics.rescale_capacities_to_country_totals(hydro, 'Hydro')
+hydro = pm.heuristics.rescale_capacities_to_country_totals(hydro, 'Hydro')
 
 
 #%% Parse europe geographic properties
 
 # parse 3-dim goedata from http://www.ngdc.noaa.gov/mgg/global/global.html
 
-
-geodata = xr.open_dataset('ETOPO1_Ice_c_gmt4.grd')
+geodata = xr.open_dataset('/home/fabian/Desktop/EuropeanPowerGrid/Hydroaggregation/ETOPO1_Ice_c_gmt4.grd')
 eu = geodata['z'].sel(y=slice(35, 71), x=slice(-9, 30))
 eu = eu.to_dataframe(name='height')
 eu = pd.DataFrame(eu.height).reset_index()
@@ -101,15 +100,12 @@ euslopes = pd.DataFrame(data=variation, index=eumap.index[2:-2], columns=eumap.c
 eusmeans = pd.DataFrame(data=mean, index=eumap.index[2:-2], columns=eumap.columns[2:-2]).reindex(index=eumap.index, columns=eumap.columns)
 coords = eu.reset_index().loc[:,['x','y']].values
 
-
 s = sp.spatial.cKDTree(coords)
 
 #%% Add geographic properties
 
 spots = eu.loc[s.query(hydro.loc[:,['lon','lat']].values)[1]]
 spots = spots.reset_index(drop=True).loc[:,['x','y']]
-
-
 
 hydro.loc[:,'stdheight']= np.diag(euslopes.loc[spots.x, spots.y])
 hydro.loc[:,'height']= np.diag(eusmeans.loc[spots.x, spots.y])
@@ -120,9 +116,7 @@ print hydro.Technology.value_counts()
 
 #%% Train classification
 
-
 hydro.loc[hydro.Technology=='Run-Of-River', 'Technology']='Ror'
-
 
 
 # Make only classification for run-of-river and reservoir since pumped storage is already covered
@@ -136,7 +130,6 @@ training = trainhydro[trainhydro.loc[:,['height', 'stdheight', 'Capacity', 'Tech
 print trainhydro.Technology.value_counts()
 
 
-
 #%% Fit to database
 hydrofit = hydro.copy()
 relations = hydrogrouped-entsoestats[entsoestats!=0]
@@ -147,11 +140,12 @@ bias = pd.DataFrame(index=relations.index, columns=relations.columns)
 bias.Reservoir = 1.
 bias.Ror = 1.
 
-bias.loc["Austria"]=[1.5,.0]
-bias.loc["Bulgaria"]= [1.5,.0]
+bias.loc["Austria"]=[0,.0]
+bias.loc["Bulgaria"]= [0.,.0]
 bias.loc["Croatia"] = [1.1,0.]
 bias.loc['Czech Republic'] = [1.,1.]
 bias.loc["Denmark"] = [1.,1.]
+#bias.loc["Finland"] = [1.5,.4]
 bias.loc["France"] = [1.5,.4]
 bias.loc["Greece"] = [1.,1.]
 bias.loc["Italy"] = [1.,1.3]
@@ -161,7 +155,6 @@ bias.loc["Portugal"] = [1.,1.3]
 bias.loc['Romania'] = [1.5,.7]
 bias.loc["Spain"] = [1.5,.9]
 bias.loc["Switzerland"] = [.8,1.4]
-
 
 
 
@@ -186,13 +179,11 @@ for c in bias.index:
         None
 
 
-
-columnsnew = list(columns.drop('ESE_and_FIAS')) + ['Scaled Capacity']
-
+columnsnew = list(columns.drop('ESE')) + ['Scaled Capacity']
 hydrofit = hydrofit.loc[:,columnsnew]
-hydrofitgrouped = hydrofit.groupby(['Country', 'Technology'])['Scaled Capacity'].sum().unstack()
-hydrofitgrouped.loc[:,'hydro']=hydrofit.groupby('Country')['Scaled Capacity'].sum()
+hydrofitgrouped = hydrofit.groupby(['Country', 'Technology'])['Capacity'].sum().unstack()
+hydrofitgrouped.loc[:,'hydro']=hydrofit.groupby('Country')['Capacity'].sum()
 relationsfit = hydrofitgrouped-entsoestats[entsoestats!=0]
 print relationsfit
 hydrofit.Technology.replace('Ror', 'Run-Of-River', regex=True, inplace=True)
-hydrofit.to_csv('hydro_aggregation_beta.csv', index_label='id', encoding='utf-8')
+hydrofit.to_csv('data/in/hydro_aggregation_beta.csv', index_label='id', encoding='utf-8')
