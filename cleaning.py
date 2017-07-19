@@ -224,8 +224,10 @@ def aggregate_units(df, use_saved_aggregation=False, dataset_name=None,
             logger.info('Reading saved aggregation groups for dataset: {}'.format(dataset_name))
             df = df.assign(grouped=pd.read_csv(path_name, header=None, index_col=0).values)
         except ValueError:
-            logger.warning("Non-existing saved links for this dataset, continuing by aggregating again")
-            df.drop('grouped', axis=1, inplace=True)
+            logger.warning("Non-existing saved links for dataset '{0}',"+\
+                           "continuing by aggregating again".format(dataset_name))
+            if 'grouped' in df:
+                df.drop('grouped', axis=1, inplace=True)
 
     if 'grouped' not in df:
         duplicates = duke(read_csv_if_string(df))
