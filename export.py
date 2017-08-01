@@ -20,8 +20,8 @@
 import os
 import pandas as pd
 import numpy as np
+import pycountry
 
-from countrycode import countrycode
 from .collection import Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced
 
 def Export_TIMES(df=None, use_scaled_capacity=False):
@@ -33,13 +33,14 @@ def Export_TIMES(df=None, use_scaled_capacity=False):
     df = df.copy()
 
     # replace country names by iso3166-2 codes
-    df.loc[:,'Country'] = countrycode(codes=df.Country, origin='country_name', target='iso2c')
-
+    df.loc[:,'Country'] = df.Country.apply(lambda c: pycountry.countries.get(name=c).alpha2)
 
     # add column with TIMES-specific type. The pattern is as follows:
     # 'ConELC-' + Set + '_' + Fueltype + '-' Technology
     df.loc[:,'Technology'].fillna('', inplace=True)
-    df.insert(10, 'TimesType', np.nan)
+    if 'TimesType' not in df:
+        pos = [i for i,x in enumerate(df.columns) if x == 'Technology'][0]
+        df.insert(pos+1, 'TimesType', np.nan)
     df.loc[:,'TimesType'] = pd.Series('ConELC-' for _ in range(len(df))) +\
           np.where(df.loc[:,'Set'].str.contains('CHP'),'CHP','PP') +\
           '_' + df.loc[:,'Fueltype'].map(fueltype_to_abbrev())
@@ -59,11 +60,15 @@ def Export_TIMES(df=None, use_scaled_capacity=False):
            & (df['Technology'].str.contains('pumped storage', case=False)==False),'TimesType'] += '-STO'
 
     # add column with technical lifetime
-    df.insert(12, 'Life', np.nan)
+    if 'Life' not in df:
+        pos = [i for i,x in enumerate(df.columns) if x == 'YearCommissioned'][0]
+        df.insert(pos+1, 'Life', np.nan)
     df.loc[:,'Life'] = df.TimesType.map(timestype_to_life())
 
     # add column with decommissioning year
-    df.insert(13, 'YearDecommissioned', np.nan)
+    if 'YearDecommissioned' not in df:
+        pos = [i for i,x in enumerate(df.columns) if x == 'Life'][0]
+        df.insert(pos+1, 'YearDecommissioned', np.nan)
     df.loc[:,'YearDecommissioned'] = df.loc[:,'YearCommissioned'] + df.loc[:,'Life']
 
     # Now create new export dataframe with headers
@@ -80,8 +85,8 @@ def Export_TIMES(df=None, use_scaled_capacity=False):
     row = 0
     timestypes = sorted(set(df.TimesType))
     if None in timestypes:
-        raise ValueError("""There are rows without a valid TIMES-Type identifier
-                         in the dataframe. Please check!""")
+        raise ValueError("There are rows without a valid TIMES-Type identifier "\
+                         "in the dataframe. Please check!")
     data_timestypes = df.groupby(df.TimesType)
     cap_column='Scaled Capacity' if use_scaled_capacity else 'Capacity'
     for tt in timestypes:
@@ -100,7 +105,7 @@ def Export_TIMES(df=None, use_scaled_capacity=False):
                 else:
                     df_exp.loc[row,ct] = 0
             df_exp.loc[row,'Pset_Pn'] = tt
-            row = row + 1
+            row += 1
     df_exp.loc[:,'Attribute'] = 'STOCK'
     df_exp.loc[:,'*Unit'] = 'GW'
     df_exp.loc[:,'LimType'] = 'FX'

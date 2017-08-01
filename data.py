@@ -28,6 +28,7 @@ import xml.etree.ElementTree as ET
 import re
 from six import iteritems
 import logging
+import pycountry
 logger = logging.getLogger(__name__)
 
 from .config import europeancountries, target_columns
@@ -655,7 +656,7 @@ def WEPP(raw=False, parseGeoLoc=False):
 data_config['WEPP'] = {'read_function': WEPP}
 
 
-def OPSD_RES(raw=False):
+def OPSD_RES():
     """
     Return standardized OPSD (Open Power Systems Data) renewables (RES)
     database with target column names and fueltypes.
@@ -667,9 +668,16 @@ def OPSD_RES(raw=False):
     def read_opsd_res(country):
         import pandas as pd
         import sqlite3
-
         db = sqlite3.connect(_data_in('renewable_power_plants.sqlite'))
-        if country == 'DE':
+        if country == 'CH':
+            cur = db.execute(
+            "SELECT"
+            "   substr(commissioning_date,1,4), "
+            "   energy_source_level_2, technology, electrical_capacity, lat, lon "
+            "FROM"
+            "   renewable_power_plants_CH "
+            )
+        elif country == 'DE':
             cur = db.execute(
             "SELECT"
             "   substr(commissioning_date,1,4), "
@@ -696,15 +704,24 @@ def OPSD_RES(raw=False):
         df = pd.DataFrame(cur.fetchall(),
                           columns=["YearCommissioned","Fueltype","Technology",
                                    "Capacity","lat","lon"])
-        df.loc[:,'Country'] = countrycode(codes=country, target='country_name', origin='iso2c')
+        df.loc[:,'Country'] = pycountry.countries.get(alpha2=country).name
         return df
 
-    df = pd.concat(read_opsd_res(r) for r in ['DE','DK']).reset_index(drop=True)
+    df = pd.concat((read_opsd_res(r) for r in ['CH', 'DE', 'DK']),
+                   ignore_index=True).reset_index(drop=True)
     df.loc[:,'Country'] = df.Country.str.title()
     df.loc[:,'Set'] = 'PP'
     df.YearCommissioned.replace({'NaT':np.NaN}, inplace=True)
     df.loc[:,'YearCommissioned'] = df.YearCommissioned.astype(np.float)
     df.replace({None:np.nan}, inplace=True)
+    d = {u'Connected unit':'PV',
+         u'Integrated unit':'PV',
+         u'Photovoltaics':'PV',
+         u'Photovoltaics ground':'PV',
+         u'Stand alone unit':'PV',
+         u'Onshore wind energy':'Onshore',
+         u'Offshore wind energy':'Offshore'}
+    df.Technology.replace(d, inplace=True)
     return df
 
 
@@ -715,8 +732,8 @@ def IRENA_stats():
     # Read the raw dataset
     df = pd.read_csv(_data_in('IRENA_CapacityStatistics2017.csv'), encoding='utf-8')
     # "Unpivot"
-    df = pd.melt(df, id_vars=['Indicator', 'Technology', 'Country'],var_name='Year',
-                 value_vars=[unicode(i) for i in range(2000,2017,1)],value_name='Capacity')
+    df = pd.melt(df, id_vars=['Indicator', 'Technology', 'Country'], var_name='Year',
+                 value_vars=[unicode(i) for i in range(2000,2017,1)], value_name='Capacity')
     # Drop empty
     df.dropna(axis=0, subset=['Capacity'], inplace=True)
     # Drop generations
@@ -745,14 +762,11 @@ def IRENA_stats():
          u'Other solid biofuels':'Bioenergy',
          u'Renewable municipal waste':'Bioenergy',
          u'Solar photovoltaic':'Solar'}
-    df['Fueltype'] = df.Technology.map(d)     
+    df.loc[:,'Fueltype'] = df.Technology.map(d)     
     d = {u'Concentrated solar power':'CSP',
          u'Solar photovoltaic':'PV',
          u'Onshore wind energy':'Onshore',
          u'Offshore wind energy':'Offshore'}
     df.Technology.replace(d, inplace=True)
-    df['Set'] = 'PP'
-    return df
-
-
-
+    df.loc[:,'Set'] = 'PP'
+    return df.reset_index(drop=True)

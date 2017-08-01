@@ -21,16 +21,13 @@ def europeancountries():
     """
     Returns a list of countries in Europe
     """
-#    c = ['Austria', 'Belgium', 'Czech Republic', 'Denmark', 'France', 'Germany',
-#         'Ireland', 'Italy', 'Hungary', 'Luxembourg', 'Netherlands', 'Norway', 'Poland',
-#         'Portugal', 'Slovakia', 'Slovenia', 'Spain', 'Sweden', 'Switzerland', 'United Kingdom']
-    c = ['Austria', 'Belgium', 'Bulgaria', 'Croatia', 'Czech Republic',
-            'Denmark', 'Estonia', 'Finland', 'France', 'Germany',
-            'Greece', 'Hungary', 'Ireland', 'Italy', 'Latvia',
-            'Lithuania', 'Luxembourg', 'Netherlands', 'Norway',
-            'Poland', 'Portugal', 'Romania', 'Slovakia', 'Slovenia',
-            'Spain', 'Sweden', 'Switzerland', 'United Kingdom']
+    c = ['Austria', 'Belgium', 'Bulgaria', 'Croatia', 'Czech Republic', 'Denmark',
+         'Estonia', 'Finland', 'France', 'Germany', 'Greece', 'Hungary', 'Ireland',
+         'Italy', 'Latvia', 'Lithuania', 'Luxembourg', 'Netherlands', 'Norway',
+         'Poland', 'Portugal', 'Romania', 'Slovakia', 'Slovenia', 'Spain', 'Sweden',
+         'Switzerland', 'United Kingdom']
     return sorted(c)
+
 
 def target_fueltypes():
     """
@@ -39,14 +36,17 @@ def target_fueltypes():
     return ['Natural Gas', 'Wind', 'Hydro', 'Oil', 'Waste', 'Hard Coal', 'Lignite',
             'Nuclear', 'Other', 'Solar', 'Bioenergy', 'Geothermal']
 
+
 def target_sets():
     return ['PP', 'CHP']
+
 
 def target_technologies():
     return ['CCGT', 'OCGT', 'Steam Turbine', 'Combustion Engine', # Thermal types
             'Run-Of-River', 'Pumped Storage', 'Reservoir', 'Marine', # Hydro types
             'Onshore', 'Offshore', # Wind types
             'PV', 'CSP'] # Solar types
+  
     
 def target_columns(detailed_columns=False):
     """
@@ -60,8 +60,8 @@ def target_columns(detailed_columns=False):
             'projectID']
     else:
         return ['Name', 'Fueltype', 'Technology', 'Set', 'Country',
-            'Capacity', 'YearCommissioned', 'lat', 'lon', 'File',
-            'projectID']
+            'Capacity', 'YearCommissioned', 'lat', 'lon', 'File', 'projectID']
+
 
 def fueltype_to_life():
     """
@@ -71,7 +71,7 @@ def fueltype_to_life():
     data = {'Bioenergy':20,
              'Geothermal':15,
              'Hard Coal':35,
-             'Hydro':75,
+             'Hydro':100,
              'Lignite':35,
              'Natural Gas':25,
              'Nuclear':50,
