@@ -55,11 +55,11 @@ def target_columns(detailed_columns=False):
     of the replacements
     """
     if detailed_columns:
-        return ['Name', 'Fueltype', 'Technology', 'Set', 'Country',
+        return ['Name', 'Set', 'Fueltype', 'Technology', 'Country',
             'Capacity', 'Duration', 'YearCommissioned', 'lat', 'lon', 'File',
             'projectID']
     else:
-        return ['Name', 'Fueltype', 'Technology', 'Set', 'Country',
+        return ['Name',  'Set', 'Fueltype', 'Technology', 'Country',
             'Capacity', 'YearCommissioned', 'lat', 'lon', 'File', 'projectID']
 
 
@@ -70,12 +70,12 @@ def fueltype_to_life():
     """
     data = {'Bioenergy':20,
              'Geothermal':15,
-             'Hard Coal':35,
+             'Hard Coal':45,
              'Hydro':100,
-             'Lignite':35,
-             'Natural Gas':25,
+             'Lignite':45,
+             'Natural Gas':40,
              'Nuclear':50,
-             'Oil':20,
+             'Oil':40,
              'Other':5,
              'Solar':25,
              'Waste':25,
