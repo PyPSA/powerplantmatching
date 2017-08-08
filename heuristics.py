@@ -284,12 +284,16 @@ def derive_vintage_cohorts_from_statistics(df, base_year=2015):
     return dfe[~np.isclose(dfe.Capacity, 0)]
 
 
-
-
-
-
-
-
+def manual_corrections(df):
+    """
+    Here, manual corrections are being processed which are not (yet) solved by the
+    data mending, matching or reducing algorithms.
+    """
+    # 1. German CAES plant Huntorf
+    df.loc[df.OPSD.str.contains('huntorf', case=False).fillna(False), 'Technology'] = 'CAES'
+    # 2. Gross-Net-corrections for nuclear plants in France, value derived from analysis
+    df.loc[(df.Country=='France')&(df.Fueltype=='Nuclear'), 'Capacity'] *= 0.961
+    return df
 
 #add artificial powerplants
 #entsoe = pc.ENTSOE_data()
