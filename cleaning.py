@@ -112,16 +112,15 @@ def gather_set_info(df, search_col=['Name', 'Fueltype']):
            if 'Set' in df
            else pd.Series())
 
-    if 'chp' in df:
-        Set.loc[df['chp'].isin({True, 'yes', 1.0})] = 'CHP'
-
     pattern = '|'.join(['heizkraftwerk', 'hkw', 'chp', 'bhkw', 'cogeneration',
                         'power and heat', 'heat and power'])
     for i in search_col:
         isCHP_b = df[i].dropna().str.contains(pattern, case=False)
         Set.loc[isCHP_b] = 'CHP'
-
-    return df.assign(Set=Set.fillna('PP'))
+        
+    df = df.assign(Set=Set)
+    df.loc[:,'Set'].fillna('PP', inplace=True)
+    return df
 
 
 def clean_technology(df, generalize_hydros=False):
