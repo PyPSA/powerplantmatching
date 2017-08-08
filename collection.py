@@ -20,13 +20,14 @@ from __future__ import print_function
 
 import pandas as pd
 import ast
-
+import logging
+logger = logging.getLogger(__name__)
 from .utils import set_uncommon_fueltypes_to_other, _data_in, _data_out
 from .data import data_config, OPSD, OPSD_RES, WRI, IRENA_stats
 from .cleaning import clean_single
 from .matching import combine_multiple_datasets, reduce_matched_dataframe
 from .heuristics import (extend_by_non_matched, aggregate_RES_by_commyear,
-                         derive_vintage_cohorts_from_statistics)
+                         derive_vintage_cohorts_from_statistics, manual_corrections)
 
 def Collection(datasets, update=False, use_saved_aggregation=False, reduced=True,
                custom_config={}):
@@ -181,28 +182,33 @@ def Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced(update=False, use_saved_a
 def Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced_VRE(update=False,
                                                     use_saved_aggregation=False, base_year=2015):
     # Base dataframe
+    logger.info('Read base dataframe...')
     df = Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced(update=update,
                                                             use_saved_aggregation=use_saved_aggregation)
-    df = df[df.YearCommissioned<=base_year]
     # Drop VRE which are to be replaced
     df = df[~(((df.Fueltype=='Solar')&(df.Technology!='CSP'))|(df.Fueltype=='Wind')|(df.Fueltype=='Bioenergy'))]
+    df = manual_corrections(df)
     cols = df.columns
     # Take CH, DE, DK values from OPSD
+    logger.info('Read OPSD_RES dataframe...')
     vre_CH_DE_DK = OPSD_RES()
-    vre_CH_DE_DK = vre_CH_DE_DK[vre_CH_DE_DK.YearCommissioned<=base_year]
-    vre_CH_DE_DK = aggregate_RES_by_commyear(vre_CH_DE_DK)
-    vre_CH_DE_DK.loc[:,'File'] = 'renewable_power_plants.sqlite'
-    # Take other countries from IRENA stats without DE + DK_Wind+Solar + CH_Bioenergy
+    vre_DK = vre_CH_DE_DK[vre_CH_DE_DK.Country=='Denmark']
+    vre_CH_DE = vre_CH_DE_DK[vre_CH_DE_DK.Country!='Denmark']
+    logger.info('Aggregate CH+DE by commyear')
+    vre_CH_DE = aggregate_RES_by_commyear(vre_CH_DE)
+    vre_CH_DE.loc[:,'File'] = 'renewable_power_plants.sqlite'
+    # Take other countries from IRENA stats without: DE, DK_Wind+Solar+Hydro, CH_Bioenergy
+    logger.info('Read IRENA_stats dataframe...')
     vre = IRENA_stats()
-    vre = vre[vre.Year<=base_year]
     vre = derive_vintage_cohorts_from_statistics(vre, base_year=base_year)
     vre = vre[~(vre.Country=='Germany')]
-    vre = vre[~((vre.Country=='Denmark')&((vre.Fueltype=='Wind')|(vre.Fueltype=='Solar')))]
+    vre = vre[~((vre.Country=='Denmark')&((vre.Fueltype=='Wind')|(vre.Fueltype=='Solar')|(vre.Fueltype=='Hydro')))]
     vre = vre[~((vre.Country=='Switzerland')&(vre.Fueltype=='Bioenergy'))]
     vre = vre[~(vre.Technology=='CSP')] # IRENA's CSP data seems to be outdated
     vre.loc[:,'File'] ='IRENA_CapacityStatistics2017.csv'
     # Concatenate
-    concat = pd.concat([df, vre_CH_DE_DK, vre], ignore_index=True)
+    logger.info('Concatenate...')
+    concat = pd.concat([df, vre_DK, vre_CH_DE, vre], ignore_index=True)
     concat = concat[cols]
     concat.reset_index(drop=True, inplace=True)
     return concat
