@@ -26,11 +26,10 @@ import pandas as pd
 import requests
 import xml.etree.ElementTree as ET
 import re
-from six import iteritems
-import logging
 import pycountry
+import logging
 logger = logging.getLogger(__name__)
-
+from six import iteritems
 from .config import europeancountries, target_columns
 from .cleaning import (gather_fueltype_info, gather_set_info,
                        gather_technology_info, clean_powerplantname,
@@ -210,7 +209,8 @@ def Oldenburgdata():
     """
     oldb = pd.read_csv(_data_in('OldenburgHydro.csv'),
                        encoding='utf-8', index_col='id')
-    oldb.loc[:,'projectID'] = oldb.index # Dirtyfix, since NaNs in projectID cause errors!
+    oldb.loc[:, 'projectID'] = oldb.index # Dirtyfix, since NaNs in projectID cause errors!
+    oldb.loc[:, 'Set'] = 'PP'
     return oldb.loc[:,target_columns()]
 
 data_config['Oldenburgdata'] = {'read_function': Oldenburgdata,
@@ -702,18 +702,19 @@ def OPSD_RES():
             raise NotImplementedError("The country '{0}' is not supported yet.".format(country))
 
         df = pd.DataFrame(cur.fetchall(),
-                          columns=["YearCommissioned","Fueltype","Technology",
-                                   "Capacity","lat","lon"])
-        df.loc[:,'Country'] = pycountry.countries.get(alpha2=country).name
+                          columns=["YearCommissioned", "Fueltype", "Technology",
+                                   "Capacity", "lat", "lon"])
+        df.loc[:, 'Country'] = pycountry.countries.get(alpha2=country).name
         return df
 
-    df = pd.concat((read_opsd_res(r) for r in ['CH', 'DE', 'DK']),
-                   ignore_index=True).reset_index(drop=True)
-    df.loc[:,'Country'] = df.Country.str.title()
-    df.loc[:,'Set'] = 'PP'
-    df.YearCommissioned.replace({'NaT':np.NaN}, inplace=True)
-    df.loc[:,'YearCommissioned'] = df.YearCommissioned.astype(np.float)
-    df.replace({None:np.nan}, inplace=True)
+    df = pd.concat((read_opsd_res(r) for r in ['DE','DK','CH']), ignore_index=True)
+    df.loc[:, 'Country'] = df.Country.str.title()
+    df.loc[:, 'Set'] = 'PP'
+    df = df.replace({'NaT':np.NaN,
+                     None:np.NaN,
+                     '':np.NaN})
+    for col in ['YearCommissioned', 'Capacity', 'lat', 'lon']:
+        df.loc[:, col] = df[col].astype(np.float)        
     d = {u'Connected unit':'PV',
          u'Integrated unit':'PV',
          u'Photovoltaics':'PV',
