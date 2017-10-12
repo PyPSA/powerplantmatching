@@ -24,7 +24,7 @@ plant. Secondly, we provide functions to horizontally merge different
 databases in order to check their consistency and improve the
 reliability.
 
-![Map of power plants in Europe](https://cloud.githubusercontent.com/assets/2552981/20465688/b7b9d2c0-af63-11e6-964e-2f0a19d26f15.png)
+![Map of power plants in Europe](https://user-images.githubusercontent.com/19226431/31497088-1ed25900-af5e-11e7-8da7-9ff76fe18c3e.png)
 
 powerplantmatching was initially developed by the
 [Renewable Energy Group](https://fias.uni-frankfurt.de/physics/schramm/complex-renewable-energy-networks/)
@@ -55,21 +55,25 @@ set combines the data of all the data sources listed in
 [Data-Sources](#Data-Sources) and provides the following information:
 
 - **Power plant name** 		- claim of each database
-- **Fueltype** 			- Hydro, Wind, Solar, Nuclear, Natural Gas, Oil, Coal, Other
-- **Classification**		- Run-of-River, Reservoir, CCGT etc.
+- **Fueltype** 			- {Bioenergy, Geothermal, Hard Coal, Hydro, Lignite, Nuclear, Natural Gas, Oil, Solar, Wind, Other}
+- **Classification**		- {CCGT, OCGT, Steam Turbine, Combustion Engine, Run-Of-River, Pumped Storage, Reservoir}
+- **Set**			- {Power Plant (PP), Combined Heat and Power (CHP)}
 - **Capacity**			- \[MW\]
 - **Geo-position**		- Latitude, Longitude
 - **Country** 			- EU-27 + CH + NO (+ UK) minus Cyprus and Malta
+- **YearCommissioned**		- Commmisioning year of the powerplant
+- **File**			- Source file of the data entry
+- **projectID**			- Identifier of the power plant in the source file
 
 
 The following picture compares the total capacities per fuel type
 between the different data sources and our merged dataset.
 
-![Total capacities per fuel type for the different data sources and the merged dataset.](https://cloud.githubusercontent.com/assets/19226431/20011654/a683952c-a2ac-11e6-8ce8-8e4982fb18d1.jpg)
+![Total capacities per fuel type for the different data sources and the merged dataset.](https://user-images.githubusercontent.com/19226431/31497124-45ea4b10-af5e-11e7-8153-7046f17ca05f.png)
 
-The merged dataset is available in two versions: The [bigger dataset](../master/data/Matched_Carma_Geo_Opsd_Wri.csv)
+The merged dataset is available in two versions: The [bigger dataset](../master/data/out/Matched_CARMA_ENTSOE_GEO_OPSD_WRI.csv)
 links the entries of the matched power plant and lists all the related
-claims by the different data-sources. The [smaller merged dataset](../master/data/Matched_Carma_Geo_Opsd_Wri_reduced.csv) 
+claims by the different data-sources. The [smaller merged dataset](../master/data/out/Matched_CARMA_ENTSOE_GEO_OPSD_WRI_reduced.csv) 
 reduces the former by applying a set of aggregation rules (shown
 below) for deciding the power plant parameters.
 
@@ -79,28 +83,26 @@ below) for deciding the power plant parameters.
 | Fueltype       | Most frequent claimed one                  |
 | Classification | All _different_ Classification in a row    |
 | Country        | Take the uniquely stated country           |
-| Capacity       | Maximum of all claims                      |
-| lat            | Average                                    |
-| lon            | Average                                    |
+| Capacity       | Mean 		                      |
+| lat            | Mean                                       |
+| lon            | Mean                                       |
 | File           | All files in a row                         |
+| projectID	 | Python dictionary referencing all origi-   |
+|		 | nal powerplants that are included   	      |
 
-Note, that for the Capacity we keep the maximum value of different
-claims, since some data sets do not include all units of power plants.
-The claims for the country cannot differ, otherwise the power plants
+Note that the claims for the country cannot differ, otherwise the power plants
 cannot match.
 
-### Modified Data set
-The merged dataset is also available as a further version that uses
-heuristics to fill the gaps.
 
 ![Power plant coverage](https://cloud.githubusercontent.com/assets/19226431/20011650/a654e858-a2ac-11e6-93a2-2ed0e938f642.jpg)
 
-- Unmatched power plants from the GEO data source are added so that the
+The merged dataset is also available as a further version that uses heuristics to fill the gaps.
+
+- Unmatched power plants from the OPSD data source are added so that the
   aggregated capacities per country and fueltype correspond closely to
   the ENTSOe statistics (except for Wind and Solar).
 
-- A learning algorithm fills the information about missing hydro
-  classification (Run-of-River, Pumped Storage and Reservoir).
+- A learning algorithm fills the information about missing hydro classification (Run-of-River, Pumped Storage and Reservoir)
 
 - Additionally, a function that can be activated with a switch is
   provided that scales the hydro power plant capacities in order to
@@ -108,25 +110,25 @@ heuristics to fill the gaps.
 
 The database is available using the python command 
 ```python
-from powerplantmatching import powerplant_collection as pc
-pc.MATCHED_dataset() 
+import powerplantmatching as pm
+pm.collection.MATCHED_dataset() 
 ```
 or 
 ```python
-from powerplantmatching import powerplant_collection as pc
-pc.MATCHED_dataset(rescaled_hydros=True)
+import powerplantmatching as pm
+pm.collection.MATCHED_dataset(rescaled_hydros=True)
 ```
 if you want to scale hydro power plants.
 
 
 ## Module Structure
 
-The package consists of seven modules. For creating a new dataset you
+The package consists of ten modules. For creating a new dataset you
 can make most use of the modules data, clean and match, which provide
 you with function for data supply, vertical cleaning and horizontal
 matching, respectively.
 
-![Modular package structure](https://cloud.githubusercontent.com/assets/19226431/20449087/984dc0c2-ade7-11e6-96e0-f1169c9a7fef.png)
+![Modular package structure](https://user-images.githubusercontent.com/19226431/31513014-2feef76e-af8d-11e7-9b4d-f1be929e2dba.png)
 
 ## Combining Data From Different Sources - Horizontal Matching
 
@@ -193,7 +195,13 @@ for your own reduction.
 
 ## Vertical Cleaning
 
-TODO
+In order to compare and combine information from multiple databases, uni-
+form standards must be guaranteed. That is, the datasets should be based on
+the same set of arguments having consistent formats. With the module cleaning.py you can 
+easily handle data alignment, that is, after renaming the basic columns of
+an unprocessed dataset, one simply has to apply several provided functions.
+Furthermore, you can aggregate power plant units from the same power
+plant together. 
 
 ## Data-Sources: 
 
@@ -210,9 +218,6 @@ TODO
   net and gross values.
 - Add additional information like build year or efficiencies where
   available
-- Aligning closer with the fuel and technology names introduced by the
-  OPSD project (at the moment the dataset is loosely oriented to the
-  conventions of the GEO project)
 
 and most importantly
 
