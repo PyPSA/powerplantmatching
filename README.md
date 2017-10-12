@@ -34,7 +34,8 @@ out simulations for the [CoNDyNet project](http://condynet.de/),
 financed by the
 [German Federal Ministry for Education and Research (BMBF)](https://www.bmbf.de/en/)
 as part of the
-[Stromnetze Research Initiative](http://forschung-stromnetze.info/projekte/grundlagen-und-konzepte-fuer-effiziente-dezentrale-stromnetze/).
+[Stromnetze Research Initiative](http://forschung-stromnetze.info/projekte/grundlagen-und-konzepte-fuer-effiziente-dezentrale-stromnetze/). 
+
 
 
 ## What it can do
@@ -120,6 +121,7 @@ pm.collection.MATCHED_dataset(rescaled_hydros=True)
 ```
 if you want to scale hydro power plants.
 
+See the ![Documentation](https://github.com/FRESNA/powerplantmatching/files/1380529/PowerplantmatchingDoc.pdf) for a more extensive insight.
 
 ## Module Structure
 
@@ -227,7 +229,7 @@ and most importantly
   touch if you are!
 
 
-## Acknowledgements
+## Acknowledgements222
 
 The development of powerplantmatching was helped considerably by
 in-depth discussions and exchanges of ideas and code with
