@@ -1,6 +1,7 @@
 # powerplantmatching
 A toolset for cleaning, standardizing and combining multiple power
-plant databases.
+plant databases. See the ![Documentation](https://github.com/FRESNA/powerplantmatching/files/1380529/PowerplantmatchingDoc.pdf) for a more extensive insight.
+
 
 **WARNING (2017/03/08)**: To prune unvoluntarily introduced non-public
 data (copyrighted data) from our repository we were forced to
@@ -121,7 +122,6 @@ pm.collection.MATCHED_dataset(rescaled_hydros=True)
 ```
 if you want to scale hydro power plants.
 
-See the ![Documentation](https://github.com/FRESNA/powerplantmatching/files/1380529/PowerplantmatchingDoc.pdf) for a more extensive insight.
 
 ## Module Structure
 
@@ -229,7 +229,7 @@ and most importantly
   touch if you are!
 
 
-## Acknowledgements222
+## Acknowledgements
 
 The development of powerplantmatching was helped considerably by
 in-depth discussions and exchanges of ideas and code with
