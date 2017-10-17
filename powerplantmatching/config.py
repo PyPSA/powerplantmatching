@@ -61,7 +61,7 @@ def target_columns(detailed_columns=False):
             'Capacity', 'YearCommissioned', 'lat', 'lon', 'File'
             , 'projectID']
 
-def catching_data_config():
+def additional_data_config():
     """
     reads the ./data/data_config file where additional information about tokens, 
     and paths is stored (e.g entsoe token, path to ESE file)
@@ -74,7 +74,7 @@ def catching_data_config():
     
     returns pandas.Series
     """
-    return pd.read_csv(_data('catching_data_config'), 
+    return pd.read_csv(_data('additional_data_config'), 
                        index_col=0, sep=':', header=None).loc[:,1]
     
     
