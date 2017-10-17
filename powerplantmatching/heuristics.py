@@ -23,7 +23,7 @@ import numpy as np
 
 from .utils import read_csv_if_string
 from .utils import lookup
-from .data import ENTSOE_stats
+from .data import Capacity_stats
 from .cleaning import clean_single
 
 

@@ -20,6 +20,7 @@ Utility functions for checking data completness and supporting other functions
 from __future__ import print_function, absolute_import
 
 import os
+from os.path import dirname
 import pandas as pd
 import six
 if six.PY3:
@@ -29,13 +30,13 @@ else:
 import matplotlib.pyplot as plt
 
 def _data(fn):
-    return os.path.join(os.path.dirname(__file__), 'data', fn)
+    return os.path.join(dirname(dirname(__file__)), 'data', fn)
 
 def _data_in(fn):
-    return os.path.join(os.path.dirname(__file__), 'data', 'in', fn)
+    return os.path.join(dirname(dirname(__file__)), 'data', 'in', fn)
 
 def _data_out(fn):
-    return os.path.join(os.path.dirname(__file__), 'data', 'out', fn)
+    return os.path.join(dirname(dirname(__file__)), 'data', 'out', fn)
 
 def lookup(df, keys=None, by='Country, Fueltype', exclude=None, show_totals=False):
     """

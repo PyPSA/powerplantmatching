@@ -31,7 +31,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 from .cleaning import clean_single
-from .config import europeancountries, target_columns
+from .config import europeancountries, target_columns, catching_data_config
 from .cleaning import (gather_fueltype_info, gather_set_info,
                        gather_technology_info, clean_powerplantname,
                        clean_technology)
@@ -316,8 +316,10 @@ def ESE(update=False, path=None, add_Oldenburgdata=False, raw=False):
         if add_Oldenburgdata:
             ese = ese.append(Oldenburgdata(), ignore_index=True)
         return ese
-    if path is None:
+    if path is None and not os.path.exists(catching_data_config()['ese_path']):
         raise(ValueError('No path defined for update'))
+    if path is None and os.path.exists(catching_data_config()['ese_path']):
+        path=os.path.exists(catching_data_config()['ese_path'])
     if not os.path.exists(path):
         raise(ValueError('The given path does not exist'))
 
@@ -387,6 +389,8 @@ def ENTSOE(update=False, raw=False, entsoe_token=None):
     https://transparency.entsoe.eu/content/static_content/Static%20content/web%20api/Guide.html#_authentication_and_authorisation
     """
     if update or raw:
+        if catching_data_config()['entsoe_token'] is not np.nan:
+            entsoe_token = catching_data_config()['entsoe_token']
         assert entsoe_token is not None, "entsoe_token is missing"
 
         domains = pd.read_csv(_data('in/entsoe-areamap.csv'), sep=';', header=None)

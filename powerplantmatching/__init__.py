@@ -20,4 +20,10 @@ A set of tools for cleaning, standardising and combining multiple
 power plant databases.
 """
 
-from .collection import Collection, MATCHED_dataset
+
+from __future__ import absolute_import
+
+from . import config
+from . import cleaning, collection, data, export, heuristics, matching, utils
+
+import logging
