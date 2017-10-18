@@ -204,16 +204,19 @@ def CARMA(raw=False):
 data_config['CARMA'] = {'read_function': CARMA,
                         'clean_single_kwargs': dict(aggregate_powerplant_units=False)}
 
-def Oldenburgdata():
-    """
-    This data is not yet available.
-    """
-    oldb = pd.read_csv(_data_in('OldenburgHydro.csv'),
-                       encoding='utf-8', index_col='id')
-    return oldb.loc[:,target_columns()]
+def IWPDCY():
+     """
+     This data is not yet available. Was extracted manually from the 'International
+     Water Power & Dam Country Yearbook'. 
+     """
+     IWPDCY = pd.read_csv(_data_in('IWPDCY.csv'),
+                          encoding='utf-8', index_col='id')
+     return IWPDCY.loc[:,target_columns()]
+ 
+data_config['IWPDCY'] = {'read_function': IWPDCY,
+           'clean_single_kwargs': dict(aggregate_powerplant_units=False)}
+ 
 
-data_config['Oldenburgdata'] = {'read_function': Oldenburgdata,
-                                'clean_single_kwargs': dict(aggregate_powerplant_units=False)}
 
 
 def Capacity_stats(raw=False, level=2, **selectors):
@@ -285,7 +288,7 @@ data_config['WRI'] = {'read_function': WRI,
                       'clean_single_kwargs': dict(aggregate_powerplant_units=False)}
 
 
-def ESE(update=False, path=None, add_Oldenburgdata=False, raw=False):
+def ESE(update=False, path=None, add_IWPDCY=False, raw=False):
     """
     This database is not given within the repository because of its restrictive license.
     Just download the database from the link given in the README file
@@ -313,8 +316,8 @@ def ESE(update=False, path=None, add_Oldenburgdata=False, raw=False):
         '''))
     if os.path.exists(saved_version) and (update is False) :
         ese = pd.read_csv(saved_version, index_col='id', encoding='utf-8')
-        if add_Oldenburgdata:
-            ese = ese.append(Oldenburgdata(), ignore_index=True)
+        if add_IWPDCY:
+            ese = ese.append(IWPDCY(), ignore_index=True)
         return ese
     if path is None and not os.path.exists(additional_data_config()['ese_path']):
         raise(ValueError('No path defined for update'))
