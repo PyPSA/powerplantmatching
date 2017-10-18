@@ -52,7 +52,7 @@ as part of the
 ## Installation
 
 1. Copy or clone the repository to your preferred directory 
-2. Install the package via '$pip install -e /path/to/powerplantmatching' 
+2. Install the package via 'pip install -e /path/to/powerplantmatching' 
 
 Optional but recommended:
 
