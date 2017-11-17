@@ -26,7 +26,7 @@ from .config import fueltype_to_life
 from .cleaning import clean_single
 # Logging: General Settings
 import logging
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('__main__')
 
 
 def extend_by_non_matched(df, extend_by, label, fueltypes=None,
@@ -99,43 +99,6 @@ def rescale_capacities_to_country_totals(df, fueltypes):
     return df
 
 
-def add_missing_capacities(df, fueltypes):
-    """
-    Primarily written to add artificial missing wind- and solar capacities to
-    match these to the statistics.
-
-    Parameters
-    ----------
-    df : Pandas.DataFrame
-        Dataframe that should be modified
-    fueltype : str or list of strings
-        fueltype that should be scaled
-    """
-    df = df.copy()
-    if isinstance(fueltypes, str):
-        fueltypes = [fueltypes]
-    stats_df = lookup(df).loc[fueltypes]
-    stats_entsoe = lookup(ENTSOE_stats()).loc[fueltypes]
-    missing = (stats_entsoe - stats_df).fillna(0.)
-    missing[missing<0] = 0
-    for country in missing:
-        for fueltype in fueltypes:
-            if missing.loc[fueltype, country] > 0:
-                row = df.index.size
-                df.loc[row, ['CARMA','ENTSOE','ESE','GEO','OPSD','WEPP','WRI']] = \
-                             'Artificial_' + fueltype + '_' + country
-                df.loc[row, 'Fueltype'] = fueltype
-                df.loc[row, 'Country'] = country
-                df.loc[row, 'Set'] = 'PP'
-                df.loc[row, 'Capacity'] = missing.loc[fueltype,country]
-                #TODO: This section needs to be enhanced, current values based on average construction year.
-                if fueltype == 'Solar':
-                    df.loc[row, 'YearCommissioned'] = 2011
-                if fueltype == 'Wind':
-                    df.loc[row, 'YearCommissioned'] = 2008
-    return df
-
-
 def average_empty_commyears(df):
     """
     Fills the empty commissioning years with averages.
@@ -176,28 +139,6 @@ def aggregate_RES_by_commyear(df, target_fueltypes=None):
            .sum().reset_index().replace({'-': np.NaN})
     df.loc[:, 'Set'] = 'PP'
     return df
-
-
-def aggregate_RES_by_yeardiff(df, target_fueltypes=None):
-    df = df.copy()
-
-    if target_fueltypes is None:
-        target_fueltypes = ['Wind', 'Solar', 'Bioenergy']
-    df = df[df.Fueltype.isin(target_fueltypes)]
-    df.loc[:, 'Addition'] = np.NaN
-
-    for c, df_country in df.groupby(['Country']):
-        for tech, stats in df_country.groupby(['Technology']):
-            if (stats.Year.diff().fillna(1) != 1).any():
-                logger.warn('The year column for country "{0}" and '
-                                 'technology "{1}" is not continuous.'.format(c, tech))
-            stats.loc[:, 'Addition'] = stats.Capacity.diff().fillna(stats.Capacity.iloc[0])
-            df.update(stats)
-
-    df.drop(['Capacity'], axis=1, inplace=True)
-    df = df.rename(columns={'Year': 'YearCommissioned',
-                            'Addition': 'Capacity'})
-    return df.reset_index(drop=True)
 
 
 def derive_vintage_cohorts_from_statistics(df, base_year=2015):
@@ -291,9 +232,43 @@ def manual_corrections(df):
     """
     # 1. German CAES plant Huntorf
     df.loc[df.OPSD.str.contains('huntorf', case=False).fillna(False), 'Technology'] = 'CAES'
-    # 2. Gross-Net-corrections for nuclear plants in France, value derived from analysis
+    # 2. Gross-Net-corrections for nuclear plants in France, value derived from unitwise analysis
     df.loc[(df.Country=='France')&(df.Fueltype=='Nuclear'), 'Capacity'] *= 0.961
     return df
+
+
+def set_denmark_region_id(df):
+    """
+    Used to set the Region column to DKE/DKW (East/West) for electricity models,
+    based on lat,lon-coordinates and a heuristic for unknowns.
+    """
+    if 'Region' not in df:
+        pos = [i for i,x in enumerate(df.columns) if x == 'Country'][0]
+        df.insert(pos+1, 'Region', np.nan)
+    else:
+        df.loc[(df.Country=='Denmark'), 'Region'] = np.nan
+    #TODO: This does not work yet.
+        #import geopandas as gpd
+        #df = gpd.read_file('/tmp/ne_10m_admin_0_countries/')
+        #df = df.query("ISO_A2 != '-99'").set_index('ISO_A2')
+        #Point(9, 52).within(df.loc['DE', 'geometry']) 
+    # Workaround:
+    df.loc[(df.Country=='Denmark')&(df.lon>=10.96), 'Region'] = 'DKE'
+    df.loc[(df.Country=='Denmark')&(df.lon<10.96), 'Region'] = 'DKW'
+    df.loc[df.CARMA.str.contains('Jegerspris', case=False).fillna(False), 'Region'] = 'DKE'
+    df.loc[df.CARMA.str.contains('Jetsmark', case=False).fillna(False), 'Region'] = 'DKW'
+    df.loc[df.CARMA.str.contains('Fellinggard', case=False).fillna(False), 'Region'] = 'DKW'
+    # Copy the remaining ones without Region and handle in copy
+    dk_o = df.loc[df.Region.isnull()].reset_index(drop=True)
+    dk_o.loc[:, 'Capacity'] *= 0.5
+    dk_o.loc[:, 'Region'] = 'DKE'
+    # Handle remaining in df
+    df.loc[df.Region.isnull(), 'Capacity'] *= 0.5
+    df.loc[df.Region.isnull(), 'Region'] = 'DKW'
+    # Concat
+    df = pd.concat([df, dk_o], ignore_index=True)
+    return df
+
 
 #add artificial powerplants
 #entsoe = pc.ENTSOE_data()
