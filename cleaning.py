@@ -216,7 +216,6 @@ def aggregate_units(df, use_saved_aggregation=False, dataset_name=None,
                    'projectID': list(x.projectID)}
         if 'Duration' in x:
             results['Duration'] = (x.Duration*x.Capacity /x.Capacity.sum()).sum()
-
         return pd.Series(results)
 
     path_name = _data_out('aggregation_groups_{}.csv'.format(dataset_name))
@@ -275,9 +274,11 @@ def clean_single(df, aggregate_powerplant_units=True, use_saved_aggregation=Fals
         for dataset identification, choose your own identification in
         case no metadata is passed to the function
     """
+    logger.info("Cleaning plant names in '{}'.".format(dataset_name))
     df = clean_powerplantname(df)
 
     if aggregate_powerplant_units:
+        logger.info("Aggregating block to units in '{}'.".format(dataset_name))
         df = aggregate_units(df, use_saved_aggregation=use_saved_aggregation,
                              dataset_name=dataset_name, detailed_columns=detailed_columns)
     else:
