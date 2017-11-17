@@ -114,10 +114,10 @@ def MATCHED_dataset(aggregated_hydros=True, rescaled_hydros=False,
     matched = extend_by_non_matched(matched, OPSD(), 'OPSD', clean_added_data=True,
                                     use_saved_aggregation=True)
 #    if include_unavailables:
-#        matched = extend_by_non_matched(matched, ESE(), 'ESE', clean_added_data=True, 
+#        matched = extend_by_non_matched(matched, ESE(), 'ESE', clean_added_data=True,
 #                                         use_saved_aggregation=True)
-        
-    matched = extend_by_non_matched(matched, WRI(), 'WRI', 
+
+    matched = extend_by_non_matched(matched, WRI(), 'WRI',
             fueltypes=['Wind'], clean_added_data=True, use_saved_aggregation=True )
 
     if aggregated_hydros:
@@ -190,8 +190,8 @@ def Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced_VRE(update=False,
     df = manual_corrections(df)
     cols = df.columns
     # Take CH, DE, DK values from OPSD
-    logger.info('Read OPSD_RES dataframe...')
-    vre_CH_DE_DK = OPSD_RES()
+    logger.info('Read OPSD_VRE dataframe...')
+    vre_CH_DE_DK = OPSD_VRE()
     vre_DK = vre_CH_DE_DK[vre_CH_DE_DK.Country=='Denmark']
     vre_CH_DE = vre_CH_DE_DK[vre_CH_DE_DK.Country!='Denmark']
     logger.info('Aggregate CH+DE by commyear')
