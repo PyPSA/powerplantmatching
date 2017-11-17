@@ -22,7 +22,7 @@ import matplotlib.patches as mpatches
 from .config import fueltype_to_life, fueltype_to_color
 from .cleaning import clean_single
 from .data import CARMA, ENTSOE, ENTSOE_stats, ESE, GEO, OPSD, WEPP, WRI
-from .collection import (Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced_RES,
+from .collection import (Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced_VRE,
                          Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced,
                          #TODO: Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced_RES,
                          Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced)
@@ -43,7 +43,7 @@ def Plot_bar_comparison_single_matched(df=None, cleaned=True, use_saved_aggregat
     2.) Fueltypes on x-axis and capacity on y-axis, matched database
     """
     if df is None:
-        df = Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced_RES()
+        df = Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced_VRE()
         if df is None:
             raise RuntimeError("The data to be plotted does not yet exist.")
 
@@ -94,12 +94,12 @@ def Plot_bar_comparison_single_matched(df=None, cleaned=True, use_saved_aggregat
 def Plot_hbar_comparison_1dim(by='Country', include_WEPP=True, include_RES=False):
     """
     Plots a horizontal bar chart with capacity on x-axis, country on y-axis.
-    
+
     Parameters
     ----------
     by : string, defines how to group data
         Allowed values: 'Country' or 'Fueltype'
-    
+
     """
     red_w_wepp, red_wo_wepp, wepp, statistics = gather_comparison_data(include_WEPP=include_WEPP,
                                                                        include_RES=include_RES)
@@ -111,7 +111,7 @@ def Plot_hbar_comparison_1dim(by='Country', include_WEPP=True, include_RES=False
         stats = lookup([red_wo_wepp, statistics],
                        keys=['Matched dataset w/o WEPP', 'Statistics OPSD'],
                        by=by)/1000
-        
+
     # Presettings for the plots
     font={#'family' : 'normal',
           #'weight' : 'bold',
@@ -135,7 +135,7 @@ def Plot_bar_comparison_countries_fueltypes(ylabel=None, include_WEPP=True,
     differ by fueltype.
     """
     if ylabel is None: ylabel = 'Capacity [GW]'
-        
+
     red_w_wepp, red_wo_wepp, wepp, statistics = gather_comparison_data(include_WEPP=include_WEPP,
                                                                        include_RES=include_RES)
     countries = set()
@@ -157,7 +157,7 @@ def Plot_bar_comparison_countries_fueltypes(ylabel=None, include_WEPP=True,
           #'weight' : 'bold',
           'size'   : 12}
     plt.rc('font', **font)
-    
+
     # Loop through countries.
     nrows, ncols = gather_nrows_ncols(len(countries))
     i,j = [0, 0]
@@ -197,9 +197,9 @@ def gather_comparison_data(include_WEPP=True, include_RES=False):
         wepp = WEPP()
         #TODO: This hack should be removed, as soon as OPSD releases its 'National Generation Capacity' update
         wepp.query('(YearCommissioned <= 2014) or (YearCommissioned != YearCommissioned)', inplace=True)
-        
+
         if include_RES:
-            red_w_wepp = Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced_RES()
+            red_w_wepp = Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced_VRE()
         else:
             red_w_wepp = Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced()
             red_w_wepp.query(queryexpr, inplace=True)
@@ -222,7 +222,7 @@ def gather_comparison_data(include_WEPP=True, include_RES=False):
     # 4: Statistics
     statistics = ENTSOE_stats()
     statistics.Fueltype.replace({'Mixed fuel types':'Other'}, inplace=True)
-    statistics.query(queryexpr, inplace=True) 
+    statistics.query(queryexpr, inplace=True)
     return red_w_wepp, red_wo_wepp, wepp, statistics
 
 
@@ -234,7 +234,7 @@ def Plot_bar_decomissioning_curves(df=None, ylabel=None, title=None, legend_in_s
     if ylabel is None:
         ylabel = 'Capacity [GW]'
     if df is None:
-        df = Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced_RES()
+        df = Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced_VRE()
         if df is None:
             raise RuntimeError("The data to be plotted does not yet exist.")
     df = df.copy()
@@ -283,7 +283,7 @@ def Plot_bar_decomissioning_curves(df=None, ylabel=None, title=None, legend_in_s
         ax[i,j].grid(color='white', linestyle='dotted')
         ax[i,j].set_title(country)
         ax[i,0].set_ylabel(ylabel)
-        ax[3,j].xaxis.label.set_visible(False)
+        ax[-1,j].xaxis.label.set_visible(False)
         j+=1
     # After the loop, do the rest of the layouting.
     fig.tight_layout()
@@ -313,7 +313,7 @@ def Plot_matchcount_stats(df):
 def gather_nrows_ncols(x):
     """
     Derives [nrows, ncols] based on x plots, so that a subplot looks nicely.
-    
+
     Parameters
     ----------
     x : int, Number of subplots between [0, 42]
@@ -322,7 +322,7 @@ def gather_nrows_ncols(x):
     def calc(n, m):
         while (n*m < x): m += 1
         return n, m
-    
+
     if not isinstance(x, int):
         raise ValueError('An integer needs to be passed to this function.')
     elif x <= 0:
@@ -331,15 +331,15 @@ def gather_nrows_ncols(x):
         raise ValueError('Are you sure that you want to put more than 42 subplots in one diagram?\n'+\
                          'You better don\'t, it looks squeezed. Otherwise adapt the code.')
     k = math.sqrt(x)
-    if k.is_integer(): 
+    if k.is_integer():
         return [int(k), int(k)] #square format
-    else: 
+    else:
         k = int(math.floor(k))
         # Solution 1
         n, m = calc(k, k+1)
         sol1 = n*m
         # Solution 2:
         n, m = calc(k-1, k+1)
-        sol2 = n*m        
+        sol2 = n*m
         if sol2 > sol1: n, m = calc(k, k+1)
         return [n, m]
