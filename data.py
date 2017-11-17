@@ -636,7 +636,7 @@ def WEPP(raw=False, parseGeoLoc=False):
     wepp.loc[wepp.Utype.isin(ocgt_pattern), 'Technology'] = 'OCGT'
     wepp.loc[wepp.Utype.isin(st_pattern), 'Technology'] = 'Steam Turbine'
     wepp.loc[(wepp.Fueltype=='Solar')&(wepp.Utype.isin(st_pattern)), 'Technology'] = 'CSP'
-    wepp.loc[wepp.Utype.isin(ic_pattern), 'Technology'] = 'Combustion Engine'    
+    wepp.loc[wepp.Utype.isin(ic_pattern), 'Technology'] = 'Combustion Engine'
     wepp.loc[wepp.Utype=='WTG', 'Technology'] = 'Onshore'
     wepp.loc[wepp.Utype=='WTG/O', 'Technology'] = 'Offshore'
     # Derive the SET column
@@ -656,9 +656,9 @@ def WEPP(raw=False, parseGeoLoc=False):
 data_config['WEPP'] = {'read_function': WEPP}
 
 
-def OPSD_RES():
+def OPSD_VRE():
     """
-    Return standardized OPSD (Open Power Systems Data) renewables (RES)
+    Return standardized OPSD (Open Power Systems Data) renewables (VRE)
     database with target column names and fueltypes.
 
     This sqlite database is very big and therefore not part of the package.
@@ -705,16 +705,18 @@ def OPSD_RES():
                           columns=["YearCommissioned", "Fueltype", "Technology",
                                    "Capacity", "lat", "lon"])
         df.loc[:, 'Country'] = pycountry.countries.get(alpha2=country).name
+        df.loc[:, 'projectID'] = pd.Series(['OPSD-VRE_{}_{}'.format(country,i) for i in df.index])
         return df
 
     df = pd.concat((read_opsd_res(r) for r in ['DE','DK','CH']), ignore_index=True)
     df.loc[:, 'Country'] = df.Country.str.title()
+    df.loc[:, 'File'] = 'renewable_power_plants.sqlite'
     df.loc[:, 'Set'] = 'PP'
     df = df.replace({'NaT':np.NaN,
                      None:np.NaN,
                      '':np.NaN})
     for col in ['YearCommissioned', 'Capacity', 'lat', 'lon']:
-        df.loc[:, col] = df[col].astype(np.float)        
+        df.loc[:, col] = df[col].astype(np.float)
     d = {u'Connected unit':'PV',
          u'Integrated unit':'PV',
          u'Photovoltaics':'PV',
@@ -763,7 +765,7 @@ def IRENA_stats():
          u'Other solid biofuels':'Bioenergy',
          u'Renewable municipal waste':'Bioenergy',
          u'Solar photovoltaic':'Solar'}
-    df.loc[:,'Fueltype'] = df.Technology.map(d)     
+    df.loc[:,'Fueltype'] = df.Technology.map(d)
     d = {u'Concentrated solar power':'CSP',
          u'Solar photovoltaic':'PV',
          u'Onshore wind energy':'Onshore',
