@@ -104,6 +104,7 @@ def lookup(df, keys=None, by='Country, Fueltype', exclude=None, show_totals=Fals
         else:
             return lookup_single(df).fillna(0.).round(0).astype(int)
 
+
 def plot_fueltype_stats(df):
     stats = lookup(df, by='Fueltype')
     plt.pie(stats, colors=stats.index.to_series().map(tech_colors).tolist(),
@@ -111,13 +112,15 @@ def plot_fueltype_stats(df):
 
 
 def set_uncommon_fueltypes_to_other(df, fueltypes={'Bioenergy','Geothermal','Mixed fuel types','Waste'}):
-    df.loc[df.Fueltype.isin(fueltypes) , 'Fueltype'] = 'Other'
+    df.loc[df.Fueltype.isin(fueltypes), 'Fueltype'] = 'Other'
     return df
+
 
 def read_csv_if_string(data):
     if isinstance(data, six.string_types):
         data = pd.read_csv(data, index_col='id')
     return data
+
 
 def parse_Geoposition(loc, zipcode=None, country=None, return_Country=False):
     """
