@@ -23,7 +23,7 @@ import ast
 import logging
 logger = logging.getLogger(__name__)
 from .utils import set_uncommon_fueltypes_to_other, _data_in, _data_out
-from .data import data_config, OPSD, OPSD_RES, WRI, IRENA_stats
+from .data import data_config, OPSD, OPSD_VRE, WRI, IRENA_stats
 from .cleaning import clean_single
 from .matching import combine_multiple_datasets, reduce_matched_dataframe
 from .heuristics import (extend_by_non_matched, aggregate_RES_by_commyear,

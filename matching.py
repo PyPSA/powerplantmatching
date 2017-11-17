@@ -256,7 +256,7 @@ def reduce_matched_dataframe(df):
     sdf.loc[:, 'lat'] = df.lat.apply(optimised_mean, axis=1)
     sdf.loc[:, 'lon'] = df.lon.apply(optimised_mean, axis=1)
     sdf.loc[:, 'File'] = df.File.apply(concat_strings, axis=1)
-    sdf.loc[:,'projectID'] = df.projectID.apply(lambda x:
+    sdf.loc[:, 'projectID'] = df.projectID.apply(lambda x:
                                 dict(zip(df.columns.levels[1][x.notnull()].values
                                 , x.dropna().values)), axis=1)
     sdf = clean_technology(sdf, generalize_hydros=False)
