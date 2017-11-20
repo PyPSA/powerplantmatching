@@ -34,7 +34,7 @@ from .config import europeancountries, target_columns
 from .cleaning import (gather_fueltype_info, gather_set_info,
                        gather_technology_info, clean_powerplantname,
                        clean_technology)
-from .utils import (parse_Geoposition, _data, _data_in, _data_out, countrycode)
+from .utils import (parse_Geoposition, _data, _data_in, _data_out)
 
 data_config = {}
 
@@ -91,19 +91,19 @@ def OPSD(rawEU=False, rawDE=False, statusDE=None):
                                     'Other bioenergy and renewable waste': 'Bioenergy',
                                     'Other or unspecified energy sources': 'Other',
                                     'Other fossil fuels': 'Other'}))
+            .replace({'Country': {'UK': u'GB','[ \t]+|[ \t]+$.':''}}, regex=True) #UK->GB, strip whitespace
             .assign(Name=lambda df: df.Name.str.title(),
                     Fueltype=lambda df: df.Fueltype.str.title(),
-                    Country=lambda df: (pd.Series(countrycode(codes=df.Country.values,
-                                                         target='country_name',
-                                                         origin='iso2c'),
-                                             index=df.index)
-                                   .str.title()))
+                    Country=lambda df: (pd.Series(df.Country.apply(
+                                        lambda c: pycountry.countries.get(alpha2=c).name),
+                                        index=df.index).str.title()))
             .pipe(gather_technology_info)
             .pipe(gather_set_info)
             .pipe(clean_technology)
             .loc[lambda df: df.Country.isin(europeancountries())])
 
 data_config['OPSD'] = {'read_function': OPSD}
+
 
 def GEO(raw=False):
     """
@@ -234,11 +234,9 @@ def ENTSOE_stats(raw=False, level=2, **selectors):
                            for k, v in iteritems(selectors)
                            if v is not None),
                           df['energy_source_level_%d' % level])]
-            .assign(country=lambda df: (pd.Series(countrycode(codes=df.country.values,
-                                                         target='country_name',
-                                                         origin='iso2c'),
-                                             index=df.index)
-                                   .str.title()))
+            .assign(country=lambda df: (pd.Series(df.country.apply(
+                            lambda c: pycountry.countries.get(alpha2=c).name),
+                            index=df.index).str.title()))
             .loc[lambda df: df.country.isin(europeancountries())]
             .rename(columns={'technology': 'Fueltype'})
             .replace(dict(Fueltype={'Bioenergy and other renewable fuels': 'Bioenergy',
@@ -377,9 +375,7 @@ def ENTSOE(update=False, raw=False, entsoe_token=None):
 
         domains = pd.read_csv(_data('in/entsoe-areamap.csv'), sep=';', header=None)
         def full_country_name(l):
-            return [country.title()
-                    for country in filter(None, countrycode(l, origin='iso2c',
-                                                            target='country_name'))]
+            return [country.title() for country in filter(None, pycountry.countries.get(alpha2=l).name)]
         pattern = '|'.join(('(?i)'+x) for x in europeancountries())
         found = domains.loc[:,1].str.findall(pattern).str.join(sep=', ')
         domains.loc[:, 'Country'] = found

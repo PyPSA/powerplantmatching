@@ -22,10 +22,7 @@ from __future__ import print_function, absolute_import
 import os
 import pandas as pd
 import six
-if six.PY3:
-    from countrycode.countrycode import countrycode
-else:
-    from countrycode import countrycode
+import pycountry
 import matplotlib.pyplot as plt
 
 def _data(fn):
@@ -144,7 +141,7 @@ def parse_Geoposition(loc, zipcode=None, country=None, return_Country=False):
     """
     from geopy.geocoders import GoogleV3 #ArcGIS  Yandex Nominatim
     if loc is not None and loc != float:
-        country = countrycode(codes=[country], origin='country_name', target='iso2c')[0]
+        country = pycountry.countries.get(name=country).alpha2
         #gdata = Nominatim(timeout=10, country_bias=country).geocode(loc)
         #gdata = Yandex(timeout=10, lang='en_US').geocode(loc)
         #gdata = ArcGIS(timeout=10).geocode(loc, exactly_one=True)
