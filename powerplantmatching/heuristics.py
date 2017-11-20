@@ -20,13 +20,13 @@ Functions to modify and adjust power plant datasets
 from __future__ import absolute_import, print_function
 import pandas as pd
 import numpy as np
+from .data import Capacity_stats
 from .utils import (read_csv_if_string, lookup)
-from .data import ENTSOE_stats
 from .config import fueltype_to_life
 from .cleaning import clean_single
 # Logging: General Settings
 import logging
-logger = logging.getLogger('__main__')
+logger = logging.getLogger(__name__)
 
 
 def extend_by_non_matched(df, extend_by, label, fueltypes=None,

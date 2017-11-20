@@ -12,6 +12,9 @@
 
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
+import os 
+import pandas as pd
+from .utils import _data
 """
 This file is used for basic configurations of the datasets, defining the fueltypes,
 the given arguments of each power plant, and the restriction to european countries
@@ -59,8 +62,8 @@ def target_columns(detailed_columns=False):
             'Capacity', 'Duration', 'YearCommissioned', 'lat', 'lon', 'File',
             'projectID']
     else:
-        return ['Name',  'Set', 'Fueltype', 'Technology', 'Country',
-            'Capacity', 'YearCommissioned', 'lat', 'lon', 'File', 'projectID']
+		return ['Name', 'Fueltype', 'Technology', 'Set', 'Country',
+				'Capacity', 'YearCommissioned', 'lat', 'lon', 'File', 'projectID']
 
 
 def fueltype_to_life():
@@ -100,3 +103,20 @@ def fueltype_to_color():
             'Waste':'purple',
             'Wind':'green'}
     return data
+
+
+def additional_data_config():
+    """
+    reads the ./data/data_config file where additional information about tokens, 
+    and paths is stored (e.g entsoe token, path to ESE file)
+    
+    contents should be 
+    
+    entsoe_token : entose security token for the REST API
+    path_to_ese: absolute path to the downloaded ese file, 
+                default 'Downloads/projects.xls'
+    
+    returns pandas.Series
+    """
+    return pd.read_csv(_data('additional_data_config'), 
+                       index_col=0, sep=':', header=None).loc[:,1]

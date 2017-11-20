@@ -30,10 +30,10 @@ import pycountry
 import logging
 logger = logging.getLogger(__name__)
 from six import iteritems
-from .config import europeancountries, target_columns
+from .config import europeancountries, target_columns, additional_data_config
 from .cleaning import (gather_fueltype_info, gather_set_info,
                        gather_technology_info, clean_powerplantname,
-                       clean_technology)
+                       clean_technology, clean_single)
 from .utils import (parse_Geoposition, _data, _data_in, _data_out)
 
 data_config = {}
@@ -203,27 +203,43 @@ def CARMA(raw=False):
 data_config['CARMA'] = {'read_function': CARMA,
                         'clean_single_kwargs': dict(aggregate_powerplant_units=False)}
 
-def Oldenburgdata():
-    """
-    This data is not yet available.
-    """
-    oldb = pd.read_csv(_data_in('OldenburgHydro.csv'),
-                       encoding='utf-8', index_col='id')
-    oldb.loc[:, 'projectID'] = oldb.index # Dirtyfix, since NaNs in projectID cause errors!
-    oldb.loc[:, 'Set'] = 'PP'
-    return oldb.loc[:,target_columns()]
 
-data_config['Oldenburgdata'] = {'read_function': Oldenburgdata,
-                                'clean_single_kwargs': dict(aggregate_powerplant_units=False)}
+def IWPDCY():
+     """
+     This data is not yet available. Was extracted manually from the 'International
+     Water Power & Dam Country Yearbook'. 
+     """
+     IWPDCY = pd.read_csv(_data_in('IWPDCY.csv'),
+                          encoding='utf-8', index_col='id')
+     return IWPDCY.loc[:,target_columns()]
+ 
+data_config['IWPDCY'] = {'read_function': IWPDCY,
+           'clean_single_kwargs': dict(aggregate_powerplant_units=False)}
 
 
-def ENTSOE_stats(raw=False, level=2, **selectors):
+
+def Capacity_stats(raw=False, level=2, **selectors):
     """
     Standardize the entsoe database for statistical use.
+
+    Parameters
+    ----------
+    year : int
+        Year of the data (range usually 2013-2017)
+        (defaults to 2016)
+    source : str
+        Which statistics source from
+        {'entsoe SO&AF', 'entsoe Statistics', 'EUROSTAT', ...}
+        (defaults to 'entsoe SO&AF')
+
+    Returns
+    -------
+    df : pd.DataFrame
+         Capacity statistics per country and fuel-type
     """
     opsd_aggregated = pd.read_csv(_data_in('national_generation_capacity_stacked.csv'), encoding='utf-8', index_col=0)
 
-    selectors.setdefault('year', 2015)
+    selectors.setdefault('year', 2016)
     selectors.setdefault('source', 'entsoe SO&AF')
 
     if raw:
@@ -269,7 +285,7 @@ data_config['WRI'] = {'read_function': WRI,
                       'clean_single_kwargs': dict(aggregate_powerplant_units=False)}
 
 
-def ESE(update=False, path=None, add_Oldenburgdata=False, raw=False):
+def ESE(update=False, path=None, add_IWPDCY=False, raw=False):
     """
     This database is not given within the repository because of its restrictive license.
     Just download the database from the link given in the README file
@@ -297,11 +313,13 @@ def ESE(update=False, path=None, add_Oldenburgdata=False, raw=False):
         '''))
     if os.path.exists(saved_version) and (update is False) :
         ese = pd.read_csv(saved_version, index_col='id', encoding='utf-8')
-        if add_Oldenburgdata:
-            ese = ese.append(Oldenburgdata(), ignore_index=True)
+        if add_IWPDCY:
+            ese = ese.append(IWPDCY(), ignore_index=True)
         return ese
-    if path is None:
+    if path is None and not os.path.exists(additional_data_config()['ese_path']):
         raise(ValueError('No path defined for update'))
+    if path is None and os.path.exists(additional_data_config()['ese_path']):
+        path=os.path.exists(additional_data_config()['ese_path'])
     if not os.path.exists(path):
         raise(ValueError('The given path does not exist'))
 
@@ -368,9 +386,12 @@ def ENTSOE(update=False, raw=False, entsoe_token=None):
 
     Note: For obtaining a security token refer to section 2 of the
     RESTful API documentation of the ENTSOE-E Transparency platform
-    https://transparency.entsoe.eu/content/static_content/Static%20content/web%20api/Guide.html#_authentication_and_authorisation
+    https://transparency.entsoe.eu/content/static_content/Static%20content/
+    web%20api/Guide.html#_authentication_and_authorisation
     """
     if update or raw:
+        if additional_data_config()['entsoe_token'] is not np.nan:
+            entsoe_token = additional_data_config()['entsoe_token']
         assert entsoe_token is not None, "entsoe_token is missing"
 
         domains = pd.read_csv(_data('in/entsoe-areamap.csv'), sep=';', header=None)
