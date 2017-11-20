@@ -57,7 +57,7 @@ def extend_by_non_matched(df, extend_by, label, fueltypes=None,
     if fueltypes is not None:
         extend_by = extend_by[extend_by.Fueltype.isin(fueltypes)]
     if clean_added_data:
-        extend_by = clean_single(extend_by, use_saved_aggregation=use_saved_aggregation, 
+        extend_by = clean_single(extend_by, use_saved_aggregation=use_saved_aggregation,
                                  dataset_name=label)
     extend_by = extend_by.rename(columns={'Name':label})
     extend_by['projectID'] = extend_by.projectID.map(lambda x: {label : x})
@@ -84,7 +84,7 @@ def rescale_capacities_to_country_totals(df, fueltypes):
     if isinstance(fueltypes, str):
         fueltypes = [fueltypes]
     stats_df = lookup(df).loc[fueltypes]
-    stats_entsoe = lookup(ENTSOE_stats()).loc[fueltypes]
+    stats_entsoe = lookup(Capacity_stats()).loc[fueltypes]
     if ((stats_df==0)&(stats_entsoe!=0)).any().any():
         print('Could not scale powerplants in the countries %s because of no occurring \
               power plants in these countries'%\
@@ -251,7 +251,7 @@ def set_denmark_region_id(df):
         #import geopandas as gpd
         #df = gpd.read_file('/tmp/ne_10m_admin_0_countries/')
         #df = df.query("ISO_A2 != '-99'").set_index('ISO_A2')
-        #Point(9, 52).within(df.loc['DE', 'geometry']) 
+        #Point(9, 52).within(df.loc['DE', 'geometry'])
     # Workaround:
     df.loc[(df.Country=='Denmark')&(df.lon>=10.96), 'Region'] = 'DKE'
     df.loc[(df.Country=='Denmark')&(df.lon<10.96), 'Region'] = 'DKW'

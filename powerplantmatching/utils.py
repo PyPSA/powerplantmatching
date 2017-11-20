@@ -38,6 +38,7 @@ def _data_out(fn):
 # Logging: General Settings
 import logging
 logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 logger.setLevel('INFO')
 # Logging: File
 logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")

@@ -33,7 +33,7 @@ from six import iteritems
 from .config import europeancountries, target_columns, additional_data_config
 from .cleaning import (gather_fueltype_info, gather_set_info,
                        gather_technology_info, clean_powerplantname,
-                       clean_technology, clean_single)
+                       clean_technology)
 from .utils import (parse_Geoposition, _data, _data_in, _data_out)
 
 data_config = {}
@@ -207,12 +207,12 @@ data_config['CARMA'] = {'read_function': CARMA,
 def IWPDCY():
      """
      This data is not yet available. Was extracted manually from the 'International
-     Water Power & Dam Country Yearbook'. 
+     Water Power & Dam Country Yearbook'.
      """
      IWPDCY = pd.read_csv(_data_in('IWPDCY.csv'),
                           encoding='utf-8', index_col='id')
      return IWPDCY.loc[:,target_columns()]
- 
+
 data_config['IWPDCY'] = {'read_function': IWPDCY,
            'clean_single_kwargs': dict(aggregate_powerplant_units=False)}
 

@@ -27,12 +27,11 @@ from .data import data_config, OPSD, OPSD_VRE, WRI, IRENA_stats
 from .cleaning import clean_single
 from .matching import combine_multiple_datasets, reduce_matched_dataframe
 from .heuristics import (extend_by_non_matched, aggregate_RES_by_commyear,
-                         derive_vintage_cohorts_from_statistics, manual_corrections,
-						 rescale_capacities_to_country_totals)
+                         derive_vintage_cohorts_from_statistics, manual_corrections)
 
 def Collection(datasets, update=False, use_saved_aggregation=False, reduced=True,
                custom_config={}):
-    if 'ESE' in custom_config:        
+    if 'ESE' in custom_config:
         if custom_config['ESE']['read_kwargs']['add_IWPDCY']:
             datasets = datasets + ['IWPDCY']
     datasets = sorted(datasets)
@@ -92,7 +91,7 @@ def MATCHED_dataset(aggregated_hydros=True, rescaled_hydros=False,
                     subsume_uncommon_fueltypes=False,
                     include_unavailables=False):
     """
-    This returns the actual match between the databases Carma, ENTSOE, ESE, GEO, 
+    This returns the actual match between the databases Carma, ENTSOE, ESE, GEO,
     OPSD and WRI with an additional manipulation on the hydro
     powerplants. The latter were adapted in terms of the power plant
     technology (Run-of-river, Reservoir, Pumped-Storage) and were
