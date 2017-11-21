@@ -121,7 +121,7 @@ def read_csv_if_string(data):
     return data
 
 
-def parse_Geoposition(loc, zipcode=None, country=None, return_Country=False):
+def parse_Geoposition(loc, zipcode='', country=None, return_Country=False):
     """
     Nominatim request for the Geoposition of a specific location in a country.
     Returns a tuples with (latitude, longitude) if the request was sucessful,
@@ -142,20 +142,29 @@ def parse_Geoposition(loc, zipcode=None, country=None, return_Country=False):
 
     """
     from geopy.geocoders import GoogleV3 #ArcGIS  Yandex Nominatim
+    import geopy.exc
     if loc is not None and loc != float:
-        country = pycountry.countries.get(name=country).alpha2
+        try:
+            country = pycountry.countries.get(name=country).alpha2
+        except KeyError:
+            country = ''
+        if zipcode is None: zipcode = ''
         #gdata = Nominatim(timeout=10, country_bias=country).geocode(loc)
         #gdata = Yandex(timeout=10, lang='en_US').geocode(loc)
         #gdata = ArcGIS(timeout=10).geocode(loc, exactly_one=True)
-        gdata = GoogleV3(api_key='AIzaSyCmQqxUg-0ccPbIBzsKyh_gNKBD8yVHOPc',
-                         timeout=10).geocode(query=loc, components={'country':country,
-                                   'postal_code':zipcode}, exactly_one=True)
+        try:
+            gdata = GoogleV3(api_key='AIzaSyCmQqxUg-0ccPbIBzsKyh_gNKBD8yVHOPc',
+                             timeout=10).geocode(query=loc, components={'country':country,
+                                       'postal_code':zipcode}, exactly_one=True)
+        except geopy.exc.GeocoderQueryError as e:
+            gdata = None
+            logger.warn(e)
+
         if gdata != None:
             if return_Country:
                 return gdata.address.split(', ')[-1]
-            lat = gdata.latitude
-            lon = gdata.longitude
-            return (lat, lon)
+            else:
+                return (gdata.latitude, gdata.longitude)
 
 
 tech_colors = pd.Series({"Wind" : "b",

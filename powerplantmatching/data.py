@@ -394,9 +394,19 @@ def ENTSOE(update=False, raw=False, entsoe_token=None):
             entsoe_token = additional_data_config()['entsoe_token']
         assert entsoe_token is not None, "entsoe_token is missing"
 
-        domains = pd.read_csv(_data('in/entsoe-areamap.csv'), sep=';', header=None)
         def full_country_name(l):
-            return [country.title() for country in filter(None, pycountry.countries.get(alpha2=l).name)]
+            import types
+            def pycountry_try(c):
+                try:
+                    return pycountry.countries.get(alpha2=c).name
+                except KeyError:
+                    return None
+            if isinstance(l, types.StringTypes):
+                return filter(None, [pycountry_try(l)])
+            else: # iterable
+                return filter(None, [pycountry_try(country) for country in l])
+
+        domains = pd.read_csv(_data('in/entsoe-areamap.csv'), sep=';', header=None)
         pattern = '|'.join(('(?i)'+x) for x in europeancountries())
         found = domains.loc[:,1].str.findall(pattern).str.join(sep=', ')
         domains.loc[:, 'Country'] = found
@@ -432,10 +442,10 @@ def ENTSOE(update=False, raw=False, entsoe_token=None):
                 'B18': 'Wind Offshore',
                 'B19': 'Wind Onshore',
                 'B20': 'Other'}
+
         level1 = ['registeredResource.name', 'registeredResource.mRID']
         level2 = ['voltage_PowerSystemResources.highVoltageLimit','psrType']
         level3 = ['quantity']
-        entsoe = pd.DataFrame(columns=level1+level2+level3+['Country'])
         def namespace(element):
             m = re.match('\{.*\}', element.tag)
             return m.group(0) if m else ''

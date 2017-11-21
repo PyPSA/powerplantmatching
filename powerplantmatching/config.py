@@ -12,7 +12,6 @@
 
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
-import os 
 import pandas as pd
 from .utils import _data
 """
@@ -49,8 +48,8 @@ def target_technologies():
             'Run-Of-River', 'Pumped Storage', 'Reservoir', 'Marine', # Hydro types
             'Onshore', 'Offshore', # Wind types
             'PV', 'CSP'] # Solar types
-  
-    
+
+
 def target_columns(detailed_columns=False):
     """
     Returns a list of columns to which the powerplants should be standardized. For renaming
@@ -68,7 +67,7 @@ def target_columns(detailed_columns=False):
 
 def fueltype_to_life():
     """
-    Returns an approximation for the technical lifetime of a power plant in 
+    Returns an approximation for the technical lifetime of a power plant in
     years, depending on its fueltype.
     """
     data = {'Bioenergy':20,
@@ -107,16 +106,16 @@ def fueltype_to_color():
 
 def additional_data_config():
     """
-    reads the ./data/data_config file where additional information about tokens, 
+    reads the ./data/data_config file where additional information about tokens,
     and paths is stored (e.g entsoe token, path to ESE file)
-    
-    contents should be 
-    
+
+    contents should be
+
     entsoe_token : entose security token for the REST API
-    path_to_ese: absolute path to the downloaded ese file, 
+    path_to_ese: absolute path to the downloaded ese file,
                 default 'Downloads/projects.xls'
-    
+
     returns pandas.Series
     """
-    return pd.read_csv(_data('additional_data_config'), 
+    return pd.read_csv(_data('additional_data.config'),
                        index_col=0, sep=':', header=None).loc[:,1]
