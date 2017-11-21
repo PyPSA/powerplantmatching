@@ -62,7 +62,7 @@ def OPSD(rawEU=False, rawDE=False, statusDE=None):
                             'Source':'File'},
                    inplace=True)
     opsd_EU.loc[:,'projectID'] = 'OEU' + opsd_EU.index.astype(str)
-    opsd_EU = opsd_EU.loc[:,target_columns()]
+    opsd_EU = opsd_EU.reindex(columns=target_columns())
     opsd_DE.columns = opsd_DE.columns.str.title()
     # If BNetzA-Name is empty replace by company, if this is empty by city.
     opsd_DE.Name_Bnetza.fillna(opsd_DE.Company, inplace=True)
@@ -81,7 +81,7 @@ def OPSD(rawEU=False, rawDE=False, statusDE=None):
     opsd_DE['projectID'] = opsd_DE['Id']
     if statusDE is not None:
         opsd_DE = opsd_DE.loc[opsd_DE.Status.isin(statusDE)]
-    opsd_DE = opsd_DE.loc[:,target_columns()]
+    opsd_DE = opsd_DE.reindex(columns=target_columns())
     return (pd.concat([opsd_EU, opsd_DE]).reset_index(drop=True)
             .replace(dict(Fueltype={'Biomass and biogas': 'Bioenergy',
                                     'Fossil fuels': 'Other',
@@ -151,7 +151,7 @@ def GEO(raw=False):
             .pipe(gather_set_info)
             .pipe(clean_powerplantname)
             .pipe(clean_technology, generalize_hydros=True)
-            .loc[:,target_columns()])
+            .reindex(columns=target_columns()))
 
 data_config['GEO'] = {'read_function': GEO,
                       'clean_single_kwargs': dict(aggregate_powerplant_units=False)}
@@ -198,7 +198,7 @@ def CARMA(raw=False):
             .pipe(gather_set_info)
             .pipe(clean_technology)
             .drop_duplicates()
-            .loc[:, target_columns()])
+            .reindex(columns=target_columns()))
 
 data_config['CARMA'] = {'read_function': CARMA,
                         'clean_single_kwargs': dict(aggregate_powerplant_units=False)}
@@ -211,7 +211,7 @@ def IWPDCY():
      """
      IWPDCY = pd.read_csv(_data_in('IWPDCY.csv'),
                           encoding='utf-8', index_col='id')
-     return IWPDCY.loc[:,target_columns()]
+     return IWPDCY.reindex(columns=target_columns())
 
 data_config['IWPDCY'] = {'read_function': IWPDCY,
            'clean_single_kwargs': dict(aggregate_powerplant_units=False)}
@@ -279,7 +279,7 @@ def WRI(reduced_data=True):
         #wri data consists of ENTSOE data and OPSD, drop those:
         wri = wri.loc[~wri.File.str.contains('ENTSOE', case=False)]
         wri = wri.loc[~wri.Country.isin(['Germany','Poland', 'France', 'Switzerland'])]
-    return wri.loc[:,target_columns()]
+    return wri.reindex(columns=target_columns())
 
 data_config['WRI'] = {'read_function': WRI,
                       'clean_single_kwargs': dict(aggregate_powerplant_units=False)}
@@ -352,8 +352,7 @@ def ESE(update=False, path=None, add_IWPDCY=False, raw=False):
                     YearCommissioned=pd.DatetimeIndex(data['Commissioning Date']).year))
     data.loc[data.Technology.str.contains('Pumped') &
              data.Technology.notnull(), 'Technology'] = 'Pumped storage'
-    data = data.loc[data.Technology == 'Pumped storage',
-                    target_columns(detailed_columns=True)]
+    data = data.loc[data.Technology == 'Pumped storage'].reindex(columns=target_columns(detailed_columns=True))
     data = data.reset_index(drop = True)
     data = data.loc[data.Country.isin(europeancountries())]
     data.projectID = 'ESE' + data.projectID.astype(str)
@@ -494,7 +493,7 @@ def ENTSOE(update=False, raw=False, entsoe_token=None):
                               (~entsoe.Country.isin(europeancountries())))]
         entsoe = entsoe.drop_duplicates('projectID').reset_index(drop=True)
         entsoe['File'] = "https://transparency.entsoe.eu/generation/r2/\ninstalledCapacityPerProductionUnit/show"
-        entsoe = entsoe.loc[:,target_columns()]
+        entsoe = entsoe.reindex(columns=target_columns())
         entsoe = gather_technology_info(entsoe)
         entsoe = gather_set_info(entsoe)
         entsoe = clean_technology(entsoe)
@@ -672,7 +671,7 @@ def WEPP(raw=False, parseGeoLoc=False):
     wepp.loc[wepp.Utype.isin(chp_pattern), 'Set'] = 'CHP'
     wepp.loc[wepp.Set.isnull(), 'Set' ] = 'PP'
     # Drop any columns we do not need
-    wepp = wepp.loc[:,target_columns()]
+    wepp = wepp.reindex(columns=target_columns())
     # Clean up the mess
     wepp.Fueltype = wepp.Fueltype.str.title()
     wepp.reset_index(drop=True)
