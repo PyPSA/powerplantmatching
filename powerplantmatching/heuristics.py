@@ -270,6 +270,35 @@ def set_denmark_region_id(df):
     return df
 
 
+def gross_to_net_factors(opsd_DE_raw, aggfunc='median', return_stats=True):
+    """
+    """
+    df = opsd_DE_raw.copy()
+    df = df[df.capacity_gross_uba.notnull()&df.capacity_net_bnetza.notnull()]
+    df.loc[:, 'ratio'] = df.capacity_net_bnetza / df.capacity_gross_uba
+    df = df[df.ratio<=1.0] # these are obvious data errors
+    df.loc[:,'FuelTech'] = '(' + df.energy_source_level_2 +', ' + df.technology + ')'
+    df = df.groupby('FuelTech').filter(lambda x: len(x)>=10)
+    dfg = df.groupby('FuelTech')
+    if return_stats:
+        stats = pd.DataFrame()
+        for grp, df_grp in dfg:
+            stats.loc[grp, 'n'] = len(df_grp)
+            stats.loc[grp, 'min'] = df_grp.ratio.min()
+            stats.loc[grp, 'median'] = df_grp.ratio.median()
+            stats.loc[grp, 'mean'] = df_grp.ratio.mean()
+            stats.loc[grp, 'max'] = df_grp.ratio.max()
+        cax = df.boxplot(column='ratio', by='FuelTech', rot=90, showmeans=True)
+        cax.set_xticklabels(['%s $n$=%d'%(k, len(v)) for k, v in dfg])
+        fig = cax.get_figure()
+        fig.suptitle('')
+        return stats, fig
+    else:
+        #return correction factor according to fueltype
+        # use aggfunc
+        raise NotImplementedError('ToDo after coordinating with Jonas and Fabian')
+
+
 #add artificial powerplants
 #entsoe = pc.ENTSOE_data()
 #lookup = pc.lookup([entsoe.loc[entsoe.Fueltype=='Hydro'], hydro], keys= ['ENTSOE', 'matched'], by='Country')

@@ -21,7 +21,7 @@ import matplotlib.patches as mpatches
 
 from .config import fueltype_to_life, fueltype_to_color
 from .cleaning import clean_single
-from .data import CARMA, ENTSOE, ENTSOE_stats, ESE, GEO, OPSD, WEPP, WRI
+from .data import CARMA, ENTSOE, Capacity_stats, ESE, GEO, OPSD, WEPP, WRI
 from .collection import (Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced_VRE,
                          Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced,
                          #TODO: Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced_RES,
@@ -220,7 +220,7 @@ def gather_comparison_data(include_WEPP=True, include_RES=False):
     #TODO: This hack should be removed, as soon as OPSD releases its 'National Generation Capacity' update
     red_wo_wepp.query('(YearCommissioned <= 2014) or (YearCommissioned != YearCommissioned)', inplace=True)
     # 4: Statistics
-    statistics = ENTSOE_stats()
+    statistics = Capacity_stats()
     statistics.Fueltype.replace({'Mixed fuel types':'Other'}, inplace=True)
     statistics.query(queryexpr, inplace=True)
     return red_w_wepp, red_wo_wepp, wepp, statistics

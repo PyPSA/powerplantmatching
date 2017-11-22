@@ -152,12 +152,12 @@ def parse_Geoposition(loc, zipcode='', country=None, return_Country=False):
         #gdata = Nominatim(timeout=10, country_bias=country).geocode(loc)
         #gdata = Yandex(timeout=10, lang='en_US').geocode(loc)
         #gdata = ArcGIS(timeout=10).geocode(loc, exactly_one=True)
+        gdata = None
         try:
             gdata = GoogleV3(api_key='AIzaSyCmQqxUg-0ccPbIBzsKyh_gNKBD8yVHOPc',
-                             timeout=10).geocode(query=loc, components={'country':country,
-                                       'postal_code':zipcode}, exactly_one=True)
+                             timeout=10).geocode(query=loc, components={'country':str(country),
+                                       'postal_code':str(zipcode)}, exactly_one=True)
         except geopy.exc.GeocoderQueryError as e:
-            gdata = None
             logger.warn(e)
 
         if gdata != None:

@@ -183,35 +183,41 @@ def Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced(update=False, use_saved_a
 
 #unpublishable
 def Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced_VRE(update=False,
-                                                    use_saved_aggregation=False, base_year=2015):
-    # Base dataframe
-    logger.info('Read base dataframe...')
-    df = Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced(update=update,
-                                                            use_saved_aggregation=use_saved_aggregation)
-    # Drop VRE which are to be replaced
-    df = df[~(((df.Fueltype=='Solar')&(df.Technology!='CSP'))|(df.Fueltype=='Wind')|(df.Fueltype=='Bioenergy'))]
-    df = manual_corrections(df)
-    cols = df.columns
-    # Take CH, DE, DK values from OPSD
-    logger.info('Read OPSD_VRE dataframe...')
-    vre_CH_DE_DK = OPSD_VRE()
-    vre_DK = vre_CH_DE_DK[vre_CH_DE_DK.Country=='Denmark']
-    vre_CH_DE = vre_CH_DE_DK[vre_CH_DE_DK.Country!='Denmark']
-    logger.info('Aggregate CH+DE by commyear')
-    vre_CH_DE = aggregate_RES_by_commyear(vre_CH_DE)
-    vre_CH_DE.loc[:,'File'] = 'renewable_power_plants.sqlite'
-    # Take other countries from IRENA stats without: DE, DK_Wind+Solar+Hydro, CH_Bioenergy
-    logger.info('Read IRENA_stats dataframe...')
-    vre = IRENA_stats()
-    vre = derive_vintage_cohorts_from_statistics(vre, base_year=base_year)
-    vre = vre[~(vre.Country=='Germany')]
-    vre = vre[~((vre.Country=='Denmark')&((vre.Fueltype=='Wind')|(vre.Fueltype=='Solar')|(vre.Fueltype=='Hydro')))]
-    vre = vre[~((vre.Country=='Switzerland')&(vre.Fueltype=='Bioenergy'))]
-    vre = vre[~(vre.Technology=='CSP')] # IRENA's CSP data seems to be outdated
-    vre.loc[:,'File'] ='IRENA_CapacityStatistics2017.csv'
-    # Concatenate
-    logger.info('Concatenate...')
-    concat = pd.concat([df, vre_DK, vre_CH_DE, vre], ignore_index=True)
-    concat = concat[cols]
-    concat.reset_index(drop=True, inplace=True)
+                                use_saved_aggregation=False, base_year=2015, concat_new=False):
+    if concat_new:
+        logger.info('Read base dataframe...')
+        df = Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced(update=update,
+                                                                use_saved_aggregation=use_saved_aggregation)
+        # Drop VRE which are to be replaced
+        df = df[~(((df.Fueltype=='Solar')&(df.Technology!='CSP'))|(df.Fueltype=='Wind')|(df.Fueltype=='Bioenergy'))]
+        df = manual_corrections(df)
+        cols = df.columns
+        # Take CH, DE, DK values from OPSD
+        logger.info('Read OPSD_VRE dataframe...')
+        vre_CH_DE_DK = OPSD_VRE()
+        vre_DK = vre_CH_DE_DK[vre_CH_DE_DK.Country=='Denmark']
+        vre_CH_DE = vre_CH_DE_DK[vre_CH_DE_DK.Country!='Denmark']
+        logger.info('Aggregate CH+DE by commyear')
+        vre_CH_DE = aggregate_RES_by_commyear(vre_CH_DE)
+        vre_CH_DE.loc[:,'File'] = 'renewable_power_plants.sqlite'
+        # Take other countries from IRENA stats without: DE, DK_Wind+Solar+Hydro, CH_Bioenergy
+        logger.info('Read IRENA_stats dataframe...')
+        vre = IRENA_stats()
+        vre = derive_vintage_cohorts_from_statistics(vre, base_year=base_year)
+        vre = vre[~(vre.Country=='Germany')]
+        vre = vre[~((vre.Country=='Denmark')&((vre.Fueltype=='Wind')|(vre.Fueltype=='Solar')|(vre.Fueltype=='Hydro')))]
+        vre = vre[~((vre.Country=='Switzerland')&(vre.Fueltype=='Bioenergy'))]
+        vre = vre[~(vre.Technology=='CSP')] # IRENA's CSP data seems to be outdated
+        vre.loc[:,'File'] ='IRENA_CapacityStatistics2017.csv'
+        # Concatenate
+        logger.info('Concatenate...')
+        concat = pd.concat([df, vre_DK, vre_CH_DE, vre], ignore_index=True)
+        concat = concat[cols]
+        concat.reset_index(drop=True, inplace=True)
+        concat.to_csv(_data_out('Matched_CARMA_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_reduced_vre.csv'),
+                      index_label='id', encoding='utf-8')
+    else:
+        logger.info('Read existing matched_vre dataframe...')
+        concat = pd.read_csv(_data_out('Matched_CARMA_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_reduced_vre.csv'),
+                             index_col=0, encoding='utf-8')
     return concat

@@ -267,6 +267,7 @@ def Capacity_stats(raw=False, level=2, **selectors):
     entsoedata.columns = entsoedata.columns.str.title()
     return entsoedata
 
+
 def WRI(reduced_data=True):
     wri = pd.read_csv(_data_in('WRIdata.csv'),
                       encoding='utf-8', index_col='id')
