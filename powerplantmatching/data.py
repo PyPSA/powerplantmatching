@@ -256,10 +256,11 @@ def Capacity_stats(raw=False, level=2, **selectors):
             .loc[lambda df: df.country.isin(europeancountries())]
             .rename(columns={'technology': 'Fueltype'})
             .replace(dict(Fueltype={'Bioenergy and other renewable fuels': 'Bioenergy',
+                                    'Bioenergy and renewable waste': 'Waste',
                                     'Coal derivatives': 'Hard Coal',
                                     'Differently categorized fossil fuels': 'Other',
+                                    'Differently categorized renewable energy sources': 'Other',
                                     'Hard coal': 'Hard Coal',
-                                    # 'Lignite': 'Lignite',
                                     'Mixed fossil fuels': 'Mixed fuel types',
                                     'Natural gas': 'Natural Gas',
                                     'Other or unspecified energy sources': 'Other',
@@ -681,6 +682,140 @@ def WEPP(raw=False, parseGeoLoc=False):
     return wepp
 
 data_config['WEPP'] = {'read_function': WEPP}
+
+
+def UBA(header=9, skip_footer=26):
+    """
+    Returns the UBA Database.
+    The user has to download the database from:
+        ``https://www.umweltbundesamt.de/dokument/datenbank-kraftwerke-in-deutschland``
+    and has to place it into the ``data/In`` folder.
+
+    Parameters:
+    -----------
+        header : int, Default 9
+            The zero-indexed row in which the column headings are found.
+        skip_footer : int, Default 26
+
+    """
+    filename = 'kraftwerke-de-ab-100-mw.xls'
+    uba = pd.read_excel(_data_in(filename), header=header, skip_footer=skip_footer,
+                        na_values='n.b.')
+    uba = uba.rename(columns={u'Kraftwerksname / Standort': 'Name',
+                              u'Elektrische Bruttoleistung (MW)': 'Capacity',
+                              u'Inbetriebnahme  (ggf. Ertüchtigung)':'YearCommissioned',
+                              u'Primärenergieträger':'Fueltype',
+                              u'Anlagenart':'Technology',
+                              u'Fernwärme-leistung (MW)':'CHP'})
+    uba.loc[:, 'Country'] = 'Germany'
+    uba.loc[:, 'File'] = filename
+    uba.loc[:, 'projectID'] = ['UBA{:03d}'.format(i + header + 2) for i in uba.index]
+    uba.loc[uba.CHP.notnull(), 'Set'] = 'CHP'
+    uba = gather_set_info(uba)
+    uba = clean_powerplantname(uba)
+    uba.Technology = uba.Technology.replace({u'DKW':'Steam Turbine',
+                                             u'DWR':'Pressurized Water Reactor',
+                                             u'G/AK':'Steam Turbine',
+                                             u'GT':'OCGT',
+                                             u'GuD':'CCGT',
+                                             u'GuD / HKW':'CCGT',
+                                             u'HKW':'Steam Turbine',
+                                             u'HKW (DT)':'Steam Turbine',
+                                             u'HKW / GuD':'CCGT',
+                                             u'HKW / SSA':'Steam Turbine',
+                                             u'IKW':'OCGT',
+                                             u'IKW / GuD':'CCGT',
+                                             u'IKW / HKW':'Steam Turbine',
+                                             u'IKW / HKW / GuD':'CCGT',
+                                             u'IKW / SSA':'OCGT',
+                                             u'IKW /GuD':'CCGT',
+                                             u'LWK':'Run-Of-River',
+                                             u'PSW':'Pumped Storage',
+                                             u'SWK':'Reservoir Storage',
+                                             u'SWR':'Boiled Water Reactor'})
+    uba.loc[uba.Fueltype=='Wind (O)', 'Technology'] = 'Offshore'
+    uba.loc[uba.Fueltype=='Wind (L)', 'Technology'] = 'Onshore'
+    uba.loc[uba.Fueltype.str.contains('Wind'), 'Fueltype'] = 'Wind'
+    uba.loc[uba.Fueltype.str.contains('Braunkohle'), 'Fueltype'] = 'Lignite'
+    uba.loc[uba.Fueltype.str.contains('Steinkohle'), 'Fueltype'] = 'Hard Coal'
+    uba.loc[uba.Fueltype.str.contains('Erdgas'), 'Fueltype'] = 'Natural Gas'
+    uba.loc[uba.Fueltype.str.contains('HEL'), 'Fueltype'] = 'Oil'
+    uba.Fueltype = uba.Fueltype.replace({u'Biomasse':'Bioenergy',
+                                         u'Gichtgas':'Other',
+                                         u'HS':'Oil',
+                                         u'Konvertergas':'Other',
+                                         u'Licht':'PV',
+                                         u'Raffineriegas':'Other',
+                                         u'Uran':'Nuclear',
+                                         u'Wasser':'Hydro',
+                                         u'\xd6lr\xfcckstand':'Oil'})
+    uba = uba.reindex(columns=target_columns())
+    # TODO: Rescale to net capacities, e.g.:
+    #uba.Capacity = uba.Capacity.map(lambda x,y,z: x*heuristics.gross_to_net_factors(y,z), ...)
+    return uba
+
+data_config['UBA'] = {'read_function': UBA,
+           'clean_single_kwargs': dict(aggregate_powerplant_units=False)}
+
+
+def BNETZA(header=9, sheet_name='Gesamtkraftwerksliste BNetzA'):
+    """
+    Returns the database put together by Germany's 'Federal Network Agency'
+    (dt. 'Bundesnetzagentur' (BNetzA)). The user has to download the database from:
+        ``https://www.bundesnetzagentur.de/DE/Sachgebiete/ElektrizitaetundGas/Unternehmen_Institutionen/Versorgungssicherheit/Erzeugungskapazitaeten/Kraftwerksliste/kraftwerksliste-node.html``
+    and has to place it into the ``data/In`` folder.
+
+    Parameters:
+    -----------
+        header : int, Default 9
+            The zero-indexed row in which the column headings are found.
+        skip_footer : int, Default 26
+
+    """
+    filename = 'Kraftwerksliste_2017_2.xlsx'
+    bnetza = pd.read_excel(_data_in(filename), header=header, sheet_name=sheet_name)
+    bnetza = bnetza.rename(columns={
+            u'Kraftwerksnummer Bundesnetzagentur': 'projectID',
+            u'Kraftwerksname': 'Name',
+            u'Netto-Nennleistung (elektrische Wirkleistung) in MW': 'Capacity',
+            u'Auswertung\nEnergieträger (Zuordnung zu einem Hauptenergieträger bei Mehreren Energieträgern)':'Fueltype',
+            u'Kraftwerksstatus \n(in Betrieb/\nvorläufig stillgelegt/\nsaisonale Konservierung\nGesetzlich an Stilllegung gehindert/\nSonderfall)':'Status',
+            u'Aufnahme der kommerziellen Stromerzeugung der derzeit in Betrieb befindlichen Erzeugungseinheit\n(Jahr)':'YearCommissioned',
+            u'Wärmeauskopplung (KWK)\n(ja/nein)':'Set'})
+    # If BNetzA-Name is empty replace by company, if this is empty by city.
+    bnetza.Name.fillna(bnetza.Unternehmen, inplace=True)
+    bnetza.Name.fillna(bnetza.loc[:, u'Ort\n(Standort Kraftwerk)'], inplace=True)
+    bnetza = clean_powerplantname(bnetza)
+    # Filter by Status
+    pattern = '|'.join(['.*(?i)betrieb', '.*(?i)gehindert', 'Sicherheitsbereitschaft', 'Sonderfall'])
+    bnetza = bnetza.loc[bnetza.Status.str.title().str.contains(pattern, regex=True, case=False)]
+    # Technologies
+    bnetza.Blockname.replace(
+            to_replace=['.*(GT|gasturbine).*', '.*(DT|HKW|(?i)dampfturbine|(?i)heizkraftwerk).*', '.*GuD.*'],
+            value=['OCGT', 'Steam Turbine', 'CCGT'], regex=True, inplace=True)
+    bnetza = gather_technology_info(bnetza, search_col=['Name', 'Fueltype', 'Blockname'])
+    bnetza.loc[bnetza.Fueltype.str.contains('Onshore', case=False), 'Technology'] = 'Onshore'
+    bnetza.loc[bnetza.Fueltype.str.contains('Offshore', case=False), 'Technology'] = 'Offshore'
+    bnetza.loc[bnetza.Fueltype.str.contains('solare', case=False), 'Technology'] = 'PV'
+    bnetza.loc[bnetza.Fueltype.str.contains('Laufwasser', case=False), 'Technology'] = 'Run-Of-River'
+    bnetza.loc[bnetza.Fueltype.str.contains('Speicherwasser', case=False), 'Technology'] = 'Reservoir'
+    bnetza.loc[bnetza.Fueltype==u'Pumpspeicher', 'Technology'] = 'Pumped Storage'
+    # Fueltypes
+    bnetza.Fueltype.replace(
+            to_replace=['(.*(?i)wasser.*|Pump.*)', 'Erdgas', 'Steinkohle', 'Braunkohle',
+                        'Wind.*', 'Solar.*', '.*(?i)energietr.*ger.*\n.*', 'Kern.*',
+                        'Mineral.l.*', 'Biom.*', '.*(?i)(e|r|n)gas', 'Geoth.*', 'Abfall'],
+            value=['Hydro', 'Natural Gas', 'Hard Coal', 'Lignite', 'Wind', 'Solar', 'Other',
+                   'Nuclear', 'Oil', 'Bioenergy', 'Other', 'Geothermal', 'Waste'],
+            regex=True, inplace=True)
+    # Remaining columns
+    bnetza.loc[:, 'Country'] = 'Germany'
+    bnetza.loc[:, 'File'] = filename
+    bnetza.loc[:, 'Set'] = bnetza.Set.fillna('Nein').str.title().replace({u'Ja':'CHP',u'Nein':'PP'})
+    bnetza = bnetza.reindex(columns=target_columns())
+    return bnetza
+
+data_config['BNETZA'] = {'read_function': BNETZA}
 
 
 def OPSD_VRE():
