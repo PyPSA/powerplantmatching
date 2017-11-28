@@ -57,12 +57,11 @@ def target_columns(detailed_columns=False):
     of the replacements
     """
     if detailed_columns:
-        return ['Name', 'Set', 'Fueltype', 'Technology', 'Country',
-            'Capacity', 'Duration', 'YearCommissioned', 'lat', 'lon', 'File',
-            'projectID']
+        return ['Name', 'Fueltype', 'Technology', 'Set', 'Country', 'Capacity',
+                'Duration', 'YearCommissioned', 'lat', 'lon', 'File', 'projectID']
     else:
-		return ['Name', 'Fueltype', 'Technology', 'Set', 'Country',
-				'Capacity', 'YearCommissioned', 'lat', 'lon', 'File', 'projectID']
+        return ['Name', 'Fueltype', 'Technology', 'Set', 'Country', 'Capacity',
+                'YearCommissioned', 'lat', 'lon', 'File', 'projectID']
 
 
 def fueltype_to_life():
