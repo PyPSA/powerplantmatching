@@ -20,6 +20,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 import os
+from os.path import dirname
 import subprocess as sub
 import shutil
 import tempfile
@@ -70,14 +71,14 @@ def duke(datasets, labels=['one', 'two'], singlematch=False,
     else:
         config = "Comparison.xml"
 
-    duke_bin_dir = os.path.join(os.path.dirname(__file__), "duke_binaries")
+    duke_bin_dir = os.path.join(dirname(dirname(__file__)), "duke_binaries")
     os.environ['CLASSPATH'] = os.pathsep.join([os.path.join(duke_bin_dir, r)
                                                for r in os.listdir(duke_bin_dir)])
 
     tmpdir = tempfile.mkdtemp()
 
     try:
-        shutil.copyfile(os.path.join(os.path.dirname(__file__), "data", config),
+        shutil.copyfile(os.path.join(dirname(dirname(__file__)), "data", config),
                         os.path.join(tmpdir, "config.xml"))
 
         logger.debug("Comparing files: %s", ", ".join(labels))
