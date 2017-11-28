@@ -24,7 +24,7 @@ from .cleaning import clean_single
 from .data import CARMA, ENTSOE, Capacity_stats, ESE, GEO, OPSD, WEPP, WRI
 from .collection import (Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced_VRE,
                          Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced,
-                         #TODO: Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced_RES,
+                         Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced_VRE,
                          Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced)
 from .utils import lookup
 
@@ -48,12 +48,12 @@ def Plot_bar_comparison_single_matched(df=None, cleaned=True, use_saved_aggregat
             raise RuntimeError("The data to be plotted does not yet exist.")
 
     if cleaned:
-        carma = clean_single(CARMA(), use_saved_aggregation=use_saved_aggregation)
-        entsoe = clean_single(ENTSOE(), use_saved_aggregation=use_saved_aggregation)
-        geo = clean_single(GEO(), aggregate_powerplant_units=False)
-        opsd = clean_single(OPSD(), use_saved_aggregation=use_saved_aggregation)
-        wepp = clean_single(WEPP(), use_saved_aggregation=use_saved_aggregation)
-        wri = clean_single(WRI(), use_saved_aggregation=use_saved_aggregation)
+        carma = clean_single(CARMA(), dataset_name='CARMA', use_saved_aggregation=use_saved_aggregation)
+        entsoe = clean_single(ENTSOE(), dataset_name='ENTSOE', use_saved_aggregation=use_saved_aggregation)
+        geo = clean_single(GEO(), dataset_name='GEO', aggregate_powerplant_units=False)
+        opsd = clean_single(OPSD(), dataset_name='OPSD', use_saved_aggregation=use_saved_aggregation)
+        wepp = clean_single(WEPP(), dataset_name='WEPP', use_saved_aggregation=use_saved_aggregation)
+        wri = clean_single(WRI(), dataset_name='WRI', use_saved_aggregation=use_saved_aggregation)
     else:
         carma = CARMA()
         entsoe = ENTSOE()
@@ -70,10 +70,8 @@ def Plot_bar_comparison_single_matched(df=None, cleaned=True, use_saved_aggregat
           #'weight' : 'bold',
           'size'   : 24}
     plt.rc('font', **font)
-    # Create figure with two subplots
     fig, ax = plt.subplots(nrows=1, ncols=2, sharex=False, sharey=True, figsize = (25,13))
-    # 1st Plot with single datasets on the left side. The df.plot() function returns a
-    #     matplotlib.axes.AxesSubplot object. You can set the labels on that object.
+    # 1st Plot with single datasets on the left side.
     stats.plot.bar(ax=ax[0], stacked=False, legend=True, colormap='Accent')
     ax[0].set_ylabel('Installed Capacity [GW]')
     ax[0].set_title('Capacities of Single DBs')
@@ -91,7 +89,7 @@ def Plot_bar_comparison_single_matched(df=None, cleaned=True, use_saved_aggregat
     return
 
 
-def Plot_hbar_comparison_1dim(by='Country', include_WEPP=True, include_RES=False):
+def Plot_hbar_comparison_1dim(by='Country', include_WEPP=True, include_VRE=False, year=2015):
     """
     Plots a horizontal bar chart with capacity on x-axis, country on y-axis.
 
@@ -102,7 +100,8 @@ def Plot_hbar_comparison_1dim(by='Country', include_WEPP=True, include_RES=False
 
     """
     red_w_wepp, red_wo_wepp, wepp, statistics = gather_comparison_data(include_WEPP=include_WEPP,
-                                                                       include_RES=include_RES)
+                                                                       include_VRE=include_VRE,
+                                                                       year=year)
     if include_WEPP:
         stats = lookup([red_w_wepp, red_wo_wepp, wepp, statistics],
                        keys=['Matched dataset w/ WEPP', 'Matched dataset w/o WEPP',
@@ -129,7 +128,7 @@ def Plot_hbar_comparison_1dim(by='Country', include_WEPP=True, include_RES=False
 
 
 def Plot_bar_comparison_countries_fueltypes(ylabel=None, include_WEPP=True,
-        include_RES=False, show_coverage=True, show_legend=True):
+        include_VRE=False, show_coverage=True, legend_in_subplots=False, year=2015):
     """
     Plots per country an analysis, how the matched dataset and the statistics
     differ by fueltype.
@@ -137,7 +136,8 @@ def Plot_bar_comparison_countries_fueltypes(ylabel=None, include_WEPP=True,
     if ylabel is None: ylabel = 'Capacity [GW]'
 
     red_w_wepp, red_wo_wepp, wepp, statistics = gather_comparison_data(include_WEPP=include_WEPP,
-                                                                       include_RES=include_RES)
+                                                                       include_VRE=include_VRE,
+                                                                       year=year)
     countries = set()
     if include_WEPP:
         stats = lookup([red_w_wepp, red_wo_wepp, wepp, statistics],
@@ -161,6 +161,7 @@ def Plot_bar_comparison_countries_fueltypes(ylabel=None, include_WEPP=True,
     # Loop through countries.
     nrows, ncols = gather_nrows_ncols(len(countries))
     i,j = [0, 0]
+    labels_mpatches = collections.OrderedDict()
     fig, ax = plt.subplots(nrows=nrows, ncols=ncols, sharex=True, sharey=False, figsize=(32,18))
     for country in sorted(countries):
         if j==ncols:
@@ -175,50 +176,57 @@ def Plot_bar_comparison_countries_fueltypes(ylabel=None, include_WEPP=True,
             cov = 1 - ctry.Delta_squared.sum()/((ctry.iloc[:,1]**2).sum())
             ax[i,j].text(0.0, ax[i,j].get_ylim()[1]*0.95, u'Coverage = '+unicode(round(cov, 3)),
                          ha='left', va='top')
-        if show_legend:
+        # Pass the legend information into the Ordered Dict
+        if not legend_in_subplots:
+            stats_handle, stats_labels = ax[i,j].get_legend_handles_labels()
+            for u, v in enumerate(stats_labels):
+                if v not in labels_mpatches:
+                    labels_mpatches[v] = mpatches.Patch(color=stats_handle[u].patches[0].get_facecolor(),
+                                                        label=v)
+        else:
             ax[i,j].legend(fontsize=9, loc='best')
         ax[i,j].set_facecolor('#d9d9d9')
         ax[i,j].set_axisbelow(True)
         ax[i,j].grid(color='white', linestyle='dotted')
         ax[i,j].set_title(country)
         ax[i,0].set_ylabel(ylabel)
-        ax[3,j].xaxis.label.set_visible(False)
+        ax[-1,j].xaxis.label.set_visible(False)
         j+=1
-    ax[0,0].legend(fontsize=9, loc='best')
     # After the loop, do the rest of the layouting.
     fig.tight_layout()
+    if not legend_in_subplots:
+        fig.subplots_adjust(bottom=0.08)
+        labels_mpatches = collections.OrderedDict(sorted(labels_mpatches.items()))
+        fig.legend(labels_mpatches.values(), labels_mpatches.keys(),
+                   loc=8, ncol=len(labels_mpatches), facecolor='#d9d9d9')
     return
 
 
-def gather_comparison_data(include_WEPP=True, include_RES=False):
-    queryexpr = 'Fueltype != "Solar" and Fueltype != "Wind" and Fueltype != "Geothermal"'
+def gather_comparison_data(include_WEPP=True, include_VRE=False, **kwargs):
+    yr = kwargs.get('year', 2016)
+    queryexpr = kwargs.get('queryexpr', 'Fueltype != "Solar" and Fueltype != "Wind" and Fueltype != "Geothermal"')
     # 1+2: WEPP itself + Reduced w/ WEPP
     if include_WEPP:
         wepp = WEPP()
-        #TODO: This hack should be removed, as soon as OPSD releases its 'National Generation Capacity' update
-        wepp.query('(YearCommissioned <= 2014) or (YearCommissioned != YearCommissioned)', inplace=True)
+        wepp.query('(YearCommissioned <= {:04d}) or (YearCommissioned != YearCommissioned)'.format(yr), inplace=True)
 
-        if include_RES:
+        if include_VRE:
             red_w_wepp = Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced_VRE()
         else:
             red_w_wepp = Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced()
             red_w_wepp.query(queryexpr, inplace=True)
             wepp.query(queryexpr, inplace=True)
-        #TODO: This hack should be removed, as soon as OPSD releases its 'National Generation Capacity' update
-        red_w_wepp.query('(YearCommissioned <= 2014) or (YearCommissioned != YearCommissioned)', inplace=True)
+        red_w_wepp.query('(YearCommissioned <= {:04d}) or (YearCommissioned != YearCommissioned)'.format(yr), inplace=True)
     else:
         wepp = None
         red_w_wepp = None
     # 3: Reduced w/o WEPP
-    if include_RES:
-        #red_wo_wepp = Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced_RES()
-        #TODO: The aforementioned one should be used, the lower is just a workaround.
-        red_wo_wepp = Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced()
+    if include_VRE:
+        red_wo_wepp = Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced_VRE()
     else:
         red_wo_wepp = Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced()
         red_wo_wepp.query(queryexpr, inplace=True)
-    #TODO: This hack should be removed, as soon as OPSD releases its 'National Generation Capacity' update
-    red_wo_wepp.query('(YearCommissioned <= 2014) or (YearCommissioned != YearCommissioned)', inplace=True)
+    red_wo_wepp.query('(YearCommissioned <= {:04d}) or (YearCommissioned != YearCommissioned)'.format(yr), inplace=True)
     # 4: Statistics
     statistics = Capacity_stats()
     statistics.Fueltype.replace({'Mixed fuel types':'Other'}, inplace=True)
@@ -293,20 +301,18 @@ def Plot_bar_decomissioning_curves(df=None, ylabel=None, title=None, legend_in_s
     if not legend_in_subplots:
         fig.subplots_adjust(bottom=0.08)
         labels_mpatches = collections.OrderedDict(sorted(labels_mpatches.items()))
-        fig.legend(handles=labels_mpatches.values(),labels=labels_mpatches.keys(),
+        fig.legend(labels_mpatches.values(), labels_mpatches.keys(),
                    loc=8, ncol=len(labels_mpatches), facecolor='#d9d9d9')
     return
 
 
 def Plot_matchcount_stats(df):
     """
-    Plots the number of matches across all databases
+    Plots the number of matches against the number of involved databases, across all databases.
     """
-    df = df.copy()
-    df = df.iloc[:,0:7]
+    df = df.copy().iloc[:,0:7]
     df.loc[:,'MatchCount'] = df.notnull().sum(axis=1)
-    stats = df.groupby(['MatchCount']).size()
-    stats.plot.bar()
+    df.groupby(['MatchCount']).size().plot.bar()
     return
 
 
