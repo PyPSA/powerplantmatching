@@ -30,7 +30,6 @@ from .duke import duke
 from .utils import (_data_out)
 
 
-
 def clean_powerplantname(df):
     """
     Cleans the column "Name" of the database by deleting very frequent
@@ -117,7 +116,7 @@ def gather_set_info(df, search_col=['Name', 'Fueltype']):
     for i in search_col:
         isCHP_b = df[i].dropna().str.contains(pattern, case=False)
         Set.loc[isCHP_b] = 'CHP'
-        
+
     df = df.assign(Set=Set)
     df.loc[:,'Set'].fillna('PP', inplace=True)
     return df
@@ -222,7 +221,7 @@ def aggregate_units(df, use_saved_aggregation=False, dataset_name=None,
     if use_saved_aggregation:
         try:
             logger.info('Reading saved aggregation groups for dataset: {}'.format(dataset_name))
-            groups = pd.read_csv(path_name, header=None, index_col=0).loc[df.index]
+            groups = pd.read_csv(path_name, header=None, index_col=0).reindex(index=df.index)
             df = df.assign(grouped=groups.values)
         except ValueError:
             logger.warning("Non-existing saved links for dataset '{0}',"+\
@@ -244,6 +243,7 @@ def aggregate_units(df, use_saved_aggregation=False, dataset_name=None,
     df.reset_index(drop=True, inplace=True)
     df = df.loc[:, target_columns(detailed_columns=detailed_columns)]
     return df
+
 
 def clean_single(df, aggregate_powerplant_units=True, use_saved_aggregation=False,
                  dataset_name=None, detailed_columns=False):
@@ -270,10 +270,13 @@ def clean_single(df, aggregate_powerplant_units=True, use_saved_aggregation=Fals
         aggregation algorithm again
 
     dataset_name : str
-        Only sensible if aggregate_units is set to True.  custom name
+        Only sensible if ``aggregate_units`` is set to True.  custom name
         for dataset identification, choose your own identification in
         case no metadata is passed to the function
     """
+    if aggregate_powerplant_units and dataset_name is None:
+        raise ValueError('``aggregate_powerplant_units`` is True but no ``dataset_name`` was given!')
+
     logger.info("Cleaning plant names in '{}'.".format(dataset_name))
     df = clean_powerplantname(df)
 
