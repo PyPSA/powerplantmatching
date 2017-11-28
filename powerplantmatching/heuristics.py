@@ -123,9 +123,9 @@ def average_empty_commyears(df):
     return df
 
 
-def aggregate_RES_by_commyear(df, target_fueltypes=None):
+def aggregate_VRE_by_commyear(df, target_fueltypes=None):
     """
-    Aggregates the vast number of RES (e.g. vom data.OPSD-RES()) units to one
+    Aggregates the vast number of VRE (e.g. vom data.OPSD_VRE()) units to one
     specific (Fueltype + Technology) cohorte per commissioning year.
     """
     df = df.copy()

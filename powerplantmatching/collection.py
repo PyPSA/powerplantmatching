@@ -26,7 +26,7 @@ from .utils import set_uncommon_fueltypes_to_other, _data_in, _data_out
 from .data import data_config, OPSD, OPSD_VRE, WRI, IRENA_stats
 from .cleaning import clean_single
 from .matching import combine_multiple_datasets, reduce_matched_dataframe
-from .heuristics import (extend_by_non_matched, aggregate_RES_by_commyear,
+from .heuristics import (extend_by_non_matched, aggregate_VRE_by_commyear,
                          derive_vintage_cohorts_from_statistics, manual_corrections)
 
 def Collection(datasets, update=False, use_saved_aggregation=False, reduced=True,
@@ -207,7 +207,7 @@ def Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced_VRE(update=False,
         vre_DK = vre_CH_DE_DK[vre_CH_DE_DK.Country=='Denmark']
         vre_CH_DE = vre_CH_DE_DK[vre_CH_DE_DK.Country!='Denmark']
         logger.info('Aggregate CH+DE by commyear')
-        vre_CH_DE = aggregate_RES_by_commyear(vre_CH_DE)
+        vre_CH_DE = aggregate_VRE_by_commyear(vre_CH_DE)
         vre_CH_DE.loc[:,'File'] = 'renewable_power_plants.sqlite'
         # Take other countries from IRENA stats without: DE, DK_Wind+Solar+Hydro, CH_Bioenergy
         logger.info('Read IRENA_stats dataframe...')
