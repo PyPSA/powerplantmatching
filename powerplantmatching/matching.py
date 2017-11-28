@@ -128,7 +128,6 @@ def link_multiple_datasets(datasets, labels):
         Names of the databases in alphabetical order and corresponding
         order to the datasets
     """
-#    return ArgumentError if labels not in alphabetical order
     datasets = list(map(read_csv_if_string, datasets))
     combinations = list(itertools.combinations(range(len(labels)), 2))
     all_matches = []
@@ -191,9 +190,10 @@ def reduce_matched_dataframe(df):
     """
     Returns a new reduced dataframe with all names of the powerplants, according
     to the following logic:
-        - Averages: Capacity, longitude and latitude
-        - Most frequent value: Country, Fueltype and Technology
-        - Max: YearCommissioned*
+        - Averages:             longitude and latitude
+        - Most frequent value:  Country, Fueltype and Technology
+        - Median:               Capacity,
+        - Max:                  YearCommissioned*
 
     * Two cases in which it both makes sense to choose the latest year:
     Case A: Plant has been retrofitted (e.g. 1973,1974,1973,2008)
@@ -212,16 +212,12 @@ def reduce_matched_dataframe(df):
         if s.isnull().all():
             return np.nan
         else:
-            # Priority for Lignite: If any dataset claims the fueltype
-            # is Lignite -> accept!
+            # Priority for Lignite: If any dataset claims the fueltype to be Lignite -> accept!
             if s.isin(['Lignite']).any():
                 return 'Lignite'
             else:
                 values = s.value_counts()
-                if values.idxmax() == 'Hard Coal' and len(values)>1:
-                    return values.index[1]
-                else:
-                    return values.idxmax()
+                return values.idxmax()
 
     def most_frequent(s):
         if s.isnull().all():
