@@ -21,11 +21,10 @@ from __future__ import absolute_import, print_function
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from .data import Capacity_stats
+from .data import (Capacity_stats, OPSD_VRE, IRENA_stats)
 from .utils import (read_csv_if_string, lookup)
 from .config import fueltype_to_life
 from .cleaning import clean_single
-# Logging: General Settings
 import logging
 logger = logging.getLogger(__name__)
 
@@ -98,6 +97,40 @@ def rescale_capacities_to_country_totals(df, fueltypes):
             df.loc[(df.Country==country)&(df.Fueltype==fueltype), 'Scaled Capacity'] *= \
                    ratio.loc[fueltype,country]
     return df
+
+
+def extend_by_VRE(df, base_year):
+    """
+    Extends a given reduced dataframe by externally given VREs.
+    """
+    df = df.copy()
+    # Drop VRE which are to be replaced
+    df = df[~(((df.Fueltype=='Solar')&(df.Technology!='CSP'))|(df.Fueltype=='Wind')|(df.Fueltype=='Bioenergy'))]
+    df = manual_corrections(df)
+    cols = df.columns
+    # Take CH, DE, DK values from OPSD
+    logger.info('Read OPSD_VRE dataframe...')
+    vre_CH_DE_DK = OPSD_VRE()
+    vre_DK = vre_CH_DE_DK[vre_CH_DE_DK.Country=='Denmark']
+    vre_CH_DE = vre_CH_DE_DK[vre_CH_DE_DK.Country!='Denmark']
+    logger.info('Aggregate CH+DE by commyear')
+    vre_CH_DE = aggregate_VRE_by_commyear(vre_CH_DE)
+    vre_CH_DE.loc[:, 'File'] = 'renewable_power_plants.sqlite'
+    # Take other countries from IRENA stats without: DE, DK_Wind+Solar+Hydro, CH_Bioenergy
+    logger.info('Read IRENA_stats dataframe...')
+    vre = IRENA_stats()
+    vre = derive_vintage_cohorts_from_statistics(vre, base_year=base_year)
+    vre = vre[~(vre.Country=='Germany')]
+    vre = vre[~((vre.Country=='Denmark')&((vre.Fueltype=='Wind')|(vre.Fueltype=='Solar')|(vre.Fueltype=='Hydro')))]
+    vre = vre[~((vre.Country=='Switzerland')&(vre.Fueltype=='Bioenergy'))]
+    vre = vre[~(vre.Technology=='CSP')] # IRENA's CSP data seems to be outdated
+    vre.loc[:, 'File'] ='IRENA_CapacityStatistics2017.csv'
+    # Concatenate
+    logger.info('Concatenate...')
+    concat = pd.concat([df, vre_DK, vre_CH_DE, vre], ignore_index=True)
+    concat = concat[cols]
+    concat.reset_index(drop=True, inplace=True)
+    return concat
 
 
 def average_empty_commyears(df):
