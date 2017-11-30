@@ -20,6 +20,7 @@ Functions to modify and adjust power plant datasets
 from __future__ import absolute_import, print_function
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 from .data import Capacity_stats
 from .utils import (read_csv_if_string, lookup)
 from .config import fueltype_to_life
@@ -288,9 +289,14 @@ def gross_to_net_factors(opsd_DE_raw, aggfunc='median', return_stats=True):
             stats.loc[grp, 'median'] = df_grp.ratio.median()
             stats.loc[grp, 'mean'] = df_grp.ratio.mean()
             stats.loc[grp, 'max'] = df_grp.ratio.max()
-        cax = df.boxplot(column='ratio', by='FuelTech', rot=90, showmeans=True)
-        cax.set_xticklabels(['%s $n$=%d'%(k, len(v)) for k, v in dfg])
-        fig = cax.get_figure()
+        fig, ax = plt.subplots(figsize=(8,4.5))
+        df.boxplot(ax=ax, column='ratio', by='FuelTech', rot=90, showmeans=True)
+        ax.title.set_visible(False)
+        ax.xaxis.label.set_visible(False)
+        ax2 = ax.twiny()
+        ax2.set_xlim(ax.get_xlim())
+        ax2.set_xticks([i+1 for i in range(len(dfg))])
+        ax2.set_xticklabels(['$n$=%d'%(len(v)) for k, v in dfg])
         fig.suptitle('')
         return stats, fig
     else:
