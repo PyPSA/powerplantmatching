@@ -107,3 +107,7 @@ data/out/Export_Stock_TIMES.xlsx
 data/out/aggregation_groups_ESE.csv
 data/out/Matched_CARMA_ENTSOE_ESE_GEO_OPSD_WRI.csv
 data/out/Matched_CARMA_ENTSOE_ESE_GEO_OPSD_WRI_reduced.csv
+data/in/kraftwerke-de-ab-100-mw.xls
+data/in/Kraftwerksliste_2017_2.xlsx
+data/out/aggregation_groups_BNETZA.csv
+data/out/aggregation_groups_UBA.csv
