@@ -30,7 +30,7 @@ import numpy as np
 def add_geoposition_for_duke(df):
     """
     Returns the same pandas.Dataframe with an additional column "Geoposition" which
-    concats the lattitude and longitude of the powerplant in a string
+    concats the latitude and longitude of the powerplant in a string
 
     """
     if not df.loc[:,['lat','lon']].isnull().all().all():
@@ -71,10 +71,9 @@ def duke(datasets, labels=['one', 'two'], singlematch=False,
     else:
         config = "Comparison.xml"
 
-    duke_bin_dir = os.path.join(dirname(dirname(__file__)), "duke_binaries")
+    duke_bin_dir = os.path.join(dirname(dirname(os.path.realpath(__file__))), 'duke_binaries')
     os.environ['CLASSPATH'] = os.pathsep.join([os.path.join(duke_bin_dir, r)
                                                for r in os.listdir(duke_bin_dir)])
-
     tmpdir = tempfile.mkdtemp()
 
     try:
@@ -98,7 +97,7 @@ def duke(datasets, labels=['one', 'two'], singlematch=False,
         _, stderr = run.communicate()
 
         logger.debug("Stderr: {}".format(stderr))
-        if 'ERROR' in stderr:
+        if any(word in stderr.lower() for word in ['error', 'fehler']):
             raise RuntimeError("duke failed: {}".format(stderr))
 
         if dedup:
@@ -109,6 +108,7 @@ def duke(datasets, labels=['one', 'two'], singlematch=False,
                                   usecols=[1, 2, 3], names=labels + ['scores'])
     finally:
         if keepfiles:
-            logger.debug("Files of the duke run are kept in {}", tmpdir)
+            logger.debug('Files of the duke run are kept in {}'.format(tmpdir))
         else:
             shutil.rmtree(tmpdir)
+            logger.debug('Files of the duke run have been deleted in {}'.format(tmpdir))
