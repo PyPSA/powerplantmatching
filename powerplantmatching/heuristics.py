@@ -20,10 +20,10 @@ Functions to modify and adjust power plant datasets
 from __future__ import absolute_import, print_function
 import pandas as pd
 import numpy as np
-from .data import Capacity_stats
+from .data import Capacity_stats, OPSD
 from .utils import (read_csv_if_string, lookup)
 from .config import fueltype_to_life
-from .cleaning import clean_single
+from .cleaning import clean_single, clean_technology
 # Logging: General Settings
 import logging
 logger = logging.getLogger(__name__)
@@ -270,17 +270,19 @@ def set_denmark_region_id(df):
     return df
 
 
-def gross_to_net_factors(opsd_DE_raw, aggfunc='median', return_stats=True):
+def gross_to_net_factors(reference='opsd', aggfunc='median', return_stats=False):
     """
     """
-    df = opsd_DE_raw.copy()
+    if reference=='opsd':
+        reference = OPSD(rawDE=True)
+    df = reference.copy()
     df = df[df.capacity_gross_uba.notnull()&df.capacity_net_bnetza.notnull()]
     df.loc[:, 'ratio'] = df.capacity_net_bnetza / df.capacity_gross_uba
     df = df[df.ratio<=1.0] # these are obvious data errors
-    df.loc[:,'FuelTech'] = '(' + df.energy_source_level_2 +', ' + df.technology + ')'
-    df = df.groupby('FuelTech').filter(lambda x: len(x)>=10)
-    dfg = df.groupby('FuelTech')
     if return_stats:
+        df.loc[:,'FuelTech'] = '(' + df.energy_source_level_2 +', ' + df.technology + ')'
+        df = df.groupby('FuelTech').filter(lambda x: len(x)>=10)
+        dfg = df.groupby('FuelTech')
         stats = pd.DataFrame()
         for grp, df_grp in dfg:
             stats.loc[grp, 'n'] = len(df_grp)
@@ -294,10 +296,31 @@ def gross_to_net_factors(opsd_DE_raw, aggfunc='median', return_stats=True):
         fig.suptitle('')
         return stats, fig
     else:
-        #return correction factor according to fueltype
-        # use aggfunc
-        raise NotImplementedError('ToDo after coordinating with Jonas and Fabian')
+        df.replace(dict(energy_source_level_2={'Biomass and biogas': 'Bioenergy',
+                                    'Fossil fuels': 'Other',
+                                    'Mixed fossil fuels': 'Other',
+                                    'Natural gas': 'Natural Gas',
+                                    'Non-renewable waste': 'Waste',
+                                    'Other bioenergy and renewable waste': 'Bioenergy',
+                                    'Other or unspecified energy sources': 'Other',
+                                    'Other fossil fuels': 'Other'}))
+        df.rename(columns={'technology':'Technology'}, inplace=True)
+        df = (clean_technology(df)
+                .assign(energy_source_level_2=lambda df: df.energy_source_level_2.str.title()))
+        ratios = df.groupby(['energy_source_level_2', 'Technology']).ratio.mean()
+#        Note that for Nuclear Steam Turbine this does not provide a factor. Add this maually
+#        refere to http://www.power-technology.com/features/feature-largest-nuclear-power-plants-world/
+        ratios.loc[('Nuclear', 'Steam Turbine')] = 0.95
+#        another possibility could be this, which however leads to too low ratios
+#        ratios.loc[('Nuclear', 'Steam Turbine')] = ratios.groupby(level=1).mean()['Steam Turbine']
+        return ratios
 
+def scale_to_net_capacities(df):
+    factors = gross_to_net_factors()
+    for ftype, tech in factors.index.get_values():
+        df.loc[(df.Fueltype==ftype)&(df.Technology==tech), 'Capacity'] = (
+            factors.loc[(ftype, tech)] * df.loc[(df.Fueltype==ftype)&(df.Technology==tech), 'Capacity'])
+    return df
 
 #add artificial powerplants
 #entsoe = pc.ENTSOE_data()
