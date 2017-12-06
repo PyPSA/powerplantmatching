@@ -35,7 +35,9 @@ from .cleaning import (gather_fueltype_info, gather_set_info,
                        gather_technology_info, clean_powerplantname,
                        clean_technology)
 from .utils import (parse_Geoposition, _data, _data_in, _data_out)
+from .heuristics import scale_to_net_capacities
 
+net_caps = additional_data_config()['display_net_caps']
 data_config = {}
 
 def OPSD(rawEU=False, rawDE=False, statusDE=None):
@@ -43,6 +45,7 @@ def OPSD(rawEU=False, rawDE=False, statusDE=None):
     Return standardized OPSD (Open Power Systems Data) database with target column names and fueltypes.
 
     """
+
     opsd_EU = pd.read_csv(_data_in('conventional_power_plants_EU.csv'), na_values=' ', encoding='utf-8')
     opsd_DE = pd.read_csv(_data_in('conventional_power_plants_DE.csv'), na_values=' ', encoding='utf-8')
     if rawEU and rawDE:
@@ -100,9 +103,12 @@ def OPSD(rawEU=False, rawDE=False, statusDE=None):
             .pipe(gather_technology_info)
             .pipe(gather_set_info)
             .pipe(clean_technology)
-            .loc[lambda df: df.Country.isin(europeancountries())])
+            .loc[lambda df: df.Country.isin(europeancountries())]
+            .pipe(scale_to_net_capacities, 
+                  (not data_config['OPSD']['net_capacity'])))
 
-data_config['OPSD'] = {'read_function': OPSD, 'reliability_score':4}
+data_config['OPSD'] = {'read_function': OPSD, 'reliability_score':4,
+                       'net_capacity':True}
 
 
 def GEO(raw=False):
@@ -151,11 +157,13 @@ def GEO(raw=False):
             .pipe(gather_set_info)
             .pipe(clean_powerplantname)
             .pipe(clean_technology, generalize_hydros=True)
-            .reindex(columns=target_columns()))
+            .reindex(columns=target_columns())
+            .pipe(scale_to_net_capacities, 
+                  (not data_config['GEO']['net_capacity'])))
 
 data_config['GEO'] = {'read_function': GEO,
                       'clean_single_kwargs': dict(aggregate_powerplant_units=False),
-                      'reliability_score':3}
+                      'reliability_score':3, 'net_capacity':False}
 
 
 def CARMA(raw=False):
@@ -167,7 +175,6 @@ def CARMA(raw=False):
                             encoding='utf-8', low_memory=False)
     if raw:
         return carmadata
-
     return (carmadata
             .rename(columns={'Geoposition': 'Geoposition',
                              'cap': 'Capacity',
@@ -199,11 +206,13 @@ def CARMA(raw=False):
             .pipe(gather_set_info)
             .pipe(clean_technology)
             .drop_duplicates()
-            .reindex(columns=target_columns()))
+            .reindex(columns=target_columns())
+            .pipe(scale_to_net_capacities, 
+                  (not data_config['CARMA']['net_capacity'])))
 
 data_config['CARMA'] = {'read_function': CARMA,
                         'clean_single_kwargs': dict(aggregate_powerplant_units=False),
-                        'reliability_score':2}
+                        'reliability_score':1, 'net_capacity':True}
 
 
 def IWPDCY():
@@ -527,10 +536,11 @@ def ENTSOE(update=False, raw=False, entsoe_token=None):
     else:
         entsoe = pd.read_csv(_data_out('entsoe_powerplants.csv'),
                              index_col='id', encoding='utf-8')
-        return entsoe[entsoe.Country.isin(europeancountries())]
+        return (entsoe[entsoe.Country.isin(europeancountries())]
+                    .pipe(scale_to_net_capacities,(not data_config['ENTSOE']['net_capacity'])))
 
 data_config['ENTSOE'] = {'read_function': ENTSOE,
-           'reliability_score':4}
+           'reliability_score':4, 'net_capacity':True}
 
 
 def WEPP(raw=False, parseGeoLoc=False):
@@ -686,10 +696,10 @@ def WEPP(raw=False, parseGeoLoc=False):
     wepp.reset_index(drop=True)
     # Done!
     wepp.datasetID = 'WEPP'
-    return wepp
+    return wepp.pipe(scale_to_net_capacities, (not data_config['WEPP']['net_capacity']))
 
 data_config['WEPP'] = {'read_function': WEPP,
-           'reliability_score':4}
+           'reliability_score':4, 'net_capacity':False}
 
 
 def UBA(header=9, skip_footer=26):
@@ -757,13 +767,13 @@ def UBA(header=9, skip_footer=26):
                                          u'Uran':'Nuclear',
                                          u'Wasser':'Hydro',
                                          u'\xd6lr\xfcckstand':'Oil'})
-    uba = uba.reindex(columns=target_columns())
-    # TODO: Rescale to net capacities, e.g.:
-    #uba.Capacity = uba.Capacity.map(lambda x,y,z: x*heuristics.gross_to_net_factors(y,z), ...)
+    uba = (uba.reindex(columns=target_columns()).pipe(scale_to_net_capacities, 
+                  (not data_config['UBA']['net_capacity'])))
     return uba
 
 data_config['UBA'] = {'read_function': UBA,
-           'clean_single_kwargs': dict(aggregate_powerplant_units=False)}
+           'clean_single_kwargs': dict(aggregate_powerplant_units=False),
+           'net_capacity':False}
 
 
 def BNETZA(header=9, sheet_name='Gesamtkraftwerksliste BNetzA'):
@@ -825,10 +835,11 @@ def BNETZA(header=9, sheet_name='Gesamtkraftwerksliste BNetzA'):
     bnetza.loc[:, 'Country'] = 'Germany'
     bnetza.loc[:, 'File'] = filename
     bnetza.loc[:, 'Set'] = bnetza.Set.fillna('Nein').str.title().replace({u'Ja':'CHP',u'Nein':'PP'})
-    bnetza = bnetza.reindex(columns=target_columns())
+    bnetza = (bnetza.reindex(columns=target_columns()).pipe(scale_to_net_capacities, 
+                  (not data_config['BNETZA']['net_capacity'])))
     return bnetza
 
-data_config['BNETZA'] = {'read_function': BNETZA}
+data_config['BNETZA'] = {'read_function': BNETZA, 'net_capacity':True}
 
 
 def OPSD_VRE():

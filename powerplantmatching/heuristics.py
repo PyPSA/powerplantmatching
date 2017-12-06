@@ -20,7 +20,6 @@ Functions to modify and adjust power plant datasets
 from __future__ import absolute_import, print_function
 import pandas as pd
 import numpy as np
-from .data import Capacity_stats, OPSD
 from .utils import (read_csv_if_string, lookup)
 from .config import fueltype_to_life
 from .cleaning import clean_single, clean_technology
@@ -80,6 +79,7 @@ def rescale_capacities_to_country_totals(df, fueltypes):
     fueltype : str or list of strings
         fueltype that should be scaled
     """
+    from .data import Capacity_stats
     df = df.copy()
     if isinstance(fueltypes, str):
         fueltypes = [fueltypes]
@@ -274,6 +274,7 @@ def gross_to_net_factors(reference='opsd', aggfunc='median', return_stats=False)
     """
     """
     if reference=='opsd':
+        from .data import OPSD
         reference = OPSD(rawDE=True)
     df = reference.copy()
     df = df[df.capacity_gross_uba.notnull()&df.capacity_net_bnetza.notnull()]
@@ -315,13 +316,16 @@ def gross_to_net_factors(reference='opsd', aggfunc='median', return_stats=False)
 #        ratios.loc[('Nuclear', 'Steam Turbine')] = ratios.groupby(level=1).mean()['Steam Turbine']
         return ratios
 
-def scale_to_net_capacities(df):
-    factors = gross_to_net_factors()
-    for ftype, tech in factors.index.get_values():
-        df.loc[(df.Fueltype==ftype)&(df.Technology==tech), 'Capacity'] = (
-            factors.loc[(ftype, tech)] * df.loc[(df.Fueltype==ftype)&(df.Technology==tech), 'Capacity'])
-    return df
-
+def scale_to_net_capacities(df, is_gross=True):
+    if is_gross:
+        factors = gross_to_net_factors()
+        for ftype, tech in factors.index.get_values():
+            df.loc[(df.Fueltype==ftype)&(df.Technology==tech), 'Capacity'] = (
+                factors.loc[(ftype, tech)] * df.loc[(df.Fueltype==ftype)&(df.Technology==tech), 'Capacity'])
+        return df
+    else:
+        return df
+    
 #add artificial powerplants
 #entsoe = pc.ENTSOE_data()
 #lookup = pc.lookup([entsoe.loc[entsoe.Fueltype=='Hydro'], hydro], keys= ['ENTSOE', 'matched'], by='Country')

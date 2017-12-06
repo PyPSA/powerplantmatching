@@ -116,5 +116,6 @@ def additional_data_config():
 
     returns pandas.Series
     """
-    return pd.read_csv(_data('additional_data.config'),
-                       index_col=0, sep=':', header=None).loc[:,1]
+    return pd.read_csv(_data('../config.csv'),
+                       index_col=0, sep=':', header=None).loc[:,1].replace('True', True)
+
