@@ -99,6 +99,41 @@ def rescale_capacities_to_country_totals(df, fueltypes):
     return df
 
 
+def extend_by_VRE(df, base_year):
+    """
+    Extends a given reduced dataframe by externally given VREs.
+    """
+    from .data import IRENA_stats, OPSD_VRE
+    df = df.copy()
+    # Drop VRE which are to be replaced
+    df = df[~(((df.Fueltype=='Solar')&(df.Technology!='CSP'))|(df.Fueltype=='Wind')|(df.Fueltype=='Bioenergy'))]
+    df = manual_corrections(df)
+    cols = df.columns
+    # Take CH, DE, DK values from OPSD
+    logger.info('Read OPSD_VRE dataframe...')
+    vre_CH_DE_DK = OPSD_VRE()
+    vre_DK = vre_CH_DE_DK[vre_CH_DE_DK.Country=='Denmark']
+    vre_CH_DE = vre_CH_DE_DK[vre_CH_DE_DK.Country!='Denmark']
+    logger.info('Aggregate CH+DE by commyear')
+    vre_CH_DE = aggregate_VRE_by_commyear(vre_CH_DE)
+    vre_CH_DE.loc[:, 'File'] = 'renewable_power_plants.sqlite'
+    # Take other countries from IRENA stats without: DE, DK_Wind+Solar+Hydro, CH_Bioenergy
+    logger.info('Read IRENA_stats dataframe...')
+    vre = IRENA_stats()
+    vre = derive_vintage_cohorts_from_statistics(vre, base_year=base_year)
+    vre = vre[~(vre.Country=='Germany')]
+    vre = vre[~((vre.Country=='Denmark')&((vre.Fueltype=='Wind')|(vre.Fueltype=='Solar')|(vre.Fueltype=='Hydro')))]
+    vre = vre[~((vre.Country=='Switzerland')&(vre.Fueltype=='Bioenergy'))]
+    vre = vre[~(vre.Technology=='CSP')] # IRENA's CSP data seems to be outdated
+    vre.loc[:, 'File'] ='IRENA_CapacityStatistics2017.csv'
+    # Concatenate
+    logger.info('Concatenate...')
+    concat = pd.concat([df, vre_DK, vre_CH_DE, vre], ignore_index=True)
+    concat = concat[cols]
+    concat.reset_index(drop=True, inplace=True)
+    return concat
+
+
 def average_empty_commyears(df):
     """
     Fills the empty commissioning years with averages.
@@ -291,9 +326,14 @@ def gross_to_net_factors(reference='opsd', aggfunc='median', return_stats=False)
             stats.loc[grp, 'median'] = df_grp.ratio.median()
             stats.loc[grp, 'mean'] = df_grp.ratio.mean()
             stats.loc[grp, 'max'] = df_grp.ratio.max()
-        cax = df.boxplot(column='ratio', by='FuelTech', rot=90, showmeans=True)
-        cax.set_xticklabels(['%s $n$=%d'%(k, len(v)) for k, v in dfg])
-        fig = cax.get_figure()
+        fig, ax = plt.subplots(figsize=(8,4.5))
+        df.boxplot(ax=ax, column='ratio', by='FuelTech', rot=90, showmeans=True)
+        ax.title.set_visible(False)
+        ax.xaxis.label.set_visible(False)
+        ax2 = ax.twiny()
+        ax2.set_xlim(ax.get_xlim())
+        ax2.set_xticks([i+1 for i in range(len(dfg))])
+        ax2.set_xticklabels(['$n$=%d'%(len(v)) for k, v in dfg])
         fig.suptitle('')
         return stats, fig
     else:
@@ -325,43 +365,3 @@ def scale_to_net_capacities(df, is_gross=True):
         return df
     else:
         return df
-    
-#add artificial powerplants
-#entsoe = pc.ENTSOE_data()
-#lookup = pc.lookup([entsoe.loc[entsoe.Fueltype=='Hydro'], hydro], keys= ['ENTSOE', 'matched'], by='Country')
-#lookup.loc[:,'Difference'] = lookup.ENTSOE - lookup.matched
-#missingpowerplants = (lookup.Difference/120).round().astype(int)
-#
-#hydroexp = hydro
-#
-#for i in missingpowerplants[:-1].loc[missingpowerplants[:-1] > 0].index:
-#    print i
-#    try:
-#        howmany = missingpowerplants.loc[i]
-#        hydroexp = hydroexp.append(hydro.loc[(hydro.Country == i)& (hydro.lat.notnull()),['lat', 'lon']].sample(howmany) + np.random.uniform(-.4,.4,(howmany,2)), ignore_index=True)
-#        hydroexp.loc[hydroexp.shape[0]-howmany:,'Country'] = i
-#        hydroexp.loc[hydroexp.shape[0]-howmany:,'Capacity'] = 120.
-#        hydroexp.loc[hydroexp.shape[0]-howmany:,'FIAS'] = 'Artificial Powerplant'
-#
-#
-#    except:
-#        for j in range(missingpowerplants.loc[i]):
-#            hydroexp = hydroexp.append(hydro.loc[(hydro.Country == i)& (hydro.lat.notnull()),['lat', 'lon']].sample(1) + np.random.uniform(-1,1,(1,2)), ignore_index=True)
-#            hydroexp.loc[hydroexp.shape[0]-1:,'Country'] = i
-#            hydroexp.loc[hydroexp.shape[0]-1:,'Capacity'] = 120.
-#            hydroexp.loc[hydroexp.shape[0]-howmany:,'FIAS'] = 'Artificial Powerplant'
-#
-#for i in missingpowerplants[:-1].loc[missingpowerplants[:-1] < -1].index:
-#    while hydroexp.loc[hydroexp.Country == i, 'Capacity'].sum() > lookup.loc[i, 'ENTSOE'] + 300:
-#        try:
-#            hydroexp = hydroexp.drop(hydroexp.loc[(hydroexp.Country == i)& (hydroexp.GEO.isnull())].sample(1).index)
-#        except:
-#            hydroexp = hydroexp.drop(hydroexp.loc[(hydroexp.Country == i)].sample(1).index)
-#
-#hydroexp.Fueltype = 'Hydro'
-#pc.lookup([entsoe.loc[entsoe.Fueltype=='Hydro'], hydroexp], keys= ['ENTSOE', 'matched'], by='Country')
-#
-#del hydro
-#hydro = hydroexp
-#
-#print hydro.groupby(['Country', 'Technology']).Capacity.sum().unstack()

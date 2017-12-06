@@ -127,30 +127,52 @@ def Plot_hbar_comparison_1dim(by='Country', include_WEPP=True, include_VRE=False
     return
 
 
-def Plot_bar_comparison_countries_fueltypes(ylabel=None, include_WEPP=True,
+def Plot_bar_comparison_countries_fueltypes(dfs=None, ylabel=None, include_WEPP=True,
         include_VRE=False, show_coverage=True, legend_in_subplots=False, year=2015):
     """
-    Plots per country an analysis, how the matched dataset and the statistics
-    differ by fueltype.
+    Plots per country an analysis, how the given datasets differ by fueltype.
+
+    Parameters
+    ----------
+    dfs : dict
+        keys : labels
+        values : pandas.Dataframe containing the data to be plotted
+    ylabel : str
+        Label for y-axis
+    include_WEPP : bool
+        Switch to include WEPP-based data
+    include_VRE : bool
+        Switch to include VRE data
+    show_coverage : bool
+        Switch whether to calculate a coverage between to datasets
+    legend_in_subplots : bool
+        Switch whether to show the legend in subplots (True) or below (False)
+    year : int
+        Only plot units which have a commissioning year smaller or equal this value
     """
     if ylabel is None: ylabel = 'Capacity [GW]'
 
-    red_w_wepp, red_wo_wepp, wepp, statistics = gather_comparison_data(include_WEPP=include_WEPP,
-                                                                       include_VRE=include_VRE,
-                                                                       year=year)
     countries = set()
-    if include_WEPP:
-        stats = lookup([red_w_wepp, red_wo_wepp, wepp, statistics],
-                       keys=['Matched dataset w/ WEPP', 'Matched dataset w/o WEPP',
-                             'WEPP only', 'Statistics OPSD'],
-                       by='Country, Fueltype')/1000
-        set.update(countries, set(red_w_wepp.Country), set(red_wo_wepp.Country),
-                   set(wepp.Country), set(statistics.Country))
+    if dfs is None:
+        red_w_wepp, red_wo_wepp, wepp, statistics = gather_comparison_data(include_WEPP=include_WEPP,
+                                                                           include_VRE=include_VRE,
+                                                                           year=year)
+        if include_WEPP:
+            stats = lookup([red_w_wepp, red_wo_wepp, wepp, statistics],
+                           keys=['Matched dataset w/ WEPP', 'Matched dataset w/o WEPP',
+                                 'WEPP only', 'Statistics OPSD'],
+                           by='Country, Fueltype')/1000
+            set.update(countries, set(red_w_wepp.Country), set(red_wo_wepp.Country),
+                       set(wepp.Country), set(statistics.Country))
+        else:
+            stats = lookup([red_wo_wepp, statistics],
+                           keys=['Matched dataset w/o WEPP', 'Statistics OPSD'],
+                           by='Country, Fueltype')/1000
+            set.update(countries, set(red_wo_wepp.Country), set(statistics.Country))
     else:
-        stats = lookup([red_wo_wepp, statistics],
-                       keys=['Matched dataset w/o WEPP', 'Statistics OPSD'],
-                       by='Country, Fueltype')/1000
-        set.update(countries, set(red_wo_wepp.Country), set(statistics.Country))
+        stats = lookup(dfs.values(), keys=dfs.keys(), by='Country, Fueltype')/1000
+        for k, v in dfs.items():
+            set.update(countries, set(v.Country))
 
     # Presettings for the plots
     font={#'family' : 'normal',
