@@ -248,8 +248,13 @@ def reduce_matched_dataframe(df):
     rel_scores = (pd.DataFrame(data_config).loc['reliability_score', sources]
                     .sort_values(ascending=False))
     def prioritise_reliabilities(df, how='mean'):
-#        take the first most reliable value if dtype==String, else take mean of most
-#        reliable values
+        """
+        Take the first most reliable value if dtype==String, else take mean of most
+        reliable values
+        """
+        if df.isnull().all(axis=1).all():
+            logger.warn('Empty dataframe passed to `prioritise_reliabilities`.')
+            return pd.DataFrame(index=df.index, columns=['0'])
         if ((df.dtypes == object) | (df.dtypes == str)).any():
             return (df.loc[~df.isnull().all(axis=1)].apply(lambda ds:ds.dropna().iloc[-1], axis=1)
                       .reindex(df.index))
@@ -261,7 +266,7 @@ def reduce_matched_dataframe(df):
             else:
                 raise ValueError('Bad argument: how must be `mean` or `median`.')
             return (df.apply(lambda ds:ds.dropna().iloc[-1], axis=1)
-                          .reindex(index=df.index))
+                      .reindex(index=df.index))
 
     sdf = pd.DataFrame(index=df.index)
 #    sdf.loc[:, 'Name'] = df.Name.apply(prioritise_reliabilities, axis=1)
@@ -273,13 +278,12 @@ def reduce_matched_dataframe(df):
 #    sdf.loc[:, 'YearCommissioned'] = df.YearCommissioned.max(axis=1)
 #    sdf.loc[:, 'lat'] = df.lat.apply(optimised_mean, axis=1)
 #    sdf.loc[:, 'lon'] = df.lon.apply(optimised_mean, axis=1)
-
     sdf.loc[:, 'Name'] = df.Name.pipe(prioritise_reliabilities)
     sdf.loc[:, 'Fueltype'] = df.Fueltype.pipe(prioritise_reliabilities)
     sdf.loc[:, 'Technology'] = df.Technology.pipe(prioritise_reliabilities)
     sdf.loc[:, 'Country'] = df.Country.pipe(prioritise_reliabilities)
     sdf.loc[:, 'Set'] = df.Set.pipe(prioritise_reliabilities)
-    sdf.loc[:, 'Capacity'] = df.Capacity.pipe(prioritise_reliabilities)
+    sdf.loc[:, 'Capacity'] = df.Capacity.pipe(prioritise_reliabilities, how='median')
     sdf.loc[:, 'YearCommissioned'] = df.YearCommissioned.max(axis=1)
     sdf.loc[:, 'lat'] = df.lat.pipe(prioritise_reliabilities)
     sdf.loc[:, 'lon'] = df.lon.pipe(prioritise_reliabilities)

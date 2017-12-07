@@ -184,7 +184,8 @@ def Plot_bar_comparison_countries_fueltypes(dfs=None, ylabel=None, include_WEPP=
     nrows, ncols = gather_nrows_ncols(len(countries))
     i,j = [0, 0]
     labels_mpatches = collections.OrderedDict()
-    fig, ax = plt.subplots(nrows=nrows, ncols=ncols, sharex=True, sharey=False, figsize=(32,18))
+    fig, ax = plt.subplots(nrows=nrows, ncols=ncols, sharex=True, sharey=False,
+                           squeeze=False, figsize=(32,18))
     for country in sorted(countries):
         if j==ncols:
             i+=1

@@ -93,7 +93,8 @@ def OPSD(rawEU=False, rawDE=False, statusDE=None):
                                     'Non-renewable waste': 'Waste',
                                     'Other bioenergy and renewable waste': 'Bioenergy',
                                     'Other or unspecified energy sources': 'Other',
-                                    'Other fossil fuels': 'Other'}))
+                                    'Other fossil fuels': 'Other',
+                                    'Other fuels': 'Other'}))
             .replace({'Country': {'UK': u'GB','[ \t]+|[ \t]+$.':''}}, regex=True) #UK->GB, strip whitespace
             .assign(Name=lambda df: df.Name.str.title(),
                     Fueltype=lambda df: df.Fueltype.str.title(),
@@ -762,7 +763,7 @@ def UBA(header=9, skip_footer=26):
                                          u'Gichtgas':'Other',
                                          u'HS':'Oil',
                                          u'Konvertergas':'Other',
-                                         u'Licht':'PV',
+                                         u'Licht':'Solar',
                                          u'Raffineriegas':'Other',
                                          u'Uran':'Nuclear',
                                          u'Wasser':'Hydro',
@@ -773,7 +774,7 @@ def UBA(header=9, skip_footer=26):
 
 data_config['UBA'] = {'read_function': UBA,
            'clean_single_kwargs': dict(aggregate_powerplant_units=False),
-           'net_capacity':False}
+           'net_capacity':False, 'reliability_score':3}
 
 
 def BNETZA(header=9, sheet_name='Gesamtkraftwerksliste BNetzA'):
@@ -840,7 +841,8 @@ def BNETZA(header=9, sheet_name='Gesamtkraftwerksliste BNetzA'):
                   (not data_config['BNETZA']['net_capacity'])))
     return bnetza
 
-data_config['BNETZA'] = {'read_function': BNETZA, 'net_capacity':True}
+data_config['BNETZA'] = {'read_function': BNETZA, 'net_capacity':True,
+            'reliability_score':3}
 
 
 def OPSD_VRE():
