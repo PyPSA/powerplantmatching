@@ -28,6 +28,7 @@ from .config import target_columns
 from .utils import read_csv_if_string
 from .duke import duke
 from .cleaning import clean_technology
+from .data import data_config
 
 
 def best_matches(links):
@@ -179,7 +180,7 @@ def combine_multiple_datasets(datasets, labels):
             datasets[i] = data.loc[cross_matches.ix[:, i]].reset_index(drop=True)
         df = pd.concat(datasets, axis=1, keys=cross_matches.columns.tolist())
         df = df.reorder_levels([1, 0], axis=1)
-        df = df[df.columns.levels[0]]
+#        df = df[df.columns.levels[0]]
         df = df.loc[:,target_columns()]
         return df.reset_index(drop=True)
     crossmatches = link_multiple_datasets(datasets, labels)
@@ -208,17 +209,27 @@ def reduce_matched_dataframe(df):
         combined_dataframe() or match_multiple_datasets()
     """
 
-    def most_frequent_fueltype(s):
-        if s.isnull().all():
-            return np.nan
-        else:
-            # Priority for Lignite: If any dataset claims the fueltype to be Lignite -> accept!
-            if s.isin(['Lignite']).any():
-                return 'Lignite'
-            else:
-                values = s.value_counts()
-                return values.idxmax()
-
+#    def most_frequent_fueltype(s):
+#        if s.isnull().all():
+#            return np.nan
+#        else:
+#            # Priority for Lignite: If any dataset claims the fueltype to be Lignite -> accept!
+#            if s.isin(['Lignite']).any():
+#                return 'Lignite'
+#            else:
+#                values = s.value_counts()
+#                return values.idxmax()
+#
+#    def optimised_mean(s):
+#        if s.notnull().sum()>2:
+#            return s[~((s - s.mean()).abs()>s.std())].mean()
+#        elif ('CARMA' in s and s.notnull().sum()==2):
+#            return s.drop('CARMA').mean()
+#        elif ('WRI' in s and s.notnull().sum()==2):
+#            return s.drop('WRI').mean()
+#        else:
+#            return s.mean()
+        
     def most_frequent(s):
         if s.isnull().all():
             return np.nan
@@ -232,28 +243,46 @@ def reduce_matched_dataframe(df):
         else:
             return s[s.notnull()].str.cat(sep = ', ')
 
-    def optimised_mean(s):
-        if s.notnull().sum()>2:
-            return s[~((s - s.mean()).abs()>s.std())].mean()
-        elif ('CARMA' in s and s.notnull().sum()==2):
-            return s.drop('CARMA').mean()
-        elif ('WRI' in s and s.notnull().sum()==2):
-            return s.drop('WRI').mean()
-        else:
-            return s.mean()
+#   define which databases are present and get their reliability_score
+    sources = df.columns.levels[1]
+    rel_scores = (pd.DataFrame(data_config).loc['reliability_score', sources]
+                    .sort_values(ascending=False))
+    def prioritise_reliabilities(df):
+#        take the first most reliable value if dtype==String, else take mean of most 
+#        reliable values 
+        if ((df.dtypes == object) | (df.dtypes == str)).any():
+            return (df.loc[~df.isnull().all(axis=1)].apply(lambda ds:ds.dropna().iloc[0], axis=1)
+                       .reindex(df.index))
+        else: 
+            return (df[~df.isnull().all(axis=1)].groupby(rel_scores, axis=1).mean()
+                    .apply(lambda ds:ds.dropna().iloc[0], axis=1)
+                    .reindex(index=df.index))
+        
+    sdf = pd.DataFrame(index=df.index)
+#    sdf.loc[:, 'Name'] = df.Name.apply(prioritise_reliabilities, axis=1)
+#    sdf.loc[:, 'Fueltype'] = df.Fueltype.apply(most_frequent_fueltype, axis=1)
+#    sdf.loc[:, 'Technology'] = df.Technology.apply(concat_strings, axis=1)
+#    sdf.loc[:, 'Country'] = df.Country.apply(most_frequent, axis=1)
+#    sdf.loc[:, 'Set'] = df.Set.apply(most_frequent, axis=1)
+#    sdf.loc[:, 'Capacity'] = df.Capacity.median(axis=1)
+#    sdf.loc[:, 'YearCommissioned'] = df.YearCommissioned.max(axis=1)
+#    sdf.loc[:, 'lat'] = df.lat.apply(optimised_mean, axis=1)
+#    sdf.loc[:, 'lon'] = df.lon.apply(optimised_mean, axis=1)
 
-    sdf = pd.DataFrame(df.Name)
-    sdf.loc[:, 'Fueltype'] = df.Fueltype.apply(most_frequent_fueltype, axis=1)
-    sdf.loc[:, 'Technology'] = df.Technology.apply(concat_strings, axis=1)
-    sdf.loc[:, 'Country'] = df.Country.apply(most_frequent, axis=1)
-    sdf.loc[:, 'Set'] = df.Set.apply(most_frequent, axis=1)
-    sdf.loc[:, 'Capacity'] = df.Capacity.median(axis=1)
+    sdf.loc[:, 'Name'] = df.Name.pipe(prioritise_reliabilities)
+    sdf.loc[:, 'Fueltype'] = df.Fueltype.pipe(prioritise_reliabilities)
+    sdf.loc[:, 'Technology'] = df.Technology.pipe(prioritise_reliabilities)
+    sdf.loc[:, 'Country'] = df.Country.pipe(prioritise_reliabilities)
+    sdf.loc[:, 'Set'] = df.Set.pipe(prioritise_reliabilities)
+    sdf.loc[:, 'Capacity'] = df.Capacity.pipe(prioritise_reliabilities)
     sdf.loc[:, 'YearCommissioned'] = df.YearCommissioned.max(axis=1)
-    sdf.loc[:, 'lat'] = df.lat.apply(optimised_mean, axis=1)
-    sdf.loc[:, 'lon'] = df.lon.apply(optimised_mean, axis=1)
+    sdf.loc[:, 'lat'] = df.lat.pipe(prioritise_reliabilities)
+    sdf.loc[:, 'lon'] = df.lon.pipe(prioritise_reliabilities)
+
     sdf.loc[:, 'File'] = df.File.apply(concat_strings, axis=1)
     sdf.loc[:, 'projectID'] = df.projectID.apply(lambda x:
                                 dict(zip(df.columns.levels[1][x.notnull()].values
                                 , x.dropna().values)), axis=1)
     sdf = clean_technology(sdf, generalize_hydros=False)
-    return sdf.reset_index(drop=True)
+    sdf.reset_index(drop=True)
+    return sdf[target_columns()]

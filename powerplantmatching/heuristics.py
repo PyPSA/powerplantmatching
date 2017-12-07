@@ -21,10 +21,9 @@ from __future__ import absolute_import, print_function
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from .data import (Capacity_stats, OPSD_VRE, IRENA_stats)
 from .utils import (read_csv_if_string, lookup)
 from .config import fueltype_to_life
-from .cleaning import clean_single
+from .cleaning import (clean_single, clean_technology)
 import logging
 logger = logging.getLogger(__name__)
 
@@ -80,6 +79,7 @@ def rescale_capacities_to_country_totals(df, fueltypes):
     fueltype : str or list of strings
         fueltype that should be scaled
     """
+    from .data import Capacity_stats
     df = df.copy()
     if isinstance(fueltypes, str):
         fueltypes = [fueltypes]
@@ -103,6 +103,7 @@ def extend_by_VRE(df, base_year):
     """
     Extends a given reduced dataframe by externally given VREs.
     """
+    from .data import IRENA_stats, OPSD_VRE
     df = df.copy()
     # Drop VRE which are to be replaced
     df = df[~(((df.Fueltype=='Solar')&(df.Technology!='CSP'))|(df.Fueltype=='Wind')|(df.Fueltype=='Bioenergy'))]
@@ -304,17 +305,20 @@ def set_denmark_region_id(df):
     return df
 
 
-def gross_to_net_factors(opsd_DE_raw, aggfunc='median', return_stats=True):
+def gross_to_net_factors(reference='opsd', aggfunc='median', return_stats=False):
     """
     """
-    df = opsd_DE_raw.copy()
+    if reference=='opsd':
+        from .data import OPSD
+        reference = OPSD(rawDE=True)
+    df = reference.copy()
     df = df[df.capacity_gross_uba.notnull()&df.capacity_net_bnetza.notnull()]
     df.loc[:, 'ratio'] = df.capacity_net_bnetza / df.capacity_gross_uba
     df = df[df.ratio<=1.0] # these are obvious data errors
-    df.loc[:,'FuelTech'] = '(' + df.energy_source_level_2 +', ' + df.technology + ')'
-    df = df.groupby('FuelTech').filter(lambda x: len(x)>=10)
-    dfg = df.groupby('FuelTech')
     if return_stats:
+        df.loc[:,'FuelTech'] = '(' + df.energy_source_level_2 +', ' + df.technology + ')'
+        df = df.groupby('FuelTech').filter(lambda x: len(x)>=10)
+        dfg = df.groupby('FuelTech')
         stats = pd.DataFrame()
         for grp, df_grp in dfg:
             stats.loc[grp, 'n'] = len(df_grp)
@@ -333,47 +337,32 @@ def gross_to_net_factors(opsd_DE_raw, aggfunc='median', return_stats=True):
         fig.suptitle('')
         return stats, fig
     else:
-        #return correction factor according to fueltype
-        # use aggfunc
-        raise NotImplementedError('ToDo after coordinating with Jonas and Fabian')
+        df.replace(dict(energy_source_level_2={'Biomass and biogas': 'Bioenergy',
+                                    'Fossil fuels': 'Other',
+                                    'Mixed fossil fuels': 'Other',
+                                    'Natural gas': 'Natural Gas',
+                                    'Non-renewable waste': 'Waste',
+                                    'Other bioenergy and renewable waste': 'Bioenergy',
+                                    'Other or unspecified energy sources': 'Other',
+                                    'Other fossil fuels': 'Other'}))
+        df.rename(columns={'technology':'Technology'}, inplace=True)
+        df = (clean_technology(df)
+                .assign(energy_source_level_2=lambda df: df.energy_source_level_2.str.title()))
+        ratios = df.groupby(['energy_source_level_2', 'Technology']).ratio.mean()
+#        Note that for Nuclear Steam Turbine this does not provide a factor. Add this maually
+#        refere to http://www.power-technology.com/features/feature-largest-nuclear-power-plants-world/
+        ratios.loc[('Nuclear', 'Steam Turbine')] = 0.95
+#        another possibility could be this, which however leads to too low ratios
+#        ratios.loc[('Nuclear', 'Steam Turbine')] = ratios.groupby(level=1).mean()['Steam Turbine']
+        return ratios
 
-
-#add artificial powerplants
-#entsoe = pc.ENTSOE_data()
-#lookup = pc.lookup([entsoe.loc[entsoe.Fueltype=='Hydro'], hydro], keys= ['ENTSOE', 'matched'], by='Country')
-#lookup.loc[:,'Difference'] = lookup.ENTSOE - lookup.matched
-#missingpowerplants = (lookup.Difference/120).round().astype(int)
-#
-#hydroexp = hydro
-#
-#for i in missingpowerplants[:-1].loc[missingpowerplants[:-1] > 0].index:
-#    print i
-#    try:
-#        howmany = missingpowerplants.loc[i]
-#        hydroexp = hydroexp.append(hydro.loc[(hydro.Country == i)& (hydro.lat.notnull()),['lat', 'lon']].sample(howmany) + np.random.uniform(-.4,.4,(howmany,2)), ignore_index=True)
-#        hydroexp.loc[hydroexp.shape[0]-howmany:,'Country'] = i
-#        hydroexp.loc[hydroexp.shape[0]-howmany:,'Capacity'] = 120.
-#        hydroexp.loc[hydroexp.shape[0]-howmany:,'FIAS'] = 'Artificial Powerplant'
-#
-#
-#    except:
-#        for j in range(missingpowerplants.loc[i]):
-#            hydroexp = hydroexp.append(hydro.loc[(hydro.Country == i)& (hydro.lat.notnull()),['lat', 'lon']].sample(1) + np.random.uniform(-1,1,(1,2)), ignore_index=True)
-#            hydroexp.loc[hydroexp.shape[0]-1:,'Country'] = i
-#            hydroexp.loc[hydroexp.shape[0]-1:,'Capacity'] = 120.
-#            hydroexp.loc[hydroexp.shape[0]-howmany:,'FIAS'] = 'Artificial Powerplant'
-#
-#for i in missingpowerplants[:-1].loc[missingpowerplants[:-1] < -1].index:
-#    while hydroexp.loc[hydroexp.Country == i, 'Capacity'].sum() > lookup.loc[i, 'ENTSOE'] + 300:
-#        try:
-#            hydroexp = hydroexp.drop(hydroexp.loc[(hydroexp.Country == i)& (hydroexp.GEO.isnull())].sample(1).index)
-#        except:
-#            hydroexp = hydroexp.drop(hydroexp.loc[(hydroexp.Country == i)].sample(1).index)
-#
-#hydroexp.Fueltype = 'Hydro'
-#pc.lookup([entsoe.loc[entsoe.Fueltype=='Hydro'], hydroexp], keys= ['ENTSOE', 'matched'], by='Country')
-#
-#del hydro
-#hydro = hydroexp
-#
-#print hydro.groupby(['Country', 'Technology']).Capacity.sum().unstack()
+		
+def scale_to_net_capacities(df, is_gross=True):
+    if is_gross:
+        factors = gross_to_net_factors()
+        for ftype, tech in factors.index.get_values():
+            df.loc[(df.Fueltype==ftype)&(df.Technology==tech), 'Capacity'] = (
+                factors.loc[(ftype, tech)] * df.loc[(df.Fueltype==ftype)&(df.Technology==tech), 'Capacity'])
+        return df
+    else:
+        return df
