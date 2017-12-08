@@ -267,6 +267,7 @@ def Capacity_stats(raw=False, level=2, **selectors):
             .assign(country=lambda df: (pd.Series(df.country.apply(
                             lambda c: pycountry.countries.get(alpha_2=c).name),
                             index=df.index).str.title()))
+            .replace(dict(country={'Czechia':'Czech Republic'})) #due to pycountry
             .loc[lambda df: df.country.isin(europeancountries())]
             .rename(columns={'technology': 'Fueltype'})
             .replace(dict(Fueltype={'Bioenergy and other renewable fuels': 'Bioenergy',
@@ -790,8 +791,6 @@ def BNETZA(header=9, sheet_name='Gesamtkraftwerksliste BNetzA'):
     -----------
         header : int, Default 9
             The zero-indexed row in which the column headings are found.
-        skip_footer : int, Default 26
-
     """
     filename = 'Kraftwerksliste_2017_2.xlsx'
     bnetza = pd.read_excel(_data_in(filename), header=header, sheet_name=sheet_name)
