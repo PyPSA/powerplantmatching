@@ -70,7 +70,8 @@ def Plot_bar_comparison_single_matched(df=None, cleaned=True, use_saved_aggregat
           #'weight' : 'bold',
           'size'   : 24}
     plt.rc('font', **font)
-    fig, ax = plt.subplots(nrows=1, ncols=2, sharex=False, sharey=True, figsize = (25,13))
+    fig, ax = plt.subplots(nrows=1, ncols=2, sharex=False, sharey=True, squeeze=False,
+                           figsize=(32/1.2,18/1.2))
     # 1st Plot with single datasets on the left side.
     stats.plot.bar(ax=ax[0], stacked=False, legend=True, colormap='Accent')
     ax[0].set_ylabel('Installed Capacity [GW]')
@@ -86,7 +87,7 @@ def Plot_bar_comparison_single_matched(df=None, cleaned=True, use_saved_aggregat
     ax[1].set_axisbelow(True)
     ax[1].grid(color='white', linestyle='dotted')
     fig.tight_layout()
-    return
+    return fig
 
 
 def Plot_hbar_comparison_1dim(by='Country', include_WEPP=True, include_VRE=False, year=2015):
@@ -116,7 +117,7 @@ def Plot_hbar_comparison_1dim(by='Country', include_WEPP=True, include_VRE=False
           #'weight' : 'bold',
           'size'   : 24}
     plt.rc('font', **font)
-    ax = stats.plot.barh(stacked=False, colormap='jet', figsize = (22,13))
+    ax = stats.plot.barh(stacked=False, colormap='jet', figsize=(32/1.2,18/1.2))
     ax.set_xlabel('Installed Capacity [GW]')
     ax.yaxis.label.set_visible(False)
     ax.set_facecolor('#d9d9d9')                  # gray background
@@ -124,7 +125,7 @@ def Plot_hbar_comparison_1dim(by='Country', include_WEPP=True, include_VRE=False
     ax.grid(color='white', linestyle='dotted')   # adds white dotted grid
     ax.legend(loc='best')
     ax.invert_yaxis()
-    return
+    return plt.gcf()
 
 
 def Plot_bar_comparison_countries_fueltypes(dfs=None, ylabel=None, include_WEPP=True,
@@ -179,13 +180,12 @@ def Plot_bar_comparison_countries_fueltypes(dfs=None, ylabel=None, include_WEPP=
           #'weight' : 'bold',
           'size'   : 12}
     plt.rc('font', **font)
-
     # Loop through countries.
     nrows, ncols = gather_nrows_ncols(len(countries))
     i,j = [0, 0]
     labels_mpatches = collections.OrderedDict()
     fig, ax = plt.subplots(nrows=nrows, ncols=ncols, sharex=True, sharey=False,
-                           squeeze=False, figsize=(32,18))
+                           squeeze=False, figsize=(32/1.2,18/1.2))
     for country in sorted(countries):
         if j==ncols:
             i+=1
@@ -204,8 +204,8 @@ def Plot_bar_comparison_countries_fueltypes(dfs=None, ylabel=None, include_WEPP=
             stats_handle, stats_labels = ax[i,j].get_legend_handles_labels()
             for u, v in enumerate(stats_labels):
                 if v not in labels_mpatches:
-                    labels_mpatches[v] = mpatches.Patch(color=stats_handle[u].patches[0].get_facecolor(),
-                                                        label=v)
+                    labels_mpatches[v] = mpatches.Patch(
+                            color=stats_handle[u].patches[0].get_facecolor(), label=v)
         else:
             ax[i,j].legend(fontsize=9, loc='best')
         ax[i,j].set_facecolor('#d9d9d9')
@@ -218,11 +218,11 @@ def Plot_bar_comparison_countries_fueltypes(dfs=None, ylabel=None, include_WEPP=
     # After the loop, do the rest of the layouting.
     fig.tight_layout()
     if not legend_in_subplots:
-        fig.subplots_adjust(bottom=0.08)
+        fig.subplots_adjust(bottom=0.1)
         labels_mpatches = collections.OrderedDict(sorted(labels_mpatches.items()))
         fig.legend(labels_mpatches.values(), labels_mpatches.keys(),
                    loc=8, ncol=len(labels_mpatches), facecolor='#d9d9d9')
-    return
+    return fig
 
 
 def gather_comparison_data(include_WEPP=True, include_VRE=False, **kwargs):
@@ -285,7 +285,8 @@ def Plot_bar_decomissioning_curves(df=None, ylabel=None, title=None, legend_in_s
     plt.rc('font', **font)
 
     nrows, ncols = gather_nrows_ncols(len(set(df.Country)))
-    fig, ax = plt.subplots(nrows=nrows, ncols=ncols, sharex=True, sharey=False, figsize=(32,18))
+    fig, ax = plt.subplots(nrows=nrows, ncols=ncols, sharex=True, sharey=False,
+                           squeeze=False, figsize=(32/1.2,18/1.2))
     data_countries = df.groupby(['Country'])
     i,j = [0,0]
     labels_mpatches = collections.OrderedDict()
@@ -326,7 +327,7 @@ def Plot_bar_decomissioning_curves(df=None, ylabel=None, title=None, legend_in_s
         labels_mpatches = collections.OrderedDict(sorted(labels_mpatches.items()))
         fig.legend(labels_mpatches.values(), labels_mpatches.keys(),
                    loc=8, ncol=len(labels_mpatches), facecolor='#d9d9d9')
-    return
+    return fig
 
 
 def Plot_matchcount_stats(df):
