@@ -13,11 +13,15 @@
 
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+import numpy as np
 import pandas as pd
 import collections
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
+from mpl_toolkits.basemap import Basemap
+from matplotlib.patches import Circle, Ellipse
+from matplotlib.legend_handler import HandlerPatch
+from matplotlib.markers import MarkerStyle
 
 from .config import fueltype_to_life, fueltype_to_color
 from .cleaning import clean_single
@@ -26,17 +30,45 @@ from .collection import (Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced_VRE,
                          Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced,
                          Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced_VRE,
                          Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced)
-from .utils import lookup
+from .utils import lookup, set_uncommon_fueltypes_to_other, tech_colors2
 
 
 def Show_all_plots():
-    Plot_bar_comparison_single_matched()
-    Plot_hbar_comparison_1dim(by='Country')
-    Plot_hbar_comparison_1dim(by='Fueltype')
+    bar_comparison_single_matched()
+    hbar_comparison_1dim(by='Country')
+    hbar_comparison_1dim(by='Fueltype')
     return
 
 
-def Plot_bar_comparison_single_matched(df=None, cleaned=True, use_saved_aggregation=True):
+def powerplant_map():
+    df = set_uncommon_fueltypes_to_other(Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced())
+    shown_fueltypes = ['Hydro', 'Natural Gas', 'Nuclear', 'Hard Coal', 'Lignite', 'Oil']
+    df = df[df.Fueltype.isin(shown_fueltypes) & df.lat.notnull()]
+    fig, ax = plt.subplots(figsize=(7,5))
+    
+    scale = 5e1
+    
+    #df.plot.scatter('lon', 'lat', s=df.Capacity/scale, c=df.Fueltype.map(utils.tech_colors), 
+    #                ax=ax)
+    ax.scatter(df.lon, df.lat, s=df.Capacity/scale, c=df.Fueltype.map(tech_colors2))
+    
+    ax.set_xlabel('')
+    ax.set_ylabel('')
+    draw_basemap()
+    ax.set_xlim(-13, 34)
+    ax.set_ylim(35, 71.65648314)
+    ax.set_axis_bgcolor('white')
+    fig.tight_layout(pad=0.5)
+    
+    legendcols = pd.Series(tech_colors2).reindex(shown_fueltypes)
+    handles = sum(legendcols.apply(lambda x : 
+        make_legend_circles_for([10.], scale=scale, facecolor=x)).tolist(), [])
+    fig.legend(handles, legendcols.index,
+               handler_map=make_handler_map_to_scale_circles_as_in(ax),
+               ncol=3, loc="upper left", frameon=False, fontsize=11)
+    return fig, ax
+
+def bar_comparison_single_matched(df=None, cleaned=True, use_saved_aggregation=True):
     """
     Plots two bar charts for comparison
     1.) Fueltypes on x-axis and capacity on y-axis, categorized by originating database.
@@ -89,7 +121,7 @@ def Plot_bar_comparison_single_matched(df=None, cleaned=True, use_saved_aggregat
     return
 
 
-def Plot_hbar_comparison_1dim(by='Country', include_WEPP=True, include_VRE=False, year=2015):
+def hbar_comparison_1dim(by='Country', include_WEPP=True, include_VRE=False, year=2015):
     """
     Plots a horizontal bar chart with capacity on x-axis, country on y-axis.
 
@@ -127,7 +159,7 @@ def Plot_hbar_comparison_1dim(by='Country', include_WEPP=True, include_VRE=False
     return
 
 
-def Plot_bar_comparison_countries_fueltypes(dfs=None, ylabel=None, include_WEPP=True,
+def bar_comparison_countries_fueltypes(dfs=None, ylabel=None, include_WEPP=True,
         include_VRE=False, show_coverage=True, legend_in_subplots=False, year=2015):
     """
     Plots per country an analysis, how the given datasets differ by fueltype.
@@ -224,39 +256,7 @@ def Plot_bar_comparison_countries_fueltypes(dfs=None, ylabel=None, include_WEPP=
     return
 
 
-def gather_comparison_data(include_WEPP=True, include_VRE=False, **kwargs):
-    yr = kwargs.get('year', 2016)
-    queryexpr = kwargs.get('queryexpr', 'Fueltype != "Solar" and Fueltype != "Wind" and Fueltype != "Geothermal"')
-    # 1+2: WEPP itself + Reduced w/ WEPP
-    if include_WEPP:
-        wepp = WEPP()
-        wepp.query('(YearCommissioned <= {:04d}) or (YearCommissioned != YearCommissioned)'.format(yr), inplace=True)
-
-        if include_VRE:
-            red_w_wepp = Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced_VRE()
-        else:
-            red_w_wepp = Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced()
-            red_w_wepp.query(queryexpr, inplace=True)
-            wepp.query(queryexpr, inplace=True)
-        red_w_wepp.query('(YearCommissioned <= {:04d}) or (YearCommissioned != YearCommissioned)'.format(yr), inplace=True)
-    else:
-        wepp = None
-        red_w_wepp = None
-    # 3: Reduced w/o WEPP
-    if include_VRE:
-        red_wo_wepp = Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced_VRE()
-    else:
-        red_wo_wepp = Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced()
-        red_wo_wepp.query(queryexpr, inplace=True)
-    red_wo_wepp.query('(YearCommissioned <= {:04d}) or (YearCommissioned != YearCommissioned)'.format(yr), inplace=True)
-    # 4: Statistics
-    statistics = Capacity_stats()
-    statistics.Fueltype.replace({'Mixed fuel types':'Other'}, inplace=True)
-    statistics.query(queryexpr, inplace=True)
-    return red_w_wepp, red_wo_wepp, wepp, statistics
-
-
-def Plot_bar_decomissioning_curves(df=None, ylabel=None, title=None, legend_in_subplots=False):
+def bar_decomissioning_curves(df=None, ylabel=None, title=None, legend_in_subplots=False):
     """
     Plots per country a decommissioning curve as a bar chart with capacity on y-axis,
     period on x-axis and categorized by fueltype.
@@ -327,8 +327,44 @@ def Plot_bar_decomissioning_curves(df=None, ylabel=None, title=None, legend_in_s
                    loc=8, ncol=len(labels_mpatches), facecolor='#d9d9d9')
     return
 
+    
+#%% Plot utilities    
+        
 
-def Plot_matchcount_stats(df):
+
+def gather_comparison_data(include_WEPP=True, include_VRE=False, **kwargs):
+    yr = kwargs.get('year', 2016)
+    queryexpr = kwargs.get('queryexpr', 'Fueltype != "Solar" and Fueltype != "Wind" and Fueltype != "Geothermal"')
+    # 1+2: WEPP itself + Reduced w/ WEPP
+    if include_WEPP:
+        wepp = WEPP()
+        wepp.query('(YearCommissioned <= {:04d}) or (YearCommissioned != YearCommissioned)'.format(yr), inplace=True)
+
+        if include_VRE:
+            red_w_wepp = Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced_VRE()
+        else:
+            red_w_wepp = Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced()
+            red_w_wepp.query(queryexpr, inplace=True)
+            wepp.query(queryexpr, inplace=True)
+        red_w_wepp.query('(YearCommissioned <= {:04d}) or (YearCommissioned != YearCommissioned)'.format(yr), inplace=True)
+    else:
+        wepp = None
+        red_w_wepp = None
+    # 3: Reduced w/o WEPP
+    if include_VRE:
+        red_wo_wepp = Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced_VRE()
+    else:
+        red_wo_wepp = Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced()
+        red_wo_wepp.query(queryexpr, inplace=True)
+    red_wo_wepp.query('(YearCommissioned <= {:04d}) or (YearCommissioned != YearCommissioned)'.format(yr), inplace=True)
+    # 4: Statistics
+    statistics = Capacity_stats()
+    statistics.Fueltype.replace({'Mixed fuel types':'Other'}, inplace=True)
+    statistics.query(queryexpr, inplace=True)
+    return red_w_wepp, red_wo_wepp, wepp, statistics
+
+
+def matchcount_stats(df):
     """
     Plots the number of matches against the number of involved databases, across all databases.
     """
@@ -371,3 +407,41 @@ def gather_nrows_ncols(x):
         sol2 = n*m
         if sol2 > sol1: n, m = calc(k, k+1)
         return [n, m]
+
+def make_handler_map_to_scale_circles_as_in(ax, dont_resize_actively=False):
+    fig = ax.get_figure()
+    def axes2pt():
+        return np.diff(
+                ax.transData.transform([(0,0), (1,1)]), axis=0)[0] * (72./fig.dpi)
+    ellipses = []
+    if not dont_resize_actively:
+        def update_width_height(event):
+            dist = axes2pt()
+            for e, radius in ellipses: e.width, e.height = 2. * radius * dist
+        fig.canvas.mpl_connect('resize_event', update_width_height)
+        ax.callbacks.connect('xlim_changed', update_width_height)
+        ax.callbacks.connect('ylim_changed', update_width_height)
+
+    def legend_circle_handler(legend, orig_handle, xdescent, ydescent,
+                              width, height, fontsize):
+        w, h = 2. * orig_handle.get_radius() * axes2pt()
+        e = Ellipse(xy=(0.5*width-0.5*xdescent, 0.5*height-0.5*ydescent),
+                        width=w, height=w)
+        ellipses.append((e, orig_handle.get_radius()))
+        return e
+    return {Circle: HandlerPatch(patch_func=legend_circle_handler)}
+
+def make_legend_circles_for(sizes, scale=1.0, **kw):
+    return [Circle((0,0), radius=(s/scale)**0.5, **kw) for s in sizes]
+
+def draw_basemap(resolution='l', ax=None,country_linewidth=0.5, coast_linewidth=
+                     1.0, zorder=None,  **kwds):
+    if ax is None:
+        ax = plt.gca()
+    m = Basemap(*(ax.viewLim.min + ax.viewLim.max), resolution=resolution, ax=ax, **kwds)
+    m.drawcoastlines(linewidth=coast_linewidth, zorder=zorder)
+    m.drawcountries(linewidth=country_linewidth, zorder=zorder)
+    return m
+
+
+
