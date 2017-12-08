@@ -18,13 +18,14 @@ Utility functions for checking data completness and supporting other functions
 """
 
 from __future__ import print_function, absolute_import
-
-import os
 from os.path import dirname
+import os
 import pandas as pd
 import six
 import pycountry
 import matplotlib.pyplot as plt
+import logging
+
 
 def _data(fn):
     return os.path.join(dirname(dirname(__file__)), 'data', fn)
@@ -36,7 +37,7 @@ def _data_out(fn):
     return os.path.join(dirname(dirname(__file__)), 'data', 'out', fn)
 
 # Logging: General Settings
-import logging
+#import logging
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 # Logging: File

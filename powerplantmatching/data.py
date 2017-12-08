@@ -93,7 +93,8 @@ def OPSD(rawEU=False, rawDE=False, statusDE=None):
                                     'Non-renewable waste': 'Waste',
                                     'Other bioenergy and renewable waste': 'Bioenergy',
                                     'Other or unspecified energy sources': 'Other',
-                                    'Other fossil fuels': 'Other'}))
+                                    'Other fossil fuels': 'Other',
+                                    'Other fuels': 'Other'}))
             .replace({'Country': {'UK': u'GB','[ \t]+|[ \t]+$.':''}}, regex=True) #UK->GB, strip whitespace
             .assign(Name=lambda df: df.Name.str.title(),
                     Fueltype=lambda df: df.Fueltype.str.title(),
@@ -104,10 +105,10 @@ def OPSD(rawEU=False, rawDE=False, statusDE=None):
             .pipe(gather_set_info)
             .pipe(clean_technology)
             .loc[lambda df: df.Country.isin(europeancountries())]
-            .pipe(scale_to_net_capacities, 
+            .pipe(scale_to_net_capacities,
                   (not data_config['OPSD']['net_capacity'])))
 
-data_config['OPSD'] = {'read_function': OPSD, 'reliability_score':4,
+data_config['OPSD'] = {'read_function': OPSD, 'reliability_score':5,
                        'net_capacity':True}
 
 
@@ -158,7 +159,7 @@ def GEO(raw=False):
             .pipe(clean_powerplantname)
             .pipe(clean_technology, generalize_hydros=True)
             .reindex(columns=target_columns())
-            .pipe(scale_to_net_capacities, 
+            .pipe(scale_to_net_capacities,
                   (not data_config['GEO']['net_capacity'])))
 
 data_config['GEO'] = {'read_function': GEO,
@@ -207,12 +208,12 @@ def CARMA(raw=False):
             .pipe(clean_technology)
             .drop_duplicates()
             .reindex(columns=target_columns())
-            .pipe(scale_to_net_capacities, 
+            .pipe(scale_to_net_capacities,
                   (not data_config['CARMA']['net_capacity'])))
 
 data_config['CARMA'] = {'read_function': CARMA,
                         'clean_single_kwargs': dict(aggregate_powerplant_units=False),
-                        'reliability_score':1, 'net_capacity':True}
+                        'reliability_score':1, 'net_capacity':False}
 
 
 def IWPDCY():
@@ -249,7 +250,7 @@ def Capacity_stats(raw=False, level=2, **selectors):
     df : pd.DataFrame
          Capacity statistics per country and fuel-type
     """
-    opsd_aggregated = pd.read_csv(_data_in('national_generation_capacity_stacked.csv'), 
+    opsd_aggregated = pd.read_csv(_data_in('national_generation_capacity_stacked.csv'),
                                   encoding='utf-8', index_col=0)
 
     selectors.setdefault('year', 2016)
@@ -729,8 +730,8 @@ def UBA(header=9, skip_footer=26):
     uba.loc[:, 'File'] = filename
     uba.loc[:, 'projectID'] = ['UBA{:03d}'.format(i + header + 2) for i in uba.index]
     uba.loc[uba.CHP.notnull(), 'Set'] = 'CHP'
-    uba = gather_set_info(uba)
-    uba = clean_powerplantname(uba)
+    uba = (uba.pipe(gather_set_info)
+              .pipe(clean_powerplantname))
     uba.Technology = uba.Technology.replace({u'DKW':'Steam Turbine',
                                              u'DWR':'Pressurized Water Reactor',
                                              u'G/AK':'Steam Turbine',
@@ -762,18 +763,18 @@ def UBA(header=9, skip_footer=26):
                                          u'Gichtgas':'Other',
                                          u'HS':'Oil',
                                          u'Konvertergas':'Other',
-                                         u'Licht':'PV',
+                                         u'Licht':'Solar',
                                          u'Raffineriegas':'Other',
                                          u'Uran':'Nuclear',
                                          u'Wasser':'Hydro',
                                          u'\xd6lr\xfcckstand':'Oil'})
-    uba = (uba.reindex(columns=target_columns()).pipe(scale_to_net_capacities, 
+    uba = (uba.reindex(columns=target_columns()).pipe(scale_to_net_capacities,
                   (not data_config['UBA']['net_capacity'])))
     return uba
 
 data_config['UBA'] = {'read_function': UBA,
            'clean_single_kwargs': dict(aggregate_powerplant_units=False),
-           'net_capacity':False}
+           'net_capacity':False, 'reliability_score':2}
 
 
 def BNETZA(header=9, sheet_name='Gesamtkraftwerksliste BNetzA'):
@@ -798,20 +799,24 @@ def BNETZA(header=9, sheet_name='Gesamtkraftwerksliste BNetzA'):
             u'Kraftwerksnummer Bundesnetzagentur': 'projectID',
             u'Kraftwerksname': 'Name',
             u'Netto-Nennleistung (elektrische Wirkleistung) in MW': 'Capacity',
-            u''''Auswertung\nEnergieträger (Zuordnung zu einem Hauptenergieträger 
-                                            bei Mehreren Energieträgern)''':'Fueltype',
-            u'''Kraftwerksstatus \n(in Betrieb/\nvorläufig stillgelegt/\nsaisonale Konservierung
-            \nGesetzlich an Stilllegung gehindert/\nSonderfall)''':'Status',
-            u'''Aufnahme der kommerziellen Stromerzeugung der derzeit in Betrieb 
-            befindlichen Erzeugungseinheit\n(Jahr)''':'YearCommissioned',
-            u'Wärmeauskopplung (KWK)\n(ja/nein)':'Set'})
+            u'Wärmeauskopplung (KWK)\n(ja/nein)':'Set',
+            u'Ort\n(Standort Kraftwerk)':'Ort',
+            (u'Auswertung\nEnergieträger (Zuordnung zu einem Hauptenergieträger '
+             u'bei Mehreren Energieträgern)'):'Fueltype',
+            (u'Kraftwerksstatus \n(in Betrieb/\nvorläufig stillgelegt/\nsaisonale '
+             u'Konservierung\nGesetzlich an Stilllegung gehindert/\nSonderfall)'):'Status',
+            (u'Aufnahme der kommerziellen Stromerzeugung der derzeit in Betrieb '
+             u'befindlichen Erzeugungseinheit\n(Jahr)'):'YearCommissioned',})
     # If BNetzA-Name is empty replace by company, if this is empty by city.
-    bnetza.Name.fillna(bnetza.Unternehmen, inplace=True)
-    bnetza.Name.fillna(bnetza.loc[:, u'Ort\n(Standort Kraftwerk)'], inplace=True)
+    bnetza.loc[bnetza.Name.str.len().fillna(0.0)<=4, 'Name'] =\
+        bnetza.loc[bnetza.Name.str.len().fillna(0.0)<=4, 'Unternehmen'] + ' ' +\
+        bnetza.loc[bnetza.Name.str.len().fillna(0.0)<=4, 'Name'].fillna('')
+    bnetza.Name.fillna(bnetza.Ort, inplace=True)
     bnetza = clean_powerplantname(bnetza)
     # Filter by Status
-    pattern = '|'.join(['.*(?i)betrieb', '.*(?i)gehindert', 'Sicherheitsbereitschaft', 'Sonderfall'])
-    bnetza = bnetza.loc[bnetza.Status.str.title().str.contains(pattern, regex=True, case=False)]
+    pattern = '|'.join(['.*(?i)betrieb', '.*(?i)gehindert', '(?i)vorl.*ufig.*',
+                        'Sicherheitsbereitschaft', 'Sonderfall'])
+    bnetza = bnetza.loc[bnetza.Status.str.contains(pattern, regex=True, case=False)]
     # Technologies
     bnetza.Blockname.replace(
             to_replace=['.*(GT|gasturbine).*', '.*(DT|HKW|(?i)dampfturbine|(?i)heizkraftwerk).*', '.*GuD.*'],
@@ -835,11 +840,12 @@ def BNETZA(header=9, sheet_name='Gesamtkraftwerksliste BNetzA'):
     bnetza.loc[:, 'Country'] = 'Germany'
     bnetza.loc[:, 'File'] = filename
     bnetza.loc[:, 'Set'] = bnetza.Set.fillna('Nein').str.title().replace({u'Ja':'CHP',u'Nein':'PP'})
-    bnetza = (bnetza.reindex(columns=target_columns()).pipe(scale_to_net_capacities, 
+    bnetza = (bnetza.reindex(columns=target_columns()).pipe(scale_to_net_capacities,
                   (not data_config['BNETZA']['net_capacity'])))
     return bnetza
 
-data_config['BNETZA'] = {'read_function': BNETZA, 'net_capacity':True}
+data_config['BNETZA'] = {'read_function': BNETZA, 'net_capacity':True,
+            'reliability_score':3}
 
 
 def OPSD_VRE():

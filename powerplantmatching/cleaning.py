@@ -55,7 +55,8 @@ def clean_powerplantname(df):
                           'IX','X','XI','Grupo','parque','eolico','gas',
                           'biomasa','COGENERACION','gt','unnamed',
                           'tratamiento de purines','planta','de','la','station',
-                          'power','storage','plant','stage','pumped','project'])]
+                          'power','storage','plant','stage','pumped','project',
+                          'dt','gud', 'hkw'])]
     name = (name
             .replace(regex=True, to_replace=pattern, value=' ')
             .str.strip().str.replace('\\s\\s+', ' ')

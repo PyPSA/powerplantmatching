@@ -20,10 +20,10 @@ Functions to modify and adjust power plant datasets
 from __future__ import absolute_import, print_function
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 from .utils import (read_csv_if_string, lookup)
 from .config import fueltype_to_life
-from .cleaning import clean_single, clean_technology
-# Logging: General Settings
+from .cleaning import (clean_single, clean_technology)
 import logging
 logger = logging.getLogger(__name__)
 
@@ -337,6 +337,7 @@ def gross_to_net_factors(reference='opsd', aggfunc='median', return_stats=False)
         fig.suptitle('')
         return stats, fig
     else:
+        df.energy_source_level_2.fillna(value=df.fuel, inplace=True)
         df.replace(dict(energy_source_level_2={'Biomass and biogas': 'Bioenergy',
                                     'Fossil fuels': 'Other',
                                     'Mixed fossil fuels': 'Other',
@@ -344,17 +345,14 @@ def gross_to_net_factors(reference='opsd', aggfunc='median', return_stats=False)
                                     'Non-renewable waste': 'Waste',
                                     'Other bioenergy and renewable waste': 'Bioenergy',
                                     'Other or unspecified energy sources': 'Other',
-                                    'Other fossil fuels': 'Other'}))
+                                    'Other fossil fuels': 'Other',
+                                    'Other fuels': 'Other'}), inplace=True)
         df.rename(columns={'technology':'Technology'}, inplace=True)
         df = (clean_technology(df)
                 .assign(energy_source_level_2=lambda df: df.energy_source_level_2.str.title()))
         ratios = df.groupby(['energy_source_level_2', 'Technology']).ratio.mean()
-#        Note that for Nuclear Steam Turbine this does not provide a factor. Add this maually
-#        refere to http://www.power-technology.com/features/feature-largest-nuclear-power-plants-world/
-        ratios.loc[('Nuclear', 'Steam Turbine')] = 0.95
-#        another possibility could be this, which however leads to too low ratios
-#        ratios.loc[('Nuclear', 'Steam Turbine')] = ratios.groupby(level=1).mean()['Steam Turbine']
         return ratios
+
 
 def scale_to_net_capacities(df, is_gross=True):
     if is_gross:
