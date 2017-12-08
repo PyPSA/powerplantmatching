@@ -730,8 +730,8 @@ def UBA(header=9, skip_footer=26):
     uba.loc[:, 'File'] = filename
     uba.loc[:, 'projectID'] = ['UBA{:03d}'.format(i + header + 2) for i in uba.index]
     uba.loc[uba.CHP.notnull(), 'Set'] = 'CHP'
-    uba = gather_set_info(uba)
-    uba = clean_powerplantname(uba)
+    uba = (uba.pipe(gather_set_info)
+              .pipe(clean_powerplantname))
     uba.Technology = uba.Technology.replace({u'DKW':'Steam Turbine',
                                              u'DWR':'Pressurized Water Reactor',
                                              u'G/AK':'Steam Turbine',
@@ -774,7 +774,7 @@ def UBA(header=9, skip_footer=26):
 
 data_config['UBA'] = {'read_function': UBA,
            'clean_single_kwargs': dict(aggregate_powerplant_units=False),
-           'net_capacity':False, 'reliability_score':3}
+           'net_capacity':False, 'reliability_score':2}
 
 
 def BNETZA(header=9, sheet_name='Gesamtkraftwerksliste BNetzA'):
@@ -800,6 +800,7 @@ def BNETZA(header=9, sheet_name='Gesamtkraftwerksliste BNetzA'):
             u'Kraftwerksname': 'Name',
             u'Netto-Nennleistung (elektrische Wirkleistung) in MW': 'Capacity',
             u'Wärmeauskopplung (KWK)\n(ja/nein)':'Set',
+            u'Ort\n(Standort Kraftwerk)':'Ort',
             (u'Auswertung\nEnergieträger (Zuordnung zu einem Hauptenergieträger '
              u'bei Mehreren Energieträgern)'):'Fueltype',
             (u'Kraftwerksstatus \n(in Betrieb/\nvorläufig stillgelegt/\nsaisonale '
@@ -807,8 +808,10 @@ def BNETZA(header=9, sheet_name='Gesamtkraftwerksliste BNetzA'):
             (u'Aufnahme der kommerziellen Stromerzeugung der derzeit in Betrieb '
              u'befindlichen Erzeugungseinheit\n(Jahr)'):'YearCommissioned',})
     # If BNetzA-Name is empty replace by company, if this is empty by city.
-    bnetza.Name.fillna(bnetza.Unternehmen, inplace=True)
-    bnetza.Name.fillna(bnetza.loc[:, u'Ort\n(Standort Kraftwerk)'], inplace=True)
+    bnetza.loc[bnetza.Name.str.len().fillna(0.0)<=4, 'Name'] =\
+        bnetza.loc[bnetza.Name.str.len().fillna(0.0)<=4, 'Unternehmen'] + ' ' +\
+        bnetza.loc[bnetza.Name.str.len().fillna(0.0)<=4, 'Name'].fillna('')
+    bnetza.Name.fillna(bnetza.Ort, inplace=True)
     bnetza = clean_powerplantname(bnetza)
     # Filter by Status
     pattern = '|'.join(['.*(?i)betrieb', '.*(?i)gehindert', '(?i)vorl.*ufig.*',
