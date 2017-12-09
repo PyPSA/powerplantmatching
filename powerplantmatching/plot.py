@@ -21,7 +21,8 @@ import matplotlib.patches as mpatches
 from mpl_toolkits.basemap import Basemap
 from matplotlib.patches import Circle, Ellipse
 from matplotlib.legend_handler import HandlerPatch
-from matplotlib.markers import MarkerStyle
+from matplotlib import rcParams, cycler
+from matplotlib.lines import Line2D
 import seaborn as sns
 
 from .config import fueltype_to_life, fueltype_to_color
@@ -259,6 +260,29 @@ def bar_comparison_countries_fueltypes(dfs=None, ylabel=None, include_WEPP=True,
     return fig, ax
 
 
+#this ansatz could be an alternative to bar_comparison_countries_fueltypes, but not 
+#    sure
+def bar_fueltype_and_country_totals(dfs, keys, figsize=(12,8)):    
+    df = lookup(dfs, keys)
+    countries = df.columns.levels[0] if isinstance(df.columns, pd.MultiIndex) else df.columns
+    n = len(countries)
+    subplots = gather_nrows_ncols(n)
+    fig, ax = plt.subplots(*subplots, figsize=figsize)
+    
+    if sum(subplots)>2:
+        ax_iter = ax.flat
+    else:
+        ax_iter = np.array(ax).flat
+    for country in countries:
+        ax = next(ax_iter)
+        df[country].plot.bar(ax=ax, sharex=True, rot=55, legend=None)
+        ax.ticklabel_format(axis='y', style='sci', scilimits=(-2,2))
+        ax.set_title(country)
+        fig.tight_layout(pad=0.5)
+    return fig, ax
+
+
+
 def bar_fueltype_totals(dfs, keys, figsize=(7,4)):
     with sns.axes_style('darkgrid'):
         fig, ax = plt.subplots(1,1, figsize=figsize)
@@ -272,6 +296,46 @@ def bar_fueltype_totals(dfs, keys, figsize=(7,4)):
         ax.xaxis.grid(False)
         fig.tight_layout(pad=0.5)
         return fig, ax
+
+def bar_matching_fueltype_totals(figsize=(7,4)):
+    from . import data
+    from .collection import Carma_ENTSOE_GEO_OPSD_WRI_matched_reduced
+    matched = set_uncommon_fueltypes_to_other(
+            Carma_ENTSOE_GEO_OPSD_WRI_matched_reduced())
+    matched.loc[matched.Fueltype=='Waste', 'Fueltype']='Other'
+    geo=set_uncommon_fueltypes_to_other(data.GEO())
+    carma=set_uncommon_fueltypes_to_other(data.CARMA())
+    wri=set_uncommon_fueltypes_to_other(data.WRI())
+    ese=set_uncommon_fueltypes_to_other(data.ESE())
+    entsoe = set_uncommon_fueltypes_to_other(data.Capacity_stats())
+    opsd = set_uncommon_fueltypes_to_other(data.OPSD())
+    entsoedata = set_uncommon_fueltypes_to_other(data.ENTSOE())
+    
+    matched.Capacity = matched.Capacity/1000.
+    geo.Capacity = geo.Capacity/1000.
+    carma.Capacity = carma.Capacity/1000.
+    wri.Capacity = wri.Capacity/1000.
+    ese.Capacity = ese.Capacity/1000.
+    entsoe.Capacity = entsoe.Capacity/1000.
+    opsd.Capacity = opsd.Capacity/1000.
+    entsoedata.Capacity =  entsoedata.Capacity/1000.
+
+    fig, (ax1,ax2) = plt.subplots(1,2, figsize=(7,3), sharey=True)
+    databases = lookup([carma, entsoedata, ese, geo, opsd, wri], 
+               keys=[ 'CARMA', 'ENTSOE','ESE', 'GEO','OPSD', 'WRI'], by='Fueltype') 
+    
+    databases.plot(kind='bar', ax=ax1, edgecolor='none')
+    datamatched = lookup(matched, by='Fueltype')
+    datamatched.index.name=''
+    datamatched.name='Matched Database'
+    datamatched.plot(kind='bar', ax=ax2, #color=cmap[3:4], 
+                     edgecolor='none')
+    ax2.legend()
+    ax1.set_ylabel('Capacity [GW]')
+    ax1.xaxis.grid(False)
+    ax2.xaxis.grid(False)
+    fig.tight_layout(pad=0.5)
+
 
 def hbar_country_totals(dfs, keys, exclude_fueltypes=['Solar', 'Wind'], 
                         figsize=(7,5)):
@@ -287,6 +351,49 @@ def hbar_country_totals(dfs, keys, exclude_fueltypes=['Solar', 'Wind'],
         ax.set_ylabel('')
         fig.tight_layout(pad=0.5)
     return fig, ax
+
+
+
+def factor_comparison(dfs, keys, figsize=(7,5)):
+    compare = lookup(dfs, show_totals=True,
+              keys=keys, exclude=['Solar', 'Wind']).fillna(0.)
+    n_fueltypes, n_countries = compare.shape
+    
+    compare.columns.labels
+    c= [tech_colors2[i] for i in compare.index.values[:-1]] + ['gold']
+    rcParams["axes.prop_cycle"] = cycler(color=c)
+    
+    #where both are zero,             
+    compare[compare.groupby(level=0, axis=1).transform(np.sum)<0.5]=np.nan
+    
+    fig, ax = plt.subplots(1,1, figsize=figsize)
+    compare.T.plot(ax=ax, markevery=(0,2), 
+                   style='o', markersize=5)
+    compare.T.plot(ax=ax, markevery=(1,2), 
+                   style='s', legend=None, markersize=4.5)
+    
+    lgd = ax.get_legend_handles_labels()
+    
+    for i,j in enumerate(compare.T.index.levels[0]):
+        ax.plot(np.array([0,1])+(2*i), compare.T.loc[j])
+    
+    indexhandles = [Line2D([0.4,.6],[.4,.6], marker=m, linewidth=0., 
+                                     markersize=msize,
+                                     color='w', markeredgecolor='k', markeredgewidth=0.5)
+                    for m, msize in [['o', 5.], ['s', 4.5]]]
+    indexlabels = ['Matched Dataset', 'ENTSOE Stats']
+    ax.add_artist(ax.legend(handles=indexhandles, labels=indexlabels))
+    ax.legend(handles= lgd[0][:len(c)], labels=lgd[1][:len(c)]
+               ,title=False, loc=2)
+    
+    ax.set_xlim(-1,n_countries)
+    ax.xaxis.grid(False)
+    ax.set_xticks(np.linspace(0.5,n_countries-1.5,n_countries/2))
+    ax.set_xticklabels(compare.columns.levels[0].values, rotation=90)
+    ax.set_xlabel('')
+    ax.set_ylabel('Capacity [GW]')
+    fig.tight_layout(pad=0.5)
+
 
 
 def bar_decomissioning_curves(df=None, ylabel=None, title=None, legend_in_subplots=False):
