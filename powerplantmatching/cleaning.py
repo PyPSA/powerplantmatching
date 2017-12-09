@@ -51,14 +51,14 @@ def clean_powerplantname(df):
 
     pattern = [('(?i)(^|\s)'+x+'(?=\s|$)')
                for x in (cw +
-                         ['[a-z]','I','II','III','IV','V','VI','VII','VIII',
-                          'IX','X','XI','Grupo','parque','eolico','gas',
-                          'biomasa','COGENERACION','gt','unnamed',
-                          'tratamiento de purines','planta','de','la','station',
-                          'power','storage','plant','stage','pumped','project',
-                          'dt','gud', 'hkw', 'kbr', 'Kernkraft', 'Kernkraftwerk',
-                          'kwg', 'krb', 'ohu', 'gkn', 'Gemeinschaftskernkraftwerk',
-                          'kki', 'kkp', 'kle'])]
+                        ['[a-z]','I','II','III','IV','V','VI','VII','VIII',
+                        'IX','X','XI','Grupo','parque','eolico','gas',
+                        'biomasa','COGENERACION','gt','unnamed',
+                        'tratamiento de purines','planta','de','la','station',
+                        'power','storage','plant','stage','pumped','project',
+                        'dt','gud', 'hkw', 'kbr', 'Kernkraft', 'Kernkraftwerk',
+                        'kwg', 'krb', 'ohu', 'gkn', 'Gemeinschaftskernkraftwerk',
+                        'kki', 'kkp', 'kle'])]
     name = (name
             .replace(regex=True, to_replace=pattern, value=' ')
             .str.strip().str.replace('\\s\\s+', ' ')
