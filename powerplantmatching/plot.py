@@ -22,6 +22,7 @@ from mpl_toolkits.basemap import Basemap
 from matplotlib.patches import Circle, Ellipse
 from matplotlib.legend_handler import HandlerPatch
 from matplotlib.markers import MarkerStyle
+import seaborn as sns
 
 from .config import fueltype_to_life, fueltype_to_color
 from .cleaning import clean_single
@@ -160,7 +161,8 @@ def hbar_comparison_1dim(by='Country', include_WEPP=True, include_VRE=False, yea
 
 
 def bar_comparison_countries_fueltypes(dfs=None, ylabel=None, include_WEPP=True,
-        include_VRE=False, show_coverage=True, legend_in_subplots=False, year=2015):
+        include_VRE=False, show_coverage=True, legend_in_subplots=False, year=2015,
+        figsize=(7,5)):
     """
     Plots per country an analysis, how the given datasets differ by fueltype.
 
@@ -217,7 +219,7 @@ def bar_comparison_countries_fueltypes(dfs=None, ylabel=None, include_WEPP=True,
     i,j = [0, 0]
     labels_mpatches = collections.OrderedDict()
     fig, ax = plt.subplots(nrows=nrows, ncols=ncols, sharex=True, sharey=False,
-                           squeeze=False, figsize=(32,18))
+                           squeeze=False, figsize=figsize)
     for country in sorted(countries):
         if j==ncols:
             i+=1
@@ -254,7 +256,37 @@ def bar_comparison_countries_fueltypes(dfs=None, ylabel=None, include_WEPP=True,
         labels_mpatches = collections.OrderedDict(sorted(labels_mpatches.items()))
         fig.legend(labels_mpatches.values(), labels_mpatches.keys(),
                    loc=8, ncol=len(labels_mpatches), facecolor='#d9d9d9')
-    return
+    return fig, ax
+
+
+def bar_fueltype_totals(dfs, keys, figsize=(7,4)):
+    with sns.axes_style('darkgrid'):
+        fig, ax = plt.subplots(1,1, figsize=figsize)
+        fueltotals = lookup(dfs, 
+                   keys=keys, by='Fueltype'
+                   ,show_totals=True).loc[orderdedfuels+['Total']]
+        fueltotals[:-1].plot(kind="bar", 
+                           ax=ax, legend='reverse', edgecolor='none', rot=75)
+        ax.legend(loc=0)
+        ax.set_ylabel('Capacity [MW]')
+        ax.xaxis.grid(False)
+        fig.tight_layout(pad=0.5)
+        return fig, ax
+
+def hbar_country_totals(dfs, keys, exclude_fueltypes=['Solar', 'Wind'], 
+                        figsize=(7,5)):
+    fig, ax = plt.subplots(1,1, figsize=figsize)
+    with sns.axes_style('white'):
+        countrytotals = lookup(dfs, 
+                   keys=keys, by='Country', 
+                    exclude=exclude_fueltypes,show_totals=True)
+        countrytotals[::-1][1:].plot(kind="barh", 
+                           ax=ax, legend='reverse', edgecolor='none')
+        ax.set_xlabel('Capacity [GW]')
+        ax.yaxis.grid(False)
+        ax.set_ylabel('')
+        fig.tight_layout(pad=0.5)
+    return fig, ax
 
 
 def bar_decomissioning_curves(df=None, ylabel=None, title=None, legend_in_subplots=False):
@@ -445,4 +477,6 @@ def draw_basemap(resolution='l', ax=None,country_linewidth=0.5, coast_linewidth=
     return m
 
 
+orderdedfuels = ['Hydro', 'Solar', 'Wind',
+                     'Nuclear','Hard Coal', 'Lignite', 'Oil', 'Natural Gas','Other']
 

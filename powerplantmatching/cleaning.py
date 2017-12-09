@@ -56,7 +56,9 @@ def clean_powerplantname(df):
                           'biomasa','COGENERACION','gt','unnamed',
                           'tratamiento de purines','planta','de','la','station',
                           'power','storage','plant','stage','pumped','project',
-                          'dt','gud', 'hkw'])]
+                          'dt','gud', 'hkw', 'kbr', 'Kernkraft', 'Kernkraftwerk',
+                          'kwg', 'krb', 'ohu', 'gkn', 'Gemeinschaftskernkraftwerk',
+                          'kki', 'kkp', 'kle'])]
     name = (name
             .replace(regex=True, to_replace=pattern, value=' ')
             .str.strip().str.replace('\\s\\s+', ' ')
@@ -246,8 +248,8 @@ def aggregate_units(df, use_saved_aggregation=False, dataset_name=None,
     return df
 
 
-def clean_single(df, aggregate_powerplant_units=True, use_saved_aggregation=False,
-                 dataset_name=None, detailed_columns=False):
+def clean_single(df, dataset_name=None, aggregate_powerplant_units=True, 
+                 use_saved_aggregation=False, detailed_columns=False):
     """
     Vertical cleaning of the database. Cleans the "Name"-column, sums
     up the capacity of powerplant units which are determined to belong
@@ -257,6 +259,11 @@ def clean_single(df, aggregate_powerplant_units=True, use_saved_aggregation=Fals
     ----------
     df : pandas.Dataframe or string
         dataframe or csv-file to use for the resulting database
+
+    dataset_name : str
+        Only sensible if ``aggregate_units`` is set to True.  custom name
+        for dataset identification, choose your own identification in
+        case no metadata is passed to the function
 
     aggregate_units : Boolean, default True
         Whether or not the power plant units should be aggregated
@@ -270,10 +277,6 @@ def clean_single(df, aggregate_powerplant_units=True, use_saved_aggregation=Fals
         want to have aggregated powerplants without running the
         aggregation algorithm again
 
-    dataset_name : str
-        Only sensible if ``aggregate_units`` is set to True.  custom name
-        for dataset identification, choose your own identification in
-        case no metadata is passed to the function
     """
     if aggregate_powerplant_units and dataset_name is None:
         raise ValueError('``aggregate_powerplant_units`` is True but no ``dataset_name`` was given!')

@@ -28,8 +28,8 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def extend_by_non_matched(df, extend_by, label, fueltypes=None,
-                          clean_added_data=True, use_saved_aggregation=False):
+def extend_by_non_matched(df, extend_by, label=None, fueltypes=None,
+                          clean_added_data=True, use_saved_aggregation=True):
     """
     Returns the matched dataframe with additional entries of non-matched powerplants
     of a reliable source.
@@ -38,18 +38,24 @@ def extend_by_non_matched(df, extend_by, label, fueltypes=None,
     ----------
     df : Pandas.DataFrame
         Already matched dataset which should be extended
-    extend_by : pd.DataFrame
+    extend_by : pd.DataFrame | str
         Database which is partially included in the matched dataset, but
-        which should be included totally
+        which should be included totally. If str is passed, is will be used
+        to call the corresponding data from data.py
     label : str
         Column name of the additional database within the matched dataset, this
         string is used if the columns of the additional database do not correspond
         to the ones of the dataset
     """
-    extend_by = read_csv_if_string(extend_by).set_index('projectID', drop=False)
+    from .data import data_config
+    
+    if isinstance(extend_by, str):
+        label = extend_by
+        extend_by = data_config[label]['read_function']()
+#    extend_by.set_index('projectID', drop=False, inplace=True)
 
     included_ids = df.projectID.map(lambda d: d.get(label)).dropna().sum()
-    remaining_ids = extend_by.index.difference(included_ids)
+    remaining_ids = extend_by.projectID.isin(included_ids)
 
     extend_by = extend_by.loc[remaining_ids]
 
@@ -58,7 +64,7 @@ def extend_by_non_matched(df, extend_by, label, fueltypes=None,
     if clean_added_data:
         extend_by = clean_single(extend_by, use_saved_aggregation=use_saved_aggregation,
                                  dataset_name=label)
-    extend_by = extend_by.rename(columns={'Name':label})
+#    extend_by = extend_by.rename(columns={'Name':label})
     extend_by['projectID'] = extend_by.projectID.map(lambda x: {label : x})
     return df.append(extend_by.loc[:, df.columns], ignore_index=True)
 
@@ -354,12 +360,16 @@ def gross_to_net_factors(reference='opsd', aggfunc='median', return_stats=False)
         return ratios
 
 
-def scale_to_net_capacities(df, is_gross=True):
+def scale_to_net_capacities(df, is_gross=True, catch_all=True):
     if is_gross:
         factors = gross_to_net_factors()
         for ftype, tech in factors.index.get_values():
-            df.loc[(df.Fueltype==ftype)&(df.Technology==tech), 'Capacity'] = (
-                factors.loc[(ftype, tech)] * df.loc[(df.Fueltype==ftype)&(df.Technology==tech), 'Capacity'])
+            df.loc[(df.Fueltype==ftype)&(df.Technology==tech), 'Capacity'] *= factors.loc[(ftype, tech)]
+        if catch_all:
+            for ftype in factors.index.levels[0]:
+                techs = factors.loc[ftype].index.tolist()
+                df.loc[(df.Fueltype==ftype)&(~df.Technology.isin(techs)), 'Capacity'] *= (
+                        factors.loc[ftype].mean())
         return df
     else:
         return df

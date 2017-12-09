@@ -184,7 +184,7 @@ def combine_multiple_datasets(datasets, labels):
         df = df.loc[:,target_columns()]
         return df.reset_index(drop=True)
     crossmatches = link_multiple_datasets(datasets, labels)
-    return combined_dataframe(crossmatches, datasets)
+    return combined_dataframe(crossmatches, datasets)[target_columns()]
 
 
 def reduce_matched_dataframe(df):
