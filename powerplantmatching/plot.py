@@ -283,16 +283,16 @@ def bar_fueltype_and_country_totals(dfs, keys, figsize=(12,8)):
 
 
 
-def bar_fueltype_totals(dfs, keys, figsize=(7,4)):
-    with sns.axes_style('darkgrid'):
+def bar_fueltype_totals(dfs, keys, figsize=(7,4), unit='GW'):
+    with sns.axes_style('whitegrid'):
         fig, ax = plt.subplots(1,1, figsize=figsize)
         fueltotals = lookup(dfs, 
                    keys=keys, by='Fueltype'
-                   ,show_totals=True).loc[orderdedfuels+['Total']]
+                   ,show_totals=True, unit=unit).loc[orderdedfuels+['Total']]
         fueltotals[:-1].plot(kind="bar", 
                            ax=ax, legend='reverse', edgecolor='none', rot=75)
         ax.legend(loc=0)
-        ax.set_ylabel('Capacity [MW]')
+        ax.set_ylabel(r'Capacity [%s]'%unit)
         ax.xaxis.grid(False)
         fig.tight_layout(pad=0.5)
         return fig, ax
@@ -335,22 +335,24 @@ def bar_matching_fueltype_totals(figsize=(7,4)):
     ax1.xaxis.grid(False)
     ax2.xaxis.grid(False)
     fig.tight_layout(pad=0.5)
+    return fig, [ax1,ax2]
 
 
 def hbar_country_totals(dfs, keys, exclude_fueltypes=['Solar', 'Wind'], 
-                        figsize=(7,5)):
-    fig, ax = plt.subplots(1,1, figsize=figsize)
-    with sns.axes_style('white'):
+                        figsize=(7,5), unit='GW'):
+    with sns.axes_style('whitegrid'):
+        fig, ax = plt.subplots(1,1, figsize=figsize)
         countrytotals = lookup(dfs, 
                    keys=keys, by='Country', 
-                    exclude=exclude_fueltypes,show_totals=True)
+                    exclude=exclude_fueltypes,show_totals=True,
+                    unit=unit)
         countrytotals[::-1][1:].plot(kind="barh", 
                            ax=ax, legend='reverse', edgecolor='none')
-        ax.set_xlabel('Capacity [GW]')
+        ax.set_xlabel('Capacity [%s]'%unit)
         ax.yaxis.grid(False)
         ax.set_ylabel('')
         fig.tight_layout(pad=0.5)
-    return fig, ax
+        return fig, ax
 
 
 
