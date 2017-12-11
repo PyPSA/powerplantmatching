@@ -260,13 +260,13 @@ def Capacity_stats(raw=False, level=2, **selectors):
         return opsd_aggregated
     entsoedata = (opsd_aggregated
             [lambda df: reduce(lambda x, y: x&y,
-                          (df[k] == v
-                           for k, v in iteritems(selectors)
-                           if v is not None),
-                          df['energy_source_level_%d' % level])]
+                (df[k] == v
+                    for k, v in iteritems(selectors)
+                    if v is not None),
+                    df['energy_source_level_%d' % level])]
             .assign(country=lambda df: (pd.Series(df.country.apply(
-                            lambda c: pycountry.countries.get(alpha_2=c).name),
-                            index=df.index).str.title()))
+                lambda c: pycountry.countries.get(alpha_2=c).name),
+                index=df.index).str.title()))
             .replace(dict(country={'Czechia':'Czech Republic'})) #due to pycountry
             .loc[lambda df: df.country.isin(europeancountries())]
             .rename(columns={'technology': 'Fueltype'})
@@ -774,7 +774,7 @@ def UBA(header=9, skip_footer=26):
     return uba
 
 data_config['UBA'] = {'read_function': UBA,
-           'clean_single_kwargs': dict(aggregate_powerplant_units=False),
+#           'clean_single_kwargs': dict(aggregate_powerplant_units=False),
            'net_capacity':False, 'reliability_score':2}
 
 

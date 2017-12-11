@@ -34,12 +34,22 @@ def Collection(datasets, update=False, use_saved_aggregation=False, reduced=True
     if 'ESE' in custom_config:
         if custom_config['ESE']['read_kwargs']['add_IWPDCY']:
             datasets = datasets + ['IWPDCY']
+#    deal with the case that only one dataset is requested
+    if isinstance(datasets, str):
+        name = datasets
+        conf = data_config[name].copy()
+        conf.update(custom_config.get(name, {}))
+
+        df = conf['read_function'](**conf.get('read_kwargs', {}))
+        return clean_single(df, use_saved_aggregation=use_saved_aggregation,
+                          dataset_name=name,
+                          **conf.get('clean_single_kwargs', {}))
+
     datasets = sorted(datasets)
     outfn_matched = _data_out('Matched_{}.csv'
                               .format('_'.join(map(str.upper, datasets))))
     outfn_reduced = _data_out('Matched_{}_reduced.csv'
                               .format('_'.join(map(str.upper, datasets))))
-
     if update:
         dfs = []
         for name in datasets:

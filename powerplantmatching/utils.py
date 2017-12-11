@@ -50,7 +50,8 @@ consoleHandler = logging.StreamHandler()
 logger.addHandler(consoleHandler)
 
 
-def lookup(df, keys=None, by='Country, Fueltype', exclude=None, show_totals=False):
+def lookup(df, keys=None, by='Country, Fueltype', exclude=None, show_totals=False, 
+           unit='MW'):
     """
     Returns a lookup table of the dataframe df with rounded numbers.
     Use different lookups as "Country", "Fueltype" for the different lookups.
@@ -68,6 +69,13 @@ def lookup(df, keys=None, by='Country, Fueltype', exclude=None, show_totals=Fals
     exclude: list
         list of fueltype to exclude from the analysis
     """
+    
+    if unit=='GW':
+        scaling=1000. 
+    elif unit=='MW':
+        scaling=1.
+    else:
+        raise(ValueError("unit has to be MW or GW"))
 
     def lookup_single(df, by=by, exclude=exclude):
         df = read_csv_if_string(df)
@@ -83,7 +91,7 @@ def lookup(df, keys=None, by='Country, Fueltype', exclude=None, show_totals=Fals
         else:
             raise NameError(
             "``by` must be one of 'Country, Fueltype' or 'Country' or 'Fueltype'")
-
+    
     if isinstance(df, list):
         dfs = pd.concat([lookup_single(a) for a in df], axis=1, keys=keys)
         if by == 'Country, Fueltype':
@@ -92,16 +100,16 @@ def lookup(df, keys=None, by='Country, Fueltype', exclude=None, show_totals=Fals
         dfs = dfs.fillna(0.)
         if show_totals:
             dfs.loc['Total'] = dfs.sum()
-            return dfs.round(0).astype(int)
+            return (dfs/scaling).round(3)
         else:
-            return dfs.round(0).astype(int)
+            return (dfs/scaling).round(3)
     else:
         if show_totals:
             dfs = lookup_single(df).fillna(0.)
             dfs.loc['Total'] = dfs.sum()
-            return dfs.round(0).astype(int)
+            return (dfs/scaling).round(3)
         else:
-            return lookup_single(df).fillna(0.).round(0).astype(int)
+            return (lookup_single(df)/scaling).fillna(0.).round(3)
 
 
 def plot_fueltype_stats(df):
