@@ -704,7 +704,7 @@ data_config['WEPP'] = {'read_function': WEPP,
            'reliability_score':4, 'net_capacity':False}
 
 
-def UBA(header=9, skip_footer=26):
+def UBA(header=9, skip_footer=26, prune_wind=True, prune_solar=True):
     """
     Returns the UBA Database.
     The user has to download the database from:
@@ -774,6 +774,10 @@ def UBA(header=9, skip_footer=26):
                                          u'Uran':'Nuclear',
                                          u'Wasser':'Hydro',
                                          u'\xd6lr\xfcckstand':'Oil'})
+    if prune_wind:
+        uba = uba.loc[lambda x: x.Fueltype!='Wind']
+    if prune_solar:
+        uba = uba.loc[lambda x: x.Fueltype!='Solar']
     uba = (uba.reindex(columns=target_columns()).pipe(scale_to_net_capacities,
                   (not data_config['UBA']['net_capacity'])))
     return uba
@@ -783,8 +787,7 @@ data_config['UBA'] = {'read_function': UBA,
            'net_capacity':False, 'reliability_score':2}
 
 
-
-def BNETZA(header=9, sheet_name='Gesamtkraftwerksliste BNetzA'):
+def BNETZA(header=9, sheet_name='Gesamtkraftwerksliste BNetzA', prune_wind=True, prune_solar=True):
     """
     Returns the database put together by Germany's 'Federal Network Agency'
     (dt. 'Bundesnetzagentur' (BNetzA)). The user has to download the database from:
@@ -830,7 +833,8 @@ def BNETZA(header=9, sheet_name='Gesamtkraftwerksliste BNetzA'):
     # Filter by Status
     pattern = '|'.join(['.*(?i)betrieb', '.*(?i)gehindert', '(?i)vorl.*ufig.*',
                         'Sicherheitsbereitschaft', 'Sonderfall'])
-    bnetza = bnetza.loc[bnetza.Status.str.contains(pattern, regex=True, case=False)]
+    bnetza = (bnetza.loc[bnetza.Status.str.contains(pattern, regex=True, case=False)]
+                    .loc[lambda df: df.projectID.notna()])
     # Technologies
     bnetza.Blockname.replace(
             to_replace=['.*(GT|gasturbine).*', '.*(DT|HKW|(?i)dampfturbine|(?i)heizkraftwerk).*', '.*GuD.*'],
@@ -850,6 +854,10 @@ def BNETZA(header=9, sheet_name='Gesamtkraftwerksliste BNetzA'):
             value=['Hydro', 'Natural Gas', 'Hard Coal', 'Lignite', 'Wind', 'Solar', 'Other',
                    'Nuclear', 'Oil', 'Bioenergy', 'Other', 'Geothermal', 'Waste'],
             regex=True, inplace=True)
+    if prune_wind:
+        bnetza = bnetza.loc[lambda x: x.Fueltype!='Wind']
+    if prune_solar:
+        bnetza = bnetza.loc[lambda x: x.Fueltype!='Solar']
     # Remaining columns
     bnetza.loc[:, 'Country'] = 'Germany'
     bnetza.loc[:, 'File'] = filename

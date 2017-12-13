@@ -48,7 +48,7 @@ def extend_by_non_matched(df, extend_by, label=None, fueltypes=None,
         to the ones of the dataset
     """
     from .data import data_config
-    
+
     if isinstance(extend_by, str):
         label = extend_by
         extend_by = data_config[label]['read_function']()
@@ -311,7 +311,7 @@ def set_denmark_region_id(df):
     return df
 
 
-def gross_to_net_factors(reference='opsd', aggfunc='median', return_stats=False):
+def gross_to_net_factors(reference='opsd', aggfunc='median', return_entire_data=False):
     """
     """
     if reference=='opsd':
@@ -321,27 +321,8 @@ def gross_to_net_factors(reference='opsd', aggfunc='median', return_stats=False)
     df = df[df.capacity_gross_uba.notnull()&df.capacity_net_bnetza.notnull()]
     df.loc[:, 'ratio'] = df.capacity_net_bnetza / df.capacity_gross_uba
     df = df[df.ratio<=1.0] # these are obvious data errors
-    if return_stats:
-        df.loc[:,'FuelTech'] = '(' + df.energy_source_level_2 +', ' + df.technology + ')'
-        df = df.groupby('FuelTech').filter(lambda x: len(x)>=10)
-        dfg = df.groupby('FuelTech')
-        stats = pd.DataFrame()
-        for grp, df_grp in dfg:
-            stats.loc[grp, 'n'] = len(df_grp)
-            stats.loc[grp, 'min'] = df_grp.ratio.min()
-            stats.loc[grp, 'median'] = df_grp.ratio.median()
-            stats.loc[grp, 'mean'] = df_grp.ratio.mean()
-            stats.loc[grp, 'max'] = df_grp.ratio.max()
-        fig, ax = plt.subplots(figsize=(8,4.5))
-        df.boxplot(ax=ax, column='ratio', by='FuelTech', rot=90, showmeans=True)
-        ax.title.set_visible(False)
-        ax.xaxis.label.set_visible(False)
-        ax2 = ax.twiny()
-        ax2.set_xlim(ax.get_xlim())
-        ax2.set_xticks([i+1 for i in range(len(dfg))])
-        ax2.set_xticklabels(['$n$=%d'%(len(v)) for k, v in dfg])
-        fig.suptitle('')
-        return stats, fig
+    if return_entire_data:
+        return df
     else:
         df.energy_source_level_2.fillna(value=df.fuel, inplace=True)
         df.replace(dict(energy_source_level_2={'Biomass and biogas': 'Bioenergy',

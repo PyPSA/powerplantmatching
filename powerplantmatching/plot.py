@@ -71,6 +71,7 @@ def powerplant_map():
                    ncol=3, loc="upper left", frameon=False, fontsize=11)
         return fig, ax
 
+
 def bar_comparison_single_matched(df=None, cleaned=True, use_saved_aggregation=True):
     """
     Plots two bar charts for comparison
@@ -266,15 +267,15 @@ def bar_comparison_countries_fueltypes(dfs=None, ylabel=None, include_WEPP=True,
         return fig, ax
 
 
-#this ansatz could be an alternative to bar_comparison_countries_fueltypes, but not 
+#this ansatz could be an alternative to bar_comparison_countries_fueltypes, but not
 #    sure
-def bar_fueltype_and_country_totals(dfs, keys, figsize=(12,8)):    
+def bar_fueltype_and_country_totals(dfs, keys, figsize=(12,8)):
     df = lookup(dfs, keys)
     countries = df.columns.levels[0] if isinstance(df.columns, pd.MultiIndex) else df.columns
     n = len(countries)
     subplots = gather_nrows_ncols(n)
     fig, ax = plt.subplots(*subplots, figsize=figsize)
-    
+
     if sum(subplots)>2:
         ax_iter = ax.flat
     else:
@@ -288,20 +289,20 @@ def bar_fueltype_and_country_totals(dfs, keys, figsize=(12,8)):
     return fig, ax
 
 
-
 def bar_fueltype_totals(dfs, keys, figsize=(7,4), unit='GW'):
     with sns.axes_style('whitegrid'):
         fig, ax = plt.subplots(1,1, figsize=figsize)
-        fueltotals = lookup(dfs, 
+        fueltotals = lookup(dfs,
                    keys=keys, by='Fueltype'
                    ,show_totals=True, unit=unit).loc[orderdedfuels+['Total']]
-        fueltotals[:-1].plot(kind="bar", 
+        fueltotals[:-1].plot(kind="bar",
                            ax=ax, legend='reverse', edgecolor='none', rot=75)
         ax.legend(loc=0)
-        ax.set_ylabel(r'Capacity [%s]'%unit)
+        ax.set_ylabel(r'Capacity [$%s$]'%unit)
         ax.xaxis.grid(False)
         fig.tight_layout(pad=0.5)
         return fig, ax
+
 
 def bar_matching_fueltype_totals(figsize=(7,4)):
     from . import data
@@ -316,7 +317,7 @@ def bar_matching_fueltype_totals(figsize=(7,4)):
     entsoe = set_uncommon_fueltypes_to_other(data.Capacity_stats())
     opsd = set_uncommon_fueltypes_to_other(data.OPSD())
     entsoedata = set_uncommon_fueltypes_to_other(data.ENTSOE())
-    
+
     matched.Capacity = matched.Capacity/1000.
     geo.Capacity = geo.Capacity/1000.
     carma.Capacity = carma.Capacity/1000.
@@ -345,15 +346,15 @@ def bar_matching_fueltype_totals(figsize=(7,4)):
         return fig, [ax1,ax2]
 
 
-def hbar_country_totals(dfs, keys, exclude_fueltypes=['Solar', 'Wind'], 
+def hbar_country_totals(dfs, keys, exclude_fueltypes=['Solar', 'Wind'],
                         figsize=(7,5), unit='GW'):
     with sns.axes_style('whitegrid'):
         fig, ax = plt.subplots(1,1, figsize=figsize)
-        countrytotals = lookup(dfs, 
-                   keys=keys, by='Country', 
+        countrytotals = lookup(dfs,
+                   keys=keys, by='Country',
                     exclude=exclude_fueltypes,show_totals=True,
                     unit=unit)
-        countrytotals[::-1][1:].plot(kind="barh", 
+        countrytotals[::-1][1:].plot(kind="barh",
                            ax=ax, legend='reverse', edgecolor='none')
         ax.set_xlabel('Capacity [%s]'%unit)
         ax.yaxis.grid(False)
@@ -362,31 +363,30 @@ def hbar_country_totals(dfs, keys, exclude_fueltypes=['Solar', 'Wind'],
         return fig, ax
 
 
-
 def factor_comparison(dfs, keys, figsize=(7,5)):
     compare = lookup(dfs, show_totals=True,
               keys=keys, exclude=['Solar', 'Wind']).fillna(0.)
     n_fueltypes, n_countries = compare.shape
-    
+
     compare.columns.labels
     c= [tech_colors2[i] for i in compare.index.values[:-1]] + ['gold']
     rcParams["axes.prop_cycle"] = cycler(color=c)
-    
-    #where both are zero,             
+
+    #where both are zero,
     compare[compare.groupby(level=0, axis=1).transform(np.sum)<0.5]=np.nan
-    
+
     fig, ax = plt.subplots(1,1, figsize=figsize)
-    compare.T.plot(ax=ax, markevery=(0,2), 
+    compare.T.plot(ax=ax, markevery=(0,2),
                    style='o', markersize=5)
-    compare.T.plot(ax=ax, markevery=(1,2), 
+    compare.T.plot(ax=ax, markevery=(1,2),
                    style='s', legend=None, markersize=4.5)
-    
+
     lgd = ax.get_legend_handles_labels()
-    
+
     for i,j in enumerate(compare.T.index.levels[0]):
         ax.plot(np.array([0,1])+(2*i), compare.T.loc[j])
-    
-    indexhandles = [Line2D([0.4,.6],[.4,.6], marker=m, linewidth=0., 
+
+    indexhandles = [Line2D([0.4,.6],[.4,.6], marker=m, linewidth=0.,
                                      markersize=msize,
                                      color='w', markeredgecolor='k', markeredgewidth=0.5)
                     for m, msize in [['o', 5.], ['s', 4.5]]]
@@ -394,7 +394,7 @@ def factor_comparison(dfs, keys, figsize=(7,5)):
     ax.add_artist(ax.legend(handles=indexhandles, labels=indexlabels))
     ax.legend(handles= lgd[0][:len(c)], labels=lgd[1][:len(c)]
                ,title=False, loc=2)
-    
+
     ax.set_xlim(-1,n_countries)
     ax.xaxis.grid(False)
     ax.set_xticks(np.linspace(0.5,n_countries-1.5,n_countries/2))
@@ -402,7 +402,6 @@ def factor_comparison(dfs, keys, figsize=(7,5)):
     ax.set_xlabel('')
     ax.set_ylabel('Capacity [GW]')
     fig.tight_layout(pad=0.5)
-
 
 
 def bar_decomissioning_curves(df=None, ylabel=None, title=None, legend_in_subplots=False):
@@ -475,11 +474,39 @@ def bar_decomissioning_curves(df=None, ylabel=None, title=None, legend_in_subplo
         labels_mpatches = collections.OrderedDict(sorted(labels_mpatches.items()))
         fig.legend(labels_mpatches.values(), labels_mpatches.keys(),
                    loc=8, ncol=len(labels_mpatches), facecolor='#d9d9d9')
-    return fig
+    return fig, ax
 
-    
-#%% Plot utilities    
-        
+
+def boxplot_gross_to_net():
+    """
+    """
+    from .heuristics import gross_to_net_factors as gtn
+    df = gtn(return_entire_data=True).loc[lambda df: df.energy_source_level_2!='Hydro']
+    df.loc[:,'FuelTech'] = df.energy_source_level_2 +'\n(' + df.technology + ')'
+    df = df.groupby('FuelTech').filter(lambda x: len(x)>=10)
+    dfg = df.groupby('FuelTech')
+#    stats = pd.DataFrame()
+#    for grp, df_grp in dfg:
+#        stats.loc[grp, 'n'] = len(df_grp)
+#        stats.loc[grp, 'min'] = df_grp.ratio.min()
+#        stats.loc[grp, 'median'] = df_grp.ratio.median()
+#        stats.loc[grp, 'mean'] = df_grp.ratio.mean()
+#        stats.loc[grp, 'max'] = df_grp.ratio.max()
+    fig, ax = plt.subplots(figsize=(8,4.5))
+    df.boxplot(ax=ax, column='ratio', by='FuelTech', rot=90, showmeans=True)
+    ax.title.set_visible(False)
+    ax.xaxis.label.set_visible(False)
+    ax2 = ax.twiny()
+    ax2.set_xlim(ax.get_xlim())
+    ax2.set_xticks([i+1 for i in range(len(dfg))])
+    ax2.set_xticklabels(['$n$=%d'%(len(v)) for k, v in dfg])
+    fig.suptitle('')
+    return fig, ax
+
+
+
+#%% Plot utilities
+
 
 
 def gather_comparison_data(include_WEPP=True, include_VRE=False, **kwargs):
@@ -594,6 +621,6 @@ def draw_basemap(resolution='l', ax=None,country_linewidth=0.5, coast_linewidth=
     return m
 
 
-orderdedfuels = ['Hydro', 'Solar', 'Wind',
+orderdedfuels = ['Hydro', #'Solar', 'Wind',
                      'Nuclear','Hard Coal', 'Lignite', 'Oil', 'Natural Gas','Other']
 
