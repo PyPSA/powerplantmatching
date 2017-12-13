@@ -42,7 +42,7 @@ def add_geoposition_for_duke(df):
         return df
 
 def duke(datasets, labels=['one', 'two'], singlematch=False,
-         showmatches=False, keepfiles=False):
+         showmatches=False, keepfiles=False, showoutput=False):
     """
     Run duke in different modes (Deduplication or Record Linkage Mode) to either
     locate duplicates in one database or find the similar entries in two different datasets.
@@ -84,17 +84,30 @@ def duke(datasets, labels=['one', 'two'], singlematch=False,
 
         for n, df in enumerate(datasets):
             df = add_geoposition_for_duke(df)
+#            due to index unity (see https://github.com/larsga/Duke/issues/236)
+            if n==1:
+                shift_by = (datasets[0].index.max()+1)
+                df.index += shift_by 
             df.to_csv(os.path.join(tmpdir, "file{}.csv".format(n+1)), index_label='id', encoding='utf-8')
-
+            if n==1:
+                df.index -= shift_by
+                
         args = ['java', '-Dfile.encoding=UTF-8', 'no.priv.garshol.duke.Duke', '--linkfile=linkfile.txt']
         if singlematch:
             args.append('--singlematch')
         if showmatches:
             args.append('--showmatches')
+            stdout=sub.PIPE
+        else:
+            stdout=None
         args.append('config.xml')
 
-        run = sub.Popen(args, stderr=sub.PIPE, cwd=tmpdir, universal_newlines=True)
+        run = sub.Popen(args, stderr=sub.PIPE, cwd=tmpdir, stdout=stdout,
+                        universal_newlines=True)
         _, stderr = run.communicate()
+
+        if showmatches:
+            print(_)
 
         logger.debug("Stderr: {}".format(stderr))
         if any(word in stderr.lower() for word in ['error', 'fehler']):
@@ -104,8 +117,11 @@ def duke(datasets, labels=['one', 'two'], singlematch=False,
             return pd.read_csv(os.path.join(tmpdir, 'linkfile.txt'), encoding='utf-8',
                                   usecols=[1, 2], names=labels)
         else:
-            return pd.read_csv(os.path.join(tmpdir, 'linkfile.txt'), encoding='utf-8',
+            df = pd.read_csv(os.path.join(tmpdir, 'linkfile.txt'), encoding='utf-8',
                                   usecols=[1, 2, 3], names=labels + ['scores'])
+            df.iloc[:,1] -= shift_by
+            return df
+
     finally:
         if keepfiles:
             logger.debug('Files of the duke run are kept in {}'.format(tmpdir))

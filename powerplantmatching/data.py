@@ -726,13 +726,18 @@ def UBA(header=9, skip_footer=26):
                               u'Inbetriebnahme  (ggf. Ertüchtigung)':'YearCommissioned',
                               u'Primärenergieträger':'Fueltype',
                               u'Anlagenart':'Technology',
-                              u'Fernwärme-leistung (MW)':'CHP'})
+                              u'Fernwärme-leistung (MW)':'CHP', 
+                              u'Standort-PLZ':'PLZ'})
+    from .heuristics import PLZ_to_LatLon_map
+    uba['lon'] = uba.PLZ.map(PLZ_to_LatLon_map()['lon'])
+    uba['lat'] = uba.PLZ.map(PLZ_to_LatLon_map()['lat'])
+
     uba.loc[:, 'Country'] = 'Germany'
     uba.loc[:, 'File'] = filename
     uba.loc[:, 'projectID'] = ['UBA{:03d}'.format(i + header + 2) for i in uba.index]
     uba.loc[uba.CHP.notnull(), 'Set'] = 'CHP'
-    uba = (uba.pipe(gather_set_info)
-              .pipe(clean_powerplantname))
+    uba = (uba.pipe(gather_set_info))
+#              .pipe(clean_powerplantname))
     uba.Technology = uba.Technology.replace({u'DKW':'Steam Turbine',
                                              u'DWR':'Pressurized Water Reactor',
                                              u'G/AK':'Steam Turbine',
@@ -778,6 +783,7 @@ data_config['UBA'] = {'read_function': UBA,
            'net_capacity':False, 'reliability_score':2}
 
 
+
 def BNETZA(header=9, sheet_name='Gesamtkraftwerksliste BNetzA'):
     """
     Returns the database put together by Germany's 'Federal Network Agency'
@@ -805,13 +811,22 @@ def BNETZA(header=9, sheet_name='Gesamtkraftwerksliste BNetzA'):
             (u'Kraftwerksstatus \n(in Betrieb/\nvorläufig stillgelegt/\nsaisonale '
              u'Konservierung\nGesetzlich an Stilllegung gehindert/\nSonderfall)'):'Status',
             (u'Aufnahme der kommerziellen Stromerzeugung der derzeit in Betrieb '
-             u'befindlichen Erzeugungseinheit\n(Jahr)'):'YearCommissioned',})
+             u'befindlichen Erzeugungseinheit\n(Jahr)'):'YearCommissioned',
+             u'PLZ\n(Standort Kraftwerk)':'PLZ'})
     # If BNetzA-Name is empty replace by company, if this is empty by city.
+    from .heuristics import PLZ_to_LatLon_map
+    bnetza['lon'] = bnetza.PLZ.map(PLZ_to_LatLon_map()['lon'])
+    bnetza['lat'] = bnetza.PLZ.map(PLZ_to_LatLon_map()['lat'])
     bnetza.loc[bnetza.Name.str.len().fillna(0.0)<=4, 'Name'] =\
         bnetza.loc[bnetza.Name.str.len().fillna(0.0)<=4, 'Unternehmen'] + ' ' +\
-        bnetza.loc[bnetza.Name.str.len().fillna(0.0)<=4, 'Name'].fillna('')
+        bnetza.loc[bnetza.Name.str.len().fillna(0.0)<=4, 'Name'].fillna('')    
     bnetza.Name.fillna(bnetza.Ort, inplace=True)
-    bnetza = clean_powerplantname(bnetza)
+    add_location_b = bnetza[bnetza.Ort.notnull()].apply(lambda ds: (ds['Ort'] not in ds['Name'])
+                                            and (unicode.title(ds['Ort']) not in ds['Name']), axis=1)
+    bnetza.loc[bnetza.Ort.notnull() & add_location_b, 'Name'] =  (
+                bnetza.loc[bnetza.Ort.notnull() & add_location_b,'Ort'] + ' ' +
+                bnetza.loc[bnetza.Ort.notnull() & add_location_b,'Name']) 
+    bnetza.Name.replace('\s+', ' ', regex=True, inplace=True)
     # Filter by Status
     pattern = '|'.join(['.*(?i)betrieb', '.*(?i)gehindert', '(?i)vorl.*ufig.*',
                         'Sicherheitsbereitschaft', 'Sonderfall'])

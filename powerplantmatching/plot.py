@@ -43,32 +43,33 @@ def Show_all_plots():
 
 
 def powerplant_map():
-    df = set_uncommon_fueltypes_to_other(Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced())
-    shown_fueltypes = ['Hydro', 'Natural Gas', 'Nuclear', 'Hard Coal', 'Lignite', 'Oil']
-    df = df[df.Fueltype.isin(shown_fueltypes) & df.lat.notnull()]
-    fig, ax = plt.subplots(figsize=(7,5))
-    
-    scale = 5e1
-    
-    #df.plot.scatter('lon', 'lat', s=df.Capacity/scale, c=df.Fueltype.map(utils.tech_colors), 
-    #                ax=ax)
-    ax.scatter(df.lon, df.lat, s=df.Capacity/scale, c=df.Fueltype.map(tech_colors2))
-    
-    ax.set_xlabel('')
-    ax.set_ylabel('')
-    draw_basemap()
-    ax.set_xlim(-13, 34)
-    ax.set_ylim(35, 71.65648314)
-    ax.set_axis_bgcolor('white')
-    fig.tight_layout(pad=0.5)
-    
-    legendcols = pd.Series(tech_colors2).reindex(shown_fueltypes)
-    handles = sum(legendcols.apply(lambda x : 
-        make_legend_circles_for([10.], scale=scale, facecolor=x)).tolist(), [])
-    fig.legend(handles, legendcols.index,
-               handler_map=make_handler_map_to_scale_circles_as_in(ax),
-               ncol=3, loc="upper left", frameon=False, fontsize=11)
-    return fig, ax
+    with sns.axes_style('darkgrid'):
+        df = set_uncommon_fueltypes_to_other(Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced())
+        shown_fueltypes = ['Hydro', 'Natural Gas', 'Nuclear', 'Hard Coal', 'Lignite', 'Oil']
+        df = df[df.Fueltype.isin(shown_fueltypes) & df.lat.notnull()]
+        fig, ax = plt.subplots(figsize=(7,5))
+        
+        scale = 5e1
+        
+        #df.plot.scatter('lon', 'lat', s=df.Capacity/scale, c=df.Fueltype.map(utils.tech_colors), 
+        #                ax=ax)
+        ax.scatter(df.lon, df.lat, s=df.Capacity/scale, c=df.Fueltype.map(tech_colors2))
+        
+        ax.set_xlabel('')
+        ax.set_ylabel('')
+        draw_basemap()
+        ax.set_xlim(-13, 34)
+        ax.set_ylim(35, 71.65648314)
+        ax.set_axis_bgcolor('white')
+        fig.tight_layout(pad=0.5)
+        
+        legendcols = pd.Series(tech_colors2).reindex(shown_fueltypes)
+        handles = sum(legendcols.apply(lambda x : 
+            make_legend_circles_for([10.], scale=scale, facecolor=x)).tolist(), [])
+        fig.legend(handles, legendcols.index,
+                   handler_map=make_handler_map_to_scale_circles_as_in(ax),
+                   ncol=3, loc="upper left", frameon=False, fontsize=11)
+        return fig, ax
 
 def bar_comparison_single_matched(df=None, cleaned=True, use_saved_aggregation=True):
     """
@@ -76,55 +77,57 @@ def bar_comparison_single_matched(df=None, cleaned=True, use_saved_aggregation=T
     1.) Fueltypes on x-axis and capacity on y-axis, categorized by originating database.
     2.) Fueltypes on x-axis and capacity on y-axis, matched database
     """
-    if df is None:
-        df = Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced_VRE()
+    with sns.axes_style('darkgrid'):
         if df is None:
-            raise RuntimeError("The data to be plotted does not yet exist.")
+            df = Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced_VRE()
+            if df is None:
+                raise RuntimeError("The data to be plotted does not yet exist.")
+    
+        if cleaned:
+            carma = clean_single(CARMA(), dataset_name='CARMA', use_saved_aggregation=use_saved_aggregation)
+            entsoe = clean_single(ENTSOE(), dataset_name='ENTSOE', use_saved_aggregation=use_saved_aggregation)
+            geo = clean_single(GEO(), dataset_name='GEO', aggregate_powerplant_units=False)
+            opsd = clean_single(OPSD(), dataset_name='OPSD', use_saved_aggregation=use_saved_aggregation)
+            wepp = clean_single(WEPP(), dataset_name='WEPP', use_saved_aggregation=use_saved_aggregation)
+            wri = clean_single(WRI(), dataset_name='WRI', use_saved_aggregation=use_saved_aggregation)
+        else:
+            carma = CARMA()
+            entsoe = ENTSOE()
+            geo = GEO()
+            opsd = OPSD()
+            wepp = WEPP()
+            wri = WRI()
+        ese = ESE()
+        stats = lookup([carma, entsoe, ese, geo, opsd, wepp, wri],
+                       keys=['CARMA','ENTSO-E','ESE','GEO','OPSD','WEPP','WRI'], by='Fueltype')/1000
+        stats_reduced = lookup(df, by='Fueltype')/1000
+        # Presettings for the plots
+        font={#'family' : 'normal',
+              #'weight' : 'bold',
+              'size'   : 24}
+        plt.rc('font', **font)
+        fig, ax = plt.subplots(nrows=1, ncols=2, sharex=False, sharey=True, squeeze=False,
+                               figsize=(32/1.2,18/1.2))
+        # 1st Plot with single datasets on the left side.
+        stats.plot.bar(ax=ax[0], stacked=False, legend=True, colormap='Accent')
+        ax[0].set_ylabel('Installed Capacity [GW]')
+        ax[0].set_title('Capacities of Single DBs')
+    #    ax[0].set_facecolor('#d9d9d9')                  # gray background
+        ax[0].set_axisbelow(True)                       # puts the grid behind the bars
+        ax[0].grid(color='white', linestyle='dotted')   # adds white dotted grid
+        # 2nd Plot with reduced dataset
+        stats_reduced.plot.bar(ax=ax[1], stacked=False, colormap='jet')
+        ax[1].xaxis.label.set_visible(False)
+        ax[1].set_title('Capacities of Matched DB')
+    #    ax[1].set_facecolor('#d9d9d9')
+        ax[1].set_axisbelow(True)
+        ax[1].grid(color='white', linestyle='dotted')
+        fig.tight_layout()
+        return fig, ax
 
-    if cleaned:
-        carma = clean_single(CARMA(), dataset_name='CARMA', use_saved_aggregation=use_saved_aggregation)
-        entsoe = clean_single(ENTSOE(), dataset_name='ENTSOE', use_saved_aggregation=use_saved_aggregation)
-        geo = clean_single(GEO(), dataset_name='GEO', aggregate_powerplant_units=False)
-        opsd = clean_single(OPSD(), dataset_name='OPSD', use_saved_aggregation=use_saved_aggregation)
-        wepp = clean_single(WEPP(), dataset_name='WEPP', use_saved_aggregation=use_saved_aggregation)
-        wri = clean_single(WRI(), dataset_name='WRI', use_saved_aggregation=use_saved_aggregation)
-    else:
-        carma = CARMA()
-        entsoe = ENTSOE()
-        geo = GEO()
-        opsd = OPSD()
-        wepp = WEPP()
-        wri = WRI()
-    ese = ESE()
-    stats = lookup([carma, entsoe, ese, geo, opsd, wepp, wri],
-                   keys=['CARMA','ENTSO-E','ESE','GEO','OPSD','WEPP','WRI'], by='Fueltype')/1000
-    stats_reduced = lookup(df, by='Fueltype')/1000
-    # Presettings for the plots
-    font={#'family' : 'normal',
-          #'weight' : 'bold',
-          'size'   : 24}
-    plt.rc('font', **font)
-    fig, ax = plt.subplots(nrows=1, ncols=2, sharex=False, sharey=True, squeeze=False,
-                           figsize=(32/1.2,18/1.2))
-    # 1st Plot with single datasets on the left side.
-    stats.plot.bar(ax=ax[0], stacked=False, legend=True, colormap='Accent')
-    ax[0].set_ylabel('Installed Capacity [GW]')
-    ax[0].set_title('Capacities of Single DBs')
-    ax[0].set_facecolor('#d9d9d9')                  # gray background
-    ax[0].set_axisbelow(True)                       # puts the grid behind the bars
-    ax[0].grid(color='white', linestyle='dotted')   # adds white dotted grid
-    # 2nd Plot with reduced dataset
-    stats_reduced.plot.bar(ax=ax[1], stacked=False, colormap='jet')
-    ax[1].xaxis.label.set_visible(False)
-    ax[1].set_title('Capacities of Matched DB')
-    ax[1].set_facecolor('#d9d9d9')
-    ax[1].set_axisbelow(True)
-    ax[1].grid(color='white', linestyle='dotted')
-    fig.tight_layout()
-    return fig
 
-
-def hbar_comparison_1dim(by='Country', include_WEPP=True, include_VRE=False, year=2015):
+def hbar_comparison_1dim(by='Country', include_WEPP=True, include_VRE=False, year=2015, 
+                         figsize=(32/1.2,18/1.2)):
     """
     Plots a horizontal bar chart with capacity on x-axis, country on y-axis.
 
@@ -147,19 +150,21 @@ def hbar_comparison_1dim(by='Country', include_WEPP=True, include_VRE=False, yea
                        by=by)/1000
 
     # Presettings for the plots
-    font={#'family' : 'normal',
-          #'weight' : 'bold',
-          'size'   : 24}
-    plt.rc('font', **font)
-    ax = stats.plot.barh(stacked=False, colormap='jet', figsize=(32/1.2,18/1.2))
-    ax.set_xlabel('Installed Capacity [GW]')
-    ax.yaxis.label.set_visible(False)
-    ax.set_facecolor('#d9d9d9')                  # gray background
-    ax.set_axisbelow(True)                       # puts the grid behind the bars
-    ax.grid(color='white', linestyle='dotted')   # adds white dotted grid
-    ax.legend(loc='best')
-    ax.invert_yaxis()
-    return plt.gcf()
+    with sns.axes_style('darkgrid'):
+        font={#'family' : 'normal',
+              #'weight' : 'bold',
+              'size'   : 24}
+        plt.rc('font', **font)
+        ax = stats.plot.barh(stacked=False, colormap='jet', figsize=figsize)
+        ax.set_xlabel('Installed Capacity [GW]')
+        ax.yaxis.label.set_visible(False)
+    #    ax.set_facecolor('#d9d9d9')                  # gray background
+        ax.set_axisbelow(True)                       # puts the grid behind the bars
+        ax.grid(color='white', linestyle='dotted')   # adds white dotted grid
+        ax.legend(loc='best')
+        ax.invert_yaxis()
+        fig = plt.gcf()
+        return fig, ax
 
 
 def bar_comparison_countries_fueltypes(dfs=None, ylabel=None, include_WEPP=True,
@@ -219,45 +224,46 @@ def bar_comparison_countries_fueltypes(dfs=None, ylabel=None, include_WEPP=True,
     nrows, ncols = gather_nrows_ncols(len(countries))
     i,j = [0, 0]
     labels_mpatches = collections.OrderedDict()
-    fig, ax = plt.subplots(nrows=nrows, ncols=ncols, sharex=True, sharey=False,
-                           squeeze=False, figsize=figsize)
-    for country in sorted(countries):
-        if j==ncols:
-            i+=1
-            j=0
-        # Perform the plot
-        stats[country].plot.bar(ax=ax[i,j], stacked=False, legend=False, colormap='jet')
-        # Format the subplots nicely
-        if show_coverage:
-            ctry = stats[country]
-            ctry.loc[:,u'Delta_squared'] = (ctry.iloc[:,0]-ctry.iloc[:,1])**2
-            cov = 1 - ctry.Delta_squared.sum()/((ctry.iloc[:,1]**2).sum())
-            ax[i,j].text(0.0, ax[i,j].get_ylim()[1]*0.95, u'Coverage = '+unicode(round(cov, 3)),
-                         ha='left', va='top')
-        # Pass the legend information into the Ordered Dict
+    with sns.axes_style('whitegrid'):
+        fig, ax = plt.subplots(nrows=nrows, ncols=ncols, sharex=True, sharey=False,
+                               squeeze=False, figsize=figsize)
+        for country in sorted(countries):
+            if j==ncols:
+                i+=1
+                j=0
+            # Perform the plot
+            stats[country].plot.bar(ax=ax[i,j], stacked=False, legend=False, colormap='jet')
+            # Format the subplots nicely
+            if show_coverage:
+                ctry = stats[country]
+                ctry.loc[:,u'Delta_squared'] = (ctry.iloc[:,0]-ctry.iloc[:,1])**2
+                cov = 1 - ctry.Delta_squared.sum()/((ctry.iloc[:,1]**2).sum())
+                ax[i,j].text(0.0, ax[i,j].get_ylim()[1]*0.95, u'Coverage = '+unicode(round(cov, 3)),
+                             ha='left', va='top')
+            # Pass the legend information into the Ordered Dict
+            if not legend_in_subplots:
+                stats_handle, stats_labels = ax[i,j].get_legend_handles_labels()
+                for u, v in enumerate(stats_labels):
+                    if v not in labels_mpatches:
+                        labels_mpatches[v] = mpatches.Patch(
+                                color=stats_handle[u].patches[0].get_facecolor(), label=v)
+            else:
+                ax[i,j].legend(fontsize=9, loc='best')
+            ax[i,j].set_facecolor('#d9d9d9')
+            ax[i,j].set_axisbelow(True)
+            ax[i,j].grid(color='white', linestyle='dotted')
+            ax[i,j].set_title(country)
+            ax[i,0].set_ylabel(ylabel)
+            ax[-1,j].xaxis.label.set_visible(False)
+            j+=1
+        # After the loop, do the rest of the layouting.
+        fig.tight_layout()
         if not legend_in_subplots:
-            stats_handle, stats_labels = ax[i,j].get_legend_handles_labels()
-            for u, v in enumerate(stats_labels):
-                if v not in labels_mpatches:
-                    labels_mpatches[v] = mpatches.Patch(
-                            color=stats_handle[u].patches[0].get_facecolor(), label=v)
-        else:
-            ax[i,j].legend(fontsize=9, loc='best')
-        ax[i,j].set_facecolor('#d9d9d9')
-        ax[i,j].set_axisbelow(True)
-        ax[i,j].grid(color='white', linestyle='dotted')
-        ax[i,j].set_title(country)
-        ax[i,0].set_ylabel(ylabel)
-        ax[-1,j].xaxis.label.set_visible(False)
-        j+=1
-    # After the loop, do the rest of the layouting.
-    fig.tight_layout()
-    if not legend_in_subplots:
-        fig.subplots_adjust(bottom=0.1)
-        labels_mpatches = collections.OrderedDict(sorted(labels_mpatches.items()))
-        fig.legend(labels_mpatches.values(), labels_mpatches.keys(),
-                   loc=8, ncol=len(labels_mpatches), facecolor='#d9d9d9')
-    return fig, ax
+            fig.subplots_adjust(bottom=0.1)
+            labels_mpatches = collections.OrderedDict(sorted(labels_mpatches.items()))
+            fig.legend(labels_mpatches.values(), labels_mpatches.keys(),
+                       loc=8, ncol=len(labels_mpatches))#, facecolor='#d9d9d9')
+        return fig, ax
 
 
 #this ansatz could be an alternative to bar_comparison_countries_fueltypes, but not 
@@ -320,22 +326,23 @@ def bar_matching_fueltype_totals(figsize=(7,4)):
     opsd.Capacity = opsd.Capacity/1000.
     entsoedata.Capacity =  entsoedata.Capacity/1000.
 
-    fig, (ax1,ax2) = plt.subplots(1,2, figsize=(7,3), sharey=True)
-    databases = lookup([carma, entsoedata, ese, geo, opsd, wri], 
-               keys=[ 'CARMA', 'ENTSOE','ESE', 'GEO','OPSD', 'WRI'], by='Fueltype') 
-    
-    databases.plot(kind='bar', ax=ax1, edgecolor='none')
-    datamatched = lookup(matched, by='Fueltype')
-    datamatched.index.name=''
-    datamatched.name='Matched Database'
-    datamatched.plot(kind='bar', ax=ax2, #color=cmap[3:4], 
-                     edgecolor='none')
-    ax2.legend()
-    ax1.set_ylabel('Capacity [GW]')
-    ax1.xaxis.grid(False)
-    ax2.xaxis.grid(False)
-    fig.tight_layout(pad=0.5)
-    return fig, [ax1,ax2]
+    with sns.axes_style('whitegrid'):
+        fig, (ax1,ax2) = plt.subplots(1,2, figsize=figsize, sharey=True)
+        databases = lookup([carma, entsoedata, ese, geo, opsd, wri], 
+                   keys=[ 'CARMA', 'ENTSOE','ESE', 'GEO','OPSD', 'WRI'], by='Fueltype') 
+        
+        databases.plot(kind='bar', ax=ax1, edgecolor='none')
+        datamatched = lookup(matched, by='Fueltype')
+        datamatched.index.name=''
+        datamatched.name='Matched Database'
+        datamatched.plot(kind='bar', ax=ax2, #color=cmap[3:4], 
+                         edgecolor='none')
+        ax2.legend()
+        ax1.set_ylabel('Capacity [GW]')
+        ax1.xaxis.grid(False)
+        ax2.xaxis.grid(False)
+        fig.tight_layout(pad=0.5)
+        return fig, [ax1,ax2]
 
 
 def hbar_country_totals(dfs, keys, exclude_fueltypes=['Solar', 'Wind'], 
