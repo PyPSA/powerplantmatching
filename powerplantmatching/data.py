@@ -40,10 +40,21 @@ from .heuristics import scale_to_net_capacities
 net_caps = additional_data_config()['display_net_caps']
 data_config = {}
 
-def OPSD(rawEU=False, rawDE=False, statusDE=None):
-    """
-    Return standardized OPSD (Open Power Systems Data) database with target column names and fueltypes.
 
+def OPSD(rawEU=False, rawDE=False, statusDE=['operating']):
+    """
+    Return standardized OPSD (Open Power Systems Data) database with target column
+    names and fueltypes.
+
+    Parameters
+    ----------
+
+    rawEU : Boolean, default False
+        Whether to return the raw EU (=non-DE) database.
+    rawDE : Boolean, default False
+        Whether to return the raw DE database.
+    statusDE : list
+        Filter DE entries by operational status ['operating', 'shutdown', 'reserve', etc.]
     """
 
     opsd_EU = pd.read_csv(_data_in('conventional_power_plants_EU.csv'), na_values=' ', encoding='utf-8')
@@ -859,8 +870,10 @@ def BNETZA(header=9, sheet_name='Gesamtkraftwerksliste BNetzA', prune_wind=True,
         bnetza = bnetza.loc[lambda x: x.Fueltype!='Wind']
     if prune_solar:
         bnetza = bnetza.loc[lambda x: x.Fueltype!='Solar']
-    # Remaining columns
+    # Filter by country
+    bnetza = bnetza[~bnetza.Bundesland.isin([u'Österreich', 'Schweiz', 'Luxemburg'])]
     bnetza.loc[:, 'Country'] = 'Germany'
+    # Remaining columns
     bnetza.loc[:, 'File'] = filename
     bnetza.loc[:, 'Set'] = bnetza.Set.fillna('Nein').str.title().replace({u'Ja':'CHP',u'Nein':'PP'})
     bnetza = (bnetza.reindex(columns=target_columns()).pipe(scale_to_net_capacities,
