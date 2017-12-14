@@ -783,7 +783,7 @@ def UBA(header=9, skip_footer=26, prune_wind=True, prune_solar=True):
     return uba
 
 data_config['UBA'] = {'read_function': UBA,
-#           'clean_single_kwargs': dict(aggregate_powerplant_units=False),
+           'clean_single_kwargs': dict(aggregate_powerplant_units=False),
            'net_capacity':False, 'reliability_score':2}
 
 

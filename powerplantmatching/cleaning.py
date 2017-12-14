@@ -160,7 +160,7 @@ def cliques(df, dataduplicates):
         dataframe or name of the csv-linkfile which determines the
         link within one dataset
     """
-    df = read_csv_if_string(df)
+#    df = read_csv_if_string(df)
     G = nx.DiGraph()
     G.add_nodes_from(df.index)
     G.add_edges_from((r.one, r.two) for r in dataduplicates.itertuples())
@@ -232,7 +232,7 @@ def aggregate_units(df, use_saved_aggregation=False, dataset_name=None,
                 df.drop('grouped', axis=1, inplace=True)
 
     if 'grouped' not in df:
-        duplicates = duke(read_csv_if_string(df))
+        duplicates = duke(df)
         df = cliques(df, duplicates)
         try:
             df.grouped.to_csv(path_name)

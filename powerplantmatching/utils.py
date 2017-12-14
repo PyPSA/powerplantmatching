@@ -124,8 +124,9 @@ def set_uncommon_fueltypes_to_other(df, fueltypes={'Bioenergy','Geothermal','Mix
 
 
 def read_csv_if_string(data):
+    from .data import data_config
     if isinstance(data, six.string_types):
-        data = pd.read_csv(data, index_col='id')
+        data = data_config[data]['read_function']()
     return data
 
 

@@ -16,7 +16,7 @@
   </object>
 
   <schema>
-    <threshold>0.985</threshold>
+    <threshold>0.975</threshold>
 
     <property type="id">
       <name>ID</name>
@@ -42,7 +42,7 @@
     <property>
       <name>CAPACITY</name> 
       <comparator>no.priv.garshol.duke.comparators.NumericComparator</comparator>
-      <low>0.1</low>
+      <low>0.2</low>
       <high>0.75</high>
     </property> 
     <property>
