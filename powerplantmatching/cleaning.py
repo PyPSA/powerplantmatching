@@ -44,7 +44,7 @@ def clean_powerplantname(df):
     """
 
     name = df.Name.replace(regex=True, value=' ',
-                           to_replace=list('-/')+['\(', '\)', '\[', '\]', '[0-9]'])
+                           to_replace=list('-/,')+['\(', '\)', '\[', '\]', '[0-9]'])
 
     common_words = pd.Series(sum(name.str.split(), [])).value_counts()
     cw = list(common_words[common_words >= 20].index)
@@ -58,13 +58,12 @@ def clean_powerplantname(df):
                         'power','storage','plant','stage','pumped','project',
                         'dt','gud', 'hkw', 'kbr', 'Kernkraft', 'Kernkraftwerk',
                         'kwg', 'krb', 'ohu', 'gkn', 'Gemeinschaftskernkraftwerk',
-                        'kki', 'kkp', 'kle'])]
+                        'kki', 'kkp', 'kle', 'wkw', 'rwe', 'bis', 'nordsee', 'ostsee',
+                        'dampfturbinenanlage', 'ikw'])]
     name = (name
             .replace(regex=True, to_replace=pattern, value=' ')
-            .str.strip().str.replace('\\s\\s+', ' ')
-            # do it twice to catch all single letters
-            # .replace(regex=True, to_replace=pattern, value=' ')
-            # .str.strip().str.replace('\\s\\s+', ' ')
+            .replace('\s+', ' ', regex=True)
+            .str.strip()
             .str.capitalize())
 
     return (df
@@ -243,7 +242,7 @@ def aggregate_units(df, use_saved_aggregation=False, dataset_name=None,
     df = df.groupby('grouped').apply(prop_for_groups)
     if 'Duration' in df:
         df['Duration'] = df['Duration'].replace(0., np.nan)
-    df.reset_index(drop=True, inplace=True)
+    df = df.reset_index(drop=True).pipe(clean_powerplantname)
     df = df.loc[:, target_columns(detailed_columns=detailed_columns)]
     return df
 
@@ -278,9 +277,11 @@ def clean_single(df, dataset_name=None, aggregate_powerplant_units=True,
         aggregation algorithm again
 
     """
-    if aggregate_powerplant_units and dataset_name is None:
+    if aggregate_powerplant_units and use_saved_aggregation and dataset_name is None:
         raise ValueError('``aggregate_powerplant_units`` is True but no ``dataset_name`` was given!')
-
+    if dataset_name is None:
+        dataset_name='Unnamed dataset'
+    
     logger.info("Cleaning plant names in '{}'.".format(dataset_name))
     df = clean_powerplantname(df)
 

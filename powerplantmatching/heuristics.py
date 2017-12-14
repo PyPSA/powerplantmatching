@@ -21,7 +21,7 @@ from __future__ import absolute_import, print_function
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from .utils import (read_csv_if_string, lookup)
+from .utils import read_csv_if_string, lookup, _data_in
 from .config import fueltype_to_life
 from .cleaning import (clean_single, clean_technology)
 import logging
@@ -354,3 +354,7 @@ def scale_to_net_capacities(df, is_gross=True, catch_all=True):
         return df
     else:
         return df
+    
+
+def PLZ_to_LatLon_map():
+    return pd.read_csv(_data_in('PLZ_Coords_map.csv'), index_col='PLZ')

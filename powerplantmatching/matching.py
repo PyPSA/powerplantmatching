@@ -46,7 +46,7 @@ def best_matches(links):
             .groupby(links.iloc[:, 1], as_index=False, sort=False)
             .apply(lambda x: x.loc[x.scores.idxmax(), labels]))
 
-def compare_two_datasets(datasets, labels):
+def compare_two_datasets(datasets, labels, **dukeargs):
     """
     Duke-based horizontal match of two databases. Returns the matched
     dataframe including only the matched entries in a multi-indexed
@@ -70,7 +70,7 @@ def compare_two_datasets(datasets, labels):
 
     """
     datasets = list(map(read_csv_if_string, datasets))
-    links = duke(datasets, labels=labels, singlematch=True)
+    links = duke(datasets, labels=labels, singlematch=True, **dukeargs)
     matches = best_matches(links)
     return matches
 
@@ -110,7 +110,7 @@ def cross_matches(sets_of_pairs, labels=None):
         ]).reset_index(drop=True)
     return matches.loc[:,labels]
 
-def link_multiple_datasets(datasets, labels):
+def link_multiple_datasets(datasets, labels, **dukeargs):
     """
     Duke-based horizontal match of multiple databases. Returns the
     matching indices of the datasets. Compares all properties of the
@@ -134,12 +134,12 @@ def link_multiple_datasets(datasets, labels):
     all_matches = []
     for c,d in combinations:
         logger.info('Comparing {0} with {1}'.format(labels[c], labels[d]))
-        match = compare_two_datasets([datasets[c],datasets[d]],[labels[c],labels[d]])
+        match = compare_two_datasets([datasets[c],datasets[d]],[labels[c],labels[d]], **dukeargs)
         all_matches.append(match)
     return cross_matches(all_matches, labels=labels)
 
 
-def combine_multiple_datasets(datasets, labels):
+def combine_multiple_datasets(datasets, labels, **dukeargs):
     """
     Duke-based horizontal match of multiple databases. Returns the
     matched dataframe including only the matched entries in a
@@ -183,7 +183,7 @@ def combine_multiple_datasets(datasets, labels):
 #        df = df[df.columns.levels[0]]
         df = df.loc[:,target_columns()]
         return df.reset_index(drop=True)
-    crossmatches = link_multiple_datasets(datasets, labels)
+    crossmatches = link_multiple_datasets(datasets, labels, **dukeargs)
     return combined_dataframe(crossmatches, datasets)[target_columns()]
 
 
@@ -269,15 +269,6 @@ def reduce_matched_dataframe(df):
                       .reindex(index=df.index))
 
     sdf = pd.DataFrame(index=df.index)
-#    sdf.loc[:, 'Name'] = df.Name.apply(prioritise_reliabilities, axis=1)
-#    sdf.loc[:, 'Fueltype'] = df.Fueltype.apply(most_frequent_fueltype, axis=1)
-#    sdf.loc[:, 'Technology'] = df.Technology.apply(concat_strings, axis=1)
-#    sdf.loc[:, 'Country'] = df.Country.apply(most_frequent, axis=1)
-#    sdf.loc[:, 'Set'] = df.Set.apply(most_frequent, axis=1)
-#    sdf.loc[:, 'Capacity'] = df.Capacity.median(axis=1)
-#    sdf.loc[:, 'YearCommissioned'] = df.YearCommissioned.max(axis=1)
-#    sdf.loc[:, 'lat'] = df.lat.apply(optimised_mean, axis=1)
-#    sdf.loc[:, 'lon'] = df.lon.apply(optimised_mean, axis=1)
     sdf.loc[:, 'Name'] = df.Name.pipe(prioritise_reliabilities)
     sdf.loc[:, 'Fueltype'] = df.Fueltype.pipe(prioritise_reliabilities)
     sdf.loc[:, 'Technology'] = df.Technology.pipe(prioritise_reliabilities)

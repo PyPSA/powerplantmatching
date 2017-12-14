@@ -37,38 +37,39 @@ from .utils import lookup, set_uncommon_fueltypes_to_other, tech_colors2
 
 def Show_all_plots():
     bar_comparison_single_matched()
-    hbar_comparison_1dim(by='Country')
-    hbar_comparison_1dim(by='Fueltype')
+    comparison_1dim(by='Country')
+    comparison_1dim(by='Fueltype')
     return
 
 
 def powerplant_map():
-    df = set_uncommon_fueltypes_to_other(Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced())
-    shown_fueltypes = ['Hydro', 'Natural Gas', 'Nuclear', 'Hard Coal', 'Lignite', 'Oil']
-    df = df[df.Fueltype.isin(shown_fueltypes) & df.lat.notnull()]
-    fig, ax = plt.subplots(figsize=(7,5))
+    with sns.axes_style('darkgrid'):
+        df = set_uncommon_fueltypes_to_other(Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced())
+        shown_fueltypes = ['Hydro', 'Natural Gas', 'Nuclear', 'Hard Coal', 'Lignite', 'Oil']
+        df = df[df.Fueltype.isin(shown_fueltypes) & df.lat.notnull()]
+        fig, ax = plt.subplots(figsize=(7,5))
 
-    scale = 5e1
+        scale = 5e1
 
-    #df.plot.scatter('lon', 'lat', s=df.Capacity/scale, c=df.Fueltype.map(utils.tech_colors),
-    #                ax=ax)
-    ax.scatter(df.lon, df.lat, s=df.Capacity/scale, c=df.Fueltype.map(tech_colors2))
+        #df.plot.scatter('lon', 'lat', s=df.Capacity/scale, c=df.Fueltype.map(utils.tech_colors),
+        #                ax=ax)
+        ax.scatter(df.lon, df.lat, s=df.Capacity/scale, c=df.Fueltype.map(tech_colors2))
 
-    ax.set_xlabel('')
-    ax.set_ylabel('')
-    draw_basemap()
-    ax.set_xlim(-13, 34)
-    ax.set_ylim(35, 71.65648314)
-    ax.set_axis_bgcolor('white')
-    fig.tight_layout(pad=0.5)
+        ax.set_xlabel('')
+        ax.set_ylabel('')
+        draw_basemap()
+        ax.set_xlim(-13, 34)
+        ax.set_ylim(35, 71.65648314)
+        ax.set_axis_bgcolor('white')
+        fig.tight_layout(pad=0.5)
 
-    legendcols = pd.Series(tech_colors2).reindex(shown_fueltypes)
-    handles = sum(legendcols.apply(lambda x :
-        make_legend_circles_for([10.], scale=scale, facecolor=x)).tolist(), [])
-    fig.legend(handles, legendcols.index,
-               handler_map=make_handler_map_to_scale_circles_as_in(ax),
-               ncol=3, loc="upper left", frameon=False, fontsize=11)
-    return fig, ax
+        legendcols = pd.Series(tech_colors2).reindex(shown_fueltypes)
+        handles = sum(legendcols.apply(lambda x :
+            make_legend_circles_for([10.], scale=scale, facecolor=x)).tolist(), [])
+        fig.legend(handles, legendcols.index,
+                   handler_map=make_handler_map_to_scale_circles_as_in(ax),
+                   ncol=3, loc="upper left", frameon=False, fontsize=11)
+        return fig, ax
 
 
 def bar_comparison_single_matched(df=None, include_WEPP=True, cleaned=True,
@@ -111,31 +112,32 @@ def bar_comparison_single_matched(df=None, include_WEPP=True, cleaned=True,
                        by='Fueltype')/1000
     stats_reduced = lookup(df, by='Fueltype')/1000
     # Presettings for the plots
-    font={#'family' : 'normal',
-          #'weight' : 'bold',
-          'size'   : 24}
-    plt.rc('font', **font)
-    fig, ax = plt.subplots(nrows=1, ncols=2, sharex=False, sharey=True, figsize=figsize)
-    # 1st Plot with single datasets on the left side.
-    stats.plot.bar(ax=ax[0], stacked=False, legend=True, colormap='Accent')
-    ax[0].set_ylabel('Installed Capacity [GW]')
-    ax[0].set_title('Capacities of Single DBs')
-    ax[0].set_facecolor('#d9d9d9')                  # gray background
-    ax[0].set_axisbelow(True)                       # puts the grid behind the bars
-    ax[0].grid(color='white', linestyle='dotted')   # adds white dotted grid
-    # 2nd Plot with reduced dataset
-    stats_reduced.plot.bar(ax=ax[1], stacked=False, colormap='jet')
-    ax[1].xaxis.label.set_visible(False)
-    ax[1].set_title('Capacities of Matched DB')
-    ax[1].set_facecolor('#d9d9d9')
-    ax[1].set_axisbelow(True)
-    ax[1].grid(color='white', linestyle='dotted')
-    fig.tight_layout()
-    return fig
+    with sns.axes_style('darkgrid'):
+		font={#'family' : 'normal',
+			  #'weight' : 'bold',
+			  'size'   : 24}
+		plt.rc('font', **font)
+		fig, ax = plt.subplots(nrows=1, ncols=2, sharex=False, sharey=True, figsize=figsize)
+		# 1st Plot with single datasets on the left side.
+		stats.plot.bar(ax=ax[0], stacked=False, legend=True, colormap='Accent')
+		ax[0].set_ylabel('Installed Capacity [GW]')
+		ax[0].set_title('Capacities of Single DBs')
+		ax[0].set_facecolor('#d9d9d9')                  # gray background
+		ax[0].set_axisbelow(True)                       # puts the grid behind the bars
+		ax[0].grid(color='white', linestyle='dotted')   # adds white dotted grid
+		# 2nd Plot with reduced dataset
+		stats_reduced.plot.bar(ax=ax[1], stacked=False, colormap='jet')
+		ax[1].xaxis.label.set_visible(False)
+		ax[1].set_title('Capacities of Matched DB')
+		ax[1].set_facecolor('#d9d9d9')
+		ax[1].set_axisbelow(True)
+		ax[1].grid(color='white', linestyle='dotted')
+		fig.tight_layout()
+    return fig, ax
 
 
 def comparison_1dim(by='Country', include_WEPP=True, include_VRE=False,
-                            year=2015, how='hbar', figsize=(7,5)):
+                    year=2015, how='hbar', figsize=(7,5)):
     """
     Plots a horizontal bar chart with capacity on x-axis, ``by`` on y-axis.
 
@@ -158,25 +160,26 @@ def comparison_1dim(by='Country', include_WEPP=True, include_VRE=False,
                        by=by)/1000
 
     if how == 'hbar':
-        font={'size'   : 24}
-        plt.rc('font', **font)
-        fig, ax = plt.subplots(figsize=figsize)
-        stats.plot.barh(ax=ax, stacked=False, colormap='jet')
-        ax.set_xlabel('Installed Capacity [GW]')
-        ax.yaxis.label.set_visible(False)
-        ax.set_facecolor('#d9d9d9')                  # gray background
-        ax.set_axisbelow(True)                       # puts the grid behind the bars
-        ax.grid(color='white', linestyle='dotted')   # adds white dotted grid
-        ax.legend(loc='best')
-        ax.invert_yaxis()
+        with sns.axes_style('darkgrid'):
+			font={'size'   : 24}
+			plt.rc('font', **font)
+			fig, ax = plt.subplots(figsize=figsize)
+			stats.plot.barh(ax=ax, stacked=False, colormap='jet')
+			ax.set_xlabel('Installed Capacity [GW]')
+			ax.yaxis.label.set_visible(False)
+			#ax.set_facecolor('#d9d9d9')                  # gray background
+			ax.set_axisbelow(True)                       # puts the grid behind the bars
+			ax.grid(color='white', linestyle='dotted')   # adds white dotted grid
+			ax.legend(loc='best')
+			ax.invert_yaxis()
         return fig, ax
     if how == 'scatter':
-        stats.loc[:,'Country'] = stats.index.astype(str) #Needed for seaborne
+        stats.loc[:, by] = stats.index.astype(str) #Needed for seaborne
         if len(stats.columns)-1 >= 3:
-            g = sns.pairplot(stats, diag_kind='kde', hue='Country', palette='Set2',
+            g = sns.pairplot(stats, diag_kind='kde', hue=by, palette='Set2',
                              size=figsize[1], aspect=figsize[0]/figsize[1])
         else:
-            g = sns.pairplot(stats, diag_kind='kde', hue='Country', palette='Set2',
+            g = sns.pairplot(stats, diag_kind='kde', hue=by, palette='Set2',
                              size=figsize[1], aspect=figsize[0]/figsize[1],
                              x_vars=stats.columns[0], y_vars=stats.columns[1])
         for i in range(0, len(g.axes)):
@@ -242,45 +245,46 @@ def bar_comparison_countries_fueltypes(dfs=None, ylabel=None, include_WEPP=True,
     nrows, ncols = gather_nrows_ncols(len(countries))
     i,j = [0, 0]
     labels_mpatches = collections.OrderedDict()
-    fig, ax = plt.subplots(nrows=nrows, ncols=ncols, sharex=True, sharey=False,
-                           squeeze=False, figsize=figsize)
-    for country in sorted(countries):
-        if j==ncols:
-            i+=1
-            j=0
-        # Perform the plot
-        stats[country].plot.bar(ax=ax[i,j], stacked=False, legend=False, colormap='jet')
-        # Format the subplots nicely
-        if show_coverage:
-            ctry = stats[country]
-            ctry.loc[:,u'Delta_squared'] = (ctry.iloc[:,0]-ctry.iloc[:,1])**2
-            cov = 1 - ctry.Delta_squared.sum()/((ctry.iloc[:,1]**2).sum())
-            ax[i,j].text(0.0, ax[i,j].get_ylim()[1]*0.95, u'Coverage = '+unicode(round(cov, 3)),
-                         ha='left', va='top')
-        # Pass the legend information into the Ordered Dict
+    with sns.axes_style('whitegrid'):
+        fig, ax = plt.subplots(nrows=nrows, ncols=ncols, sharex=True, sharey=False,
+                               squeeze=False, figsize=figsize)
+        for country in sorted(countries):
+            if j==ncols:
+                i+=1
+                j=0
+            # Perform the plot
+            stats[country].plot.bar(ax=ax[i,j], stacked=False, legend=False, colormap='jet')
+            # Format the subplots nicely
+            if show_coverage:
+                ctry = stats[country]
+                ctry.loc[:,u'Delta_squared'] = (ctry.iloc[:,0]-ctry.iloc[:,1])**2
+                cov = 1 - ctry.Delta_squared.sum()/((ctry.iloc[:,1]**2).sum())
+                ax[i,j].text(0.0, ax[i,j].get_ylim()[1]*0.95, u'Coverage = '+unicode(round(cov, 3)),
+                             ha='left', va='top')
+            # Pass the legend information into the Ordered Dict
+            if not legend_in_subplots:
+                stats_handle, stats_labels = ax[i,j].get_legend_handles_labels()
+                for u, v in enumerate(stats_labels):
+                    if v not in labels_mpatches:
+                        labels_mpatches[v] = mpatches.Patch(
+                                color=stats_handle[u].patches[0].get_facecolor(), label=v)
+            else:
+                ax[i,j].legend(fontsize=9, loc='best')
+            ax[i,j].set_facecolor('#d9d9d9')
+            ax[i,j].set_axisbelow(True)
+            ax[i,j].grid(color='white', linestyle='dotted')
+            ax[i,j].set_title(country)
+            ax[i,0].set_ylabel(ylabel)
+            ax[-1,j].xaxis.label.set_visible(False)
+            j+=1
+        # After the loop, do the rest of the layouting.
+        fig.tight_layout()
         if not legend_in_subplots:
-            stats_handle, stats_labels = ax[i,j].get_legend_handles_labels()
-            for u, v in enumerate(stats_labels):
-                if v not in labels_mpatches:
-                    labels_mpatches[v] = mpatches.Patch(
-                            color=stats_handle[u].patches[0].get_facecolor(), label=v)
-        else:
-            ax[i,j].legend(fontsize=9, loc='best')
-        ax[i,j].set_facecolor('#d9d9d9')
-        ax[i,j].set_axisbelow(True)
-        ax[i,j].grid(color='white', linestyle='dotted')
-        ax[i,j].set_title(country)
-        ax[i,0].set_ylabel(ylabel)
-        ax[-1,j].xaxis.label.set_visible(False)
-        j+=1
-    # After the loop, do the rest of the layouting.
-    fig.tight_layout()
-    if not legend_in_subplots:
-        fig.subplots_adjust(bottom=0.1)
-        labels_mpatches = collections.OrderedDict(sorted(labels_mpatches.items()))
-        fig.legend(labels_mpatches.values(), labels_mpatches.keys(),
-                   loc=8, ncol=len(labels_mpatches), facecolor='#d9d9d9')
-    return fig, ax
+            fig.subplots_adjust(bottom=0.1)
+            labels_mpatches = collections.OrderedDict(sorted(labels_mpatches.items()))
+            fig.legend(labels_mpatches.values(), labels_mpatches.keys(),
+                       loc=8, ncol=len(labels_mpatches))#, facecolor='#d9d9d9')
+        return fig, ax
 
 
 #this ansatz could be an alternative to bar_comparison_countries_fueltypes, but not
@@ -343,22 +347,23 @@ def bar_matching_fueltype_totals(figsize=(7,4)):
     opsd.Capacity = opsd.Capacity/1000.
     entsoedata.Capacity =  entsoedata.Capacity/1000.
 
-    fig, (ax1,ax2) = plt.subplots(1,2, figsize=(7,3), sharey=True)
-    databases = lookup([carma, entsoedata, ese, geo, opsd, wri],
-               keys=[ 'CARMA', 'ENTSOE','ESE', 'GEO','OPSD', 'WRI'], by='Fueltype')
+    with sns.axes_style('whitegrid'):
+        fig, (ax1,ax2) = plt.subplots(1,2, figsize=figsize, sharey=True)
+        databases = lookup([carma, entsoedata, ese, geo, opsd, wri],
+                   keys=[ 'CARMA', 'ENTSOE','ESE', 'GEO','OPSD', 'WRI'], by='Fueltype')
 
-    databases.plot(kind='bar', ax=ax1, edgecolor='none')
-    datamatched = lookup(matched, by='Fueltype')
-    datamatched.index.name=''
-    datamatched.name='Matched Database'
-    datamatched.plot(kind='bar', ax=ax2, #color=cmap[3:4],
-                     edgecolor='none')
-    ax2.legend()
-    ax1.set_ylabel('Capacity [GW]')
-    ax1.xaxis.grid(False)
-    ax2.xaxis.grid(False)
-    fig.tight_layout(pad=0.5)
-    return fig, [ax1,ax2]
+        databases.plot(kind='bar', ax=ax1, edgecolor='none')
+        datamatched = lookup(matched, by='Fueltype')
+        datamatched.index.name=''
+        datamatched.name='Matched Database'
+        datamatched.plot(kind='bar', ax=ax2, #color=cmap[3:4],
+                         edgecolor='none')
+        ax2.legend()
+        ax1.set_ylabel('Capacity [GW]')
+        ax1.xaxis.grid(False)
+        ax2.xaxis.grid(False)
+        fig.tight_layout(pad=0.5)
+        return fig, [ax1,ax2]
 
 
 def hbar_country_totals(dfs, keys, exclude_fueltypes=['Solar', 'Wind'],
@@ -512,30 +517,7 @@ def boxplot_gross_to_net():
     return fig, ax
 
 
-def scatter(include_WEPP=True, include_VRE=False, year=2015):
-    """
-    """
-    red_w_wepp, red_wo_wepp, wepp, statistics = gather_comparison_data(include_WEPP=include_WEPP,
-                                                                       include_VRE=include_VRE,
-                                                                       year=year)
-    if include_WEPP:
-        stats = lookup([red_w_wepp, red_wo_wepp, wepp, statistics],
-                       keys=['Matched dataset w/ WEPP', 'Matched dataset w/o WEPP',
-                             'WEPP only', 'Statistics OPSD'], by=by)/1000
-    else:
-        stats = lookup([red_wo_wepp, statistics],
-                       keys=['Matched dataset w/o WEPP', 'Statistics OPSD'],
-                       by=by)/1000
-
-    g = sns.pairplot(stats, diag_kind='kde', hue='Country', palette='Set2')
-    for i in range(0, len(g.axes)):
-        for j in range(0, len(g.axes)):
-            g.axes[i,j].set(xscale="log", yscale="log", xlim=(1,100), ylim=(1,100))
-
-
-
 #%% Plot utilities
-
 
 
 def gather_comparison_data(include_WEPP=True, include_VRE=False, **kwargs):
