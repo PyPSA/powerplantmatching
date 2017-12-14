@@ -71,42 +71,51 @@ def powerplant_map():
     return fig, ax
 
 
-def bar_comparison_single_matched(df=None, cleaned=True, use_saved_aggregation=True):
+def bar_comparison_single_matched(df=None, include_WEPP=True, cleaned=True,
+                                  use_saved_aggregation=True, figsize=(9,5)):
     """
     Plots two bar charts for comparison
     1.) Fueltypes on x-axis and capacity on y-axis, categorized by originating database.
     2.) Fueltypes on x-axis and capacity on y-axis, matched database
     """
     if df is None:
-        df = Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced_VRE()
-        if df is None:
-            raise RuntimeError("The data to be plotted does not yet exist.")
+        if include_WEPP:
+            df = Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced()
+        else:
+            df = Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced()
 
     if cleaned:
         carma = clean_single(CARMA(), dataset_name='CARMA', use_saved_aggregation=use_saved_aggregation)
         entsoe = clean_single(ENTSOE(), dataset_name='ENTSOE', use_saved_aggregation=use_saved_aggregation)
         geo = clean_single(GEO(), dataset_name='GEO', aggregate_powerplant_units=False)
         opsd = clean_single(OPSD(), dataset_name='OPSD', use_saved_aggregation=use_saved_aggregation)
-        wepp = clean_single(WEPP(), dataset_name='WEPP', use_saved_aggregation=use_saved_aggregation)
         wri = clean_single(WRI(), dataset_name='WRI', use_saved_aggregation=use_saved_aggregation)
+        if include_WEPP:
+            wepp = clean_single(WEPP(), dataset_name='WEPP', use_saved_aggregation=use_saved_aggregation)
     else:
         carma = CARMA()
         entsoe = ENTSOE()
         geo = GEO()
         opsd = OPSD()
-        wepp = WEPP()
         wri = WRI()
+        if include_WEPP:
+            wepp = WEPP()
     ese = ESE()
-    stats = lookup([carma, entsoe, ese, geo, opsd, wepp, wri],
-                   keys=['CARMA','ENTSO-E','ESE','GEO','OPSD','WEPP','WRI'], by='Fueltype')/1000
+    if include_WEPP:
+        stats = lookup(df=[carma, entsoe, ese, geo, opsd, wepp, wri],
+                       keys=['CARMA','ENTSO-E','ESE','GEO','OPSD','WEPP','WRI'],
+                       by='Fueltype')/1000
+    else:
+        stats = lookup(df=[carma, entsoe, ese, geo, opsd, wri],
+                       keys=['CARMA','ENTSO-E','ESE','GEO','OPSD','WRI'],
+                       by='Fueltype')/1000
     stats_reduced = lookup(df, by='Fueltype')/1000
     # Presettings for the plots
     font={#'family' : 'normal',
           #'weight' : 'bold',
           'size'   : 24}
     plt.rc('font', **font)
-    fig, ax = plt.subplots(nrows=1, ncols=2, sharex=False, sharey=True, squeeze=False,
-                           figsize=(32/1.2,18/1.2))
+    fig, ax = plt.subplots(nrows=1, ncols=2, sharex=False, sharey=True, figsize=figsize)
     # 1st Plot with single datasets on the left side.
     stats.plot.bar(ax=ax[0], stacked=False, legend=True, colormap='Accent')
     ax[0].set_ylabel('Installed Capacity [GW]')
@@ -125,9 +134,10 @@ def bar_comparison_single_matched(df=None, cleaned=True, use_saved_aggregation=T
     return fig
 
 
-def hbar_comparison_1dim(by='Country', include_WEPP=True, include_VRE=False, year=2015):
+def comparison_1dim(by='Country', include_WEPP=True, include_VRE=False,
+                            year=2015, how='hbar', figsize=(7,5)):
     """
-    Plots a horizontal bar chart with capacity on x-axis, country on y-axis.
+    Plots a horizontal bar chart with capacity on x-axis, ``by`` on y-axis.
 
     Parameters
     ----------
@@ -147,20 +157,32 @@ def hbar_comparison_1dim(by='Country', include_WEPP=True, include_VRE=False, yea
                        keys=['Matched dataset w/o WEPP', 'Statistics OPSD'],
                        by=by)/1000
 
-    # Presettings for the plots
-    font={#'family' : 'normal',
-          #'weight' : 'bold',
-          'size'   : 24}
-    plt.rc('font', **font)
-    ax = stats.plot.barh(stacked=False, colormap='jet', figsize=(32/1.2,18/1.2))
-    ax.set_xlabel('Installed Capacity [GW]')
-    ax.yaxis.label.set_visible(False)
-    ax.set_facecolor('#d9d9d9')                  # gray background
-    ax.set_axisbelow(True)                       # puts the grid behind the bars
-    ax.grid(color='white', linestyle='dotted')   # adds white dotted grid
-    ax.legend(loc='best')
-    ax.invert_yaxis()
-    return plt.gcf()
+    if how == 'hbar':
+        font={'size'   : 24}
+        plt.rc('font', **font)
+        fig, ax = plt.subplots(figsize=figsize)
+        stats.plot.barh(ax=ax, stacked=False, colormap='jet')
+        ax.set_xlabel('Installed Capacity [GW]')
+        ax.yaxis.label.set_visible(False)
+        ax.set_facecolor('#d9d9d9')                  # gray background
+        ax.set_axisbelow(True)                       # puts the grid behind the bars
+        ax.grid(color='white', linestyle='dotted')   # adds white dotted grid
+        ax.legend(loc='best')
+        ax.invert_yaxis()
+        return fig, ax
+    if how == 'scatter':
+        stats.loc[:,'Country'] = stats.index.astype(str) #Needed for seaborne
+        if len(stats.columns)-1 >= 3:
+            g = sns.pairplot(stats, diag_kind='kde', hue='Country', palette='Set2',
+                             size=figsize[1], aspect=figsize[0]/figsize[1])
+        else:
+            g = sns.pairplot(stats, diag_kind='kde', hue='Country', palette='Set2',
+                             size=figsize[1], aspect=figsize[0]/figsize[1],
+                             x_vars=stats.columns[0], y_vars=stats.columns[1])
+        for i in range(0, len(g.axes)):
+            for j in range(0, len(g.axes[0])):
+                g.axes[i,j].set(xscale='log', yscale='log', xlim=(1,200), ylim=(1,200))
+        return g.fig, g.axes
 
 
 def bar_comparison_countries_fueltypes(dfs=None, ylabel=None, include_WEPP=True,
@@ -478,13 +500,6 @@ def boxplot_gross_to_net():
     df.loc[:,'FuelTech'] = df.energy_source_level_2 +'\n(' + df.technology + ')'
     df = df.groupby('FuelTech').filter(lambda x: len(x)>=10)
     dfg = df.groupby('FuelTech')
-#    stats = pd.DataFrame()
-#    for grp, df_grp in dfg:
-#        stats.loc[grp, 'n'] = len(df_grp)
-#        stats.loc[grp, 'min'] = df_grp.ratio.min()
-#        stats.loc[grp, 'median'] = df_grp.ratio.median()
-#        stats.loc[grp, 'mean'] = df_grp.ratio.mean()
-#        stats.loc[grp, 'max'] = df_grp.ratio.max()
     fig, ax = plt.subplots(figsize=(8,4.5))
     df.boxplot(ax=ax, column='ratio', by='FuelTech', rot=90, showmeans=True)
     ax.title.set_visible(False)
@@ -495,6 +510,27 @@ def boxplot_gross_to_net():
     ax2.set_xticklabels(['$n$=%d'%(len(v)) for k, v in dfg])
     fig.suptitle('')
     return fig, ax
+
+
+def scatter(include_WEPP=True, include_VRE=False, year=2015):
+    """
+    """
+    red_w_wepp, red_wo_wepp, wepp, statistics = gather_comparison_data(include_WEPP=include_WEPP,
+                                                                       include_VRE=include_VRE,
+                                                                       year=year)
+    if include_WEPP:
+        stats = lookup([red_w_wepp, red_wo_wepp, wepp, statistics],
+                       keys=['Matched dataset w/ WEPP', 'Matched dataset w/o WEPP',
+                             'WEPP only', 'Statistics OPSD'], by=by)/1000
+    else:
+        stats = lookup([red_wo_wepp, statistics],
+                       keys=['Matched dataset w/o WEPP', 'Statistics OPSD'],
+                       by=by)/1000
+
+    g = sns.pairplot(stats, diag_kind='kde', hue='Country', palette='Set2')
+    for i in range(0, len(g.axes)):
+        for j in range(0, len(g.axes)):
+            g.axes[i,j].set(xscale="log", yscale="log", xlim=(1,100), ylim=(1,100))
 
 
 
@@ -528,7 +564,7 @@ def gather_comparison_data(include_WEPP=True, include_VRE=False, **kwargs):
         red_wo_wepp.query(queryexpr, inplace=True)
     red_wo_wepp.query('(YearCommissioned <= {:04d}) or (YearCommissioned != YearCommissioned)'.format(yr), inplace=True)
     # 4: Statistics
-    statistics = Capacity_stats()
+    statistics = Capacity_stats(year=yr)
     statistics.Fueltype.replace({'Mixed fuel types':'Other'}, inplace=True)
     statistics.query(queryexpr, inplace=True)
     return red_w_wepp, red_wo_wepp, wepp, statistics
