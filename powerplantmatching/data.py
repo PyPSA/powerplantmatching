@@ -726,8 +726,9 @@ def UBA(header=9, skip_footer=26, prune_wind=True, prune_solar=True):
                               u'Inbetriebnahme  (ggf. Ertüchtigung)':'YearCommissioned',
                               u'Primärenergieträger':'Fueltype',
                               u'Anlagenart':'Technology',
-                              u'Fernwärme-leistung (MW)':'CHP', 
+                              u'Fernwärme-leistung (MW)':'CHP',
                               u'Standort-PLZ':'PLZ'})
+    uba.Name = uba.Name.replace({'\s\s+':' '}, regex=True)
     from .heuristics import PLZ_to_LatLon_map
     uba['lon'] = uba.PLZ.map(PLZ_to_LatLon_map()['lon'])
     uba['lat'] = uba.PLZ.map(PLZ_to_LatLon_map()['lat'])
@@ -822,13 +823,13 @@ def BNETZA(header=9, sheet_name='Gesamtkraftwerksliste BNetzA', prune_wind=True,
     bnetza['lat'] = bnetza.PLZ.map(PLZ_to_LatLon_map()['lat'])
     bnetza.loc[bnetza.Name.str.len().fillna(0.0)<=4, 'Name'] =\
         bnetza.loc[bnetza.Name.str.len().fillna(0.0)<=4, 'Unternehmen'] + ' ' +\
-        bnetza.loc[bnetza.Name.str.len().fillna(0.0)<=4, 'Name'].fillna('')    
+        bnetza.loc[bnetza.Name.str.len().fillna(0.0)<=4, 'Name'].fillna('')
     bnetza.Name.fillna(bnetza.Ort, inplace=True)
     add_location_b = bnetza[bnetza.Ort.notnull()].apply(lambda ds: (ds['Ort'] not in ds['Name'])
                                             and (unicode.title(ds['Ort']) not in ds['Name']), axis=1)
     bnetza.loc[bnetza.Ort.notnull() & add_location_b, 'Name'] =  (
                 bnetza.loc[bnetza.Ort.notnull() & add_location_b,'Ort'] + ' ' +
-                bnetza.loc[bnetza.Ort.notnull() & add_location_b,'Name']) 
+                bnetza.loc[bnetza.Ort.notnull() & add_location_b,'Name'])
     bnetza.Name.replace('\s+', ' ', regex=True, inplace=True)
     # Filter by Status
     pattern = '|'.join(['.*(?i)betrieb', '.*(?i)gehindert', '(?i)vorl.*ufig.*',

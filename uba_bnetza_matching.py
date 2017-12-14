@@ -63,4 +63,9 @@ ppm_links.index.name = 'BNETZA'
 ppm_links_r = ppm_links.reset_index(drop=False).set_index('UBA').BNETZA
 
 
-
+opsd_de = (pm.data.OPSD(statusDE=['operating'])
+               .pipe(pm.cleaning.clean_single, dataset_name='OPSD', use_saved_aggregation=False)
+               .loc[lambda row: row.Country=='Germany']
+               .loc[lambda row: row.Capacity>=100])
+dfs = {'UBA':UBA, 'BNetzA':BNETZA, 'OPSD':opsd_de, 'Match-UBA-BNETZA':matched}
+pm.plot.bar_fueltype_totals(dfs.values(), dfs.keys())
