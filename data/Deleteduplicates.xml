@@ -16,7 +16,7 @@
   </object>
    
   <schema>
-    <threshold>0.985</threshold>
+    <threshold>0.98</threshold>
 
     <property type="id">
       <name>ID</name>
@@ -49,7 +49,7 @@
       <name>GEOPOSITION</name> 
       <comparator>GeoComparator</comparator>
       <low>0.05</low>
-      <high>0.55</high>
+      <high>0.75</high>
     </property>   
   </schema>
 

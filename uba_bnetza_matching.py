@@ -78,5 +78,6 @@ missing_links = opsd_links.copy()
 print missing_links.shape[0]
 ppm_links = ppm_links.sort_values()
 
-
-
+_bnetza = bnetza.loc[missing_links.BNETZA]
+_uba = uba.loc[missing_links.UBA]
+print MATCHED[MATCHED.Name.UBA.str.contains('nen')].T
