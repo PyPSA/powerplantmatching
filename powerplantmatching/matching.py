@@ -70,7 +70,9 @@ def compare_two_datasets(datasets, labels, **dukeargs):
 
     """
     datasets = list(map(read_csv_if_string, datasets))
-    links = duke(datasets, labels=labels, singlematch=True, **dukeargs)
+    if not 'singlematch' in dukeargs:
+        dukeargs['singlematch']=True
+    links = duke(datasets, labels=labels, **dukeargs)
     matches = best_matches(links)
     return matches
 
@@ -209,26 +211,6 @@ def reduce_matched_dataframe(df):
         combined_dataframe() or match_multiple_datasets()
     """
 
-#    def most_frequent_fueltype(s):
-#        if s.isnull().all():
-#            return np.nan
-#        else:
-#            # Priority for Lignite: If any dataset claims the fueltype to be Lignite -> accept!
-#            if s.isin(['Lignite']).any():
-#                return 'Lignite'
-#            else:
-#                values = s.value_counts()
-#                return values.idxmax()
-#
-#    def optimised_mean(s):
-#        if s.notnull().sum()>2:
-#            return s[~((s - s.mean()).abs()>s.std())].mean()
-#        elif ('CARMA' in s and s.notnull().sum()==2):
-#            return s.drop('CARMA').mean()
-#        elif ('WRI' in s and s.notnull().sum()==2):
-#            return s.drop('WRI').mean()
-#        else:
-#            return s.mean()
 
     def most_frequent(s):
         if s.isnull().all():

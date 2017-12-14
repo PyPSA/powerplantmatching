@@ -30,7 +30,7 @@ from .heuristics import (extend_by_non_matched, extend_by_VRE)
 
 
 def Collection(datasets, update=False, use_saved_aggregation=False, reduced=True,
-               custom_config={}):
+               custom_config={}, **dukeargs):
     if 'ESE' in custom_config:
         if custom_config['ESE']['read_kwargs']['add_IWPDCY']:
             datasets = datasets + ['IWPDCY']
@@ -61,7 +61,7 @@ def Collection(datasets, update=False, use_saved_aggregation=False, reduced=True
                               dataset_name=name,
                               **conf.get('clean_single_kwargs', {}))
             dfs.append(df)
-        matched = combine_multiple_datasets(dfs, datasets)
+        matched = combine_multiple_datasets(dfs, datasets, **dukeargs)
         matched.to_csv(outfn_matched, index_label='id', encoding='utf-8')
 
         reduced_df = reduce_matched_dataframe(matched)
