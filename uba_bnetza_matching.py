@@ -80,4 +80,15 @@ ppm_links = ppm_links.sort_values()
 
 _bnetza = bnetza.loc[missing_links.BNETZA]
 _uba = uba.loc[missing_links.UBA]
+_UBA = UBA[UBA.projectID.apply(lambda x: any(
+    [i in missing_links.UBA.tolist() for i in x]))]
+_BNETZA = BNETZA[BNETZA.projectID.apply(lambda x: any(
+    [i in missing_links.BNETZA.tolist() for i in x]))]
 print MATCHED[MATCHED.Name.UBA.str.contains('nen')].T
+
+opsd_de = (pm.data.OPSD(statusDE=['operating'])
+               .pipe(pm.cleaning.clean_single, dataset_name='OPSD', use_saved_aggregation=False)
+               .loc[lambda row: row.Country=='Germany']
+               .loc[lambda row: row.Capacity>=100])
+dfs = {'UBA':UBA, 'BNetzA':BNETZA, 'OPSD':opsd_de, 'Match-UBA-BNETZA':matched}
+pm.plot.bar_fueltype_totals(dfs.values(), dfs.keys())

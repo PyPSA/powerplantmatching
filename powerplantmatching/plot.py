@@ -37,8 +37,8 @@ from .utils import lookup, set_uncommon_fueltypes_to_other, tech_colors2
 
 def Show_all_plots():
     bar_comparison_single_matched()
-    hbar_comparison_1dim(by='Country')
-    hbar_comparison_1dim(by='Fueltype')
+    comparison_1dim(by='Country')
+    comparison_1dim(by='Fueltype')
     return
 
 
@@ -48,13 +48,13 @@ def powerplant_map():
         shown_fueltypes = ['Hydro', 'Natural Gas', 'Nuclear', 'Hard Coal', 'Lignite', 'Oil']
         df = df[df.Fueltype.isin(shown_fueltypes) & df.lat.notnull()]
         fig, ax = plt.subplots(figsize=(7,5))
-        
+
         scale = 5e1
-        
-        #df.plot.scatter('lon', 'lat', s=df.Capacity/scale, c=df.Fueltype.map(utils.tech_colors), 
+
+        #df.plot.scatter('lon', 'lat', s=df.Capacity/scale, c=df.Fueltype.map(utils.tech_colors),
         #                ax=ax)
         ax.scatter(df.lon, df.lat, s=df.Capacity/scale, c=df.Fueltype.map(tech_colors2))
-        
+
         ax.set_xlabel('')
         ax.set_ylabel('')
         draw_basemap()
@@ -62,9 +62,9 @@ def powerplant_map():
         ax.set_ylim(35, 71.65648314)
         ax.set_axis_bgcolor('white')
         fig.tight_layout(pad=0.5)
-        
+
         legendcols = pd.Series(tech_colors2).reindex(shown_fueltypes)
-        handles = sum(legendcols.apply(lambda x : 
+        handles = sum(legendcols.apply(lambda x :
             make_legend_circles_for([10.], scale=scale, facecolor=x)).tolist(), [])
         fig.legend(handles, legendcols.index,
                    handler_map=make_handler_map_to_scale_circles_as_in(ax),
@@ -72,65 +72,74 @@ def powerplant_map():
         return fig, ax
 
 
-def bar_comparison_single_matched(df=None, cleaned=True, use_saved_aggregation=True):
+def bar_comparison_single_matched(df=None, include_WEPP=True, cleaned=True,
+                                  use_saved_aggregation=True, figsize=(9,5)):
     """
     Plots two bar charts for comparison
     1.) Fueltypes on x-axis and capacity on y-axis, categorized by originating database.
     2.) Fueltypes on x-axis and capacity on y-axis, matched database
     """
-    with sns.axes_style('darkgrid'):
-        if df is None:
-            df = Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced_VRE()
-            if df is None:
-                raise RuntimeError("The data to be plotted does not yet exist.")
-    
-        if cleaned:
-            carma = clean_single(CARMA(), dataset_name='CARMA', use_saved_aggregation=use_saved_aggregation)
-            entsoe = clean_single(ENTSOE(), dataset_name='ENTSOE', use_saved_aggregation=use_saved_aggregation)
-            geo = clean_single(GEO(), dataset_name='GEO', aggregate_powerplant_units=False)
-            opsd = clean_single(OPSD(), dataset_name='OPSD', use_saved_aggregation=use_saved_aggregation)
-            wepp = clean_single(WEPP(), dataset_name='WEPP', use_saved_aggregation=use_saved_aggregation)
-            wri = clean_single(WRI(), dataset_name='WRI', use_saved_aggregation=use_saved_aggregation)
+    if df is None:
+        if include_WEPP:
+            df = Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced()
         else:
-            carma = CARMA()
-            entsoe = ENTSOE()
-            geo = GEO()
-            opsd = OPSD()
+            df = Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced()
+
+    if cleaned:
+        carma = clean_single(CARMA(), dataset_name='CARMA', use_saved_aggregation=use_saved_aggregation)
+        entsoe = clean_single(ENTSOE(), dataset_name='ENTSOE', use_saved_aggregation=use_saved_aggregation)
+        geo = clean_single(GEO(), dataset_name='GEO', aggregate_powerplant_units=False)
+        opsd = clean_single(OPSD(), dataset_name='OPSD', use_saved_aggregation=use_saved_aggregation)
+        wri = clean_single(WRI(), dataset_name='WRI', use_saved_aggregation=use_saved_aggregation)
+        if include_WEPP:
+            wepp = clean_single(WEPP(), dataset_name='WEPP', use_saved_aggregation=use_saved_aggregation)
+    else:
+        carma = CARMA()
+        entsoe = ENTSOE()
+        geo = GEO()
+        opsd = OPSD()
+        wri = WRI()
+        if include_WEPP:
             wepp = WEPP()
-            wri = WRI()
-        ese = ESE()
-        stats = lookup([carma, entsoe, ese, geo, opsd, wepp, wri],
-                       keys=['CARMA','ENTSO-E','ESE','GEO','OPSD','WEPP','WRI'], by='Fueltype')/1000
-        stats_reduced = lookup(df, by='Fueltype')/1000
-        # Presettings for the plots
-        font={#'family' : 'normal',
-              #'weight' : 'bold',
-              'size'   : 24}
-        plt.rc('font', **font)
-        fig, ax = plt.subplots(nrows=1, ncols=2, sharex=False, sharey=True, squeeze=False,
-                               figsize=(32/1.2,18/1.2))
-        # 1st Plot with single datasets on the left side.
-        stats.plot.bar(ax=ax[0], stacked=False, legend=True, colormap='Accent')
-        ax[0].set_ylabel('Installed Capacity [GW]')
-        ax[0].set_title('Capacities of Single DBs')
-    #    ax[0].set_facecolor('#d9d9d9')                  # gray background
-        ax[0].set_axisbelow(True)                       # puts the grid behind the bars
-        ax[0].grid(color='white', linestyle='dotted')   # adds white dotted grid
-        # 2nd Plot with reduced dataset
-        stats_reduced.plot.bar(ax=ax[1], stacked=False, colormap='jet')
-        ax[1].xaxis.label.set_visible(False)
-        ax[1].set_title('Capacities of Matched DB')
-    #    ax[1].set_facecolor('#d9d9d9')
-        ax[1].set_axisbelow(True)
-        ax[1].grid(color='white', linestyle='dotted')
-        fig.tight_layout()
-        return fig, ax
+    ese = ESE()
+    if include_WEPP:
+        stats = lookup(df=[carma, entsoe, ese, geo, opsd, wepp, wri],
+                       keys=['CARMA','ENTSO-E','ESE','GEO','OPSD','WEPP','WRI'],
+                       by='Fueltype')/1000
+    else:
+        stats = lookup(df=[carma, entsoe, ese, geo, opsd, wri],
+                       keys=['CARMA','ENTSO-E','ESE','GEO','OPSD','WRI'],
+                       by='Fueltype')/1000
+    stats_reduced = lookup(df, by='Fueltype')/1000
+    # Presettings for the plots
+    with sns.axes_style('darkgrid'):
+		font={#'family' : 'normal',
+			  #'weight' : 'bold',
+			  'size'   : 24}
+		plt.rc('font', **font)
+		fig, ax = plt.subplots(nrows=1, ncols=2, sharex=False, sharey=True, figsize=figsize)
+		# 1st Plot with single datasets on the left side.
+		stats.plot.bar(ax=ax[0], stacked=False, legend=True, colormap='Accent')
+		ax[0].set_ylabel('Installed Capacity [GW]')
+		ax[0].set_title('Capacities of Single DBs')
+		ax[0].set_facecolor('#d9d9d9')                  # gray background
+		ax[0].set_axisbelow(True)                       # puts the grid behind the bars
+		ax[0].grid(color='white', linestyle='dotted')   # adds white dotted grid
+		# 2nd Plot with reduced dataset
+		stats_reduced.plot.bar(ax=ax[1], stacked=False, colormap='jet')
+		ax[1].xaxis.label.set_visible(False)
+		ax[1].set_title('Capacities of Matched DB')
+		ax[1].set_facecolor('#d9d9d9')
+		ax[1].set_axisbelow(True)
+		ax[1].grid(color='white', linestyle='dotted')
+		fig.tight_layout()
+    return fig, ax
 
 
-def hbar_comparison_1dim(by='Country', include_WEPP=True, include_VRE=False, year=2015, 
-                         figsize=(32/1.2,18/1.2)):
+def comparison_1dim(by='Country', include_WEPP=True, include_VRE=False,
+                    year=2015, how='hbar', figsize=(7,5)):
     """
-    Plots a horizontal bar chart with capacity on x-axis, country on y-axis.
+    Plots a horizontal bar chart with capacity on x-axis, ``by`` on y-axis.
 
     Parameters
     ----------
@@ -150,22 +159,33 @@ def hbar_comparison_1dim(by='Country', include_WEPP=True, include_VRE=False, yea
                        keys=['Matched dataset w/o WEPP', 'Statistics OPSD'],
                        by=by)/1000
 
-    # Presettings for the plots
-    with sns.axes_style('darkgrid'):
-        font={#'family' : 'normal',
-              #'weight' : 'bold',
-              'size'   : 24}
-        plt.rc('font', **font)
-        ax = stats.plot.barh(stacked=False, colormap='jet', figsize=figsize)
-        ax.set_xlabel('Installed Capacity [GW]')
-        ax.yaxis.label.set_visible(False)
-    #    ax.set_facecolor('#d9d9d9')                  # gray background
-        ax.set_axisbelow(True)                       # puts the grid behind the bars
-        ax.grid(color='white', linestyle='dotted')   # adds white dotted grid
-        ax.legend(loc='best')
-        ax.invert_yaxis()
-        fig = plt.gcf()
+    if how == 'hbar':
+        with sns.axes_style('darkgrid'):
+			font={'size'   : 24}
+			plt.rc('font', **font)
+			fig, ax = plt.subplots(figsize=figsize)
+			stats.plot.barh(ax=ax, stacked=False, colormap='jet')
+			ax.set_xlabel('Installed Capacity [GW]')
+			ax.yaxis.label.set_visible(False)
+			#ax.set_facecolor('#d9d9d9')                  # gray background
+			ax.set_axisbelow(True)                       # puts the grid behind the bars
+			ax.grid(color='white', linestyle='dotted')   # adds white dotted grid
+			ax.legend(loc='best')
+			ax.invert_yaxis()
         return fig, ax
+    if how == 'scatter':
+        stats.loc[:, by] = stats.index.astype(str) #Needed for seaborne
+        if len(stats.columns)-1 >= 3:
+            g = sns.pairplot(stats, diag_kind='kde', hue=by, palette='Set2',
+                             size=figsize[1], aspect=figsize[0]/figsize[1])
+        else:
+            g = sns.pairplot(stats, diag_kind='kde', hue=by, palette='Set2',
+                             size=figsize[1], aspect=figsize[0]/figsize[1],
+                             x_vars=stats.columns[0], y_vars=stats.columns[1])
+        for i in range(0, len(g.axes)):
+            for j in range(0, len(g.axes[0])):
+                g.axes[i,j].set(xscale='log', yscale='log', xlim=(1,200), ylim=(1,200))
+        return g.fig, g.axes
 
 
 def bar_comparison_countries_fueltypes(dfs=None, ylabel=None, include_WEPP=True,
@@ -329,14 +349,14 @@ def bar_matching_fueltype_totals(figsize=(7,4)):
 
     with sns.axes_style('whitegrid'):
         fig, (ax1,ax2) = plt.subplots(1,2, figsize=figsize, sharey=True)
-        databases = lookup([carma, entsoedata, ese, geo, opsd, wri], 
-                   keys=[ 'CARMA', 'ENTSOE','ESE', 'GEO','OPSD', 'WRI'], by='Fueltype') 
-        
+        databases = lookup([carma, entsoedata, ese, geo, opsd, wri],
+                   keys=[ 'CARMA', 'ENTSOE','ESE', 'GEO','OPSD', 'WRI'], by='Fueltype')
+
         databases.plot(kind='bar', ax=ax1, edgecolor='none')
         datamatched = lookup(matched, by='Fueltype')
         datamatched.index.name=''
         datamatched.name='Matched Database'
-        datamatched.plot(kind='bar', ax=ax2, #color=cmap[3:4], 
+        datamatched.plot(kind='bar', ax=ax2, #color=cmap[3:4],
                          edgecolor='none')
         ax2.legend()
         ax1.set_ylabel('Capacity [GW]')
@@ -485,13 +505,6 @@ def boxplot_gross_to_net():
     df.loc[:,'FuelTech'] = df.energy_source_level_2 +'\n(' + df.technology + ')'
     df = df.groupby('FuelTech').filter(lambda x: len(x)>=10)
     dfg = df.groupby('FuelTech')
-#    stats = pd.DataFrame()
-#    for grp, df_grp in dfg:
-#        stats.loc[grp, 'n'] = len(df_grp)
-#        stats.loc[grp, 'min'] = df_grp.ratio.min()
-#        stats.loc[grp, 'median'] = df_grp.ratio.median()
-#        stats.loc[grp, 'mean'] = df_grp.ratio.mean()
-#        stats.loc[grp, 'max'] = df_grp.ratio.max()
     fig, ax = plt.subplots(figsize=(8,4.5))
     df.boxplot(ax=ax, column='ratio', by='FuelTech', rot=90, showmeans=True)
     ax.title.set_visible(False)
@@ -504,9 +517,7 @@ def boxplot_gross_to_net():
     return fig, ax
 
 
-
 #%% Plot utilities
-
 
 
 def gather_comparison_data(include_WEPP=True, include_VRE=False, **kwargs):
@@ -535,7 +546,7 @@ def gather_comparison_data(include_WEPP=True, include_VRE=False, **kwargs):
         red_wo_wepp.query(queryexpr, inplace=True)
     red_wo_wepp.query('(YearCommissioned <= {:04d}) or (YearCommissioned != YearCommissioned)'.format(yr), inplace=True)
     # 4: Statistics
-    statistics = Capacity_stats()
+    statistics = Capacity_stats(year=yr)
     statistics.Fueltype.replace({'Mixed fuel types':'Other'}, inplace=True)
     statistics.query(queryexpr, inplace=True)
     return red_w_wepp, red_wo_wepp, wepp, statistics

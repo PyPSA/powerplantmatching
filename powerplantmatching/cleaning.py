@@ -247,7 +247,7 @@ def aggregate_units(df, use_saved_aggregation=False, dataset_name=None,
     return df
 
 
-def clean_single(df, dataset_name=None, aggregate_powerplant_units=True, 
+def clean_single(df, dataset_name=None, aggregate_powerplant_units=True,
                  use_saved_aggregation=False, detailed_columns=False):
     """
     Vertical cleaning of the database. Cleans the "Name"-column, sums
@@ -281,12 +281,12 @@ def clean_single(df, dataset_name=None, aggregate_powerplant_units=True,
         raise ValueError('``aggregate_powerplant_units`` is True but no ``dataset_name`` was given!')
     if dataset_name is None:
         dataset_name='Unnamed dataset'
-    
+
     logger.info("Cleaning plant names in '{}'.".format(dataset_name))
     df = clean_powerplantname(df)
 
     if aggregate_powerplant_units:
-        logger.info("Aggregating block to units in '{}'.".format(dataset_name))
+        logger.info("Aggregating blocks to entire units in '{}'.".format(dataset_name))
         df = aggregate_units(df, use_saved_aggregation=use_saved_aggregation,
                              dataset_name=dataset_name, detailed_columns=detailed_columns)
     else:

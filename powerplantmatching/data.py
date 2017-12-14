@@ -40,10 +40,21 @@ from .heuristics import scale_to_net_capacities
 net_caps = additional_data_config()['display_net_caps']
 data_config = {}
 
-def OPSD(rawEU=False, rawDE=False, statusDE=None):
-    """
-    Return standardized OPSD (Open Power Systems Data) database with target column names and fueltypes.
 
+def OPSD(rawEU=False, rawDE=False, statusDE=['operating']):
+    """
+    Return standardized OPSD (Open Power Systems Data) database with target column
+    names and fueltypes.
+
+    Parameters
+    ----------
+
+    rawEU : Boolean, default False
+        Whether to return the raw EU (=non-DE) database.
+    rawDE : Boolean, default False
+        Whether to return the raw DE database.
+    statusDE : list
+        Filter DE entries by operational status ['operating', 'shutdown', 'reserve', etc.]
     """
 
     opsd_EU = pd.read_csv(_data_in('conventional_power_plants_EU.csv'), na_values=' ', encoding='utf-8')
@@ -726,8 +737,9 @@ def UBA(header=9, skip_footer=26, prune_wind=True, prune_solar=True):
                               u'Inbetriebnahme  (ggf. Ertüchtigung)':'YearCommissioned',
                               u'Primärenergieträger':'Fueltype',
                               u'Anlagenart':'Technology',
-                              u'Fernwärme-leistung (MW)':'CHP', 
+                              u'Fernwärme-leistung (MW)':'CHP',
                               u'Standort-PLZ':'PLZ'})
+    uba.Name = uba.Name.replace({'\s\s+':' '}, regex=True)
     from .heuristics import PLZ_to_LatLon_map
     uba['lon'] = uba.PLZ.map(PLZ_to_LatLon_map()['lon'])
     uba['lat'] = uba.PLZ.map(PLZ_to_LatLon_map()['lat'])
@@ -822,13 +834,13 @@ def BNETZA(header=9, sheet_name='Gesamtkraftwerksliste BNetzA', prune_wind=True,
     bnetza['lat'] = bnetza.PLZ.map(PLZ_to_LatLon_map()['lat'])
     bnetza.loc[bnetza.Name.str.len().fillna(0.0)<=4, 'Name'] =\
         bnetza.loc[bnetza.Name.str.len().fillna(0.0)<=4, 'Unternehmen'] + ' ' +\
-        bnetza.loc[bnetza.Name.str.len().fillna(0.0)<=4, 'Name'].fillna('')    
+        bnetza.loc[bnetza.Name.str.len().fillna(0.0)<=4, 'Name'].fillna('')
     bnetza.Name.fillna(bnetza.Ort, inplace=True)
     add_location_b = bnetza[bnetza.Ort.notnull()].apply(lambda ds: (ds['Ort'] not in ds['Name'])
                                             and (unicode.title(ds['Ort']) not in ds['Name']), axis=1)
     bnetza.loc[bnetza.Ort.notnull() & add_location_b, 'Name'] =  (
                 bnetza.loc[bnetza.Ort.notnull() & add_location_b,'Ort'] + ' ' +
-                bnetza.loc[bnetza.Ort.notnull() & add_location_b,'Name']) 
+                bnetza.loc[bnetza.Ort.notnull() & add_location_b,'Name'])
     bnetza.Name.replace('\s+', ' ', regex=True, inplace=True)
     # Filter by Status
     pattern = '|'.join(['.*(?i)betrieb', '.*(?i)gehindert', '(?i)vorl.*ufig.*',
@@ -858,8 +870,10 @@ def BNETZA(header=9, sheet_name='Gesamtkraftwerksliste BNetzA', prune_wind=True,
         bnetza = bnetza.loc[lambda x: x.Fueltype!='Wind']
     if prune_solar:
         bnetza = bnetza.loc[lambda x: x.Fueltype!='Solar']
-    # Remaining columns
+    # Filter by country
+    bnetza = bnetza[~bnetza.Bundesland.isin([u'Österreich', 'Schweiz', 'Luxemburg'])]
     bnetza.loc[:, 'Country'] = 'Germany'
+    # Remaining columns
     bnetza.loc[:, 'File'] = filename
     bnetza.loc[:, 'Set'] = bnetza.Set.fillna('Nein').str.title().replace({u'Ja':'CHP',u'Nein':'PP'})
     bnetza = (bnetza.reindex(columns=target_columns()).pipe(scale_to_net_capacities,
