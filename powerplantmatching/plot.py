@@ -309,14 +309,27 @@ def bar_fueltype_and_country_totals(dfs, keys, figsize=(12,8)):
     return fig, ax
 
 
-def bar_fueltype_totals(dfs, keys, figsize=(7,4), unit='GW'):
-    with sns.axes_style('whitegrid'):
+def bar_fueltype_totals(dfs, keys, figsize=(7,4), unit='GW', show_totals=False, 
+                        last_as_marker=False):
+    with sns.axes_style('darkgrid'):
         fig, ax = plt.subplots(1,1, figsize=figsize)
+        if last_as_marker:
+            as_marker = dfs[-1]
+            dfs = dfs[:-1]
+            as_marker_key = keys[-1]
+            keys = keys[:-1]
         fueltotals = lookup(dfs,
                    keys=keys, by='Fueltype'
-                   ,show_totals=True, unit=unit).loc[orderdedfuels+['Total']]
-        fueltotals[:-1].plot(kind="bar",
+                   ,show_totals=show_totals, unit=unit)
+        fueltotals.plot(kind="bar",
                            ax=ax, legend='reverse', edgecolor='none', rot=75)
+        if last_as_marker:
+            fueltotals = lookup(as_marker,
+                        keys=as_marker_key, by='Fueltype'
+                       ,show_totals=show_totals, unit=unit)
+            fueltotals.plot(ax=ax, label=as_marker_key, markeredgecolor='none', rot=75, 
+                            marker='D', markerfacecolor='darkslategray', linestyle='None')
+            
         ax.legend(loc=0)
         ax.set_ylabel(r'Capacity [$%s$]'%unit)
         ax.xaxis.grid(False)
