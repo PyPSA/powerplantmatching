@@ -113,26 +113,26 @@ def bar_comparison_single_matched(df=None, include_WEPP=True, cleaned=True,
     stats_reduced = lookup(df, by='Fueltype')/1000
     # Presettings for the plots
     with sns.axes_style('darkgrid'):
-		font={#'family' : 'normal',
-			  #'weight' : 'bold',
-			  'size'   : 24}
-		plt.rc('font', **font)
-		fig, ax = plt.subplots(nrows=1, ncols=2, sharex=False, sharey=True, figsize=figsize)
-		# 1st Plot with single datasets on the left side.
-		stats.plot.bar(ax=ax[0], stacked=False, legend=True, colormap='Accent')
-		ax[0].set_ylabel('Installed Capacity [GW]')
-		ax[0].set_title('Capacities of Single DBs')
-		ax[0].set_facecolor('#d9d9d9')                  # gray background
-		ax[0].set_axisbelow(True)                       # puts the grid behind the bars
-		ax[0].grid(color='white', linestyle='dotted')   # adds white dotted grid
-		# 2nd Plot with reduced dataset
-		stats_reduced.plot.bar(ax=ax[1], stacked=False, colormap='jet')
-		ax[1].xaxis.label.set_visible(False)
-		ax[1].set_title('Capacities of Matched DB')
-		ax[1].set_facecolor('#d9d9d9')
-		ax[1].set_axisbelow(True)
-		ax[1].grid(color='white', linestyle='dotted')
-		fig.tight_layout()
+        font={#'family' : 'normal',
+              #'weight' : 'bold',
+              'size'   : 24}
+        plt.rc('font', **font)
+        fig, ax = plt.subplots(nrows=1, ncols=2, sharex=False, sharey=True, figsize=figsize)
+        # 1st Plot with single datasets on the left side.
+        stats.plot.bar(ax=ax[0], stacked=False, legend=True, colormap='Accent')
+        ax[0].set_ylabel('Installed Capacity [GW]')
+        ax[0].set_title('Capacities of Single DBs')
+        ax[0].set_facecolor('#d9d9d9')                  # gray background
+        ax[0].set_axisbelow(True)                       # puts the grid behind the bars
+        ax[0].grid(color='white', linestyle='dotted')   # adds white dotted grid
+        # 2nd Plot with reduced dataset
+        stats_reduced.plot.bar(ax=ax[1], stacked=False, colormap='jet')
+        ax[1].xaxis.label.set_visible(False)
+        ax[1].set_title('Capacities of Matched DB')
+        ax[1].set_facecolor('#d9d9d9')
+        ax[1].set_axisbelow(True)
+        ax[1].grid(color='white', linestyle='dotted')
+        fig.tight_layout()
     return fig, ax
 
 
@@ -161,17 +161,17 @@ def comparison_1dim(by='Country', include_WEPP=True, include_VRE=False,
 
     if how == 'hbar':
         with sns.axes_style('darkgrid'):
-			font={'size'   : 24}
-			plt.rc('font', **font)
-			fig, ax = plt.subplots(figsize=figsize)
-			stats.plot.barh(ax=ax, stacked=False, colormap='jet')
-			ax.set_xlabel('Installed Capacity [GW]')
-			ax.yaxis.label.set_visible(False)
-			#ax.set_facecolor('#d9d9d9')                  # gray background
-			ax.set_axisbelow(True)                       # puts the grid behind the bars
-			ax.grid(color='white', linestyle='dotted')   # adds white dotted grid
-			ax.legend(loc='best')
-			ax.invert_yaxis()
+            font={'size'   : 24}
+            plt.rc('font', **font)
+            fig, ax = plt.subplots(figsize=figsize)
+            stats.plot.barh(ax=ax, stacked=False, colormap='jet')
+            ax.set_xlabel('Installed Capacity [GW]')
+            ax.yaxis.label.set_visible(False)
+            #ax.set_facecolor('#d9d9d9')                  # gray background
+            ax.set_axisbelow(True)                       # puts the grid behind the bars
+            ax.grid(color='white', linestyle='dotted')   # adds white dotted grid
+            ax.legend(loc='best')
+            ax.invert_yaxis()
         return fig, ax
     if how == 'scatter':
         stats.loc[:, by] = stats.index.astype(str) #Needed for seaborne
