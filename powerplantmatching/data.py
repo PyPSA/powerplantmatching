@@ -786,6 +786,7 @@ def UBA(header=9, skip_footer=26, prune_wind=True, prune_solar=True):
                                          u'Uran':'Nuclear',
                                          u'Wasser':'Hydro',
                                          u'\xd6lr\xfcckstand':'Oil'})
+    uba.Name.replace([r'(?i)oe', r'(?i)ue'], [u'ö', u'ü'], regex=True, inplace=True)
     if prune_wind:
         uba = uba.loc[lambda x: x.Fueltype!='Wind']
     if prune_solar:

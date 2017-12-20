@@ -115,24 +115,24 @@ def bar_comparison_single_matched(df=None, include_WEPP=True, cleaned=True,
     stats_reduced = lookup(df, by='Fueltype')/1000
     # Presettings for the plots
     with sns.axes_style('darkgrid'):
-		font={'size'   : 12}
-		plt.rc('font', **font)
-		fig, ax = plt.subplots(nrows=1, ncols=2, sharex=False, sharey=True, figsize=figsize)
-		# 1st Plot with single datasets on the left side.
-		stats.plot.bar(ax=ax[0], stacked=False, legend=True, colormap='Accent')
-		ax[0].set_ylabel('Installed Capacity [GW]')
-		ax[0].set_title('Capacities of Single DBs')
-		ax[0].set_facecolor('#d9d9d9')                  # gray background
-		ax[0].set_axisbelow(True)                       # puts the grid behind the bars
-		ax[0].grid(color='white', linestyle='dotted')   # adds white dotted grid
-		# 2nd Plot with reduced dataset
-		stats_reduced.plot.bar(ax=ax[1], stacked=False, colormap='jet')
-		ax[1].xaxis.label.set_visible(False)
-		ax[1].set_title('Capacities of Matched DB')
-		ax[1].set_facecolor('#d9d9d9')
-		ax[1].set_axisbelow(True)
-		ax[1].grid(color='white', linestyle='dotted')
-		fig.tight_layout()
+        font={'size'   : 12}
+        plt.rc('font', **font)
+        fig, ax = plt.subplots(nrows=1, ncols=2, sharex=False, sharey=True, figsize=figsize)
+        # 1st Plot with single datasets on the left side.
+        stats.plot.bar(ax=ax[0], stacked=False, legend=True, colormap='Accent')
+        ax[0].set_ylabel('Installed Capacity [$GW$]')
+        ax[0].set_title('Capacities of Single Databases')
+        ax[0].set_facecolor('#d9d9d9')                  # gray background
+        ax[0].set_axisbelow(True)                       # puts the grid behind the bars
+        ax[0].grid(color='white', linestyle='dotted')   # adds white dotted grid
+        # 2nd Plot with reduced dataset
+        stats_reduced.plot.bar(ax=ax[1], stacked=False, colormap='jet')
+        ax[1].xaxis.label.set_visible(False)
+        ax[1].set_title('Capacities of Matched Dataset')
+        ax[1].set_facecolor('#d9d9d9')
+        ax[1].set_axisbelow(True)
+        ax[1].grid(color='white', linestyle='dotted')
+        fig.tight_layout()
     return fig, ax
 
 
@@ -307,7 +307,7 @@ def bar_fueltype_and_country_totals(dfs, keys, figsize=(12,8)):
     return fig, ax
 
 
-def bar_fueltype_totals(dfs, keys, figsize=(7,4), unit='GW', show_totals=False,
+def bar_fueltype_totals(dfs, keys, figsize=(7,4), unit='GW', show_totals=False, 
                         last_as_marker=False):
     with sns.axes_style('darkgrid'):
         fig, ax = plt.subplots(1,1, figsize=figsize)
@@ -325,9 +325,8 @@ def bar_fueltype_totals(dfs, keys, figsize=(7,4), unit='GW', show_totals=False,
             fueltotals = lookup(as_marker,
                         keys=as_marker_key, by='Fueltype'
                        ,show_totals=show_totals, unit=unit)
-            fueltotals.plot(ax=ax, label=as_marker_key, markeredgecolor='none', rot=75,
+            fueltotals.plot(ax=ax, label=as_marker_key, markeredgecolor='none', rot=75, 
                             marker='D', markerfacecolor='darkslategray', linestyle='None')
-
         ax.legend(loc=0)
         ax.set_ylabel(r'Capacity [$%s$]'%unit)
         ax.xaxis.grid(False)

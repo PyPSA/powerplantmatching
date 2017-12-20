@@ -44,7 +44,7 @@ def clean_powerplantname(df):
     """
 
     name = df.Name.replace(regex=True, value=' ',
-                           to_replace=list('-/,')+['\(', '\)', '\[', '\]', '[0-9]'])
+                           to_replace=list('-/,')+['\(', '\)', '\[', '\]','\+', '[0-9]'])
 
     common_words = pd.Series(sum(name.str.split(), [])).value_counts()
     cw = list(common_words[common_words >= 20].index)
@@ -59,7 +59,8 @@ def clean_powerplantname(df):
                         'dt','gud', 'hkw', 'kbr', 'Kernkraft', 'Kernkraftwerk',
                         'kwg', 'krb', 'ohu', 'gkn', 'Gemeinschaftskernkraftwerk',
                         'kki', 'kkp', 'kle', 'wkw', 'rwe', 'bis', 'nordsee', 'ostsee',
-                        'dampfturbinenanlage', 'ikw', 'kw', 'kohlekraftwerk'])]
+                        'dampfturbinenanlage', 'ikw', 'kw', 'kohlekraftwerk', 
+                        'raffineriekraftwerk'])]
     name = (name
             .replace(regex=True, to_replace=pattern, value=' ')
             .replace('\s+', ' ', regex=True)
