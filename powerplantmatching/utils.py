@@ -42,7 +42,7 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 # Logging: File
 logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
-fileHandler = logging.FileHandler(_data_out('PPMT.log'))
+fileHandler = logging.FileHandler(_data_out('PPM.log'))
 fileHandler.setFormatter(logFormatter)
 logger.addHandler(fileHandler)
 # Logging: Console
@@ -50,7 +50,7 @@ consoleHandler = logging.StreamHandler()
 logger.addHandler(consoleHandler)
 
 
-def lookup(df, keys=None, by='Country, Fueltype', exclude=None, show_totals=False, 
+def lookup(df, keys=None, by='Country, Fueltype', exclude=None, show_totals=False,
            unit='MW'):
     """
     Returns a lookup table of the dataframe df with rounded numbers.
@@ -69,9 +69,9 @@ def lookup(df, keys=None, by='Country, Fueltype', exclude=None, show_totals=Fals
     exclude: list
         list of fueltype to exclude from the analysis
     """
-    
+
     if unit=='GW':
-        scaling=1000. 
+        scaling=1000.
     elif unit=='MW':
         scaling=1.
     else:
@@ -91,7 +91,7 @@ def lookup(df, keys=None, by='Country, Fueltype', exclude=None, show_totals=Fals
         else:
             raise NameError(
             "``by` must be one of 'Country, Fueltype' or 'Country' or 'Fueltype'")
-    
+
     if isinstance(df, list):
         dfs = pd.concat([lookup_single(a) for a in df], axis=1, keys=keys)
         if by == 'Country, Fueltype':
