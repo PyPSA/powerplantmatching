@@ -16,7 +16,7 @@
   </object>
    
   <schema>
-    <threshold>0.99</threshold>
+    <threshold>0.96</threshold>
 
     <property type="id">
       <name>ID</name>
@@ -30,19 +30,19 @@
     <property>
       <name>FUELTYPE</name> 
       <comparator>no.priv.garshol.duke.comparators.QGramComparator</comparator>
-      <low>0.00</low>
-      <high>0.51</high>
+      <low>0.05</low>
+      <high>0.65</high>
     </property>
-	<property>
+    <property>
       <name>TECHNOLOGY</name> 
       <comparator>no.priv.garshol.duke.comparators.QGramComparator</comparator>
-      <low>0.00</low>
+      <low>0.05</low>
       <high>0.51</high>
     </property>
     <property>
       <name>COUNTRY</name> 
       <comparator>no.priv.garshol.duke.comparators.QGramComparator</comparator>
-      <low>0.01</low>
+      <low>0.05</low>
       <high>0.51</high>
     </property>   
     <property>
@@ -74,6 +74,9 @@
               cleaner="no.priv.garshol.duke.cleaners.LowerCaseNormalizeCleaner"/>
       <column name="Fueltype"
               property="FUELTYPE"
+              cleaner="no.priv.garshol.duke.cleaners.LowerCaseNormalizeCleaner"/>
+      <column name="Technology"
+              property="TECHNOLOGY"
               cleaner="no.priv.garshol.duke.cleaners.LowerCaseNormalizeCleaner"/>
       <column name="Country"
               property="COUNTRY"/>

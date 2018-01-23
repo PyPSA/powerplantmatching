@@ -238,8 +238,9 @@ def reduce_matched_dataframe(df, show_orig_names=False):
             logger.warn('Empty dataframe passed to `prioritise_reliabilities`.')
             return pd.DataFrame(index=df.index, columns=['0'])
         if ((df.dtypes == object) | (df.dtypes == str)).any():
-            return (df.loc[~df.isnull().all(axis=1)].apply(lambda ds:ds.dropna().iloc[-1], axis=1)
-                      .reindex(df.index))
+            return (df.loc[~df.isnull().all(axis=1), rel_scores.index]
+                       .apply(lambda ds:ds.dropna().iloc[0], axis=1)
+                       .reindex(df.index))
         else:
             if how == 'mean':
                 df = df[~df.isnull().all(axis=1)].groupby(rel_scores, axis=1).mean()
@@ -247,7 +248,7 @@ def reduce_matched_dataframe(df, show_orig_names=False):
                 df = df[~df.isnull().all(axis=1)].groupby(rel_scores, axis=1).median()
             else:
                 raise ValueError("Bad argument: `how` must be 'mean' or 'median'.")
-            return (df.apply(lambda ds:ds.dropna().iloc[-1], axis=1)
+            return (df.loc[:, rel_scores.index].apply(lambda ds:ds.dropna().iloc[0], axis=1)
                       .reindex(index=df.index))
 
     sdf = pd.DataFrame(index=df.index)
