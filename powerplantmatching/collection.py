@@ -26,7 +26,7 @@ from .utils import set_uncommon_fueltypes_to_other, _data_in, _data_out
 from .data import data_config, OPSD, WRI
 from .cleaning import clean_single
 from .matching import combine_multiple_datasets, reduce_matched_dataframe
-from .heuristics import (extend_by_non_matched, extend_by_VRE)
+from .heuristics import (extend_by_non_matched, extend_by_VRE, remove_oversea_areas)
 
 
 def Collection(datasets, update=False, use_saved_aggregation=False, reduced=True,
@@ -218,8 +218,10 @@ def Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced_VRE(update=False,
                                 use_saved_aggregation=False, base_year=2015, update_concat=False):
     if update_concat:
         logger.info('Read base reduced dataframe...')
-        df = extend_by_VRE(Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced(
-                update=update, use_saved_aggregation=use_saved_aggregation), base_year=base_year)
+        df = (Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced(update=update,
+                                                                 use_saved_aggregation=use_saved_aggregation)
+                .pipe(extend_by_VRE, base_year=base_year, prune_beyond=True)
+                .pipe(remove_oversea_areas))
         df.to_csv(_data_out('Matched_CARMA_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_reduced_vre.csv'),
                   index_label='id', encoding='utf-8')
     else:
