@@ -175,7 +175,7 @@ def cliques(df, dataduplicates):
 
 
 def aggregate_units(df, use_saved_aggregation=False, dataset_name=None,
-                    detailed_columns=False):
+                    detailed_columns=False, return_aggregation_groups=False):
     """
     Vertical cleaning of the database. Cleans the "Name"-column, sums
     up the capacity of powerplant units which are determined to belong
@@ -239,17 +239,22 @@ def aggregate_units(df, use_saved_aggregation=False, dataset_name=None,
             df.grouped.to_csv(path_name)
         except IndexError:
             pass
-
+    
+    grouped = df.set_index('projectID')['grouped']
     df = df.groupby('grouped').apply(prop_for_groups)
     if 'Duration' in df:
         df['Duration'] = df['Duration'].replace(0., np.nan)
     df = df.reset_index(drop=True).pipe(clean_powerplantname)
     df = df.loc[:, target_columns(detailed_columns=detailed_columns)]
-    return df
+    if return_aggregation_groups:
+        return df, grouped
+    else:
+        return df
 
 
 def clean_single(df, dataset_name=None, aggregate_powerplant_units=True,
-                 use_saved_aggregation=False, detailed_columns=False):
+                 use_saved_aggregation=False, detailed_columns=False, 
+                 return_aggregation_groups=False):
     """
     Vertical cleaning of the database. Cleans the "Name"-column, sums
     up the capacity of powerplant units which are determined to belong
@@ -288,8 +293,19 @@ def clean_single(df, dataset_name=None, aggregate_powerplant_units=True,
 
     if aggregate_powerplant_units:
         logger.info("Aggregating blocks to entire units in '{}'.".format(dataset_name))
-        df = aggregate_units(df, use_saved_aggregation=use_saved_aggregation,
-                             dataset_name=dataset_name, detailed_columns=detailed_columns)
+        if return_aggregation_groups:
+            df, grouped = aggregate_units(df, use_saved_aggregation=use_saved_aggregation,
+                             dataset_name=dataset_name, detailed_columns=detailed_columns,
+                             return_aggregation_groups=True)
+        else:
+            df = aggregate_units(df, use_saved_aggregation=use_saved_aggregation,
+                                 dataset_name=dataset_name, detailed_columns=detailed_columns)
+
     else:
         df['projectID'] = df['projectID'].dropna().map(lambda x: [x])
-    return clean_technology(df)
+    df =  clean_technology(df)
+    if return_aggregation_groups:
+        return df, grouped
+    else:
+        return df
+
