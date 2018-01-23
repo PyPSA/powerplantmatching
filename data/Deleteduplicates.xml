@@ -16,7 +16,7 @@
   </object>
    
   <schema>
-    <threshold>0.98</threshold>
+    <threshold>0.99</threshold>
 
     <property type="id">
       <name>ID</name>
@@ -30,9 +30,15 @@
     <property>
       <name>FUELTYPE</name> 
       <comparator>no.priv.garshol.duke.comparators.QGramComparator</comparator>
-      <low>0.09</low>
-      <high>0.65</high>
-    </property> 
+      <low>0.00</low>
+      <high>0.51</high>
+    </property>
+	<property>
+      <name>TECHNOLOGY</name> 
+      <comparator>no.priv.garshol.duke.comparators.QGramComparator</comparator>
+      <low>0.00</low>
+      <high>0.51</high>
+    </property>
     <property>
       <name>COUNTRY</name> 
       <comparator>no.priv.garshol.duke.comparators.QGramComparator</comparator>
