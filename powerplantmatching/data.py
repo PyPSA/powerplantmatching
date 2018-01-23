@@ -682,21 +682,29 @@ def WEPP(raw=False, parseGeoLoc=False):
     # Correct technology infos:
     wepp.loc[wepp.Technology.str.contains('LIG', case=False), 'Fueltype'] = 'Lignite'
     wepp.loc[wepp.Turbtype.str.contains('KAPLAN|BULB', case=False), 'Technology'] = 'Run-Of-River'
-    wepp.Technology = wepp.Technology.replace({'PS':'Pumped Storage',
-                                               'CONV/PS':'Pumped Storage',
-                                               'CONV':'Reservoir'})
-    ccgt_pattern = ['CC','GT/C','GT/CP','GT/CS','GT/ST','ST/C','ST/CC/GT','ST/CD',
-                    'ST/CP','ST/CS','ST/GT','ST/GT/IC','ST/T', 'IC/CD','IC/CP','IC/GT']
-    ocgt_pattern = ['GT','GT/D','GT/H','GT/HY','GT/IC','GT/S','GT/T','GTC']
-    st_pattern = ['ST','ST/D']
-    ic_pattern = ['IC','IC/H']
-    wepp.loc[wepp.Utype.isin(ccgt_pattern), 'Technology'] = 'CCGT'
-    wepp.loc[wepp.Utype.isin(ocgt_pattern), 'Technology'] = 'OCGT'
-    wepp.loc[wepp.Utype.isin(st_pattern), 'Technology'] = 'Steam Turbine'
-    wepp.loc[(wepp.Fueltype=='Solar')&(wepp.Utype.isin(st_pattern)), 'Technology'] = 'CSP'
-    wepp.loc[wepp.Utype.isin(ic_pattern), 'Technology'] = 'Combustion Engine'
+    wepp.Technology = wepp.Technology.replace({'CONV/PS':'Pumped Storage',
+                                               'CONV':'Reservoir',
+                                               'PS':'Pumped Storage'})
+    tech_st_pattern = ['ANTH', 'BINARY', 'BIT', 'BIT/ANTH', 'BIT/LIG', 'BIT/SUB',
+                       'BIT/SUB/LIG', 'COL', 'DRY ST', 'HFO', 'LIG', 'LIG/BIT',
+                       'PWR', 'RDF', 'SUB']
+    tech_ocgt_pattern = ['AGWST', 'LITTER', 'RESID', 'RICE', 'STRAW']
+    tech_ccgt_pattern = ['LFO']
+    wepp.loc[wepp.Technology.isin(tech_st_pattern), 'Technology'] = 'Steam Turbine'
+    wepp.loc[wepp.Technology.isin(tech_ocgt_pattern), 'Technology'] = 'OCGT'
+    wepp.loc[wepp.Technology.isin(tech_ccgt_pattern), 'Technology'] = 'CCGT'
+    ut_ccgt_pattern = ['CC','GT/C','GT/CP','GT/CS','GT/ST','ST/C','ST/CC/GT','ST/CD',
+                       'ST/CP','ST/CS','ST/GT','ST/GT/IC','ST/T', 'IC/CD','IC/CP','IC/GT']
+    ut_ocgt_pattern = ['GT','GT/D','GT/H','GT/HY','GT/IC','GT/S','GT/T','GTC']
+    ut_st_pattern = ['ST','ST/D']
+    ut_ic_pattern = ['IC','IC/H']
+    wepp.loc[wepp.Utype.isin(ut_ccgt_pattern), 'Technology'] = 'CCGT'
+    wepp.loc[wepp.Utype.isin(ut_ocgt_pattern), 'Technology'] = 'OCGT'
+    wepp.loc[wepp.Utype.isin(ut_st_pattern), 'Technology'] = 'Steam Turbine'
+    wepp.loc[wepp.Utype.isin(ut_ic_pattern), 'Technology'] = 'Combustion Engine'
     wepp.loc[wepp.Utype=='WTG', 'Technology'] = 'Onshore'
     wepp.loc[wepp.Utype=='WTG/O', 'Technology'] = 'Offshore'
+    wepp.loc[(wepp.Fueltype=='Solar')&(wepp.Utype.isin(ut_st_pattern)), 'Technology'] = 'CSP'
     # Derive the SET column
     chp_pattern = ['CC/S','CC/CP','CCSS/P','GT/CP','GT/CS','GT/S','GT/H','IC/CP',
                    'IC/H','ST/S','ST/H','ST/CP','ST/CS','ST/D']
@@ -706,6 +714,8 @@ def WEPP(raw=False, parseGeoLoc=False):
     wepp = wepp.reindex(columns=target_columns())
     # Clean up the mess
     wepp.Fueltype = wepp.Fueltype.str.title()
+    wepp.loc[wepp.Technology.str.len()>4, 'Technology'] = \
+        wepp.loc[wepp.Technology.str.len()>4, 'Technology'].str.title()
     wepp.reset_index(drop=True)
     # Done!
     wepp.datasetID = 'WEPP'
