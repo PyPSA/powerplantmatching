@@ -20,8 +20,7 @@ Functions to modify and adjust power plant datasets
 from __future__ import absolute_import, print_function
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-from .utils import read_csv_if_string, lookup, _data_in
+from .utils import lookup, _data_in
 from .config import fueltype_to_life
 from .cleaning import (clean_single, clean_technology)
 import logging
@@ -105,9 +104,24 @@ def rescale_capacities_to_country_totals(df, fueltypes):
     return df
 
 
-def extend_by_VRE(df, base_year):
+def extend_by_VRE(df, base_year, prune_beyond=True):
     """
     Extends a given reduced dataframe by externally given VREs.
+
+        Parameters
+    ----------
+    year : int
+        Year of the data (range usually 2013-2017)
+        (defaults to 2016)
+    source : str
+        Which statistics source from
+        {'entsoe SO&AF', 'entsoe Statistics', 'EUROSTAT', ...}
+        (defaults to 'entsoe SO&AF')
+
+    Returns
+    -------
+    df : pd.DataFrame
+         Capacity statistics per country and fuel-type
     """
     from .data import IRENA_stats, OPSD_VRE
     df = df.copy()
@@ -134,10 +148,12 @@ def extend_by_VRE(df, base_year):
     vre.loc[:, 'File'] ='IRENA_CapacityStatistics2017.csv'
     # Concatenate
     logger.info('Concatenate...')
-    concat = pd.concat([df, vre_DK, vre_CH_DE, vre], ignore_index=True)
-    concat = concat[cols]
-    concat.reset_index(drop=True, inplace=True)
-    return concat
+    cc = pd.concat([df, vre_DK, vre_CH_DE, vre], ignore_index=True)
+    cc = cc.loc[:,cols]
+    if prune_beyond:
+        cc = cc[cc.YearCommissioned<=base_year]
+    cc.reset_index(drop=True, inplace=True)
+    return cc
 
 
 def average_empty_commyears(df):
@@ -164,12 +180,35 @@ def average_empty_commyears(df):
     return df
 
 
-def aggregate_VRE_by_commyear(df, target_fueltypes=None):
+def aggregate_VRE_by_commyear(df, target_fueltypes=None, agg_geo_by=None):
     """
-    Aggregates the vast number of VRE (e.g. vom data.OPSD_VRE()) units to one
+    Aggregate the vast number of VRE (e.g. vom data.OPSD_VRE()) units to one
     specific (Fueltype + Technology) cohorte per commissioning year.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame containing the data to aggregate
+    target_fueltypes : list
+        list of fueltypes to be aggregated (Others are cutted!)
+    agg_by_geo : str
+        How to deal with lat/lon positions. Allowed:
+            NoneType : Do not show geoposition at all
+            'mean'   : Average geoposition
+            'wm'     : Average geoposition weighted by capacity
     """
     df = df.copy()
+    if agg_geo_by is None:
+        f = {'Capacity':['sum']}
+    elif agg_geo_by == 'mean':
+        f = {'Capacity':['sum'], 'lat':['mean'], 'lon':['mean']}
+    elif agg_geo_by == 'wm':
+        #TODO: This does not work yet, when NaNs are in lat/lon columns.
+        wm = lambda x: np.average(x, weights=df.loc[x.index, 'Capacity'])
+        f = {'Capacity':['sum'], 'lat':{'weighted mean':wm}, 'lon':{'weighted mean':wm}}
+    else:
+        raise TypeError("Value given for `agg_geo_by` is '{}' but must be either \
+                        'NoneType' or 'mean' or 'wm'.".format(agg_geo_by))
 
     if target_fueltypes is None:
         target_fueltypes = ['Wind', 'Solar', 'Bioenergy']
@@ -177,7 +216,8 @@ def aggregate_VRE_by_commyear(df, target_fueltypes=None):
     df = average_empty_commyears(df)
     df.Technology.fillna('-', inplace=True)
     df = df.groupby(['Country','YearCommissioned','Fueltype','Technology'])\
-           .sum().reset_index().replace({'-': np.NaN})
+           .agg(f).reset_index().replace({'-': np.NaN})
+    df.columns = df.columns.droplevel(level=1)
     df.loc[:, 'Set'] = 'PP'
     return df
 
@@ -272,9 +312,7 @@ def manual_corrections(df):
     data mending, matching or reducing algorithms.
     """
     # 1. German CAES plant Huntorf
-    df.loc[df.OPSD.str.contains('huntorf', case=False).fillna(False), 'Technology'] = 'CAES'
-    # 2. Gross-Net-corrections for nuclear plants in France, value derived from unitwise analysis
-    df.loc[(df.Country=='France')&(df.Fueltype=='Nuclear'), 'Capacity'] *= 0.961
+    df.loc[df.Name.str.contains('huntorf', case=False).fillna(False), 'Technology'] = 'CAES'
     return df
 
 
@@ -296,9 +334,9 @@ def set_denmark_region_id(df):
     # Workaround:
     df.loc[(df.Country=='Denmark')&(df.lon>=10.96), 'Region'] = 'DKE'
     df.loc[(df.Country=='Denmark')&(df.lon<10.96), 'Region'] = 'DKW'
-    df.loc[df.CARMA.str.contains('Jegerspris', case=False).fillna(False), 'Region'] = 'DKE'
-    df.loc[df.CARMA.str.contains('Jetsmark', case=False).fillna(False), 'Region'] = 'DKW'
-    df.loc[df.CARMA.str.contains('Fellinggard', case=False).fillna(False), 'Region'] = 'DKW'
+    df.loc[df.Name.str.contains('Jegerspris', case=False).fillna(False), 'Region'] = 'DKE'
+    df.loc[df.Name.str.contains('Jetsmark', case=False).fillna(False), 'Region'] = 'DKW'
+    df.loc[df.Name.str.contains('Fellinggard', case=False).fillna(False), 'Region'] = 'DKW'
     # Copy the remaining ones without Region and handle in copy
     dk_o = df.loc[df.Region.isnull()].reset_index(drop=True)
     dk_o.loc[:, 'Capacity'] *= 0.5
@@ -308,6 +346,15 @@ def set_denmark_region_id(df):
     df.loc[df.Region.isnull(), 'Region'] = 'DKW'
     # Concat
     df = pd.concat([df, dk_o], ignore_index=True)
+    return df
+
+
+def remove_oversea_areas(df, lat=[36, 72], lon=[-10.6, 31]):
+    """
+    Remove plants outside continental Europe such as the Canarian Islands etc.
+    """
+    df = df.loc[(df.lat.isnull() | df.lon.isnull()) |
+                ((df.lat>=lat[0]) & (df.lat<=lat[1]) & (df.lon>=lon[0]) & (df.lon<=lon[1]))]
     return df
 
 
@@ -354,7 +401,7 @@ def scale_to_net_capacities(df, is_gross=True, catch_all=True):
         return df
     else:
         return df
-    
+
 
 def PLZ_to_LatLon_map():
     return pd.read_csv(_data_in('PLZ_Coords_map.csv'), index_col='PLZ')

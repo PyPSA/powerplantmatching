@@ -189,7 +189,7 @@ def combine_multiple_datasets(datasets, labels, **dukeargs):
     return combined_dataframe(crossmatches, datasets)[target_columns()]
 
 
-def reduce_matched_dataframe(df):
+def reduce_matched_dataframe(df, show_orig_names=False):
     """
     Returns a new reduced dataframe with all names of the powerplants, according
     to the following logic:
@@ -246,7 +246,7 @@ def reduce_matched_dataframe(df):
             elif how == 'median':
                 df = df[~df.isnull().all(axis=1)].groupby(rel_scores, axis=1).median()
             else:
-                raise ValueError('Bad argument: how must be `mean` or `median`.')
+                raise ValueError("Bad argument: `how` must be 'mean' or 'median'.")
             return (df.apply(lambda ds:ds.dropna().iloc[-1], axis=1)
                       .reindex(index=df.index))
 
@@ -265,6 +265,8 @@ def reduce_matched_dataframe(df):
     sdf.loc[:, 'projectID'] = df.projectID.apply(lambda x:
                                 dict(zip(df.columns.levels[1][x.notnull()].values
                                 , x.dropna().values)), axis=1)
+    if show_orig_names:
+        sdf = sdf.assign(**dict(df.Name))
     sdf = clean_technology(sdf, generalize_hydros=False)
     sdf.reset_index(drop=True)
-    return sdf[target_columns()]
+    return sdf if show_orig_names else sdf[target_columns()]

@@ -59,7 +59,7 @@ def clean_powerplantname(df):
                         'dt','gud', 'hkw', 'kbr', 'Kernkraft', 'Kernkraftwerk',
                         'kwg', 'krb', 'ohu', 'gkn', 'Gemeinschaftskernkraftwerk',
                         'kki', 'kkp', 'kle', 'wkw', 'rwe', 'bis', 'nordsee', 'ostsee',
-                        'dampfturbinenanlage', 'ikw', 'kw', 'kohlekraftwerk', 
+                        'dampfturbinenanlage', 'ikw', 'kw', 'kohlekraftwerk',
                         'raffineriekraftwerk'])]
     name = (name
             .replace(regex=True, to_replace=pattern, value=' ')
@@ -207,8 +207,11 @@ def aggregate_units(df, use_saved_aggregation=False, dataset_name=None,
 #                     if   x.Country.notnull().any(axis=0) else np.NaN,
                    'Fueltype': x.Fueltype.value_counts(dropna=False).index[0],
 #                       if x.Fueltype.notnull().any(axis=0) else np.NaN,
-                   'Technology': ', '.join(x.Technology.dropna().unique())
-                                            if x.Technology.notnull().any(axis=0) else np.NaN,
+#                   'Technology': ', '.join(x.Technology.replace({'':np.NaN}).dropna().unique())
+#                                           if x.Technology.notnull().any(axis=0)
+#                                           else np.NaN,
+                   ### Technology workaround until DUKE is tweaked better
+                   'Technology': x.Technology.value_counts(dropna=False).index[0],
                    'Set' : ', '.join(x.Set.dropna().unique()),
                    'File': x.File.value_counts(dropna=False).index[0],
                    'Capacity': x['Capacity'].fillna(0.).sum(),
@@ -217,13 +220,13 @@ def aggregate_units(df, use_saved_aggregation=False, dataset_name=None,
                    'YearCommissioned': x['YearCommissioned'].min(),
                    'projectID': list(x.projectID)}
         if 'Duration' in x:
-            results['Duration'] = (x.Duration*x.Capacity /x.Capacity.sum()).sum()
+            results['Duration'] = (x.Duration * x.Capacity / x.Capacity.sum()).sum()
         return pd.Series(results)
 
     path_name = _data_out('aggregation_groups_{}.csv'.format(dataset_name))
     if use_saved_aggregation:
         try:
-            logger.info('Reading saved aggregation groups for dataset: {}'.format(dataset_name))
+            logger.info("Reading saved aggregation groups for dataset '{}'.".format(dataset_name))
             groups = pd.read_csv(path_name, header=None, index_col=0).reindex(index=df.index)
             df = df.assign(grouped=groups.values)
         except ValueError:
