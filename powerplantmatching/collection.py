@@ -50,6 +50,11 @@ def Collection(datasets, update=False, use_saved_aggregation=False, reduced=True
                               .format('_'.join(map(str.upper, datasets))))
     outfn_reduced = _data_out('Matched_{}_reduced.csv'
                               .format('_'.join(map(str.upper, datasets))))
+
+    if not os.path.exists(outfn_reduced if reduced else outfn_matched):
+        logger.warning("Forcing update since the cache file is missing")
+        update = True
+
     if update:
         dfs = []
         for name in datasets:
