@@ -30,6 +30,7 @@ import pycountry
 import logging
 logger = logging.getLogger(__name__)
 from six import iteritems
+from six.moves import reduce
 from .config import europeancountries, target_columns, additional_data_config
 from .cleaning import (gather_fueltype_info, gather_set_info,
                        gather_technology_info, clean_powerplantname,
