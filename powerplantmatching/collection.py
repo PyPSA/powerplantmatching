@@ -137,12 +137,12 @@ def MATCHED_dataset(aggregated_hydros=True, rescaled_hydros=False,
 #                                         use_saved_aggregation=True)
 
     matched = extend_by_non_matched(matched, WRI(), 'WRI',
-            fueltypes=['Wind'], clean_added_data=True, use_saved_aggregation=True )
+            fueltypes=['Wind'], clean_added_data=True, use_saved_aggregation=True)
 
     if aggregated_hydros:
         hydro = Aggregated_hydro(scaled_capacity=rescaled_hydros)
         matched = matched[matched.Fueltype != 'Hydro']
-        matched = pd.concat([matched, hydro]).reset_index(drop=True)
+        matched = pd.concat([matched, hydro], ignore_index=True)
     if subsume_uncommon_fueltypes:
         matched = set_uncommon_fueltypes_to_other(matched)
     return matched[columns]

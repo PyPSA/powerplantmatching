@@ -185,7 +185,7 @@ def aggregate_units(df, use_saved_aggregation=False, dataset_name=None,
     ----------
     df : pandas.Dataframe or string
         dataframe or csv-file to use for the resulting database
-    use_saved_aggregation : Boolean (default False):
+    use_saved_aggregation : bool (default False):
         Whether to use the automaticly saved aggregation file, which
         is stored in data/aggregation_groups_XX.csv with XX being
         either a custom name for the dataset. This saves time if you
@@ -242,7 +242,7 @@ def aggregate_units(df, use_saved_aggregation=False, dataset_name=None,
             df.grouped.to_csv(path_name)
         except IndexError:
             pass
-    
+
     grouped = df.set_index('projectID')['grouped']
     df = df.groupby('grouped').apply(prop_for_groups)
     if 'Duration' in df:
@@ -297,9 +297,11 @@ def clean_single(df, dataset_name=None, aggregate_powerplant_units=True,
     if aggregate_powerplant_units:
         logger.info("Aggregating blocks to entire units in '{}'.".format(dataset_name))
         if return_aggregation_groups:
-            df, grouped = aggregate_units(df, use_saved_aggregation=use_saved_aggregation,
-                             dataset_name=dataset_name, detailed_columns=detailed_columns,
-                             return_aggregation_groups=True)
+            df, grouped = aggregate_units(df,
+                                          use_saved_aggregation=use_saved_aggregation,
+                                          dataset_name=dataset_name,
+                                          detailed_columns=detailed_columns,
+                                          return_aggregation_groups=True)
         else:
             df = aggregate_units(df, use_saved_aggregation=use_saved_aggregation,
                                  dataset_name=dataset_name, detailed_columns=detailed_columns)
