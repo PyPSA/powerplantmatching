@@ -52,9 +52,10 @@ def Collection(datasets, update=False, use_saved_aggregation=False, reduced=True
     outfn_reduced = _data_out('Matched_{}_reduced.csv'
                               .format('_'.join(map(str.upper, datasets))))
 
-    if not os.path.exists(outfn_reduced if reduced else outfn_matched):
+    if not update and not os.path.exists(outfn_reduced if reduced else outfn_matched):
         logger.warning("Forcing update since the cache file is missing")
         update = True
+        use_saved_aggregation = True
 
     if update:
         dfs = []
@@ -105,7 +106,7 @@ def Carma_ENTSOE_GEO_OPSD_WRI_matched_reduced(update=False, use_saved_aggregatio
 
 def MATCHED_dataset(aggregated_hydros=True, rescaled_hydros=False,
                     subsume_uncommon_fueltypes=False,
-                    include_unavailables=False):
+                    include_unavailables=False, update=False):
     """
     This returns the actual match between the databases Carma, ENTSOE, ESE, GEO,
     OPSD and WRI with an additional manipulation on the hydro
@@ -126,9 +127,9 @@ def MATCHED_dataset(aggregated_hydros=True, rescaled_hydros=False,
     """
 
     if include_unavailables:
-        matched = Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced()
+        matched = Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced(update=update)
     else:
-        matched = Carma_ENTSOE_GEO_OPSD_WRI_matched_reduced()
+        matched = Carma_ENTSOE_GEO_OPSD_WRI_matched_reduced(update=update)
     columns = matched.columns
     matched = extend_by_non_matched(matched, OPSD(), 'OPSD', clean_added_data=True,
                                     use_saved_aggregation=True)
