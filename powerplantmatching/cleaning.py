@@ -229,7 +229,7 @@ def aggregate_units(df, use_saved_aggregation=False, dataset_name=None,
             logger.info("Reading saved aggregation groups for dataset '{}'.".format(dataset_name))
             groups = pd.read_csv(path_name, header=None, index_col=0).reindex(index=df.index)
             df = df.assign(grouped=groups.values)
-        except ValueError:
+        except (ValueError, IOError):
             logger.warning("Non-existing saved links for dataset '{0}',"+\
                            "continuing by aggregating again".format(dataset_name))
             if 'grouped' in df:
