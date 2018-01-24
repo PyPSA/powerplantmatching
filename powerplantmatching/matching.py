@@ -225,49 +225,43 @@ def reduce_matched_dataframe(df, show_orig_names=False):
         else:
             return s[s.notnull()].str.cat(sep = ', ')
 
-#   define which databases are present and get their reliability_score
+    # define which databases are present and get their reliability_score
     sources = df.columns.levels[1]
     rel_scores = (pd.DataFrame(data_config).loc['reliability_score', sources]
                     .sort_values(ascending=False))
-    def prioritise_reliabilities(df, how='mean'):
+
+    def prioritise_reliability(df, how='mean'):
         """
         Take the first most reliable value if dtype==String, else take mean of most
         reliable values
         """
-        if df.isnull().all(axis=1).all():
-            logger.warn('Empty dataframe passed to `prioritise_reliabilities`.')
-            return pd.DataFrame(index=df.index, columns=['0'])
-        if ((df.dtypes == object) | (df.dtypes == str)).any():
-            return (df.loc[~df.isnull().all(axis=1), rel_scores.index]
-                       .apply(lambda ds:ds.dropna().iloc[0], axis=1)
-                       .reindex(df.index))
-        else:
-            if how == 'mean':
-                df = df[~df.isnull().all(axis=1)].groupby(rel_scores, axis=1).mean()
-            elif how == 'median':
-                df = df[~df.isnull().all(axis=1)].groupby(rel_scores, axis=1).median()
-            else:
-                raise ValueError("Bad argument: `how` must be 'mean' or 'median'.")
-            return (df.loc[:, rel_scores.index].apply(lambda ds:ds.dropna().iloc[0], axis=1)
-                      .reindex(index=df.index))
+        df = df.loc[df.notnull().any(axis=1), rel_scores.index]
 
-    sdf = pd.DataFrame(index=df.index)
-    sdf.loc[:, 'Name'] = df.Name.pipe(prioritise_reliabilities)
-    sdf.loc[:, 'Fueltype'] = df.Fueltype.pipe(prioritise_reliabilities)
-    sdf.loc[:, 'Technology'] = df.Technology.pipe(prioritise_reliabilities)
-    sdf.loc[:, 'Country'] = df.Country.pipe(prioritise_reliabilities)
-    sdf.loc[:, 'Set'] = df.Set.pipe(prioritise_reliabilities)
-    sdf.loc[:, 'Capacity'] = df.Capacity.pipe(prioritise_reliabilities, how='median')
-    sdf.loc[:, 'YearCommissioned'] = df.YearCommissioned.max(axis=1)
-    sdf.loc[:, 'lat'] = df.lat.pipe(prioritise_reliabilities)
-    sdf.loc[:, 'lon'] = df.lon.pipe(prioritise_reliabilities)
+        if df.empty:
+            logger.warn('Empty dataframe passed to `prioritise_reliability`.')
+            return pd.Series()
 
-    sdf.loc[:, 'File'] = df.File.apply(concat_strings, axis=1)
-    sdf.loc[:, 'projectID'] = df.projectID.apply(lambda x:
-                                dict(zip(df.columns.levels[1][x.notnull()].values
-                                , x.dropna().values)), axis=1)
+        if not ((df.dtypes == object) | (df.dtypes == str)).any():
+            # all numeric
+            df = df.groupby(rel_scores, axis=1).agg(how)
+
+        return df.apply(lambda ds: ds.dropna().iloc[0], axis=1)
+
+    sdf = pd.DataFrame.from_dict({
+        'Name': prioritise_reliability(df['Name']),
+        'Technology': prioritise_reliability(df['Technology']),
+        'Country': prioritise_reliability(df['Country']),
+        'Set': prioritise_reliability(df['Set']),
+        'Capacity': prioritise_reliability(df['Capacity'], how='median'),
+        'YearCommissioned': df['YearCommissioned'].max(axis=1),
+        'lat': prioritise_reliability(df['lat']),
+        'lon': prioritise_reliability(df['lon']),
+        'File': df['File'].apply(concat_strings, axis=1),
+        'projectID': df['projectID'].apply(lambda x: dict(x.dropna()), axis=1)
+    })
+
     if show_orig_names:
         sdf = sdf.assign(**dict(df.Name))
     sdf = clean_technology(sdf, generalize_hydros=False)
     sdf.reset_index(drop=True)
-    return sdf if show_orig_names else sdf[target_columns()]
+    return sdf if show_orig_names else sdf.reindex(columns=target_columns())
