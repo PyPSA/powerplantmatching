@@ -247,8 +247,8 @@ def reduce_matched_dataframe(df, show_orig_names=False):
             elif how == 'median':
                 df = df[~df.isnull().all(axis=1)].groupby(rel_scores, axis=1).median()
             else:
-                raise ValueError("Bad argument: `how` must be 'mean' or 'median'.")
-            return (df.loc[:, rel_scores.index].apply(lambda ds:ds.dropna().iloc[0], axis=1)
+                raise ValueError("Bad argument: `how` must be either 'mean' or 'median'.")
+            return (df.loc[:, rel_scores.values].apply(lambda ds:ds.dropna().iloc[0], axis=1)
                       .reindex(index=df.index))
 
     sdf = pd.DataFrame(index=df.index)
