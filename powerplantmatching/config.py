@@ -12,7 +12,9 @@
 
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
-import pandas as pd
+import yaml
+import os
+from textwrap import dedent
 from .utils import _data
 """
 This file is used for basic configurations of the datasets, defining the fueltypes,
@@ -105,17 +107,22 @@ def fueltype_to_color():
 
 def additional_data_config():
     """
-    reads the ./data/data_config file where additional information about tokens,
-    and paths is stored (e.g entsoe token, path to ESE file)
+    reads the config.yaml file where additional information about tokens, and
+    paths is stored (e.g entsoe token, path to ESE file)
 
     contents should be
 
-    entsoe_token : entose security token for the REST API
-    path_to_ese: absolute path to the downloaded ese file,
+    entsoe_token : entsoe security token for the REST API
+    ese_path : absolute path to the downloaded ese file,
                 default 'Downloads/projects.xls'
 
-    returns pandas.Series
+    returns dict
     """
-    return pd.read_csv(_data('../config.csv'),
-                       index_col=0, sep=':', header=None).loc[:,1].replace('True', True)
+    fn = _data('../config.yaml')
+    assert os.path.exists(fn), dedent("""
+        The config file '{}' does not exist yet. Copy config_example.yaml to
+        config.yaml and fill in details, as necessary.
+    """)
+    with open(fn) as f:
+        return yaml.load(f)
 

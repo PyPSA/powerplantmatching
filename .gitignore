@@ -89,7 +89,7 @@ ENV/
 # Rope project settings
 .ropeproject
 coal-types.xlsx
-config.csv
+config.{csv,yaml}
 data/platts_wepp.csv
 data/platts_wepp_small.csv
 data/*WEPP*
@@ -115,3 +115,4 @@ german_postcode_map.py
 data/out/Matched_BNETZA_UBA.csv
 data/out/Matched_BNETZA_UBA_reduced.csv
 data/out/aggregation_groups_Unnamed dataset.csv
+config.yaml

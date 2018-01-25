@@ -19,6 +19,7 @@ Processed datasets of merged and/or adjusted data
 from __future__ import print_function
 
 import pandas as pd
+import os
 import ast
 import logging
 logger = logging.getLogger(__name__)
@@ -51,6 +52,12 @@ def Collection(datasets, update=False, use_saved_aggregation=False, reduced=True
                               .format('_'.join(map(str.upper, datasets))))
     outfn_reduced = _data_out('Matched_{}_reduced.csv'
                               .format('_'.join(map(str.upper, datasets))))
+
+    if not update and not os.path.exists(outfn_reduced if reduced else outfn_matched):
+        logger.warning("Forcing update since the cache file is missing")
+        update = True
+        use_saved_aggregation = True
+
     if update:
         dfs = []
         for name in datasets:
@@ -100,7 +107,7 @@ def Carma_ENTSOE_GEO_OPSD_WRI_matched_reduced(update=False, use_saved_aggregatio
 
 def MATCHED_dataset(aggregated_hydros=True, rescaled_hydros=False,
                     subsume_uncommon_fueltypes=False,
-                    include_unavailables=False):
+                    include_unavailables=False, update=False):
     """
     This returns the actual match between the databases Carma, ENTSOE, ESE, GEO,
     OPSD and WRI with an additional manipulation on the hydro
@@ -121,9 +128,9 @@ def MATCHED_dataset(aggregated_hydros=True, rescaled_hydros=False,
     """
 
     if include_unavailables:
-        matched = Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced()
+        matched = Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced(update=update)
     else:
-        matched = Carma_ENTSOE_GEO_OPSD_WRI_matched_reduced()
+        matched = Carma_ENTSOE_GEO_OPSD_WRI_matched_reduced(update=update)
     columns = matched.columns
     matched = extend_by_non_matched(matched, OPSD(), 'OPSD', clean_added_data=True,
                                     use_saved_aggregation=True)
@@ -132,12 +139,12 @@ def MATCHED_dataset(aggregated_hydros=True, rescaled_hydros=False,
 #                                         use_saved_aggregation=True)
 
     matched = extend_by_non_matched(matched, WRI(), 'WRI',
-            fueltypes=['Wind'], clean_added_data=True, use_saved_aggregation=True )
+            fueltypes=['Wind'], clean_added_data=True, use_saved_aggregation=True)
 
     if aggregated_hydros:
         hydro = Aggregated_hydro(scaled_capacity=rescaled_hydros)
         matched = matched[matched.Fueltype != 'Hydro']
-        matched = pd.concat([matched, hydro]).reset_index(drop=True)
+        matched = pd.concat([matched, hydro], ignore_index=True)
     if subsume_uncommon_fueltypes:
         matched = set_uncommon_fueltypes_to_other(matched)
     return matched[columns]

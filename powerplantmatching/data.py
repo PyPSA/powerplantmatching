@@ -28,8 +28,10 @@ import xml.etree.ElementTree as ET
 import re
 import pycountry
 import logging
+from textwrap import dedent
 logger = logging.getLogger(__name__)
 from six import iteritems
+from six.moves import reduce
 from .config import europeancountries, target_columns, additional_data_config
 from .cleaning import (gather_fueltype_info, gather_set_info,
                        gather_technology_info, clean_powerplantname,
@@ -331,26 +333,22 @@ def ESE(update=False, path=None, add_IWPDCY=False, raw=False):
 
     """
     saved_version = _data_in('energy_storage_exchange.csv')
-    if (not os.path.exists(saved_version)) and (update is False) and (path is None):
-        raise(NotImplementedError( '''
-        This database is not yet in your local repository.
-        Just download the database from the link given in the README file
-        and set the arguments of this function to update=True and
-        path='path/to/database/projects.xls'. This will integrate the
-        database into your local powerplantmatching/data and can then
-        be used as the other databases.
-        '''))
     if os.path.exists(saved_version) and (update is False) :
         ese = pd.read_csv(saved_version, index_col='id', encoding='utf-8')
         if add_IWPDCY:
             ese = ese.append(IWPDCY(), ignore_index=True)
         return ese
-    if path is None and not os.path.exists(additional_data_config()['ese_path']):
-        raise(ValueError('No path defined for update'))
-    if path is None and os.path.exists(additional_data_config()['ese_path']):
-        path=os.path.exists(additional_data_config()['ese_path'])
-    if not os.path.exists(path):
-        raise(ValueError('The given path does not exist'))
+
+    if path is None:
+        path = additional_data_config()['ese_path']
+
+    assert os.path.exists(path), dedent('''
+        The ESE database has not been cached in your local repository, yet (or
+        you requested an update). Due to copyright issues it cannot be
+        downloaded automatically. Get it by clicking 'Export Data XLS' on
+        https://goo.gl/gVMwKJ and set ese_path in your config.csv to its full
+        path. We couldn't find it at '{}' just now.
+    ''').format(path)
 
     # Work-around to rewrite the longitude cell types from dates to
     # numbers, would also work the other way around, if there were

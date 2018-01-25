@@ -28,13 +28,13 @@ import logging
 
 
 def _data(fn):
-    return os.path.join(dirname(dirname(__file__)), 'data', fn)
+    return os.path.join(dirname(__file__), '..', 'data', fn)
 
 def _data_in(fn):
-    return os.path.join(dirname(dirname(__file__)), 'data', 'in', fn)
+    return os.path.join(dirname(__file__), '..', 'data', 'in', fn)
 
 def _data_out(fn):
-    return os.path.join(dirname(dirname(__file__)), 'data', 'out', fn)
+    return os.path.join(dirname(__file__), '..', 'data', 'out', fn)
 
 # Logging: General Settings
 #import logging

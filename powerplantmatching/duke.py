@@ -71,13 +71,13 @@ def duke(datasets, labels=['one', 'two'], singlematch=False,
     else:
         config = "Comparison.xml"
 
-    duke_bin_dir = os.path.join(dirname(dirname(os.path.realpath(__file__))), 'duke_binaries')
+    duke_bin_dir = os.path.join(dirname(os.path.realpath(__file__)), '..', 'duke_binaries')
     os.environ['CLASSPATH'] = os.pathsep.join([os.path.join(duke_bin_dir, r)
                                                for r in os.listdir(duke_bin_dir)])
     tmpdir = tempfile.mkdtemp()
 
     try:
-        shutil.copyfile(os.path.join(dirname(dirname(__file__)), "data", config),
+        shutil.copyfile(os.path.join(dirname(__file__), "..", "data", config),
                         os.path.join(tmpdir, "config.xml"))
 
         logger.debug("Comparing files: %s", ", ".join(labels))
@@ -91,7 +91,7 @@ def duke(datasets, labels=['one', 'two'], singlematch=False,
             df.to_csv(os.path.join(tmpdir, "file{}.csv".format(n+1)), index_label='id', encoding='utf-8')
             if n==1:
                 df.index -= shift_by
-                
+
         args = ['java', '-Dfile.encoding=UTF-8', 'no.priv.garshol.duke.Duke', '--linkfile=linkfile.txt']
         if singlematch:
             args.append('--singlematch')

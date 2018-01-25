@@ -23,7 +23,6 @@ power plant databases.
 
 from __future__ import absolute_import
 
-from . import config
-from . import cleaning, data, heuristics, export, matching, utils, collection, plot
+from . import config, cleaning, data, heuristics, export, matching, utils, collection, plot
 
 import logging
