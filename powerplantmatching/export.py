@@ -20,10 +20,11 @@
 import pandas as pd
 import numpy as np
 import pycountry
-
 from .collection import Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced_VRE
 from .heuristics import set_denmark_region_id
 from .utils import _data_out
+import logging
+logger = logging.getLogger(__name__)
 
 def Export_TIMES(df=None, use_scaled_capacity=False, baseyear=2015):
     """
@@ -33,7 +34,10 @@ def Export_TIMES(df=None, use_scaled_capacity=False, baseyear=2015):
         df = Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced_VRE()
         if df is None:
             raise RuntimeError("The data to be exported does not yet exist.")
-    df = df.copy(deep=True)
+    df = df.copy(deep=True).loc[(df.YearCommissioned.isnull())|(df.YearCommissioned<=baseyear)]
+    plausible = True
+
+
 
     # Set region via country names by iso3166-2 codes
     if 'Region' not in df:
@@ -126,10 +130,11 @@ def Export_TIMES(df=None, use_scaled_capacity=False, baseyear=2015):
                     df_exp.loc[row, reg] = 0.0
                 # Plausibility-Check:
                 if yr > baseyear and (df_exp.loc[row, reg] > df_exp.loc[row-1, reg]):
-                    raise ValueError("""For region '{}' and timestype '{}' the
-                                     value for year {} ({}) is higher than in the
-                                     year before ({}). Please check!""".format(reg, tt, yr,
-                                     df_exp.loc[row, reg], df_exp.loc[row-1, reg]))
+                    plausible = False
+                    logger.error("For region '{}' and timestype '{}' the value \
+                                 for year {} ({0.000}) is higher than in the year before \
+                                 ({0.000}).".format(reg, tt, yr, df_exp.loc[row, reg],
+                                 df_exp.loc[row-1, reg]))
             df_exp.loc[row, 'Pset_Pn'] = tt
             row += 1
     df_exp.loc[:, 'Attribute'] = 'STOCK'
@@ -137,7 +142,8 @@ def Export_TIMES(df=None, use_scaled_capacity=False, baseyear=2015):
     df_exp.loc[:, 'LimType'] = 'FX'
 
     # Write resulting dataframe to file
-    df_exp.to_excel(_data_out('Export_Stock_TIMES.xlsx'))
+    if plausible:
+        df_exp.to_excel(_data_out('Export_Stock_TIMES.xlsx'))
     return df_exp
 
 
