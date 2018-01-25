@@ -26,7 +26,8 @@ from .utils import set_uncommon_fueltypes_to_other, _data_in, _data_out
 from .data import data_config, OPSD, WRI
 from .cleaning import clean_single
 from .matching import combine_multiple_datasets, reduce_matched_dataframe
-from .heuristics import (extend_by_non_matched, extend_by_VRE, remove_oversea_areas)
+from .heuristics import (extend_by_non_matched, extend_by_VRE, remove_oversea_areas,
+                         manual_corrections)
 
 
 def Collection(datasets, update=False, use_saved_aggregation=False, reduced=True,
@@ -34,7 +35,7 @@ def Collection(datasets, update=False, use_saved_aggregation=False, reduced=True
     if 'ESE' in custom_config:
         if custom_config['ESE']['read_kwargs']['add_IWPDCY']:
             datasets = datasets + ['IWPDCY']
-#    deal with the case that only one dataset is requested
+    # Deal with the case that only one dataset is requested
     if isinstance(datasets, str):
         name = datasets
         conf = data_config[name].copy()
@@ -220,6 +221,7 @@ def Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced_VRE(update=False,
         logger.info('Read base reduced dataframe...')
         df = (Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced(update=update,
                                                                  use_saved_aggregation=use_saved_aggregation)
+                .pipe(manual_corrections)
                 .pipe(extend_by_VRE, base_year=base_year, prune_beyond=True)
                 .pipe(remove_oversea_areas))
         df.to_csv(_data_out('Matched_CARMA_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_reduced_vre.csv'),

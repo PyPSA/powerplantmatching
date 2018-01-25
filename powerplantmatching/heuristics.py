@@ -127,7 +127,6 @@ def extend_by_VRE(df, base_year, prune_beyond=True):
     df = df.copy()
     # Drop VRE which are to be replaced
     df = df[~(((df.Fueltype=='Solar')&(df.Technology!='CSP'))|(df.Fueltype=='Wind')|(df.Fueltype=='Bioenergy'))]
-    df = manual_corrections(df)
     cols = df.columns
     # Take CH, DE, DK values from OPSD
     logger.info('Read OPSD_VRE dataframe...')
@@ -325,6 +324,8 @@ def set_denmark_region_id(df):
         pos = [i for i,x in enumerate(df.columns) if x == 'Country'][0]
         df.insert(pos+1, 'Region', np.nan)
     else:
+        if ('DKE' in set(df.Region))|('DKW' in set(df.Region)):
+            return df
         df.loc[(df.Country=='Denmark'), 'Region'] = np.nan
     #TODO: This does not work yet.
         #import geopandas as gpd
@@ -338,12 +339,12 @@ def set_denmark_region_id(df):
     df.loc[df.Name.str.contains('Jetsmark', case=False).fillna(False), 'Region'] = 'DKW'
     df.loc[df.Name.str.contains('Fellinggard', case=False).fillna(False), 'Region'] = 'DKW'
     # Copy the remaining ones without Region and handle in copy
-    dk_o = df.loc[df.Region.isnull()].reset_index(drop=True)
+    dk_o = df.loc[(df.Country=='Denmark')&(df.Region.isnull())].reset_index(drop=True)
     dk_o.loc[:, 'Capacity'] *= 0.5
     dk_o.loc[:, 'Region'] = 'DKE'
     # Handle remaining in df
-    df.loc[df.Region.isnull(), 'Capacity'] *= 0.5
-    df.loc[df.Region.isnull(), 'Region'] = 'DKW'
+    df.loc[(df.Country=='Denmark')&(df.Region.isnull()), 'Capacity'] *= 0.5
+    df.loc[(df.Country=='Denmark')&(df.Region.isnull()), 'Region'] = 'DKW'
     # Concat
     df = pd.concat([df, dk_o], ignore_index=True)
     return df
