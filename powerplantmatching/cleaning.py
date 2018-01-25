@@ -202,23 +202,17 @@ def aggregate_units(df, use_saved_aggregation=False, dataset_name=None,
         the most frequent values for the rest of the columns
 
         """
-        results = {'Name': x.Name.value_counts().index[0],
-                   'Country': x.Country.value_counts(dropna=False).index[0] ,
-#                     if   x.Country.notnull().any(axis=0) else np.NaN,
-                   'Fueltype': x.Fueltype.value_counts(dropna=False).index[0],
-#                       if x.Fueltype.notnull().any(axis=0) else np.NaN,
-#                   'Technology': ', '.join(x.Technology.replace({'':np.NaN}).dropna().unique())
-#                                           if x.Technology.notnull().any(axis=0)
-#                                           else np.NaN,
-                   ### Technology workaround until DUKE is tweaked better
-                   'Technology': x.Technology.value_counts(dropna=False).index[0],
-                   'Set' : ', '.join(x.Set.dropna().unique()),
-                   'File': x.File.value_counts(dropna=False).index[0],
+        results = {'Name': x['Name'].value_counts().index[0],
+                   'Country': x['Country'].value_counts(dropna=False).index[0],
+                   'Fueltype': x['Fueltype'].value_counts(dropna=False).index[0],
+                   'Technology': x['Technology'].value_counts(dropna=False).index[0],
+                   'Set' : ', '.join(x['Set'].dropna().unique()),
+                   'File': x['File'].value_counts(dropna=False).index[0],
                    'Capacity': x['Capacity'].fillna(0.).sum(),
                    'lat': x['lat'].astype(float).mean(),
                    'lon': x['lon'].astype(float).mean(),
                    'YearCommissioned': x['YearCommissioned'].min(),
-                   'projectID': list(x.projectID)}
+                   'projectID': list(x['projectID'])}
         if 'Duration' in x:
             results['Duration'] = (x.Duration * x.Capacity / x.Capacity.sum()).sum()
         return pd.Series(results)
@@ -242,7 +236,7 @@ def aggregate_units(df, use_saved_aggregation=False, dataset_name=None,
             df.grouped.to_csv(path_name)
         except IndexError:
             pass
-    
+
     grouped = df.set_index('projectID')['grouped']
     df = df.groupby('grouped').apply(prop_for_groups)
     if 'Duration' in df:
@@ -256,7 +250,7 @@ def aggregate_units(df, use_saved_aggregation=False, dataset_name=None,
 
 
 def clean_single(df, dataset_name=None, aggregate_powerplant_units=True,
-                 use_saved_aggregation=False, detailed_columns=False, 
+                 use_saved_aggregation=False, detailed_columns=False,
                  return_aggregation_groups=False):
     """
     Vertical cleaning of the database. Cleans the "Name"-column, sums
