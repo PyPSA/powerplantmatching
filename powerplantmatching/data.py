@@ -100,7 +100,7 @@ def OPSD(rawEU=False, rawDE=False, statusDE=['operating']):
     opsd_DE = opsd_DE.reindex(columns=target_columns())
     return (pd.concat([opsd_EU, opsd_DE]).reset_index(drop=True)
             .replace(dict(Fueltype={'Biomass and biogas': 'Bioenergy',
-                                    'Fossil fuels': 'Other',
+                                    'Fossil fuels': np.nan, # *NEVER EVER* set this to 'Other'!
                                     'Mixed fossil fuels': 'Other',
                                     'Natural gas': 'Natural Gas',
                                     'Non-renewable waste': 'Waste',
