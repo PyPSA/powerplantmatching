@@ -28,10 +28,10 @@ import seaborn as sns
 from .config import fueltype_to_life, fueltype_to_color
 from .cleaning import clean_single
 from .data import CARMA, ENTSOE, Capacity_stats, ESE, GEO, OPSD, WEPP, WRI
-from .collection import (Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced_VRE,
-                         Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced,
-                         Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced_VRE,
-                         Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced)
+from .collection import (Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_matched_reduced_VRE,
+                         Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_matched_reduced,
+                         Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WRI_matched_reduced_VRE,
+                         Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WRI_matched_reduced)
 from .utils import lookup, set_uncommon_fueltypes_to_other, tech_colors2
 
 
@@ -81,10 +81,10 @@ def bar_comparison_single_matched(df=None, include_WEPP=True, cleaned=True,
     """
     if df is None:
         if include_WEPP:
-            df = (Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced()
+            df = (Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_matched_reduced()
                   .loc[lambda x:  ~x.Fueltype.isin(exclude)])
         else:
-            df = (Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced()
+            df = (Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WRI_matched_reduced()
                   .loc[lambda x:  ~x.Fueltype.isin(exclude)])
 
     if cleaned:
@@ -307,7 +307,7 @@ def bar_fueltype_and_country_totals(dfs, keys, figsize=(12,8)):
     return fig, ax
 
 
-def bar_fueltype_totals(dfs, keys, figsize=(7,4), unit='GW', show_totals=False, 
+def bar_fueltype_totals(dfs, keys, figsize=(7,4), unit='GW', show_totals=False,
                         last_as_marker=False):
     with sns.axes_style('darkgrid'):
         fig, ax = plt.subplots(1,1, figsize=figsize)
@@ -325,7 +325,7 @@ def bar_fueltype_totals(dfs, keys, figsize=(7,4), unit='GW', show_totals=False,
             fueltotals = lookup(as_marker,
                         keys=as_marker_key, by='Fueltype'
                        ,show_totals=show_totals, unit=unit)
-            fueltotals.plot(ax=ax, label=as_marker_key, markeredgecolor='none', rot=75, 
+            fueltotals.plot(ax=ax, label=as_marker_key, markeredgecolor='none', rot=75,
                             marker='D', markerfacecolor='darkslategray', linestyle='None')
         ax.legend(loc=0)
         ax.set_ylabel(r'Capacity [$%s$]'%unit)
@@ -442,7 +442,7 @@ def bar_decomissioning_curves(df=None, ylabel=None, title=None, legend_in_subplo
     if ylabel is None:
         ylabel = 'Capacity [GW]'
     if df is None:
-        df = Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced_VRE()
+        df = Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_matched_reduced_VRE()
         if df is None:
             raise RuntimeError("The data to be plotted does not yet exist.")
     df = df.copy()
@@ -566,9 +566,9 @@ def gather_comparison_data(include_WEPP=True, include_VRE=False, **kwargs):
         wepp.query('(YearCommissioned <= {:04d}) or (YearCommissioned != YearCommissioned)'.format(yr), inplace=True)
 
         if include_VRE:
-            red_w_wepp = Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced_VRE()
+            red_w_wepp = Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_matched_reduced_VRE()
         else:
-            red_w_wepp = Carma_ENTSOE_ESE_GEO_OPSD_WEPP_WRI_matched_reduced()
+            red_w_wepp = Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_matched_reduced()
             red_w_wepp.query(queryexpr, inplace=True)
             wepp.query(queryexpr, inplace=True)
         red_w_wepp.query('(YearCommissioned <= {:04d}) or (YearCommissioned != YearCommissioned)'.format(yr), inplace=True)
@@ -577,9 +577,9 @@ def gather_comparison_data(include_WEPP=True, include_VRE=False, **kwargs):
         red_w_wepp = None
     # 3: Reduced w/o WEPP
     if include_VRE:
-        red_wo_wepp = Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced_VRE()
+        red_wo_wepp = Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WRI_matched_reduced_VRE()
     else:
-        red_wo_wepp = Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced()
+        red_wo_wepp = Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WRI_matched_reduced()
         red_wo_wepp.query(queryexpr, inplace=True)
     red_wo_wepp.query('(YearCommissioned <= {:04d}) or (YearCommissioned != YearCommissioned)'.format(yr), inplace=True)
     # 4: Statistics

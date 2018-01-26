@@ -234,13 +234,17 @@ def IWPDCY():
      This data is not yet available. Was extracted manually from the 'International
      Water Power & Dam Country Yearbook'.
      """
-     IWPDCY = pd.read_csv(_data_in('IWPDCY.csv'),
-                          encoding='utf-8', index_col='id')
-     return IWPDCY.reindex(columns=target_columns())
+     fn = 'IWPDCY.csv'
+     IWPDCY = (pd.read_csv(_data_in(fn), encoding='utf-8', index_col='id')
+                 .reindex(columns=target_columns())
+                 .pipe(gather_set_info))
+     IWPDCY.File = fn
+     IWPDCY.projectID = 'IWPDCY' + IWPDCY.index.astype(str)
+     return IWPDCY
 
 data_config['IWPDCY'] = {'read_function': IWPDCY,
            'clean_single_kwargs': dict(aggregate_powerplant_units=False),
-           'reliability_score':4}
+           'reliability_score':3}
 
 
 
@@ -316,7 +320,7 @@ data_config['WRI'] = {'read_function': WRI,
                       'reliability_score':2}
 
 
-def ESE(update=False, path=None, add_IWPDCY=False, raw=False):
+def ESE(update=False, path=None, raw=False):
     """
     This database is not given within the repository because of its restrictive license.
     Just download the database from the link given in the README file
@@ -334,10 +338,7 @@ def ESE(update=False, path=None, add_IWPDCY=False, raw=False):
     """
     saved_version = _data_in('energy_storage_exchange.csv')
     if os.path.exists(saved_version) and (update is False) :
-        ese = pd.read_csv(saved_version, index_col='id', encoding='utf-8')
-        if add_IWPDCY:
-            ese = ese.append(IWPDCY(), ignore_index=True)
-        return ese
+        return pd.read_csv(saved_version, index_col='id', encoding='utf-8')
 
     if path is None:
         path = additional_data_config()['ese_path']
