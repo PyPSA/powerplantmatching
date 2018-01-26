@@ -89,7 +89,8 @@ ENV/
 # Rope project settings
 .ropeproject
 coal-types.xlsx
-config.{csv,yaml}
+config.csv
+config.yaml
 data/platts_wepp.csv
 data/platts_wepp_small.csv
 data/*WEPP*
