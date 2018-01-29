@@ -174,15 +174,12 @@ def combine_multiple_datasets(datasets, labels, **dukeargs):
             powerplant_collection.cross_matches()
         datasets : list of pandas.Dataframes or csv-files in the same
             order as in cross_matches
-
-
         """
         datasets = list(map(read_csv_if_string, datasets))
         for i, data in enumerate(datasets):
-            datasets[i] = data.loc[cross_matches.ix[:, i]].reset_index(drop=True)
+            datasets[i] = data.reindex(cross_matches.iloc[:, i]).reset_index(drop=True)
         df = pd.concat(datasets, axis=1, keys=cross_matches.columns.tolist())
         df = df.reorder_levels([1, 0], axis=1)
-#        df = df[df.columns.levels[0]]
         df = df.loc[:,target_columns()]
         return df.reset_index(drop=True)
     crossmatches = link_multiple_datasets(datasets, labels, **dukeargs)
