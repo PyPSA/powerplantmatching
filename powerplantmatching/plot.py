@@ -585,7 +585,8 @@ def gather_comparison_data(include_WEPP=True, include_VRE=False, **kwargs):
     # 4: Statistics
     statistics = Capacity_stats(year=yr)
     statistics.Fueltype.replace({'Mixed fuel types':'Other'}, inplace=True)
-    statistics.query(queryexpr, inplace=True)
+    if not include_VRE:
+        statistics.query(queryexpr, inplace=True)
     return red_w_wepp, red_wo_wepp, wepp, statistics
 
 
