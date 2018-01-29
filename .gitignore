@@ -91,8 +91,6 @@ ENV/
 coal-types.xlsx
 config.csv
 config.yaml
-data/platts_wepp.csv
-data/platts_wepp_small.csv
 data/*WEPP*
 data/*wepp*
 data/in/*WEPP*
@@ -100,7 +98,8 @@ data/in/*wepp*
 data/out/*WEPP*
 data/out/*wepp*
 data/in/energy_storage_exchange.csv
-data/in/IWPDCY.csv
+data/in/*IWPDCY*
+data/out/*IWPDCY*
 data/in/OldenburgHydro.csv
 data/in/renewable_power_plants.sqlite
 data/out/Export_Stock_TIMES.xlsx
