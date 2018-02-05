@@ -208,14 +208,6 @@ def reduce_matched_dataframe(df, show_orig_names=False):
         combined_dataframe() or match_multiple_datasets()
     """
 
-
-    def most_frequent(s):
-        if s.isnull().all():
-            return np.nan
-        else:
-            values = s.value_counts()
-            return values.idxmax()
-
     def concat_strings(s):
         if s.isnull().all():
             return np.nan
@@ -238,11 +230,12 @@ def reduce_matched_dataframe(df, show_orig_names=False):
             logger.warn('Empty dataframe passed to `prioritise_reliability`.')
             return pd.Series()
 
-        if not ((df.dtypes == object) | (df.dtypes == str)).any():
-            # all numeric
+        if ((df.dtypes == object) | (df.dtypes == str)).any():
+            df = df.groupby(rel_scores, axis=1).first()
+        else: # all numeric
             df = df.groupby(rel_scores, axis=1).agg(how)
 
-        return df.apply(lambda ds: ds.dropna().iloc[0], axis=1)
+        return df.apply(lambda ds: ds.dropna().iloc[-1], axis=1)
 
     sdf = pd.DataFrame.from_dict({
         'Name': prioritise_reliability(df['Name']),
