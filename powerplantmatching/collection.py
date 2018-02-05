@@ -105,7 +105,7 @@ def Collection(datasets, update=False, use_saved_aggregation=False, reduced=True
                 pass
         return sdf
 
-def Carma_ENTSOE_OPSD_matched(update=False, use_saved_aggregation=False):
+def Carma_ENTSOE_GEO_OPSD_matched(update=False, use_saved_aggregation=False):
     return Collection(['CARMA', 'ENTSOE', 'GEO', 'OPSD'],
                       update=update, use_saved_aggregation=use_saved_aggregation,
                       reduced=False)
@@ -184,6 +184,22 @@ def Aggregated_hydro(update=False, scaled_capacity=False):
         hydro.Capacity = hydro.loc[:, 'Scaled Capacity']
     return hydro.drop('Scaled Capacity', axis=1)
 
+
+# --- The next two definitions include ESE as well ---
+
+# unpublishable
+def Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched(update=False,
+                                                 use_saved_aggregation=False):
+    return Collection(['CARMA', 'ENTSOE', 'ESE', 'GEO', 'OPSD', 'WRI'],
+                      update=update, use_saved_aggregation=use_saved_aggregation,
+                      reduced=False)
+
+# unpublishable
+def Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced(update=False,
+                                                         use_saved_aggregation=False):
+    return Collection(['CARMA', 'ENTSOE', 'ESE', 'GEO', 'OPSD', 'WRI'],
+                      update=update, use_saved_aggregation=use_saved_aggregation,
+                      reduced=True)
 
 # --- The next three definitions include ESE+IWPDCY as well ---
 
