@@ -21,7 +21,7 @@ import pandas as pd
 import numpy as np
 import pycountry
 from .collection import Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_matched_reduced_VRE
-from .heuristics import set_denmark_region_id
+from .heuristics import set_denmark_region_id, set_known_retire_years
 from .utils import _data_out
 import logging
 logger = logging.getLogger(__name__)
@@ -87,10 +87,11 @@ def Export_TIMES(df=None, use_scaled_capacity=False, baseyear=2015):
                          "dataframe. Please check!")
 
     # add column with decommissioning year
-    if 'YearDecommissioned' not in df:
+    if 'YearRetire' not in df:
         pos = [i for i,x in enumerate(df.columns) if x == 'Life'][0]
-        df.insert(pos+1, 'YearDecommissioned', np.nan)
-    df.loc[:, 'YearDecommissioned'] = df.loc[:,'YearCommissioned'] + df.loc[:, 'Life']
+        df.insert(pos+1, 'YearRetire', np.nan)
+    df.loc[:, 'YearRetire'] = df.loc[:,'YearCommissioned'] + df.loc[:, 'Life']
+    df = set_known_retire_years(df)
 
     # Now create empty export dataframe with headers
     columns = ['Attribute','*Unit','LimType','Year']
@@ -118,7 +119,7 @@ def Export_TIMES(df=None, use_scaled_capacity=False, baseyear=2015):
                     # Here all matched units that are not retired in yr, are being filtered.
                     elif yr > baseyear:
                         series = ct_group.apply(lambda x: x[cap_column] \
-                            if yr >= x['YearCommissioned'] and yr <= x['YearDecommissioned']
+                            if yr >= x['YearCommissioned'] and yr <= x['YearRetire']
                             else 0, axis=1)
                     else:
                         raise ValueError('loop yr({}) below baseyear({})'.format(yr,baseyear))

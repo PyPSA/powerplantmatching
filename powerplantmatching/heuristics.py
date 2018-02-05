@@ -406,3 +406,21 @@ def scale_to_net_capacities(df, is_gross=True, catch_all=True):
 
 def PLZ_to_LatLon_map():
     return pd.read_csv(_data_in('PLZ_Coords_map.csv'), index_col='PLZ')
+
+
+def set_known_retire_years(df):
+    """
+    Integrate known retire years, e.g. for German nuclear plants with fixed
+    decommissioning dates.
+    """
+    ft = 'Nuclear'
+    c = 'Germany'
+    df.loc[(df.Country==c)&(df.Fueltype==ft)&(df.Name.str.contains('Grafenrheinfeld')),
+           'YearRetire'] = 2015
+    df.loc[(df.Country==c)&(df.Fueltype==ft)&(df.Name.str.contains('Philippsburg')),
+           'YearRetire'] = 2019
+    for n in ['Brokdorf', 'Grohnde', 'Gundremmingen']:
+        df.loc[(df.Country==c)&(df.Fueltype==ft)&(df.Name.str.contains(n)), 'YearRetire'] = 2021
+    for n in ['Emsland', 'Isar', 'Neckarwestheim']:
+        df.loc[(df.Country==c)&(df.Fueltype==ft)&(df.Name.str.contains(n)), 'YearRetire'] = 2022
+    return df
