@@ -23,6 +23,7 @@ from matplotlib.patches import Circle, Ellipse
 from matplotlib.legend_handler import HandlerPatch
 from matplotlib import rcParams, cycler
 from matplotlib.lines import Line2D
+from matplotlib.offsetbox import AnchoredText
 import seaborn as sns
 
 from .config import fueltype_to_life, fueltype_to_color
@@ -193,7 +194,7 @@ def comparison_1dim(by='Country', include_WEPP=True, include_VRE=False,
 
 
 def bar_comparison_countries_fueltypes(dfs=None, ylabel=None, include_WEPP=True,
-        include_VRE=False, show_coverage=True, legend_in_subplots=False, year=2015,
+        include_VRE=False, show_indicators=True, legend_in_subplots=False, year=2015,
         figsize=(7,5)):
     """
     Plots per country an analysis, how the given datasets differ by fueltype.
@@ -237,6 +238,7 @@ def bar_comparison_countries_fueltypes(dfs=None, ylabel=None, include_WEPP=True,
             set.update(countries, set(red_wo_wepp.Country), set(statistics.Country))
     else:
         stats = lookup(dfs.values(), keys=dfs.keys(), by='Country, Fueltype')/1000
+        stats.sort_index(axis=1, inplace=True)
         for k, v in dfs.items():
             set.update(countries, set(v.Country))
 
@@ -253,12 +255,16 @@ def bar_comparison_countries_fueltypes(dfs=None, ylabel=None, include_WEPP=True,
         if j==ncols: i+=1; j=0
         # Perform the plot
         stats[country].plot.bar(ax=ax[i,j], stacked=False, legend=False, colormap='jet')
-        if show_coverage:
+        if show_indicators:
             ctry = stats[country]
-            ctry.loc[:,u'Delta_squared'] = (ctry.iloc[:,0]-ctry.iloc[:,1])**2
-            cov = 1 - ctry.Delta_squared.sum()/((ctry.iloc[:,1]**2).sum())
-            ax[i,j].text(0.0, ax[i,j].get_ylim()[1]*0.95, u'Coverage = '+unicode(round(cov, 3)),
-                         ha='left', va='top')
+            r_sq = round(ctry.corr().iloc[0,1]**2, 3)
+            #TODO: Make sure that matched is always in first and stats in last column!
+            cov = round(ctry.iloc[:,0].sum() / ctry.iloc[:,-1].sum(), 3)
+            txt = AnchoredText("\n" + r'$R^{2} = $%s'%r_sq + "\n"
+                               r'$\frac{\sum P_{match}}{\sum P_{stats}} = $%s'%cov,
+                               loc=2, prop={'size':11})
+            txt.patch.set(boxstyle='round', alpha=0.5)
+            ax[i,j].add_artist(txt)
         # Pass the legend information into the Ordered Dict
         if not legend_in_subplots:
             stats_handle, stats_labels = ax[i,j].get_legend_handles_labels()
