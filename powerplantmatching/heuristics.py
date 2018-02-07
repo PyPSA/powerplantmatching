@@ -411,14 +411,21 @@ def set_known_retire_years(df):
     Integrate known retire years, e.g. for German nuclear plants with fixed
     decommissioning dates.
     """
-    ft = 'Nuclear'
-    c = 'Germany'
-    df.loc[(df.Country==c)&(df.Fueltype==ft)&(df.Name.str.contains('Grafenrheinfeld')),
-           'YearRetire'] = 2015
-    df.loc[(df.Country==c)&(df.Fueltype==ft)&(df.Name.str.contains('Philippsburg')),
-           'YearRetire'] = 2019
-    for n in ['Brokdorf', 'Grohnde', 'Gundremmingen']:
-        df.loc[(df.Country==c)&(df.Fueltype==ft)&(df.Name.str.contains(n)), 'YearRetire'] = 2021
-    for n in ['Emsland', 'Isar', 'Neckarwestheim']:
-        df.loc[(df.Country==c)&(df.Fueltype==ft)&(df.Name.str.contains(n)), 'YearRetire'] = 2022
+
+    YearRetire = {
+        'Grafenrheinfeld': 2015,
+        'Philippsburg': 2019,
+        'Brokdorf': 2021,
+        'Grohnde': 2021,
+        'Grundremmingen': 2021,
+        'Emsland': 2022,
+        'Isar': 2022,
+        'Neckarwestheim': 2022
+    }
+
+    ppl_de_nuc = pd.DataFrame(df.loc[(df.Country == 'Germany') & (df.Fueltype == 'Nuclear'),
+                                     ['Name', 'YearRetire']])
+    for name, year in iteritems(YearRetire):
+        ppl_de_nuc.loc[df.Name.str.contains(name), 'YearRetire'] = year
+    df.loc[ppl_de_nuc.index, 'YearRetire'] = ppl_de_nuc['YearRetire']
     return df

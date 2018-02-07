@@ -125,9 +125,9 @@ def Carma_ENTSOE_GEO_OPSD_WRI_matched_reduced(update=False, use_saved_aggregatio
                       update=update, use_saved_aggregation=use_saved_aggregation,
                       reduced=True)
 
-def MATCHED_dataset(aggregated_hydros=True, rescaled_hydros=False,
+def MATCHED_dataset(aggregated_hydros=False, rescaled_hydros=False,
                     subsume_uncommon_fueltypes=False,
-                    include_unavailables=False, update=False):
+                    include_unavailables=False, **kwargs):
     """
     This returns the actual match between the databases Carma, ENTSOE, ESE, GEO,
     IWPDCY, OPSD and WRI with an additional manipulation on the hydro
@@ -148,9 +148,9 @@ def MATCHED_dataset(aggregated_hydros=True, rescaled_hydros=False,
     """
 
     if include_unavailables:
-        matched = Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WRI_matched_reduced(update=update)
+        matched = Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WRI_matched_reduced(**kwargs)
     else:
-        matched = Carma_ENTSOE_GEO_OPSD_WRI_matched_reduced(update=update)
+        matched = Carma_ENTSOE_GEO_OPSD_WRI_matched_reduced(**kwargs)
     columns = matched.columns
     matched = extend_by_non_matched(matched, OPSD(), 'OPSD', clean_added_data=True,
                                     use_saved_aggregation=True)
@@ -158,8 +158,9 @@ def MATCHED_dataset(aggregated_hydros=True, rescaled_hydros=False,
 #        matched = extend_by_non_matched(matched, ESE(), 'ESE', clean_added_data=True,
 #                                         use_saved_aggregation=True)
 
-    matched = extend_by_non_matched(matched, WRI(), 'WRI',
-            fueltypes=['Wind'], clean_added_data=True, use_saved_aggregation=True)
+    matched = extend_by_non_matched(matched, WRI(), 'WRI', fueltypes=['Wind'],
+                                    clean_added_data=True,
+                                    use_saved_aggregation=True)
 
     if aggregated_hydros:
         hydro = Aggregated_hydro(scaled_capacity=rescaled_hydros)
@@ -189,14 +190,14 @@ def Aggregated_hydro(update=False, scaled_capacity=False):
 
 # unpublishable
 def Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched(update=False,
-                                                 use_saved_aggregation=False):
+                                          use_saved_aggregation=False):
     return Collection(['CARMA', 'ENTSOE', 'ESE', 'GEO', 'OPSD', 'WRI'],
                       update=update, use_saved_aggregation=use_saved_aggregation,
                       reduced=False)
 
 # unpublishable
 def Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced(update=False,
-                                                         use_saved_aggregation=False):
+                                                  use_saved_aggregation=False):
     return Collection(['CARMA', 'ENTSOE', 'ESE', 'GEO', 'OPSD', 'WRI'],
                       update=update, use_saved_aggregation=use_saved_aggregation,
                       reduced=True)
@@ -219,12 +220,12 @@ def Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WRI_matched_reduced(update=False,
 
 # unpublishable
 def Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WRI_matched_reduced_VRE(update=False,
-                                                        use_saved_aggregation=False,
-                                                        update_concat=False, base_year=2016):
+                                                             use_saved_aggregation=False,
+                                                             update_concat=False, base_year=2016):
     if update_concat:
         logger.info('Read base reduced dataframe...')
         df = Collection(['CARMA', 'ENTSOE', 'ESE', 'GEO', 'IWPDCY', 'OPSD', 'WRI'],
-                      update=update, use_saved_aggregation=use_saved_aggregation, reduced=True)
+                        update=update, use_saved_aggregation=use_saved_aggregation, reduced=True)
         df = extend_by_VRE(df, base_year=base_year)
         df.to_csv(_data_out('Matched_CARMA_ENTSOE_ESE_GEO_IWPDCY_OPSD_WRI_reduced_vre.csv'),
                   index_label='id', encoding='utf-8')
@@ -256,9 +257,9 @@ def Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_matched_reduced_VRE(update=False,
         logger.info('Read base reduced dataframe...')
         df = (Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_matched_reduced(update=update,
                                                         use_saved_aggregation=use_saved_aggregation)
-                .pipe(manual_corrections)
-                .pipe(extend_by_VRE, base_year=base_year, prune_beyond=True)
-                .pipe(remove_oversea_areas))
+              .pipe(manual_corrections)
+              .pipe(extend_by_VRE, base_year=base_year, prune_beyond=True)
+              .pipe(remove_oversea_areas))
         df.to_csv(_data_out('Matched_CARMA_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_reduced_vre.csv'),
                   index_label='id', encoding='utf-8')
     else:

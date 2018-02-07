@@ -208,6 +208,7 @@ def reduce_matched_dataframe(df, show_orig_names=False):
         combined_dataframe() or match_multiple_datasets()
     """
 
+
     def concat_strings(s):
         if s.isnull().all():
             return np.nan
@@ -224,18 +225,21 @@ def reduce_matched_dataframe(df, show_orig_names=False):
         Take the first most reliable value if dtype==String, else take mean of most
         reliable values
         """
+
+        # Arrange columns in descending order of reliability
         df = df.loc[df.notnull().any(axis=1), rel_scores.index]
 
         if df.empty:
             logger.warn('Empty dataframe passed to `prioritise_reliability`.')
             return pd.Series()
 
-        if ((df.dtypes == object) | (df.dtypes == str)).any():
-            df = df.groupby(rel_scores, axis=1).first()
-        else: # all numeric
-            df = df.groupby(rel_scores, axis=1).agg(how)
+        # Aggregate data with same reliability scores for numeric columns
+        # (but DO maintain order)
+        if not ((df.dtypes == object) | (df.dtypes == str)).any():
+            # all numeric
+            df = df.groupby(rel_scores, axis=1, sort=False).agg(how)
 
-        return df.apply(lambda ds: ds.dropna().iloc[-1], axis=1)
+        return df.apply(lambda ds: ds.dropna().iloc[0], axis=1)
 
     sdf = pd.DataFrame.from_dict({
         'Name': prioritise_reliability(df['Name']),
