@@ -108,29 +108,27 @@ def extend_by_VRE(df, base_year, prune_beyond=True):
     """
     Extends a given reduced dataframe by externally given VREs.
 
-        Parameters
+    Parameters
     ----------
-    year : int
-        Year of the data (range usually 2013-2017)
-        (defaults to 2016)
-    source : str
-        Which statistics source from
-        {'entsoe SO&AF', 'entsoe Statistics', 'EUROSTAT', ...}
-        (defaults to 'entsoe SO&AF')
+    df : pandas.DataFrame
+        The dataframe to be extended
+    base_year : int
+        Needed for deriving cohorts from IRENA's capacity statistics
 
     Returns
     -------
     df : pd.DataFrame
-         Capacity statistics per country and fuel-type
+         Extended dataframe
     """
     from .data import IRENA_stats, OPSD_VRE
     df = df.copy()
-    # Drop VRE which are to be replaced
-    df = df[~(((df.Fueltype=='Solar')&(df.Technology!='CSP'))|(df.Fueltype=='Wind')|(df.Fueltype=='Bioenergy'))]
+    # Drop Solar (except CSP), Wind and Bioenergy which are to be replaced
+    df = df[~(((df.Fueltype=='Solar')&(df.Technology!='CSP'))|
+              (df.Fueltype=='Wind')|(df.Fueltype=='Bioenergy'))]
     cols = df.columns
     # Take CH, DE, DK values from OPSD
     logger.info('Read OPSD_VRE dataframe...')
-    vre_CH_DE_DK = OPSD_VRE()
+    vre_CH_DE_DK = OPSD_VRE().loc[lambda x: x.Fueltype.isin(['Solar', 'Wind', 'Bioenergy'])]
     vre_DK = vre_CH_DE_DK[vre_CH_DE_DK.Country=='Denmark']
     vre_CH_DE = vre_CH_DE_DK[vre_CH_DE_DK.Country!='Denmark']
     logger.info('Aggregate CH+DE by commyear')
@@ -138,19 +136,19 @@ def extend_by_VRE(df, base_year, prune_beyond=True):
     vre_CH_DE.loc[:, 'File'] = 'renewable_power_plants.sqlite'
     # Take other countries from IRENA stats without: DE, DK_Wind+Solar+Hydro, CH_Bioenergy
     logger.info('Read IRENA_stats dataframe...')
-    vre = IRENA_stats()
-    vre = derive_vintage_cohorts_from_statistics(vre, base_year=base_year)
+    vre = IRENA_stats().loc[lambda x: x.Fueltype.isin(['Solar', 'Wind', 'Bioenergy'])]
     vre = vre[~(vre.Country=='Germany')]
     vre = vre[~((vre.Country=='Denmark')&((vre.Fueltype=='Wind')|(vre.Fueltype=='Solar')|(vre.Fueltype=='Hydro')))]
     vre = vre[~((vre.Country=='Switzerland')&(vre.Fueltype=='Bioenergy'))]
-    vre = vre[~(vre.Technology=='CSP')] # IRENA's CSP data seems to be outdated
+    vre = vre[~(vre.Technology=='CSP')] # Drop IRENA's CSP. Data seems to be outdated
+    vre = derive_vintage_cohorts_from_statistics(vre, base_year=base_year)
     vre.loc[:, 'File'] ='IRENA_CapacityStatistics2017.csv'
     # Concatenate
     logger.info('Concatenate...')
     cc = pd.concat([df, vre_DK, vre_CH_DE, vre], ignore_index=True)
     cc = cc.loc[:,cols]
     if prune_beyond:
-        cc = cc[cc.YearCommissioned<=base_year]
+        cc = cc[(cc.YearCommissioned<=base_year)|cc.YearCommissioned.isnull()]
     cc.reset_index(drop=True, inplace=True)
     return cc
 
