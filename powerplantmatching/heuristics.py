@@ -417,15 +417,18 @@ def set_known_retire_years(df):
         'Philippsburg': 2019,
         'Brokdorf': 2021,
         'Grohnde': 2021,
-        'Grundremmingen': 2021,
+        'Gundremmingen': 2021,
         'Emsland': 2022,
         'Isar': 2022,
         'Neckarwestheim': 2022
     }
 
-    ppl_de_nuc = pd.DataFrame(df.loc[(df.Country == 'Germany') & (df.Fueltype == 'Nuclear'),
-                                     ['Name', 'YearRetire']])
-    for name, year in iteritems(YearRetire):
-        ppl_de_nuc.loc[df.Name.str.contains(name), 'YearRetire'] = year
+    ppl_de_nuc = pd.DataFrame(df.loc[(df.Country == 'Germany') & (df.Fueltype == 'Nuclear')]
+                                .reindex(['Name', 'YearRetire'], axis=1))
+    for name, year in YearRetire.iteritems():
+        if ppl_de_nuc.Name.str.contains(name, case=False).any():
+            ppl_de_nuc.loc[ppl_de_nuc.Name.str.contains(name, case=False), 'YearRetire'] = year
+        else:
+            logger.warn("'{}' was not found in given DataFrame.".format(name))
     df.loc[ppl_de_nuc.index, 'YearRetire'] = ppl_de_nuc['YearRetire']
     return df
