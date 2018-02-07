@@ -293,7 +293,7 @@ def Capacity_stats(raw=False, level=2, **selectors):
                                     'Differently categorized fossil fuels': 'Other',
                                     'Differently categorized renewable energy sources': 'Other',
                                     'Hard coal': 'Hard Coal',
-                                    'Mixed fossil fuels': 'Mixed fuel types',
+                                    'Mixed fossil fuels': 'Other',
                                     'Natural gas': 'Natural Gas',
                                     'Other or unspecified energy sources': 'Other',
                                     'Tide, wave, and ocean': 'Other'})))
@@ -1001,7 +1001,7 @@ def IRENA_stats():
          u'Offshore wind energy':'Wind',
          u'Onshore wind energy':'Wind',
          u'Other solid biofuels':'Bioenergy',
-         u'Renewable municipal waste':'Bioenergy',
+         u'Renewable municipal waste':'Waste',
          u'Solar photovoltaic':'Solar'}
     df.loc[:,'Fueltype'] = df.Technology.map(d)
     d = {u'Concentrated solar power':'CSP',
