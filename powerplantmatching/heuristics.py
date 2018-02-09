@@ -24,6 +24,7 @@ from .utils import lookup, _data_in
 from .config import fueltype_to_life
 from .cleaning import (clean_single, clean_technology)
 import logging
+from six import iteritems
 logger = logging.getLogger(__name__)
 
 
@@ -412,6 +413,9 @@ def set_known_retire_years(df):
     decommissioning dates.
     """
 
+    if 'YearRetire' not in df:
+        df['YearRetire'] = np.nan
+
     YearRetire = {
         'Grafenrheinfeld': 2015,
         'Philippsburg': 2019,
@@ -423,11 +427,12 @@ def set_known_retire_years(df):
         'Neckarwestheim': 2022
     }
 
-    ppl_de_nuc = pd.DataFrame(df.loc[(df.Country == 'Germany') & (df.Fueltype == 'Nuclear')]
-                                .reindex(['Name', 'YearRetire'], axis=1))
-    for name, year in YearRetire.iteritems():
-        if ppl_de_nuc.Name.str.contains(name, case=False).any():
-            ppl_de_nuc.loc[ppl_de_nuc.Name.str.contains(name, case=False), 'YearRetire'] = year
+    ppl_de_nuc = pd.DataFrame(df.loc[(df.Country == 'Germany') & (df.Fueltype == 'Nuclear'),
+                                     ['Name', 'YearRetire']])
+    for name, year in iteritems(YearRetire):
+        name_match_b = ppl_de_nuc.Name.str.contains(name, case=False, na=False)
+        if name_match_b.any():
+            ppl_de_nuc.loc[name_match_b, 'YearRetire'] = year
         else:
             logger.warn("'{}' was not found in given DataFrame.".format(name))
     df.loc[ppl_de_nuc.index, 'YearRetire'] = ppl_de_nuc['YearRetire']
