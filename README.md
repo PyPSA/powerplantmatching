@@ -3,7 +3,7 @@ A toolset for cleaning, standardizing and combining multiple power
 plant databases. 
 
 This package provides ready-to-use power plant data for the European power system.
-Starting from openly available existing power plant datasets, the package cleans, standardizes 
+Starting from openly available power plant datasets, the package cleans, standardizes 
 and merges the input data to create a new combining dataset, which includes all the important information.
 The major advantage of this procedure is that the resulting dataset 
 can be easily updated as soon as new input datasets are released.
@@ -95,17 +95,17 @@ claims only the value of the most reliable data source being matched in the indi
 The considered reliability scores are:
 
 
-|Dataset         |Reliabilty score                                        |
-|:---------------|:-------------------------------------------|
-| BNETZA         | 3      |
-| CARMA          | 1                  |
-| ENTSOE 	 | 4    |
-| ESE            | 4           |
-| GEO            | 3 		                      |
-| IWPDCY         | 3                                       |
-| OPSD           | 5                                       |
-| UBA            | 2                         |
-| WRI		 | 2   |
+|Dataset         |Reliabilty score  |
+|:---------------|:---------------|
+| BNETZA         | 3              |
+| CARMA          | 1              |
+| ENTSOE 	 | 4              |
+| ESE            | 4              |
+| GEO            | 3              |
+| IWPDCY         | 3              |
+| OPSD           | 5              |
+| UBA            | 2              |
+| WRI		 | 2              |
 
 
 The toolset provides additional funcitons to easily manipulate your merged, e.g. you can 
@@ -130,7 +130,7 @@ pm.collection.MATCHED_dataset(rescaled_hydros=True)
 if you want to scale hydro power plants.
 
 
-There is a (bit out of date) ![Documentation](https://github.com/FRESNA/powerplantmatching/files/1380529/PowerplantmatchingDoc.pdf) available, which (however) give you some more extensive insight, 
+There is a (bit out of date) ![Documentation](https://github.com/FRESNA/powerplantmatching/files/1380529/PowerplantmatchingDoc.pdf) available, which (however) gives you some more extensive insight 
 on the coding level.
 
 
