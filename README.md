@@ -1,29 +1,12 @@
 # powerplantmatching
 A toolset for cleaning, standardizing and combining multiple power
-plant databases. See the ![Documentation](https://github.com/FRESNA/powerplantmatching/files/1380529/PowerplantmatchingDoc.pdf) for a more extensive insight.
+plant databases. 
 
-
-**WARNING (2017/03/08)**: To prune unvoluntarily introduced non-public
-data (copyrighted data) from our repository we were forced to
-substantially rewrite the git commit history. This means that merges
-with descendants of earlier commits will NOT apply cleanly and instead
-have to be processed manually. Also, the usual 'pull' procedure will
-fail to start working based on the new changes, you have to save your
-changes and then call either `git reset origin/master` or even `git
-reset --hard origin/master` (Note that this removes the commits on
-your current branch).  We used the opportunity to move the
-continuously updating database bits to git large files, which you will
-have to [install](https://git-lfs.github.com/).
-
-This package helps with simplifying the data collection of power
-plants. Information on power plants, particularly European ones is
-scattered over a few different projects and databases that are
-introducing their own different standards. Thus, we firstly provide
-functions to vertically clean databases and convert them into one
-coherent standard, which does not distinguish the units of a power
-plant. Secondly, we provide functions to horizontally merge different
-databases in order to check their consistency and improve the
-reliability.
+This package provides ready-to-use power plant data for the European power system.
+Starting from openly available existing power plant datasets, the package cleans, standardizes 
+and merges the input data to create a new combining dataset, which includes all the important information.
+The major advantage of this procedure is that the resulting dataset 
+can be easily updated as soon as new input datasets are released.
 
 ![Map of power plants in Europe](https://user-images.githubusercontent.com/19226431/31497088-1ed25900-af5e-11e7-8da7-9ff76fe18c3e.png)
 
@@ -42,11 +25,13 @@ as part of the
 ## What it can do
 
 - clean and standardize power plant data sets
-- merge power plant units to one power plant
+- aggregate power plants units which belong to the same plant 
 - compare and combine different data sets
 - create lookups and give statistical insight to power plant goodness
 - provide cleaned data from different sources 
-- provide an already merged data set of five different data-sources 
+- choose between gros/net capacity
+- provide an already merged data set of six different data-sources 
+
 
 
 ## Installation
@@ -68,20 +53,20 @@ Optional but recommended:
 
 If you are only interested in the power plant data, we provide our
 current merged dataset as a
-[csv-file](../master/data/Matched_Carma_Geo_Opsd_Wri.csv). This
+[csv-file](../master/data/Matched_CARMA_ENTSOE_GEO_OPSD_WRI_reduced.csv). This
 set combines the data of all the data sources listed in
 [Data-Sources](#Data-Sources) and provides the following information:
 
 - **Power plant name** 		- claim of each database
 - **Fueltype** 			- {Bioenergy, Geothermal, Hard Coal, Hydro, Lignite, Nuclear, Natural Gas, Oil, Solar, Wind, Other}
-- **Classification**		- {CCGT, OCGT, Steam Turbine, Combustion Engine, Run-Of-River, Pumped Storage, Reservoir}
+- **Technology**		- {CCGT, OCGT, Steam Turbine, Combustion Engine, Run-Of-River, Pumped Storage, Reservoir}
 - **Set**			- {Power Plant (PP), Combined Heat and Power (CHP)}
 - **Capacity**			- \[MW\]
 - **Geo-position**		- Latitude, Longitude
 - **Country** 			- EU-27 + CH + NO (+ UK) minus Cyprus and Malta
 - **YearCommissioned**		- Commmisioning year of the powerplant
 - **File**			- Source file of the data entry
-- **projectID**			- Identifier of the power plant in the source file
+- **projectID**			- Immutable identifier of the power plant
 
 
 The following picture compares the total capacities per fuel type
@@ -89,42 +74,48 @@ between the different data sources and our merged dataset.
 
 ![Total capacities per fuel type for the different data sources and the merged dataset.](https://user-images.githubusercontent.com/19226431/31497124-45ea4b10-af5e-11e7-8153-7046f17ca05f.png)
 
+
+
+## Data-Sources: 
+
+- OPSD - [Open Power System Data](http://data.open-power-system-data.org/) publish their [data](http://data.open-power-system-data.org/conventional_power_plants/) under a free license
+- GEO - [Global Energy Observatory](http://globalenergyobservatory.org/), the data is not directly available on the website, but can be obtained from an [sqlite scraper](https://morph.io/coroa/global_energy_observatory_power_plants)
+- WRI - [World Resource Institute](http://www.wri.org) provide their data under a free license on their [powerwatch repository](https://github.com/Arjay7891/WRI-Powerplant/blob/master/output_database/powerwatch2_data.csv)
+- CARMA - [Carbon Monitoring for Action](http://carma.org/plant) 
+- ESE - [Energy Storage Exchange](http://www.energystorageexchange.org/) provide a database for storage units. Especially the hydro storage data is of big use for a combining power plant database. Since the data is not free, it is optional and can be [downloaded separately](http://www.energystorageexchange.org/projects/advanced_search?utf8=%E2%9C%93&name_eq=&country_sort_eq%5B%5D=Austria&country_sort_eq%5B%5D=Belgium&country_sort_eq%5B%5D=Bulgaria&country_sort_eq%5B%5D=Croatia&country_sort_eq%5B%5D=Czeck+Republic&country_sort_eq%5B%5D=Denmark&country_sort_eq%5B%5D=Estonia&country_sort_eq%5B%5D=Finland&country_sort_eq%5B%5D=France&country_sort_eq%5B%5D=Germany&country_sort_eq%5B%5D=Greece&country_sort_eq%5B%5D=Hungary&country_sort_eq%5B%5D=Ireland&country_sort_eq%5B%5D=Italy&country_sort_eq%5B%5D=Latvia&country_sort_eq%5B%5D=Lithuania&country_sort_eq%5B%5D=Luxembourg&country_sort_eq%5B%5D=Netherlands&country_sort_eq%5B%5D=Norway&country_sort_eq%5B%5D=Poland&country_sort_eq%5B%5D=Portugal&country_sort_eq%5B%5D=Romainia&country_sort_eq%5B%5D=Slovakia&country_sort_eq%5B%5D=Slovenia&country_sort_eq%5B%5D=Spain&country_sort_eq%5B%5D=Sweden&country_sort_eq%5B%5D=Switzerland&country_sort_eq%5B%5D=United+Kingdom&size_kw_ll=&size_kw_ul=&kW=&size_kwh_ll=&size_kwh_ul=&kWh=&%5Bannouncement_on_ll%281i%29%5D=&%5Bannouncement_on_ll%282i%29%5D=&%5Bannouncement_on_ll%283i%29%5D=1&%5Bannouncement_on_ul%281i%29%5D=&%5Bannouncement_on_ul%282i%29%5D=&%5Bannouncement_on_ul%283i%29%5D=1&%5Bconstruction_on_ll%281i%29%5D=&%5Bconstruction_on_ll%282i%29%5D=&%5Bconstruction_on_ll%283i%29%5D=1&%5Bconstruction_on_ul%281i%29%5D=&%5Bconstruction_on_ul%282i%29%5D=&%5Bconstruction_on_ul%283i%29%5D=1&%5Bcommissioning_on_ll%281i%29%5D=&%5Bcommissioning_on_ll%282i%29%5D=&%5Bcommissioning_on_ll%283i%29%5D=1&%5Bcommissioning_on_ul%281i%29%5D=&%5Bcommissioning_on_ul%282i%29%5D=&%5Bcommissioning_on_ul%283i%29%5D=1&%5Bdecommissioning_on_ll%281i%29%5D=&%5Bdecommissioning_on_ll%282i%29%5D=&%5Bdecommissioning_on_ll%283i%29%5D=1&%5Bdecommissioning_on_ul%281i%29%5D=&%5Bdecommissioning_on_ul%282i%29%5D=&%5Bdecommissioning_on_ul%283i%29%5D=1&owner_in=&vendor_company=&electronics_provider=&utility=&om_contractor=&developer=&order_by=&sort_order=&search_page=&search_search=search).
+- ENTSOe - [European Network of Transmission System Operators for Electricity](http://entsoe.eu/), annually provides statistics about aggregated power plant capacities which is available [here]() Their data can be used as a validation reference. We further use their [annual energy generation report from 2010](https://www.entsoe.eu/db-query/miscellaneous/net-generating-capacity) as an input for the hydro power plant classification.
+- IRENA - [International Renewable Energy Agency](http://resourceirena.irena.org/gateway/dashboard/) open available statistics on power plant capacities.
+- BNETZA - [Bundesnetzagentur](https://www.bundesnetzagentur.de/EN/Areas/Energy/Companies/SecurityOfSupply/GeneratingCapacity/PowerPlantList/PubliPowerPlantList_node.html) open available data source for Germany's power plants
+
+
 The merged dataset is available in two versions: The [bigger dataset](../master/data/out/Matched_CARMA_ENTSOE_GEO_OPSD_WRI.csv)
-links the entries of the matched power plant and lists all the related
-claims by the different data-sources. The [smaller merged dataset](../master/data/out/Matched_CARMA_ENTSOE_GEO_OPSD_WRI_reduced.csv) 
-reduces the former by applying a set of aggregation rules (shown
-below) for deciding the power plant parameters.
+links the entries of the matched power plants and lists all the related
+properties given by the different data-sources. The [smaller merged dataset](../master/data/out/Matched_CARMA_ENTSOE_GEO_OPSD_WRI_reduced.csv) 
+claims only the value of the most reliable data source being matched in the individual power plant data entry.
+The considered reliability scores are:
 
-|Argument        |Rule                                        |
+
+|Dataset         |Reliabilty score                                        |
 |:---------------|:-------------------------------------------|
-| Name           | Every name of the different databases      |
-| Fueltype       | Most frequent claimed one                  |
-| Classification | All _different_ Classification in a row    |
-| Country        | Take the uniquely stated country           |
-| Capacity       | Mean 		                      |
-| lat            | Mean                                       |
-| lon            | Mean                                       |
-| File           | All files in a row                         |
-| projectID	 | Python dictionary referencing all origi-   |
-|		 | nal powerplants that are included   	      |
-
-Note that the claims for the country cannot differ, otherwise the power plants
-cannot match.
+| BNETZA         | 3      |
+| CARMA          | 1                  |
+| ENTSOE 	 | 4    |
+| ESE            | 4           |
+| GEO            | 3 		                      |
+| IWPDCY         | 3                                       |
+| OPSD           | 5                                       |
+| UBA            | 2                         |
+| WRI		 | 2   |
 
 
-![Power plant coverage](https://cloud.githubusercontent.com/assets/19226431/20011650/a654e858-a2ac-11e6-93a2-2ed0e938f642.jpg)
+The toolset provides additional funcitons to easily manipulate your merged, e.g. you can 
 
-The merged dataset is also available as a further version that uses heuristics to fill the gaps.
+- extend your data by non-matched power plant entries
 
-- Unmatched power plants from the OPSD data source are added so that the
-  aggregated capacities per country and fueltype correspond closely to
-  the ENTSOe statistics (except for Wind and Solar).
+- scale the power plant capacities in order to match country specific statistics about total power plant capacities
 
-- A learning algorithm fills the information about missing hydro classification (Run-of-River, Pumped Storage and Reservoir)
+- extend your data by renewable power plants given by the [OPSD](https://data.open-power-system-data.org/renewable_power_plants/2018-03-08/)
 
-- Additionally, a function that can be activated with a switch is
-  provided that scales the hydro power plant capacities in order to
-  fulfill all country totals.
 
 The database is available using the python command 
 ```python
@@ -137,6 +128,12 @@ import powerplantmatching as pm
 pm.collection.MATCHED_dataset(rescaled_hydros=True)
 ```
 if you want to scale hydro power plants.
+
+
+There is a (bit out of date) ![Documentation](https://github.com/FRESNA/powerplantmatching/files/1380529/PowerplantmatchingDoc.pdf) available, which (however) give you some more extensive insight, 
+on the coding level.
+
+
 
 
 ## Module Structure
@@ -211,6 +208,9 @@ been reduced an aggregate value using the rules described in
 with all the claims is, of course, also available to provide a basis
 for your own reduction.
 
+![Power plant coverage](https://cloud.githubusercontent.com/assets/19226431/20011650/a654e858-a2ac-11e6-93a2-2ed0e938f642.jpg)
+
+
 ## Vertical Cleaning
 
 In order to compare and combine information from multiple databases, uni-
@@ -221,35 +221,13 @@ an unprocessed dataset, one simply has to apply several provided functions.
 Furthermore, you can aggregate power plant units from the same power
 plant together. 
 
-## Data-Sources: 
-
-- OPSD - [Open Power System Data](http://data.open-power-system-data.org/) publish their [data](http://data.open-power-system-data.org/conventional_power_plants/) under a free license
-- GEO - [Global Energy Observatory](http://globalenergyobservatory.org/), the data is not directly available on the website, but can be obtained from an [sqlite scraper](https://morph.io/coroa/global_energy_observatory_power_plants)
-- WRI - [World Resource Institute](http://www.wri.org) provide their data under a free license on their [powerwatch repository](https://github.com/Arjay7891/WRI-Powerplant/blob/master/output_database/powerwatch2_data.csv)
-- CARMA - [Carbon Monitoring for Action](http://carma.org/plant) 
-- ESE - [Energy Storage Exchange](http://www.energystorageexchange.org/) provide a database for storage units. Especially the hydro storage data is of big use for a combining power plant database. Since the data is not free, it is optional and can be [downloaded separately](http://www.energystorageexchange.org/projects/advanced_search?utf8=%E2%9C%93&name_eq=&country_sort_eq%5B%5D=Austria&country_sort_eq%5B%5D=Belgium&country_sort_eq%5B%5D=Bulgaria&country_sort_eq%5B%5D=Croatia&country_sort_eq%5B%5D=Czeck+Republic&country_sort_eq%5B%5D=Denmark&country_sort_eq%5B%5D=Estonia&country_sort_eq%5B%5D=Finland&country_sort_eq%5B%5D=France&country_sort_eq%5B%5D=Germany&country_sort_eq%5B%5D=Greece&country_sort_eq%5B%5D=Hungary&country_sort_eq%5B%5D=Ireland&country_sort_eq%5B%5D=Italy&country_sort_eq%5B%5D=Latvia&country_sort_eq%5B%5D=Lithuania&country_sort_eq%5B%5D=Luxembourg&country_sort_eq%5B%5D=Netherlands&country_sort_eq%5B%5D=Norway&country_sort_eq%5B%5D=Poland&country_sort_eq%5B%5D=Portugal&country_sort_eq%5B%5D=Romainia&country_sort_eq%5B%5D=Slovakia&country_sort_eq%5B%5D=Slovenia&country_sort_eq%5B%5D=Spain&country_sort_eq%5B%5D=Sweden&country_sort_eq%5B%5D=Switzerland&country_sort_eq%5B%5D=United+Kingdom&size_kw_ll=&size_kw_ul=&kW=&size_kwh_ll=&size_kwh_ul=&kWh=&%5Bannouncement_on_ll%281i%29%5D=&%5Bannouncement_on_ll%282i%29%5D=&%5Bannouncement_on_ll%283i%29%5D=1&%5Bannouncement_on_ul%281i%29%5D=&%5Bannouncement_on_ul%282i%29%5D=&%5Bannouncement_on_ul%283i%29%5D=1&%5Bconstruction_on_ll%281i%29%5D=&%5Bconstruction_on_ll%282i%29%5D=&%5Bconstruction_on_ll%283i%29%5D=1&%5Bconstruction_on_ul%281i%29%5D=&%5Bconstruction_on_ul%282i%29%5D=&%5Bconstruction_on_ul%283i%29%5D=1&%5Bcommissioning_on_ll%281i%29%5D=&%5Bcommissioning_on_ll%282i%29%5D=&%5Bcommissioning_on_ll%283i%29%5D=1&%5Bcommissioning_on_ul%281i%29%5D=&%5Bcommissioning_on_ul%282i%29%5D=&%5Bcommissioning_on_ul%283i%29%5D=1&%5Bdecommissioning_on_ll%281i%29%5D=&%5Bdecommissioning_on_ll%282i%29%5D=&%5Bdecommissioning_on_ll%283i%29%5D=1&%5Bdecommissioning_on_ul%281i%29%5D=&%5Bdecommissioning_on_ul%282i%29%5D=&%5Bdecommissioning_on_ul%283i%29%5D=1&owner_in=&vendor_company=&electronics_provider=&utility=&om_contractor=&developer=&order_by=&sort_order=&search_page=&search_search=search).
-- ENTSOe - [European Network of Transmission System Operators for Electricity](http://entsoe.eu/), annually provides statistics about aggregated power plant capacities which is available [here]() Their data can be used as a validation reference. We further use their [annual energy generation report from 2010](https://www.entsoe.eu/db-query/miscellaneous/net-generating-capacity) as an input for the hydro power plant classification.
-
-## Planned changes
-
-- Figuring out how to distinguish and deal with capacities given as
-  net and gross values.
-- Add additional information like build year or efficiencies where
-  available
-
-and most importantly
-
-  We would welcome it, if a third-party institute with access to a
-  commercial European powerplant database like PLATTS was interested
-  in collaborating on validating the dataset against it. Please get in
-  touch if you are!
-
 
 ## Acknowledgements
 
 The development of powerplantmatching was helped considerably by
 in-depth discussions and exchanges of ideas and code with
 
+- Fabian Gotzens from University Juelich
 - Chris Davis from University of Groningen and
 - Johannes Friedrich, Roman Hennig and Colin McCormick of the World Resources Institute
 
