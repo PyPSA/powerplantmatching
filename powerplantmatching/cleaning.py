@@ -109,16 +109,23 @@ def gather_technology_info(df, search_col=['Name', 'Fueltype']):
     return df.assign(Technology=technology)
 
 
-def gather_set_info(df, search_col=['Name', 'Fueltype']):
-    Set = (df['Set'].dropna()
+def gather_set_info(df, search_col=['Name', 'Fueltype', 'Technology']):
+    Set = (df['Set'].copy()
            if 'Set' in df
-           else pd.Series())
+           else pd.Series(index=df.index))
 
     pattern = '|'.join(['heizkraftwerk', 'hkw', 'chp', 'bhkw', 'cogeneration',
                         'power and heat', 'heat and power'])
     for i in search_col:
-        isCHP_b = df[i].dropna().str.contains(pattern, case=False)
+        isCHP_b = df[i].dropna().str.contains(pattern, case=False)\
+                    .reindex(df.index).fillna(False)
         Set.loc[isCHP_b] = 'CHP'
+
+    pattern = '|'.join(['battery', 'storage'])
+    for i in search_col:
+        isStore_b = df[i].dropna().str.contains(pattern, case=False) \
+                    .reindex(df.index).fillna(False)
+        Set.loc[isStore_b] = 'Store'
 
     df = df.assign(Set=Set)
     df.loc[:,'Set'].fillna('PP', inplace=True)
@@ -129,7 +136,8 @@ def clean_technology(df, generalize_hydros=False):
     tech = df['Technology'].dropna()
     if len(tech)==0:
         return df
-    tech = tech.replace({' and ': ', ', ' Power Plant': ''}, regex=True)
+    tech = tech.replace(
+            {' and ': ', ', ' Power Plant': '', 'Battery':''}, regex=True)
     if generalize_hydros:
         tech[tech.str.contains('pump', case=False)] = 'Pumped Storage'
         tech[tech.str.contains('reservoir|lake', case=False)] = 'Reservoir'
@@ -206,15 +214,17 @@ def aggregate_units(df, use_saved_aggregation=False, dataset_name=None,
                    'Country': x['Country'].value_counts(dropna=False).index[0],
                    'Fueltype': x['Fueltype'].value_counts(dropna=False).index[0],
                    'Technology': x['Technology'].value_counts(dropna=False).index[0],
-                   'Set' : ', '.join(x['Set'].dropna().unique()),
+                   'Set' : x['Set'].value_counts(dropna=False).index[0],
                    'File': x['File'].value_counts(dropna=False).index[0],
                    'Capacity': x['Capacity'].fillna(0.).sum(),
                    'lat': x['lat'].astype(float).mean(),
                    'lon': x['lon'].astype(float).mean(),
                    'YearCommissioned': x['YearCommissioned'].min(),
                    'projectID': list(x['projectID'])}
-        if 'Duration' in x:
+        if ('Duration' in target_columns()) & ('Duration' in x):
             results['Duration'] = (x.Duration * x.Capacity / x.Capacity.sum()).sum()
+        elif ('Duration' in target_columns()):
+            results['Duration'] = np.nan
         return pd.Series(results)
 
     path_name = _data_out('aggregation_groups_{}.csv'.format(dataset_name))

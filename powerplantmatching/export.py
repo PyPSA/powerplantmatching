@@ -26,6 +26,35 @@ from .utils import _data_out
 import logging
 logger = logging.getLogger(__name__)
 
+
+def to_pypsa_names(df):
+    return (df.assign(Fueltype = df['Fueltype'].str.lower())
+                .rename(columns={'Fueltype' : 'carrier',
+                       'Capacity' : 'p_nom',
+                       'Duration' : 'max_hours',
+                       'Set' : 'component'}) )
+                
+def to_pypsa_network(df, network):
+    from scipy.spatial import cKDTree as KDTree
+    substation_lv_i = network.buses.index[network.buses['substation_lv']]
+    kdtree = KDTree(network.buses.loc[substation_lv_i, ['x','y']].values)
+    df = df.assign(bus=substation_lv_i[kdtree.query(df[['lon','lat']].values)[1]])
+    df.Set.replace('CHP', 'PP', inplace=True)
+    if 'Duration' in df:
+        df['weighted_duration'] = df['Duration'] * df['Capacity']
+        df = df.groupby(['bus', 'Fueltype', 'Set']
+                        ).aggregate({'Capacity':sum,'weighted_duration':sum})
+        df = df.assign(Duration = df['weighted_duration'] / df['Capacity'] )
+        df = df.drop(columns='weighted_duration')
+    else:
+        df = df.groupby(['bus', 'Fueltype', 'Set']
+                    ).aggregate({'Capacity':sum})
+    df = df.reset_index()
+    df = to_pypsa_names(df)
+    df.index = df.bus + ' ' + df.carrier
+    network.import_components_from_dataframe(df[df['component']!='Store'], 'Generator')
+    network.import_components_from_dataframe(df[df['component']=='Store'], 'StorageUnit')
+
 def Export_TIMES(df=None, use_scaled_capacity=False, baseyear=2015):
     """
     Transform a given dataset into the TIMES format and export als xlsx.

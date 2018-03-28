@@ -24,7 +24,7 @@ import ast
 import logging
 logger = logging.getLogger(__name__)
 from .utils import set_uncommon_fueltypes_to_other, _data_in, _data_out
-from .data import data_config, OPSD, WRI
+from .data import data_config, OPSD, ESE
 from .cleaning import clean_single
 from .matching import combine_multiple_datasets, reduce_matched_dataframe
 from .heuristics import (extend_by_non_matched, extend_by_VRE, remove_oversea_areas,
@@ -149,6 +149,9 @@ def MATCHED_dataset(aggregated_hydros=False, rescaled_hydros=False,
 
     if include_unavailables:
         matched = Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WRI_matched_reduced(**kwargs)
+        matched = extend_by_non_matched(matched, ESE(), 'ESE',
+                                    clean_added_data=False)
+
     else:
         matched = Carma_ENTSOE_GEO_OPSD_WRI_matched_reduced(**kwargs)
     columns = matched.columns
@@ -157,10 +160,15 @@ def MATCHED_dataset(aggregated_hydros=False, rescaled_hydros=False,
 #    if include_unavailables:
 #        matched = extend_by_non_matched(matched, ESE(), 'ESE', clean_added_data=True,
 #                                         use_saved_aggregation=True)
-
-    matched = extend_by_non_matched(matched, WRI(), 'WRI', fueltypes=['Wind'],
-                                    clean_added_data=True,
-                                    use_saved_aggregation=True)
+    
+#   drop matches between only low reliability-data, this is necessary since 
+#   a lot of those are decommissioned: Probably we should introduce 
+#   a mean reliability for matched entries and take all > 3
+    matched = matched[matched.projectID.apply(lambda x : x.keys() not in 
+                                              [['GEO', 'CARMA'], ['CARMA', 'GEO'],
+                                              ['GEO', 'WRI'],['WRI', 'GEO'],
+                                              ['CARMA', 'WRI'],['WRI', 'CARMA']] )]
+    
 
     if aggregated_hydros:
         hydro = Aggregated_hydro(scaled_capacity=rescaled_hydros)

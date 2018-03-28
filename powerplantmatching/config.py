@@ -52,7 +52,7 @@ def target_technologies():
             'PV', 'CSP'] # Solar types
 
 
-def target_columns(detailed_columns=False):
+def target_columns(detailed_columns=True):
     """
     Returns a list of columns to which the powerplants should be standardized. For renaming
     columns use df.rename(columns=dic, inplace=True) with dic being a dictionary

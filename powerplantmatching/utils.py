@@ -129,6 +129,12 @@ def read_csv_if_string(data):
         data = data_config[data]['read_function']()
     return data
 
+def map_projectID(df, dataset_name, ID):
+    if isinstance(df.projectID.iloc[0],unicode) | isinstance(df.projectID.iloc[0],str):
+        return df['projectID'] == ID
+    else:
+        return df['projectID'].apply(lambda x: ID in x[dataset_name] 
+                                     if dataset_name in x.keys() else False)
 
 def parse_Geoposition(loc, zipcode='', country=None, return_Country=False):
     """

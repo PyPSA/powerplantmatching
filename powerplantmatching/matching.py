@@ -254,6 +254,8 @@ def reduce_matched_dataframe(df, show_orig_names=False):
         'File': df['File'].apply(concat_strings, axis=1),
         'projectID': df['projectID'].apply(lambda x: dict(x.dropna()), axis=1)
     })
+    if 'Duration' in target_columns():
+        sdf = sdf.assign(Duration= prioritise_reliability(df['Duration']))
 
     if show_orig_names:
         sdf = sdf.assign(**dict(df.Name))

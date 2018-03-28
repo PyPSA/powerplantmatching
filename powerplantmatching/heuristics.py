@@ -65,8 +65,8 @@ def extend_by_non_matched(df, extend_by, label=None, fueltypes=None,
         extend_by = clean_single(extend_by, use_saved_aggregation=use_saved_aggregation,
                                  dataset_name=label)
 #    extend_by = extend_by.rename(columns={'Name':label})
-    extend_by['projectID'] = extend_by.projectID.map(lambda x: {label : x})
-    return df.append(extend_by.loc[:, df.columns], ignore_index=True)
+    extend_by = extend_by.assign(projectID = extend_by.projectID.map(lambda x: {label : x}))
+    return df.append(extend_by.reindex(columns=df.columns), ignore_index=True)
 
 
 def rescale_capacities_to_country_totals(df, fueltypes):
@@ -104,6 +104,12 @@ def rescale_capacities_to_country_totals(df, fueltypes):
                    ratio.loc[fueltype,country]
     return df
 
+def fill_missing_duration(df):
+    mean_duration = df[df.Set=='Store'].groupby('Fueltype').Duration.mean()
+    for store in mean_duration.index:
+        df.loc[(df['Set']=='Store') & (df['Fueltype']==store), 'Duration'] = \
+                                                        mean_duration.at[store]
+    return df
 
 def extend_by_VRE(df, base_year, prune_beyond=True):
     """

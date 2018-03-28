@@ -107,14 +107,15 @@ def OPSD(rawEU=False, rawDE=False, statusDE=['operating']):
                                     'Other bioenergy and renewable waste': 'Bioenergy',
                                     'Other or unspecified energy sources': 'Other',
                                     'Other fossil fuels': 'Other',
-                                    'Other fuels': 'Other'}))
+                                    'Other fuels': 'Other'},
+                            Set = {'IPP':'PP'}))
             .replace({'Country': {'UK': u'GB','[ \t]+|[ \t]+$.':''}}, regex=True) #UK->GB, strip whitespace
             .assign(Name=lambda df: df.Name.str.title(),
                     Fueltype=lambda df: df.Fueltype.str.title(),
                     Country=lambda df: (pd.Series(df.Country.apply(
                                         lambda c: pycountry.countries.get(alpha_2=c).name),
                                         index=df.index).str.title()))
-            .pipe(gather_technology_info)
+            .pipe(gather_technology_info) 
             .pipe(gather_set_info)
             .pipe(clean_technology)
             .loc[lambda df: df.Country.isin(europeancountries())]
@@ -372,18 +373,22 @@ def ESE(update=False, path=None, raw=False):
                              'Technology Type': 'Technology',
                              'Longitude': 'lon',
                              'Latitude': 'lat'})
-            .assign(Set='PP',
-                    Fueltype='Hydro',
+            .assign(Set='Store',
                     File='energy_storage_exchange',
                     projectID=data.index.values,
                     Capacity=data['Rated Power in kW']/1e3,
                     YearCommissioned=pd.DatetimeIndex(data['Commissioning Date']).year))
-    data.loc[data.Technology.str.contains('Pumped') &
-             data.Technology.notnull(), 'Technology'] = 'Pumped storage'
-    data = data.loc[data.Technology == 'Pumped storage'].reindex(columns=target_columns(detailed_columns=True))
+    data = data[data.Status == 'Operational']
+    data = data.rename(columns = {'Technology Type Category 2': 'Fueltype'})
+    data = clean_technology(data, generalize_hydros=True)
+    data = data[data.Fueltype != 'Thermal Storage']
+    data.Fueltype.replace([u'Electro-chemical', u'Pumped Hydro Storage'], 
+                          ['Battery', 'Hydro', ], inplace=True)
+    data = data.reindex(columns=target_columns(detailed_columns=True))
     data = data.reset_index(drop = True)
     data = data.loc[data.Country.isin(europeancountries())]
     data.projectID = 'ESE' + data.projectID.astype(str)
+    data = clean_powerplantname(data)
     data.to_csv(saved_version, index_label='id', encoding='utf-8')
     return data
 
@@ -542,11 +547,11 @@ def ENTSOE(update=False, raw=False, entsoe_token=None):
         entsoe.loc[:,'Country'] = entsoe.Country.astype(str)
         entsoe.loc[entsoe.Country=='None', 'Country'] = np.NaN
         entsoe.reset_index(drop=True, inplace=True)
-        entsoe.to_csv(_data_out('entsoe_powerplants.csv'),
+        entsoe.to_csv(_data_in('entsoe_powerplants.csv'),
                       index_label='id', encoding='utf-8')
         return entsoe
     else:
-        entsoe = pd.read_csv(_data_out('entsoe_powerplants.csv'),
+        entsoe = pd.read_csv(_data_in('entsoe_powerplants.csv'),
                              index_col='id', encoding='utf-8')
         return (entsoe[entsoe.Country.isin(europeancountries())]
                     .pipe(scale_to_net_capacities,(not data_config['ENTSOE']['net_capacity'])))
@@ -922,11 +927,11 @@ def OPSD_VRE():
             "   energy_source_level_2, technology, electrical_capacity, lat, lon "
             "FROM"
             "   renewable_power_plants_DE "
-            "WHERE"
-            "   (DATE(substr(decommissioning_date,1,4)||substr(decommissioning_date,6,2)|| "
-            "   substr(decommissioning_date,9,2)) > DATE(20153112)) OR decommissioning_date=='NaT'"
-            "AND NOT"
-            "   comment LIKE '%R_%'"
+#            "WHERE"
+#            "   (DATE(substr(decommissioning_date,1,4)||substr(decommissioning_date,6,2)|| "
+#            "   substr(decommissioning_date,9,2)) > DATE(20153112)) OR decommissioning_date=='NaT'"
+#            "AND NOT"
+#            "   comment LIKE '%R_%'"
             )
         elif country == 'DK':
             cur = db.execute(
