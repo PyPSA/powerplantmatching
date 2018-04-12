@@ -303,22 +303,33 @@ def Capacity_stats(raw=False, level=2, **selectors):
 
 
 def WRI(reduced_data=True):
-    wri = pd.read_csv(_data_in('WRIdata.csv'),
-                      encoding='utf-8', index_col='id')
-    wri['projectID'] = wri.index
-    wri = (wri[wri.Country.isin(europeancountries())]
-           .replace(dict(Fueltype={'Coal':'Hard Coal'}))
-           .pipe(gather_set_info))
-
-    if reduced_data:
-        #wri data consists of ENTSOE data and OPSD, drop those:
-        wri = wri.loc[~wri.File.str.contains('ENTSOE', case=False)]
-        wri = wri.loc[~wri.Country.isin(['Germany','Poland', 'France', 'Switzerland'])]
-    return wri.reindex(columns=target_columns())
+    return (pd.read_csv(_data_in('global_power_plant_database.csv'))
+            [lambda df: df.country_long.isin(europeancountries()) &
+                        ~df.geolocation_source.isin(['GEODB', 'CARMA', 
+                                                     'WRI', 
+                                                     'Open Power System Data'])]
+            .rename(columns = lambda x : x.title()) 
+            .assign(Country = lambda df: df['Country_Long'])
+            .rename(columns = {'Fuel1' : 'Fueltype',
+                               'Latitude': 'lat',
+                               'Longitude' : 'lon',
+                               'Capacity_Mw' : 'Capacity',
+                               'Commissioning_Year' : 'YearCommissioned',
+                               'Source' : 'File'
+                               })
+            .replace(dict(Fueltype={'Coal':'Hard Coal',
+                                    'Biomass' : 'Bioenergy',
+                                    'Wave and Tidal': 'Other'}))
+            .reindex(columns=target_columns())
+            .pipe(gather_technology_info)
+            .pipe(gather_set_info)
+            .pipe(clean_powerplantname)
+            .assign(projectID = lambda df: 'WRI' + df.index.astype(str))
+            ) 
 
 data_config['WRI'] = {'read_function': WRI,
                       'clean_single_kwargs': dict(aggregate_powerplant_units=False),
-                      'reliability_score':2}
+                      'reliability_score':3}
 
 
 def ESE(update=False, path=None, raw=False):
@@ -372,23 +383,23 @@ def ESE(update=False, path=None, raw=False):
             .rename(columns={'Project Name': 'Name',
                              'Technology Type': 'Technology',
                              'Longitude': 'lon',
-                             'Latitude': 'lat'})
+                             'Latitude': 'lat',
+                             'Technology Type Category 2': 'Fueltype'})
             .assign(Set='Store',
                     File='energy_storage_exchange',
                     projectID=data.index.values,
                     Capacity=data['Rated Power in kW']/1e3,
-                    YearCommissioned=pd.DatetimeIndex(data['Commissioning Date']).year))
-    data = data[data.Status == 'Operational']
-    data = data.rename(columns = {'Technology Type Category 2': 'Fueltype'})
-    data = clean_technology(data, generalize_hydros=True)
-    data = data[data.Fueltype != 'Thermal Storage']
-    data.Fueltype.replace([u'Electro-chemical', u'Pumped Hydro Storage'], 
-                          ['Battery', 'Hydro', ], inplace=True)
-    data = data.reindex(columns=target_columns(detailed_columns=True))
-    data = data.reset_index(drop = True)
-    data = data.loc[data.Country.isin(europeancountries())]
-    data.projectID = 'ESE' + data.projectID.astype(str)
-    data = clean_powerplantname(data)
+                    YearCommissioned=pd.DatetimeIndex(data['Commissioning Date']).year)
+            [lambda df: (df.Status == 'Operational') & 
+             (df.Fueltype != 'Thermal Storage') &
+              df.Country.isin(europeancountries())]
+            .pipe(clean_powerplantname)
+            .pipe(clean_technology, generalize_hydros=True)
+            .replace(dict(Fueltype={u'Electro-chemical': 'Battery', 
+                                    u'Pumped Hydro Storage':'Hydro'}))
+            .reindex(columns=target_columns(detailed_columns=True))
+            .reset_index(drop = True)
+            .assign(projectID = lambda df : 'ESE' + df.projectID.astype(str)))
     data.to_csv(saved_version, index_label='id', encoding='utf-8')
     return data
 
