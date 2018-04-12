@@ -105,15 +105,6 @@ def Collection(datasets, update=False, use_saved_aggregation=False, reduced=True
                 pass
         return sdf
 
-def Carma_ENTSOE_GEO_OPSD_matched(update=False, use_saved_aggregation=False):
-    return Collection(['CARMA', 'ENTSOE', 'GEO', 'OPSD'],
-                      update=update, use_saved_aggregation=use_saved_aggregation,
-                      reduced=False)
-
-def Carma_ENTSOE_GEO_OPSD_matched_reduced(update=False, use_saved_aggregation=False):
-    return Collection(['CARMA', 'ENTSOE', 'GEO', 'OPSD'],
-                      update=update, use_saved_aggregation=use_saved_aggregation,
-                      reduced=True)
 
 def Carma_ENTSOE_GEO_OPSD_WRI_matched(update=False, use_saved_aggregation=False):
     return Collection(['CARMA', 'ENTSOE', 'GEO', 'OPSD', 'WRI'],
@@ -157,17 +148,14 @@ def MATCHED_dataset(aggregated_hydros=False, rescaled_hydros=False,
     columns = matched.columns
     matched = extend_by_non_matched(matched, OPSD(), 'OPSD', clean_added_data=True,
                                     use_saved_aggregation=True)
-#    if include_unavailables:
-#        matched = extend_by_non_matched(matched, ESE(), 'ESE', clean_added_data=True,
-#                                         use_saved_aggregation=True)
     
 #   drop matches between only low reliability-data, this is necessary since 
-#   a lot of those are decommissioned: Probably we should introduce 
-#   a mean reliability for matched entries and take all > 3
+#   a lot of those are decommissioned: Probably we should filter 
+#   by mean reliability larger than 3
     matched = matched[matched.projectID.apply(lambda x : x.keys() not in 
-                                              [['GEO', 'CARMA'], ['CARMA', 'GEO'],
-                                              ['GEO', 'WRI'],['WRI', 'GEO'],
-                                              ['CARMA', 'WRI'],['WRI', 'CARMA']] )]
+                                              [['GEO', 'CARMA'], ['CARMA', 'GEO']] )
+#    some countries only appear in GEO and CARMA
+                      | matched.Country.isin(['Croatia', 'Czech Republic', 'Estonia'])]
     
 
     if aggregated_hydros:

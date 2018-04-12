@@ -16,6 +16,7 @@ import yaml
 import os
 from textwrap import dedent
 from .utils import _data
+import pandas as pd
 """
 This file is used for basic configurations of the datasets, defining the fueltypes,
 the given arguments of each power plant, and the restriction to european countries
@@ -86,11 +87,34 @@ def fueltype_to_life():
     return data
 
 
-def fueltype_to_color():
+def fueltype_to_color(alternative_style=False):
     """
     Maps a fueltype to a specific color for the plots
     """
-    data = {'Bioenergy':'darkgreen',
+    if alternative_style:
+#    Alternative (nicer?) fuetlype-color map 
+        return pd.Series(data=
+              {'OCGT':'dimgrey', 
+               'Hydro':'royalblue', 
+               'Lignite':'indianred', 
+              'Nuclear': 'yellow',
+              'solar':'gold',
+              'Solar':'gold',
+              'windoff':'cornflowerblue',
+              'windon':'steelblue',
+              'Wind': 'steelblue',
+              "Bioenergy" : "g",
+              "Natural Gas" : "firebrick",
+              'CCGT':'firebrick',
+              'Coal':'k',
+              'Hard Coal':'dimgray',
+              "Oil" : "darkgreen",
+              "Other":"silver",
+              "Waste" : "grey",
+              "Geothermal" : "orange",
+              'Battery' : 'coral'})
+
+    return pd.Series({'Bioenergy':'darkgreen',
             'Geothermal':'pink',
             'Hard Coal':'dimgray',
             'Hydro':'blue',
@@ -101,8 +125,8 @@ def fueltype_to_color():
             'Other':'silver',
             'Solar':'yellow',
             'Waste':'purple',
-            'Wind':'cyan'}
-    return data
+            'Wind':'cyan'})
+
 
 
 def additional_data_config():

@@ -50,8 +50,7 @@ consoleHandler = logging.StreamHandler()
 logger.addHandler(consoleHandler)
 
 
-def lookup(df, keys=None, by='Country, Fueltype', exclude=None, show_totals=False,
-           unit='MW'):
+def lookup(df, keys=None, by='Country, Fueltype', exclude=None, unit='MW'):
     """
     Returns a lookup table of the dataframe df with rounded numbers.
     Use different lookups as "Country", "Fueltype" for the different lookups.
@@ -79,46 +78,29 @@ def lookup(df, keys=None, by='Country, Fueltype', exclude=None, show_totals=Fals
 
     def lookup_single(df, by=by, exclude=exclude):
         df = read_csv_if_string(df)
+        if isinstance(by, str):
+            by = by.replace(' ', '').split(',')
         if exclude is not None:
             df = df[~df.Fueltype.isin(exclude)]
-        if by == 'Country, Fueltype':
-            return df.groupby(['Country', 'Fueltype']).Capacity.sum()\
-                    .unstack(0).fillna(0.)
-        elif by == 'Country':
-            return df.groupby(['Country']).Capacity.sum()
-        elif by == 'Fueltype':
-            return df.groupby(['Fueltype']).Capacity.sum()
-        else:
-            raise NameError(
-            "``by` must be one of 'Country, Fueltype' or 'Country' or 'Fueltype'")
+        return df.groupby(by).Capacity.sum()
 
     if isinstance(df, list):
         dfs = pd.concat([lookup_single(a) for a in df], axis=1, keys=keys)
-        if by == 'Country, Fueltype':
-            dfs = dfs.reorder_levels([1, 0], axis=1)
-            dfs = dfs[dfs.columns.levels[0]]
         dfs = dfs.fillna(0.)
-        if show_totals:
-            dfs.loc['Total'] = dfs.sum()
-            return (dfs/scaling).round(3)
-        else:
-            return (dfs/scaling).round(3)
+        return (dfs/scaling).round(3)
     else:
-        if show_totals:
-            dfs = lookup_single(df).fillna(0.)
-            dfs.loc['Total'] = dfs.sum()
-            return (dfs/scaling).round(3)
-        else:
-            return (lookup_single(df)/scaling).fillna(0.).round(3)
+        return (lookup_single(df)/scaling).fillna(0.).round(3)
 
 
 def plot_fueltype_stats(df):
     stats = lookup(df, by='Fueltype')
-    plt.pie(stats, colors=stats.index.to_series().map(tech_colors).tolist(),
+    plt.pie(stats, colors=stats.index.to_series().map(tech_colors).fillna(''),
            labels=stats.index, autopct='%1.1f%%')
 
 
-def set_uncommon_fueltypes_to_other(df, fueltypes={'Bioenergy','Geothermal','Mixed fuel types','Waste'}):
+def set_uncommon_fueltypes_to_other(df, fueltypes=
+                                    ['Bioenergy','Geothermal','Mixed fuel types',
+                                     'Waste', 'Electro-mechanical', 'Hydrogen Storage']):
     df.loc[df.Fueltype.isin(fueltypes), 'Fueltype'] = 'Other'
     return df
 
@@ -217,23 +199,3 @@ tech_colors = pd.Series({"Wind" : "b",
                "Other":"grey",
                "Total":"gold"
                })
-
-tech_colors2 = pd.Series(data=
-          {'OCGT':'brown',
-          'Hydro':'darkblue',
-          'Lignite':'chocolate',
-          'Nuclear': 'yellow',
-          'solar':'gold',
-          'Solar':'gold',
-          'windoff':'cornflowerblue',
-          'windon':'steelblue',
-          'Wind': 'steelblue',
-          "Bioenergy" : "g",
-          "Natural Gas" : "firebrick",
-          'CCGT':'firebrick',
-          'Coal':'k',
-          'Hard Coal':'k',
-          "Oil" : "darkgreen",
-          "Other":"dimgrey",
-          "Waste" : "grey",
-          "Geothermal" : "orange"})
