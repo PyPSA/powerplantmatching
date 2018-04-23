@@ -34,9 +34,15 @@ def to_pypsa_names(df):
                        'Duration' : 'max_hours',
                        'Set' : 'component'}) )
                 
-def to_pypsa_network(df, network):
+def to_pypsa_network(df, network, buslist=None):
+    """
+    export a powerplant dataframe to a pypsa.Network(), specify specific buses to allocate
+    the plants (buslist).
+    
+    """
     from scipy.spatial import cKDTree as KDTree
     substation_lv_i = network.buses.index[network.buses['substation_lv']]
+    substation_lv_i = substation_lv_i.intersection(network.buses.reindex(buslist).index)
     kdtree = KDTree(network.buses.loc[substation_lv_i, ['x','y']].values)
     df = df.assign(bus=substation_lv_i[kdtree.query(df[['lon','lat']].values)[1]])
     df.Set.replace('CHP', 'PP', inplace=True)

@@ -115,13 +115,14 @@ def OPSD(rawEU=False, rawDE=False, statusDE=['operating']):
                     Country=lambda df: (pd.Series(df.Country.apply(
                                         lambda c: pycountry.countries.get(alpha_2=c).name),
                                         index=df.index).str.title()))
-            .pipe(gather_technology_info) 
+#            .pipe(gather_technology_info) 
             .pipe(gather_set_info)
             .pipe(clean_technology)
             .loc[lambda df: df.Country.isin(europeancountries())]
             .pipe(scale_to_net_capacities,
-                  (not data_config['OPSD']['net_capacity'])))
-
+                  (not data_config['OPSD']['net_capacity']))
+            .pipe())
+            
 data_config['OPSD'] = {'read_function': OPSD, 'reliability_score':5,
                        'net_capacity':True}
 
