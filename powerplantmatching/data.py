@@ -120,8 +120,7 @@ def OPSD(rawEU=False, rawDE=False, statusDE=['operating']):
             .pipe(clean_technology)
             .loc[lambda df: df.Country.isin(europeancountries())]
             .pipe(scale_to_net_capacities,
-                  (not data_config['OPSD']['net_capacity']))
-            .pipe())
+                  (not data_config['OPSD']['net_capacity'])))
             
 data_config['OPSD'] = {'read_function': OPSD, 'reliability_score':5,
                        'net_capacity':True}
