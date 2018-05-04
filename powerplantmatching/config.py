@@ -22,24 +22,51 @@ This file is used for basic configurations of the datasets, defining the fueltyp
 the given arguments of each power plant, and the restriction to european countries
 """
 
-def europeancountries():
+#countries
+def set_target_countries(countries=None):
+    global c
+    if countries is None:
+        c = sorted(['Austria', 'Belgium', 'Bulgaria', 'Croatia', 'Czech Republic',
+             'Denmark','Estonia', 'Finland', 'France', 'Germany', 'Greece', 
+             'Hungary', 'Ireland', 'Italy', 'Latvia', 'Lithuania', 'Luxembourg',
+             'Netherlands', 'Norway', 'Poland', 'Portugal', 'Romania', 
+             'Slovakia', 'Slovenia', 'Spain', 'Sweden', 'Switzerland', 
+             'United Kingdom'])
+    else: 
+        if isinstance(countries, str):
+            countries = [countries]
+        c = countries 
+        
+set_target_countries()
+
+
+def target_countries():
     """
-    Returns a list of countries in Europe
+    Returns a list of selected countries, defaults to European countries
     """
-    c = ['Austria', 'Belgium', 'Bulgaria', 'Croatia', 'Czech Republic', 'Denmark',
-         'Estonia', 'Finland', 'France', 'Germany', 'Greece', 'Hungary', 'Ireland',
-         'Italy', 'Latvia', 'Lithuania', 'Luxembourg', 'Netherlands', 'Norway',
-         'Poland', 'Portugal', 'Romania', 'Slovakia', 'Slovenia', 'Spain', 'Sweden',
-         'Switzerland', 'United Kingdom']
-    return sorted(c)
+    return c
+
+
+def set_target_fueltypes(fueltypes=None):
+    global f
+    if fueltypes is None:
+        f = sorted(['Natural Gas', 'Wind', 'Hydro', 'Oil', 'Waste', 
+                    'Hard Coal', 'Lignite',
+                    'Nuclear', 'Other', 'Solar', 'Bioenergy', 'Geothermal'])
+    else: 
+        if isinstance(fueltypes, str):
+            fueltypes = [fueltypes]
+        f = fueltypes 
+        
+set_target_fueltypes()
 
 
 def target_fueltypes():
     """
     Returns a list of fueltypes to which the powerplants should be standardized
     """
-    return ['Natural Gas', 'Wind', 'Hydro', 'Oil', 'Waste', 'Hard Coal', 'Lignite',
-            'Nuclear', 'Other', 'Solar', 'Bioenergy', 'Geothermal']
+    return f 
+
 
 
 def target_sets():
@@ -51,6 +78,7 @@ def target_technologies():
             'Run-Of-River', 'Pumped Storage', 'Reservoir', 'Marine', # Hydro types
             'Onshore', 'Offshore', # Wind types
             'PV', 'CSP'] # Solar types
+
 
 
 def target_columns(detailed_columns=True):

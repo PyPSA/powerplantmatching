@@ -32,7 +32,7 @@ from textwrap import dedent
 logger = logging.getLogger(__name__)
 from six import iteritems
 from six.moves import reduce
-from .config import europeancountries, target_columns, additional_data_config
+from .config import target_countries, target_columns, additional_data_config
 from .cleaning import (gather_fueltype_info, gather_set_info,
                        gather_technology_info, clean_powerplantname,
                        clean_technology)
@@ -118,7 +118,7 @@ def OPSD(rawEU=False, rawDE=False, statusDE=['operating']):
 #            .pipe(gather_technology_info) 
             .pipe(gather_set_info)
             .pipe(clean_technology)
-            .loc[lambda df: df.Country.isin(europeancountries())]
+            .loc[lambda df: df.Country.isin(target_countries())]
             .pipe(scale_to_net_capacities,
                   (not data_config['OPSD']['net_capacity'])))
             
@@ -164,7 +164,7 @@ def GEO(raw=False):
     if raw:
         return GEOdata
     return (GEOdata
-            .loc[lambda df: df.Country.isin(europeancountries())]
+            .loc[lambda df: df.Country.isin(target_countries())]
             .replace({col: {'Gas': 'Natural Gas'}
                       for col in {'Fueltype', 'FuelClassification1', 'FuelClassification2'}})
             .pipe(gather_fueltype_info, search_col=['FuelClassification1'])
@@ -201,7 +201,7 @@ def CARMA(raw=False):
                              'plant': 'Name',
                              'plant.id':'projectID'})
             .loc[lambda df: df.Capacity > 3]
-            .loc[lambda df: df.Country.isin(europeancountries())]
+            .loc[lambda df: df.Country.isin(target_countries())]
             .replace(dict(Fueltype={'COAL': 'Hard Coal',
                                     'WAT': 'Hydro',
                                     'FGAS': 'Natural Gas',
@@ -286,7 +286,7 @@ def Capacity_stats(raw=False, level=2, **selectors):
                 lambda c: pycountry.countries.get(alpha_2=c).name),
                 index=df.index).str.title()))
             .replace(dict(country={'Czechia':'Czech Republic'})) #due to pycountry
-            .loc[lambda df: df.country.isin(europeancountries())]
+            .loc[lambda df: df.country.isin(target_countries())]
             .rename(columns={'technology': 'Fueltype'})
             .replace(dict(Fueltype={'Bioenergy and other renewable fuels': 'Bioenergy',
                                     'Bioenergy and renewable waste': 'Waste',
@@ -302,9 +302,12 @@ def Capacity_stats(raw=False, level=2, **selectors):
     return entsoedata
 
 
-def WRI(reduced_data=True):
-    return (pd.read_csv(_data_in('global_power_plant_database.csv'))
-            [lambda df: df.country_long.isin(europeancountries()) &
+def WRI(raw=False, reduced_data=True):
+    if raw:
+        return pd.read_csv(_data_in('global_power_plant_database.csv'))
+    else:
+       return (pd.read_csv(_data_in('global_power_plant_database.csv'))
+            [lambda df: df.country_long.isin(target_countries()) &
                         ~df.geolocation_source.isin(['GEODB', 'CARMA', 
                                                      'WRI', 
                                                      'Open Power System Data'])]
@@ -392,7 +395,7 @@ def ESE(update=False, path=None, raw=False):
                     YearCommissioned=pd.DatetimeIndex(data['Commissioning Date']).year)
             [lambda df: (df.Status == 'Operational') & 
              (df.Fueltype != 'Thermal Storage') &
-              df.Country.isin(europeancountries())]
+              df.Country.isin(target_countries())]
             .pipe(clean_powerplantname)
             .pipe(clean_technology, generalize_hydros=True)
             .replace(dict(Fueltype={u'Electro-chemical': 'Battery', 
@@ -451,7 +454,7 @@ def ENTSOE(update=False, raw=False, entsoe_token=None):
                 return filter(None, [pycountry_try(country) for country in l])
 
         domains = pd.read_csv(_data('in/entsoe-areamap.csv'), sep=';', header=None)
-        pattern = '|'.join(('(?i)'+x) for x in europeancountries())
+        pattern = '|'.join(('(?i)'+x) for x in target_countries())
         found = domains.loc[:,1].str.findall(pattern).str.join(sep=', ')
         domains.loc[:, 'Country'] = found
         found = (domains[1].replace('[0-9]', '', regex=True).str.split(' |,|\+|\-')
@@ -535,7 +538,7 @@ def ENTSOE(update=False, raw=False, entsoe_token=None):
         entsoe['Name'] = entsoe['Name'].str.title()
         entsoe = entsoe.loc[entsoe.Country.notnull()]
         entsoe = entsoe.loc[~((entsoe.projectID.duplicated(keep=False))&
-                              (~entsoe.Country.isin(europeancountries())))]
+                              (~entsoe.Country.isin(target_countries())))]
         entsoe = entsoe.drop_duplicates('projectID').reset_index(drop=True)
         entsoe['File'] = "https://transparency.entsoe.eu/generation/r2/\ninstalledCapacityPerProductionUnit/show"
         entsoe = entsoe.reindex(columns=target_columns())
@@ -554,7 +557,7 @@ def ENTSOE(update=False, raw=False, entsoe_token=None):
         entsoe.Country.replace(to_replace=['Deutschland','.*sterreich' ,'L.*tzebuerg'],
                                value=['Germany','Austria','Luxembourg'],
                                regex=True, inplace=True)
-        entsoe = entsoe.loc[entsoe.Country.isin(europeancountries()+[None])]
+        entsoe = entsoe.loc[entsoe.Country.isin(target_countries()+[None])]
         entsoe.loc[:,'Country'] = entsoe.Country.astype(str)
         entsoe.loc[entsoe.Country=='None', 'Country'] = np.NaN
         entsoe.reset_index(drop=True, inplace=True)
@@ -564,7 +567,7 @@ def ENTSOE(update=False, raw=False, entsoe_token=None):
     else:
         entsoe = pd.read_csv(_data_in('entsoe_powerplants.csv'),
                              index_col='id', encoding='utf-8')
-        return (entsoe[entsoe.Country.isin(europeancountries())]
+        return (entsoe[entsoe.Country.isin(target_countries())]
                     .pipe(scale_to_net_capacities,(not data_config['ENTSOE']['net_capacity'])))
 
 data_config['ENTSOE'] = {'read_function': ENTSOE,
@@ -638,7 +641,7 @@ def WEPP(raw=False, parseGeoLoc=False):
          'GIBRALTAR':u'SPAIN',
          'SCOTLAND':u'UNITED KINGDOM'}
     wepp.Country = wepp.Country.replace(c).str.title()
-    wepp = wepp[wepp.Country.isin(europeancountries())]
+    wepp = wepp[wepp.Country.isin(target_countries())]
     # Drop any rows with plants which are not: In operation (OPR) or under construction (CON)
     wepp = wepp[wepp.Status.isin(['OPR', 'CON'])]
     # Replace fueltypes
@@ -999,7 +1002,7 @@ def IRENA_stats():
     # Drop countries out of scope
     df.Country.replace({'Czechia':u'Czech Republic',
                         'UK':u'United Kingdom'}, inplace=True)
-    df = df[df.Country.isin(europeancountries())]
+    df = df[df.Country.isin(target_countries())]
     # Convert to numeric
     df.Year = df.Year.astype(int)
     df.Capacity = df.Capacity.str.strip().str.replace(' ','').astype(float)
