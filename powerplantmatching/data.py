@@ -150,8 +150,6 @@ def GEO(raw=False):
         "from"
         "   powerplants "
         "where"
-        "   lat between 33 and 71 and"
-        "   lon between -12 and 41 and"
         "   status_of_plant_itf=='Operating Fully' and"
         "   design_capacity_mwe_nbr > 0"
         )
@@ -302,15 +300,17 @@ def Capacity_stats(raw=False, level=2, **selectors):
     return entsoedata
 
 
-def WRI(raw=False, reduced_data=True):
+def WRI(raw=False, reduced_data=True, filter_other_dbs=True):
     if raw:
         return pd.read_csv(_data_in('global_power_plant_database.csv'))
     else:
-       return (pd.read_csv(_data_in('global_power_plant_database.csv'))
+        if filter_other_dbs:
+            other_dbs = ['GEODB', 'CARMA', 'WRI', 'Open Power System Data']
+        else:
+            other_dbs = []
+        return (pd.read_csv(_data_in('global_power_plant_database.csv'))
             [lambda df: df.country_long.isin(target_countries()) &
-                        ~df.geolocation_source.isin(['GEODB', 'CARMA', 
-                                                     'WRI', 
-                                                     'Open Power System Data'])]
+                        ~df.geolocation_source.isin(other_dbs)]
             .rename(columns = lambda x : x.title()) 
             .assign(Country = lambda df: df['Country_Long'])
             .rename(columns = {'Fuel1' : 'Fueltype',
