@@ -152,10 +152,10 @@ def MATCHED_dataset(aggregated_hydros=False, rescaled_hydros=False,
 #   drop matches between only low reliability-data, this is necessary since 
 #   a lot of those are decommissioned: Probably we should filter 
 #   by mean reliability larger than 3
-    matched = matched[matched.projectID.apply(lambda x : x.keys() not in 
-                                              [['GEO', 'CARMA'], ['CARMA', 'GEO']] )
 #    some countries only appear in GEO and CARMA
-                      | matched.Country.isin(['Croatia', 'Czech Republic', 'Estonia'])]
+#    matched = matched[matched.projectID.apply(lambda x : x.keys() not in 
+#                                              [['GEO', 'CARMA'], ['CARMA', 'GEO']] )
+#                      | matched.Country.isin(['Croatia', 'Czech Republic', 'Estonia'])]
     
 
     if aggregated_hydros:

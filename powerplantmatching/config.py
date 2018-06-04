@@ -122,14 +122,17 @@ def fueltype_to_color(alternative_style=False):
     if alternative_style:
 #    Alternative (nicer?) fuetlype-color map 
         return pd.Series(data=
-              {'OCGT':'dimgrey', 
+              {'OCGT':'darkorange', 
                'Hydro':'royalblue', 
+               'Run-of-river':'navy', 
+               'Ror':'navy', 
                'Lignite':'indianred', 
               'Nuclear': 'yellow',
-              'solar':'gold',
               'Solar':'gold',
-              'windoff':'cornflowerblue',
-              'windon':'steelblue',
+              'Windoff':'cornflowerblue',
+              'Windon':'steelblue',
+              'Offshore':'cornflowerblue',
+              'Onshore':'steelblue',
               'Wind': 'steelblue',
               "Bioenergy" : "g",
               "Natural Gas" : "firebrick",
@@ -140,7 +143,8 @@ def fueltype_to_color(alternative_style=False):
               "Other":"silver",
               "Waste" : "grey",
               "Geothermal" : "orange",
-              'Battery' : 'coral'})
+              'Battery' : 'coral',
+              'Total':'gold'})
 
     return pd.Series({'Bioenergy':'darkgreen',
             'Geothermal':'pink',
@@ -153,7 +157,8 @@ def fueltype_to_color(alternative_style=False):
             'Other':'silver',
             'Solar':'yellow',
             'Waste':'purple',
-            'Wind':'cyan'})
+            'Wind':'cyan',
+            'Total':'gold'})
 
 
 

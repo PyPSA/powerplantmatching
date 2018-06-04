@@ -49,34 +49,36 @@ def fueltype_stats(df):
            labels=stats.index, autopct='%1.1f%%')
 
 
-def powerplant_map(df, alternative_color_style=True, **kwargs):
+def powerplant_map(df, alternative_color_style=True, scale=1e5, european_bounds=True, 
+                   legendscale=1, **kwargs):
+#   TODO: add reference circle in legend
     figsize = kwargs.get('figsize', (7,5))
     with sns.axes_style('darkgrid'):
         df = set_uncommon_fueltypes_to_other(df)
-        shown_fueltypes = ['Hydro', 'Natural Gas', 'Nuclear', 'Hard Coal', 'Lignite', 'Oil']
-        df = df[df.Fueltype.isin(shown_fueltypes) & df.lat.notnull()]
+        shown_fueltypes = df.Fueltype.unique()
+        df = df[df.lat.notnull()]
         fig, ax = plt.subplots(figsize=figsize)
-
-        scale = 5e1
 
         ax.scatter(df.lon, df.lat, s=df.Capacity/scale, 
                    c=df.Fueltype.map(fueltype_to_color(alternative_color_style)))
 
         ax.set_xlabel('')
         ax.set_ylabel('')
+        if european_bounds:
+            ax.set_xlim(-13, 34)
+            ax.set_ylim(35, 71.65648314)
         draw_basemap()
-        ax.set_xlim(-13, 34)
-        ax.set_ylim(35, 71.65648314)
         ax.set_facecolor('white')
         fig.tight_layout(pad=0.5)
 
         legendcols = pd.Series(fueltype_to_color(alternative_color_style)
                     ).reindex(shown_fueltypes)
         handles = sum(legendcols.apply(lambda x :
-            make_legend_circles_for([10.], scale=scale, facecolor=x)).tolist(), [])
+            make_legend_circles_for([10.], scale=scale*legendscale, facecolor=x)).tolist(), [])
         fig.legend(handles, legendcols.index,
                    handler_map=make_handler_map_to_scale_circles_as_in(ax),
-                   ncol=3, loc="upper left", frameon=False, fontsize=11)
+                   ncol=kwargs.get('ncol', 3), loc=kwargs.get('loc', "upper left"),
+                   frameon=False, fontsize=kwargs.get('fontsize', 11))
         return fig, ax
 
 
@@ -415,7 +417,7 @@ def factor_comparison(dfs, keys, figsize=(7,9)):
     n_countries, n_fueltypes = compare.index.levshape
     
 
-    c= [fueltype_to_color(True)[i] for i in compare.index.levels[1][:-1]] + ['gold']
+    c= [fueltype_to_color(True)[i] for i in compare.index.levels[1]]
     rcParams["axes.prop_cycle"] = cycler(color=c)
 
     #where both are zero,
@@ -441,9 +443,9 @@ def factor_comparison(dfs, keys, figsize=(7,9)):
     ax.legend(handles= lgd[0][:len(c)], labels=lgd[1][:len(c)]
                ,title=False, loc=2)
 
-    ax.set_xlim(-1,n_countries)
+    ax.set_xlim(-1,n_countries*2 +1)
     ax.xaxis.grid(False)
-    ax.set_xticks(np.linspace(0.5,n_countries-1.5,n_countries/2))
+    ax.set_xticks(np.linspace(0.5,n_countries*2-1.5,n_countries))
     ax.set_xticklabels(compare.columns.levels[0].values, rotation=90)
     ax.set_xlabel('')
     ax.set_ylabel('Capacity [GW]')
@@ -680,7 +682,7 @@ def draw_basemap(resolution='l', ax=None,country_linewidth=0.5, coast_linewidth=
                      1.0, zorder=None,  **kwds):
     if ax is None:
         ax = plt.gca()
-    m = Basemap(*(ax.viewLim.min + ax.viewLim.max), resolution=resolution, ax=ax, **kwds)
+    m = Basemap(*(list(ax.viewLim.min) + list(ax.viewLim.max)), resolution=resolution, ax=ax, **kwds)
     m.drawcoastlines(linewidth=coast_linewidth, zorder=zorder)
     m.drawcountries(linewidth=country_linewidth, zorder=zorder)
     return m

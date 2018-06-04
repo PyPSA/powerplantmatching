@@ -111,7 +111,7 @@ def OPSD(rawEU=False, rawDE=False, statusDE=['operating']):
                             Set = {'IPP':'PP'}))
             .replace({'Country': {'UK': u'GB','[ \t]+|[ \t]+$.':''}}, regex=True) #UK->GB, strip whitespace
             .assign(Name=lambda df: df.Name.str.title(),
-                    Fueltype=lambda df: df.Fueltype.str.title(),
+                    Fueltype=lambda df: df.Fueltype.str.title().str.strip(),
                     Country=lambda df: (pd.Series(df.Country.apply(
                                         lambda c: pycountry.countries.get(alpha_2=c).name),
                                         index=df.index).str.title()))
@@ -322,6 +322,7 @@ def WRI(raw=False, reduced_data=True, filter_other_dbs=True):
                                })
             .replace(dict(Fueltype={'Coal':'Hard Coal',
                                     'Biomass' : 'Bioenergy',
+                                    'Gas' : 'Natural Gas',
                                     'Wave and Tidal': 'Other'}))
             .reindex(columns=target_columns())
             .pipe(gather_technology_info)
@@ -828,7 +829,8 @@ data_config['UBA'] = {'read_function': UBA,
            'net_capacity':False, 'reliability_score':2}
 
 
-def BNETZA(header=9, sheet_name='Gesamtkraftwerksliste BNetzA', prune_wind=True, prune_solar=True):
+def BNETZA(header=9, sheet_name='Gesamtkraftwerksliste BNetzA', prune_wind=True, prune_solar=True,
+           raw=False):
     """
     Returns the database put together by Germany's 'Federal Network Agency'
     (dt. 'Bundesnetzagentur' (BNetzA)). The user has to download the database from:
@@ -844,6 +846,8 @@ def BNETZA(header=9, sheet_name='Gesamtkraftwerksliste BNetzA', prune_wind=True,
     """
     filename = 'Kraftwerksliste_2017_2.xlsx'
     bnetza = pd.read_excel(_data_in(filename), header=header, sheet_name=sheet_name)
+    if raw:
+        return bnetza
     bnetza = bnetza.rename(columns={
             u'Kraftwerksnummer Bundesnetzagentur': 'projectID',
             u'Kraftwerksname': 'Name',

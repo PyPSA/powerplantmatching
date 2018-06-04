@@ -22,9 +22,10 @@ from os.path import dirname
 import os
 import pandas as pd
 import six
-import pycountry
+import pycountry as pyc
 import matplotlib.pyplot as plt
 import logging
+import numpy as np
 
 
 def _data(fn):
@@ -92,12 +93,6 @@ def lookup(df, keys=None, by='Country, Fueltype', exclude=None, unit='MW'):
         return (lookup_single(df)/scaling).fillna(0.).round(3)
 
 
-def plot_fueltype_stats(df):
-    stats = lookup(df, by='Fueltype')
-    plt.pie(stats, colors=stats.index.to_series().map(tech_colors).fillna(''),
-           labels=stats.index, autopct='%1.1f%%')
-
-
 def set_uncommon_fueltypes_to_other(df, fueltypes=
                                     ['Bioenergy','Geothermal','Mixed fuel types',
                                      'Waste', 'Electro-mechanical', 'Hydrogen Storage']):
@@ -118,7 +113,15 @@ def map_projectID(df, dataset_name, ID):
         return df['projectID'].apply(lambda x: ID in x[dataset_name] 
                                      if dataset_name in x.keys() else False)
 
-def parse_Geoposition(loc, zipcode='', country=None, return_Country=False):
+
+def country_alpha_2(country):
+    try:
+        return pyc.countries.get(name=country).alpha_2
+    except KeyError:
+        return ''
+
+
+def parse_Geoposition(loc, zipcode='', country=None, return_Country=False, use_saved_position=False):
     """
     Nominatim request for the Geoposition of a specific location in a country.
     Returns a tuples with (latitude, longitude) if the request was sucessful,
@@ -140,12 +143,18 @@ def parse_Geoposition(loc, zipcode='', country=None, return_Country=False):
     """
     from geopy.geocoders import GoogleV3 #ArcGIS  Yandex Nominatim
     import geopy.exc
+    
     if loc is not None and loc != float:
-        try:
-            country = pycountry.countries.get(name=country).alpha2
-        except KeyError:
-            country = ''
+
+        country = country_alpha_2(country)
+        
         if zipcode is None: zipcode = ''
+
+        if use_saved_position is not None:
+            saved = pd.read_csv(_data('parsed_locations.csv'), index_col=[0,1], encoding='utf-8')
+            if saved.index.contains((loc, country)):
+                return saved.loc[(loc, country)].values
+    
         #gdata = Nominatim(timeout=10, country_bias=country).geocode(loc)
         #gdata = Yandex(timeout=10, lang='en_US').geocode(loc)
         #gdata = ArcGIS(timeout=10).geocode(loc, exactly_one=True)
@@ -158,11 +167,74 @@ def parse_Geoposition(loc, zipcode='', country=None, return_Country=False):
             logger.warn(e)
 
         if gdata != None:
+            if use_saved_position:
+                with open(_data('parsed_locations.csv'), 'a') as f:
+                    (pd.DataFrame({'country': country, 'lat':gdata.latitude, 'lon':gdata.longitude}, index = [loc])
+                            .to_csv(f, header=False, encoding='utf-8'))
             if return_Country:
                 return gdata.address.split(', ')[-1]
             else:
                 return (gdata.latitude, gdata.longitude)
 
+
+def fill_geoposition(df, parse = False, group_columns = ['Country', 'Fueltype', 'Technology'], 
+                     only_saved_locs=False):
+    """
+    Fill missing power plant coordinates (lat/lon). Use the distribution of existing power plant
+    coordinates which coincide in Country, Fueltype and Technology and propagate it to the 
+    missing entries.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        DataFrame of power plants
+    parse : Boolean (default False)
+        whether to parse the geoposition for every power plant using the funtion parse_Geoposition.
+        Otherwise use existing distribution
+    group_columns : list
+        list of column names which are used to determine existing coordinate distribution. 
+        For each power plant with missing coordinate a random coordinate is picked from the 
+        subset of power plants which have the same values in group_columns
+
+    """
+    
+    if parse:
+
+        coords = df[['lat', 'lon']].copy()
+
+        saved = (pd.read_csv(_data('parsed_locations.csv'), index_col=0, encoding='utf-8')
+                    .rename(index = lambda df: df.replace(' Power Plant', '')))
+        saved.index += ' ' + saved.country
+        df = df.assign(Keys = df['Name'] + ' ' + df['Country'].apply(country_alpha_2))
+        
+        coords['lat'] = coords['lat'].where(coords.lat.notnull(), df.Keys.map(saved.lat))
+        coords['lon'] = coords['lon'].where(coords.lon.notnull(), df.Keys.map(saved.lon))
+        
+        df.drop(columns=['Keys'], inplace=True)
+        
+        if not only_saved_locs:
+            missing_b  = (coords.lat.isnull() | coords.lon.isnull() )
+            search_strings = pd.DataFrame(df[missing_b].Name + ' Power Plant')
+            search_strings = search_strings.assign(Country = df[missing_b].Country)
+            latlon = (search_strings.apply(lambda ds : 
+                                parse_Geoposition(ds['Name'], country=ds['Country'], 
+                                                  use_saved_position=True
+                                ), axis=1 )
+                        .rename(columns={'Name':'lat', 'Country':'lon'}))
+    
+            coords.loc[missing_b, 'lat'] = latlon.str[0]
+            coords.loc[missing_b, 'lon'] = latlon.str[1]
+
+        return df.assign(**{"lat": coords.lat, 'lon':coords.lon})
+            
+    else:
+        def fillna(df):
+            return (df.fillna(method='ffill').fillna(method='bfill'))
+        
+        coords = (df.loc[np.random.permutation(df.index)]
+                    .groupby(group_columns)[['lat', 'lon']].transform(fillna)
+                    .reindex(df.index))
+        return df.assign(**{"lat": coords.lat, 'lon':coords.lon})
 
 tech_colors = pd.Series({"Wind" : "b",
                'windoff' : "c",
