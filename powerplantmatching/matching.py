@@ -245,7 +245,7 @@ def reduce_matched_dataframe(df, show_orig_names=False):
 
     sdf = pd.DataFrame.from_dict({
         'Name': prioritise_reliability(df['Name']),
-        'Fueltype': prioritise_reliability(df['Fueltype']),
+        'Fueltype': prioritise_reliability(df['Fueltype'].replace({'Other': np.nan})).reindex(df.index, fill_value='Other'),
         'Technology': prioritise_reliability(df['Technology']),
         'Country': prioritise_reliability(df['Country']),
         'Set': prioritise_reliability(df['Set']),
