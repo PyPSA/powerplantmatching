@@ -227,11 +227,13 @@ def reduce_matched_dataframe(df, show_orig_names=False):
         """
 
         # Arrange columns in descending order of reliability
-        df = df.loc[df.notnull().any(axis=1), rel_scores.index]
+        df = df.loc[df.notnull().any(axis=1)]
 
         if df.empty:
             logger.warn('Empty dataframe passed to `prioritise_reliability`.')
             return pd.Series()
+
+        df = df.reindex(columns=rel_scores.index)
 
         # Aggregate data with same reliability scores for numeric columns
         # (but DO maintain order)
