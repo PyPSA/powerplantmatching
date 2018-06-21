@@ -1,0 +1,21 @@
+name: powerplantmatching
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - basemap
+  - geopy
+  - ipython
+  - matplotlib
+  - networkx
+  - numpy
+  - pandas
+  - python=2
+  - pyyaml
+  - requests
+  - scipy
+  - seaborn
+  - six
+  - xlrd
+  - pip:
+    - pycountry

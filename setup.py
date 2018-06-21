@@ -20,7 +20,7 @@ setup(
     license='GPLv3',
     packages=find_packages(exclude=['duke_binaries', 'Hydro aggregation.py']),
     include_package_data=True,
-    install_requires=['numpy','scipy','pandas>=0.19.0','networkx>=1.10','pycountry'],
+    install_requires=['numpy','scipy','pandas>=0.19.0','networkx>=1.10','pycountry', 'xlrd', 'seaborn', 'yaml', 'requests', 'matplotlib', 'basemap', 'geopy'],
     classifiers=[
 #        'Development Status :: 3 - Alpha',
         'Environment :: Console',
