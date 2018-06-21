@@ -36,16 +36,28 @@ as part of the
 
 ## Installation
 
-1. Make sure that [git lfs](https://git-lfs.github.com/) is installed, in case of doubt just run `git lfs install` 
-2. Copy or clone the repository to your preferred directory 
-3. Install the package via 'pip install -e /path/to/powerplantmatching' 
+1. Make sure that [git lfs](https://git-lfs.github.com/) is installed, in case of doubt just run `git lfs install`
+2. Copy or clone the repository to a directory of your choosing /path/to/powerplantmatching
+   ```shell
+   cd /path/to
+   git clone https://github.com/FRESNA/powerplantmatching.git
+   ```
+3. If you use conda (if not skip this step), install the requirements from requirements.yaml into a new environment powerplantmatching and activate it.
+   ```shell
+   conda env create -f powerplantmatching/requirements.yaml
+   source activate powerplantmatching
+   ```
+3. Install the package using `pip`
+   ```shell
+   pip install -e ./powerplantmatching'
+   ```
 4. Copy config_example.yaml to config.yaml.
 
 Optional but recommended:
 
 5. Download the [ESE dataset](https://goo.gl/gVMwKJ). For integrating the data into powerplantmatching, the path of the downloaded file has to be added to the config.yaml file with the keyword 'ese_path' (default is set to 'Downloads/projects.xls').
 6. Add your ENTSOE security token to the config file. The token can be obtained by following section 2 of the [RESTful API documentation](https://transparency.entsoe.eu/content/static_content/Static%20content/web%20api/Guide.html#_authentication_and_authorisation) of the ENTSOE-E Transparency platform.
-    
+
 ### Info (May 7 2018)
 
 If you are currently having problems with untracked/missing git lfs files, please run 'git lfs pull' in the repo. If files can still not be tracked and remain missing, please contact us (or open an issue), ideally sending the lfs object id of the missing file. 
@@ -85,7 +97,7 @@ between the different data sources and our merged dataset.
 - WRI - [World Resource Institute](http://www.wri.org) provide their data under a free license on their [institute website](http://datasets.wri.org/dataset/globalpowerplantdatabase)
 - CARMA - [Carbon Monitoring for Action](http://carma.org/plant) 
 - ESE - [Energy Storage Exchange](http://www.energystorageexchange.org/) provide a database for storage units. Especially the hydro storage data is of big use for a combining power plant database. Since the data is not free, it is optional and can be [downloaded separately](http://www.energystorageexchange.org/projects/advanced_search?utf8=%E2%9C%93&name_eq=&country_sort_eq%5B%5D=Austria&country_sort_eq%5B%5D=Belgium&country_sort_eq%5B%5D=Bulgaria&country_sort_eq%5B%5D=Croatia&country_sort_eq%5B%5D=Czeck+Republic&country_sort_eq%5B%5D=Denmark&country_sort_eq%5B%5D=Estonia&country_sort_eq%5B%5D=Finland&country_sort_eq%5B%5D=France&country_sort_eq%5B%5D=Germany&country_sort_eq%5B%5D=Greece&country_sort_eq%5B%5D=Hungary&country_sort_eq%5B%5D=Ireland&country_sort_eq%5B%5D=Italy&country_sort_eq%5B%5D=Latvia&country_sort_eq%5B%5D=Lithuania&country_sort_eq%5B%5D=Luxembourg&country_sort_eq%5B%5D=Netherlands&country_sort_eq%5B%5D=Norway&country_sort_eq%5B%5D=Poland&country_sort_eq%5B%5D=Portugal&country_sort_eq%5B%5D=Romainia&country_sort_eq%5B%5D=Slovakia&country_sort_eq%5B%5D=Slovenia&country_sort_eq%5B%5D=Spain&country_sort_eq%5B%5D=Sweden&country_sort_eq%5B%5D=Switzerland&country_sort_eq%5B%5D=United+Kingdom&size_kw_ll=&size_kw_ul=&kW=&size_kwh_ll=&size_kwh_ul=&kWh=&%5Bannouncement_on_ll%281i%29%5D=&%5Bannouncement_on_ll%282i%29%5D=&%5Bannouncement_on_ll%283i%29%5D=1&%5Bannouncement_on_ul%281i%29%5D=&%5Bannouncement_on_ul%282i%29%5D=&%5Bannouncement_on_ul%283i%29%5D=1&%5Bconstruction_on_ll%281i%29%5D=&%5Bconstruction_on_ll%282i%29%5D=&%5Bconstruction_on_ll%283i%29%5D=1&%5Bconstruction_on_ul%281i%29%5D=&%5Bconstruction_on_ul%282i%29%5D=&%5Bconstruction_on_ul%283i%29%5D=1&%5Bcommissioning_on_ll%281i%29%5D=&%5Bcommissioning_on_ll%282i%29%5D=&%5Bcommissioning_on_ll%283i%29%5D=1&%5Bcommissioning_on_ul%281i%29%5D=&%5Bcommissioning_on_ul%282i%29%5D=&%5Bcommissioning_on_ul%283i%29%5D=1&%5Bdecommissioning_on_ll%281i%29%5D=&%5Bdecommissioning_on_ll%282i%29%5D=&%5Bdecommissioning_on_ll%283i%29%5D=1&%5Bdecommissioning_on_ul%281i%29%5D=&%5Bdecommissioning_on_ul%282i%29%5D=&%5Bdecommissioning_on_ul%283i%29%5D=1&owner_in=&vendor_company=&electronics_provider=&utility=&om_contractor=&developer=&order_by=&sort_order=&search_page=&search_search=search).
-- ENTSOe - [European Network of Transmission System Operators for Electricity](http://entsoe.eu/), annually provides statistics about aggregated power plant capacities which is available [here]() Their data can be used as a validation reference. We further use their [annual energy generation report from 2010](https://www.entsoe.eu/db-query/miscellaneous/net-generating-capacity) as an input for the hydro power plant classification.
+- ENTSOe - [European Network of Transmission System Operators for Electricity](http://entsoe.eu/), annually provides statistics about aggregated power plant capacities. Their data can be used as a validation reference. We further use their [annual energy generation report from 2010](https://www.entsoe.eu/db-query/miscellaneous/net-generating-capacity) as an input for the hydro power plant classification. The [power plant dataset](https://transparency.entsoe.eu/generation/r2/installedCapacityPerProductionUnit/show) on the ENTSO-E transparency website is downloaded using the [ENTSO-E Transparency API](https://transparency.entsoe.eu/content/static_content/Static%20content/web%20api/Guide.html). 
 - IRENA - [International Renewable Energy Agency](http://resourceirena.irena.org/gateway/dashboard/) open available statistics on power plant capacities.
 - BNETZA - [Bundesnetzagentur](https://www.bundesnetzagentur.de/EN/Areas/Energy/Companies/SecurityOfSupply/GeneratingCapacity/PowerPlantList/PubliPowerPlantList_node.html) open available data source for Germany's power plants
 
