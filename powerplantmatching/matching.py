@@ -227,11 +227,13 @@ def reduce_matched_dataframe(df, show_orig_names=False):
         """
 
         # Arrange columns in descending order of reliability
-        df = df.loc[df.notnull().any(axis=1), rel_scores.index]
+        df = df.loc[df.notnull().any(axis=1)]
 
         if df.empty:
             logger.warn('Empty dataframe passed to `prioritise_reliability`.')
             return pd.Series()
+
+        df = df.reindex(columns=rel_scores.index)
 
         # Aggregate data with same reliability scores for numeric columns
         # (but DO maintain order)
@@ -243,7 +245,7 @@ def reduce_matched_dataframe(df, show_orig_names=False):
 
     sdf = pd.DataFrame.from_dict({
         'Name': prioritise_reliability(df['Name']),
-        'Fueltype': prioritise_reliability(df['Fueltype']),
+        'Fueltype': prioritise_reliability(df['Fueltype'].replace({'Other': np.nan})).reindex(df.index, fill_value='Other'),
         'Technology': prioritise_reliability(df['Technology']),
         'Country': prioritise_reliability(df['Country']),
         'Set': prioritise_reliability(df['Set']),
