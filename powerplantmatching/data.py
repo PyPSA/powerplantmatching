@@ -30,7 +30,7 @@ import pycountry
 import logging
 from textwrap import dedent
 logger = logging.getLogger(__name__)
-from six import iteritems
+from six import iteritems, string_types
 from six.moves import reduce
 from .config import target_countries, target_columns, additional_data_config
 from .cleaning import (gather_fueltype_info, gather_set_info,
@@ -443,13 +443,12 @@ def ENTSOE(update=False, raw=False, entsoe_token=None):
         assert entsoe_token is not None, "entsoe_token is missing"
 
         def full_country_name(l):
-            import types
             def pycountry_try(c):
                 try:
                     return pycountry.countries.get(alpha_2=c).name
                 except KeyError:
                     return None
-            if isinstance(l, types.StringTypes):
+            if isinstance(l, string_types):
                 return filter(None, [pycountry_try(l)])
             else: # iterable
                 return filter(None, [pycountry_try(country) for country in l])
