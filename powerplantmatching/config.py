@@ -143,7 +143,8 @@ def fueltype_to_color(alternative_style=False):
               "Other":"silver",
               "Waste" : "grey",
               "Geothermal" : "orange",
-              'Battery' : 'coral',
+              'Battery' : 'purple',
+              'Hydrogen Storage' : 'teal',
               'Total':'gold'})
 
     return pd.Series({'Bioenergy':'darkgreen',
