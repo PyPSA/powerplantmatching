@@ -300,6 +300,14 @@ def Capacity_stats(raw=False, level=2, **selectors):
     return entsoedata
 
 
+def Capacity_stats_factsheet():
+    df = pd.read_csv(_data_in('entsoe_factsheet.csv'), encoding='utf-8')
+    return (df.replace(dict(Country={'Czechia':'Czech Republic'}))
+              .replace(dict(Fueltype={'Gas':'Natural Gas',
+                                      'Biomass':'Bioenergy'})))
+
+
+
 def WRI(raw=False, reduced_data=True, filter_other_dbs=True):
     if raw:
         return pd.read_csv(_data_in('global_power_plant_database.csv'))
