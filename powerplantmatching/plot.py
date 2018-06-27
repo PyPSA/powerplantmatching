@@ -26,7 +26,7 @@ from matplotlib.lines import Line2D
 from matplotlib.offsetbox import AnchoredText
 import seaborn as sns
 
-from .config import fueltype_to_life, fueltype_to_color
+from .config import fueltype_to_life, fueltype_to_color, textbox_position
 from .cleaning import clean_single
 from .data import CARMA, ENTSOE, Capacity_stats, ESE, GEO, OPSD, WEPP, WRI
 from .collection import (Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_matched_reduced_VRE,
@@ -37,7 +37,7 @@ from .utils import lookup, set_uncommon_fueltypes_to_other
 
 
 def Show_all_plots():
-    bar_comparison_single_matched()
+    comparison_single_matched_bar()
     comparison_1dim(by='Country')
     comparison_1dim(by='Fueltype')
     return
@@ -247,7 +247,10 @@ def comparison_countries_fueltypes_bar(dfs=None, ylabel=None, include_WEPP=True,
                            by='Country, Fueltype')/1000
             set.update(countries, set(red_wo_wepp.Country), set(statistics.Country))
     else:
-        stats = lookup(dfs.values(), keys=dfs.keys(), by='Country, Fueltype')/1000
+        stats = (lookup(dfs.values(), keys=dfs.keys(), by='Country, Fueltype')
+                 .replace({0.0: np.nan})     # Do this in order to show only
+                 .dropna(axis=0, how='all')  # relevant fueltypes for each
+                 .fillna(0.0))/1000          # country (if all zero->drop!).
         stats.sort_index(axis=1, inplace=True)
         for k, v in dfs.items():
             set.update(countries, set(v.Country))
@@ -259,7 +262,7 @@ def comparison_countries_fueltypes_bar(dfs=None, ylabel=None, include_WEPP=True,
     nrows, ncols = gather_nrows_ncols(len(countries))
     i,j = [0, 0]
     labels_mpatches = collections.OrderedDict()
-    fig, ax = plt.subplots(nrows=nrows, ncols=ncols, sharex=True, sharey=False,
+    fig, ax = plt.subplots(nrows=nrows, ncols=ncols, sharex=False, sharey=False,
                            squeeze=False, figsize=figsize)
     for country in sorted(countries):
         if j==ncols: i+=1; j=0
@@ -268,11 +271,12 @@ def comparison_countries_fueltypes_bar(dfs=None, ylabel=None, include_WEPP=True,
         if show_indicators:
             ctry = stats.loc[country]
             r_sq = round(ctry.corr().iloc[0,1]**2, 3)
-            #TODO: Make sure that matched is always in first and stats in last column!
+            #TODO: Assure that matched is always in first + stats in last column.
             cov = round(ctry.iloc[:,0].sum() / ctry.iloc[:,-1].sum(), 3)
             txt = AnchoredText("\n" + r'$R^{2} = $%s'%r_sq + "\n"
                                r'$\frac{\sum P_{match}}{\sum P_{stats}} = $%s'%cov,
-                               loc=2, prop={'size':11})
+                               loc=textbox_position()[country],
+                               prop={'size':11})
             txt.patch.set(boxstyle='round', alpha=0.5)
             ax[i,j].add_artist(txt)
         # Pass the legend information into the Ordered Dict
@@ -290,7 +294,7 @@ def comparison_countries_fueltypes_bar(dfs=None, ylabel=None, include_WEPP=True,
         ax[i,j].grid(color='white', linestyle='dotted')
         ax[i,j].set_title(country)
         ax[i,0].set_ylabel(ylabel)
-        ax[-1,j].xaxis.label.set_visible(False)
+        ax[i,j].xaxis.label.set_visible(False)
         j+=1
     # After the loop, do the rest of the layouting.
     fig.tight_layout()
@@ -545,6 +549,26 @@ def boxplot_gross_to_net():
     return fig, ax
 
 
+def boxplot_matchcount(df):
+    """
+    Makes a boxplot for the capacities grouped by the number of matches.
+    Attention: Currently only works for the full dataset with original
+    names as the last columns.
+    """
+    # Mend needed data
+    df = df.copy()  # TODO: Make this more dynamic.
+    df.loc[:, 'Matches'] = df.copy().loc[:,'CARMA':].notnull().sum(axis=1)
+
+    # Plot
+    fig, ax = plt.subplots(figsize=(8,4.5))
+    df.boxplot(ax=ax, column='Capacity', by='Matches', showmeans=True)
+    ax.title.set_visible(False)
+    ax.set_xlabel('Number of datasets participating in match [$-$]')
+    ax.set_ylabel('Capacity [$MW$]')
+    fig.suptitle('')
+    return fig
+
+
 def area_yearcommissioned(dfs, figsize=(7,5), ylabel='Capacity [$GW$]'):
     """
     Plots an area chart by commissioning year.
@@ -553,22 +577,34 @@ def area_yearcommissioned(dfs, figsize=(7,5), ylabel='Capacity [$GW$]'):
     for n, df in dfs.items():
         dfp[n] = df.pivot_table(values='Capacity', index='YearCommissioned',
                                 columns='Fueltype', aggfunc='sum')/1000
+    labels_mpatches = collections.OrderedDict()
     fig, ax = plt.subplots(nrows=2, ncols=2, sharex=True, sharey=True,
                            squeeze=False, figsize=figsize)
     ax[0,0].set_xlim((1900,2016))
-    colors = dfp[dfs.keys()[-1]].columns.to_series().map(fueltype_to_color()).tolist()
     i,j = (0,0)
     for n, df in dfp.items():
         if j==2: i+=1; j=0
-        df.plot.area(ax=ax[i,j],stacked=True,legend=False,color=colors)
+        colors = df.columns.to_series().map(fueltype_to_color()).tolist()
+        df.plot.area(ax=ax[i,j], stacked=True, legend=False, color=colors,
+                     linewidth=0.0)
+        # Pass the legend information into the Ordered Dict
+        stats_handle, stats_labels = ax[i,j].get_legend_handles_labels()
+        for u, v in enumerate(stats_labels):
+            if v not in labels_mpatches:
+                labels_mpatches[v] = mpatches.Patch(color=colors[u], label=v)
         ax[i,j].set_title(n)
         ax[i,j].set_facecolor('#d9d9d9')
         ax[i,j].set_axisbelow(True)
         ax[i,j].grid(color='white', linestyle='dotted')
         ax[i,j].set_ylabel(ylabel)
         j+=1
-    ax[-1,-1].legend(fontsize=12, loc='center left', bbox_to_anchor=(1, 0.5))
+    #ax[-1,0].legend(fontsize=12, loc='center left', bbox_to_anchor=(1, 0.5))
     fig.tight_layout()
+    # Legend
+    fig.subplots_adjust(bottom=0.2)
+    labels_mpatches = collections.OrderedDict(sorted(labels_mpatches.items()))
+    fig.legend(labels_mpatches.values(), labels_mpatches.keys(),
+               loc=8, ncol=len(labels_mpatches)/2, facecolor='#d9d9d9')
     return fig, ax
 
 
@@ -612,7 +648,7 @@ def matchcount_stats(df):
     """
     Plots the number of matches against the number of involved databases, across all databases.
     """
-    df = df.copy().iloc[:,0:7]
+    df = df.copy().iloc[:,-8:]
     df.loc[:,'MatchCount'] = df.notnull().sum(axis=1)
     df.groupby(['MatchCount']).size().plot.bar()
     return
