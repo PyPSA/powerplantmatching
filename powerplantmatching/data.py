@@ -462,9 +462,10 @@ def ENTSOE(update=False, raw=False, entsoe_token=None):
                 return filter(None, [pycountry_try(country) for country in l])
 
         domains = pd.read_csv(_data('in/entsoe-areamap.csv'), sep=';', header=None)
+        #search for Country abbreviations in each Name 
         pattern = '|'.join(('(?i)'+x) for x in target_countries())
-        found = domains.loc[:,1].str.findall(pattern).str.join(sep=', ')
-        domains.loc[:, 'Country'] = found
+        domains = domains.assign(Country = domains[1].str.findall(pattern).str.join(', '))
+        
         found = (domains[1].replace('[0-9]', '', regex=True).str.split(' |,|\+|\-')
                  .apply(full_country_name).str.join(sep=', ').str.findall(pattern)
                  .str.join(sep=', ').str.strip())
@@ -507,7 +508,7 @@ def ENTSOE(update=False, raw=False, entsoe_token=None):
         def attribute(etree_sel):
             return etree_sel.text
 
-        entsoe = []
+        entsoe = pd.DataFrame()
         for i in domains.index[domains.Country.notnull()]:
             logger.info("Fetching power plants for domain %s (%s)",
                         domains.loc[i, 0],
@@ -529,46 +530,54 @@ def ENTSOE(update=False, raw=False, entsoe_token=None):
             ns = namespace(etree)
             df = pd.DataFrame(columns=level1+level2+level3+['Country'])
             for arg in level1:
-                df[arg] = map(attribute , etree.findall('*/%s%s'%(ns, arg)))
+                df[arg] = [attribute(e) for e in etree.findall('*/%s%s'%(ns, arg))]
             for arg in level2:
-                df[arg] = map(attribute , etree.findall('*/*/%s%s'%(ns, arg)))
+                df[arg] = [attribute(e) for e in etree.findall('*/*/%s%s'%(ns, arg))]
             for arg in level3:
-                df[arg] = map(attribute , etree.findall('*/*/*/%s%s'%(ns, arg)))
+                df[arg] = [attribute(e) for e in etree.findall('*/*/*/%s%s'%(ns, arg))]
             df['Country'] = domains.loc[i,'Country']
             logger.info("Received data on %d power plants", len(df))
-            entsoe.append(df)
-        entsoe = pd.concat(entsoe, ignore_index=True)
+            entsoe = entsoe.append(df, ignore_index=True)
         if raw:
             return entsoe
-        entsoe.columns = ['Name', 'projectID', 'High Voltage Limit', 'Fueltype',
-                          'Capacity', 'Country']
-        entsoe['Fueltype'] = entsoe['Fueltype'].map(fdict)
-        entsoe['Name'] = entsoe['Name'].str.title()
-        entsoe = entsoe.loc[entsoe.Country.notnull()]
-        entsoe = entsoe.loc[~((entsoe.projectID.duplicated(keep=False))&
-                              (~entsoe.Country.isin(target_countries())))]
-        entsoe = entsoe.drop_duplicates('projectID').reset_index(drop=True)
-        entsoe['File'] = "https://transparency.entsoe.eu/generation/r2/\ninstalledCapacityPerProductionUnit/show"
-        entsoe = entsoe.reindex(columns=target_columns())
-        entsoe = gather_technology_info(entsoe)
-        entsoe = gather_set_info(entsoe)
-        entsoe = clean_technology(entsoe)
-        entsoe.Fueltype.replace(to_replace=['.*Hydro.*','Fossil Gas', '.*(?i)coal.*','.*Peat',
-                                            'Marine', 'Wind.*', '.*Oil.*', 'Biomass'],
-                                value=['Hydro','Natural Gas', 'Hard Coal', 'Lignite', 'Other',
-                                       'Wind', 'Oil', 'Bioenergy'],
-                                regex=True, inplace=True)
-        entsoe.loc[:,'Capacity'] = pd.to_numeric(entsoe.Capacity)
-        entsoe.loc[entsoe.Country=='Austria, Germany, Luxembourg', 'Country'] = \
-                  [parse_Geoposition(powerplant , return_Country=True)
-                   for powerplant in entsoe.loc[entsoe.Country=='Austria, Germany, Luxembourg', 'Name']]
-        entsoe.Country.replace(to_replace=['Deutschland','.*sterreich' ,'L.*tzebuerg'],
-                               value=['Germany','Austria','Luxembourg'],
-                               regex=True, inplace=True)
-        entsoe = entsoe.loc[entsoe.Country.isin(target_countries()+[None])]
-        entsoe.loc[:,'Country'] = entsoe.Country.astype(str)
-        entsoe.loc[entsoe.Country=='None', 'Country'] = np.NaN
-        entsoe.reset_index(drop=True, inplace=True)
+        
+        entsoe =  (entsoe
+                    .rename(columns= {'psrType': 'Fueltype',
+                                       'quantity': 'Capacity',
+                                       'registeredResource.mRID': 'projectID',
+                                       'registeredResource.name': 'Name'})
+                    .reindex(columns=target_columns())
+                    .replace({'Fueltype':fdict})
+                    .drop_duplicates('projectID').reset_index(drop=True) 
+                    .assign(Name = lambda df : df.Name.str.title(),
+                            file = '''https://transparency.entsoe.eu/generation/
+                                        r2/installedCapacityPerProductionUnit/''',
+                            Fueltype = lambda df: 
+                                    df.Fueltype.replace(
+                                            to_replace=
+                                                ['.*Hydro.*','Fossil Gas', 
+                                                 '.*(?i)coal.*','.*Peat',
+                                                 'Marine', 'Wind.*', 
+                                                 '.*Oil.*', 'Biomass'],
+                                            value=['Hydro','Natural Gas', 
+                                                    'Hard Coal', 'Lignite', 'Other',
+                                                    'Wind', 'Oil', 'Bioenergy'],
+                                            regex=True) ,
+                            Capacity = lambda df : pd.to_numeric(df.Capacity),
+                            Country = lambda df : 
+                                df.Country.where(~df.Country.str.contains(','),
+                                                 df.Name[df.Country.str.contains(',')]
+                                                 .apply(lambda x: 
+                                                     parse_Geoposition(x, 
+                                                           return_Country=True)))
+                                 )                                       
+                    [lambda df : df.Country.isin(target_countries())]
+                    .pipe(gather_technology_info)
+                    .pipe(gather_set_info)
+                    .pipe(clean_technology)
+                    )
+                        
+
         entsoe.to_csv(_data_in('entsoe_powerplants.csv'),
                       index_label='id', encoding='utf-8')
         return entsoe
