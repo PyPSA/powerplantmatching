@@ -115,13 +115,13 @@ def OPSD(rawEU=False, rawDE=False, statusDE=['operating']):
                     Country=lambda df: (pd.Series(df.Country.apply(
                                         lambda c: pycountry.countries.get(alpha_2=c).name),
                                         index=df.index).str.title()))
-#            .pipe(gather_technology_info) 
+#            .pipe(gather_technology_info)
             .pipe(gather_set_info)
             .pipe(clean_technology)
             .loc[lambda df: df.Country.isin(target_countries())]
             .pipe(scale_to_net_capacities,
                   (not data_config['OPSD']['net_capacity'])))
-            
+
 data_config['OPSD'] = {'read_function': OPSD, 'reliability_score':5,
                        'net_capacity':True}
 
@@ -311,7 +311,7 @@ def WRI(raw=False, reduced_data=True, filter_other_dbs=True):
         return (pd.read_csv(_data_in('global_power_plant_database.csv'))
             [lambda df: df.country_long.isin(target_countries()) &
                         ~df.geolocation_source.isin(other_dbs)]
-            .rename(columns = lambda x : x.title()) 
+            .rename(columns = lambda x : x.title())
             .assign(Country = lambda df: df['Country_Long'])
             .rename(columns = {'Fuel1' : 'Fueltype',
                                'Latitude': 'lat',
@@ -329,7 +329,7 @@ def WRI(raw=False, reduced_data=True, filter_other_dbs=True):
             .pipe(gather_set_info)
             .pipe(clean_powerplantname)
             .assign(projectID = lambda df: 'WRI' + df.index.astype(str))
-            ) 
+            )
 
 data_config['WRI'] = {'read_function': WRI,
                       'clean_single_kwargs': dict(aggregate_powerplant_units=False),
@@ -394,12 +394,12 @@ def ESE(update=False, path=None, raw=False):
                     projectID=data.index.values,
                     Capacity=data['Rated Power in kW']/1e3,
                     YearCommissioned=pd.DatetimeIndex(data['Commissioning Date']).year)
-            [lambda df: (df.Status == 'Operational') & 
+            [lambda df: (df.Status == 'Operational') &
              (df.Fueltype != 'Thermal Storage') &
               df.Country.isin(target_countries())]
             .pipe(clean_powerplantname)
             .pipe(clean_technology, generalize_hydros=True)
-            .replace(dict(Fueltype={u'Electro-chemical': 'Battery', 
+            .replace(dict(Fueltype={u'Electro-chemical': 'Battery',
                                     u'Pumped Hydro Storage':'Hydro'}))
             .reindex(columns=target_columns(detailed_columns=True))
             .reset_index(drop = True)

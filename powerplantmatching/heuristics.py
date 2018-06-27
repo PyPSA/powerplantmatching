@@ -104,12 +104,14 @@ def rescale_capacities_to_country_totals(df, fueltypes):
                    ratio.loc[fueltype,country]
     return df
 
+
 def fill_missing_duration(df):
     mean_duration = df[df.Set=='Store'].groupby('Fueltype').Duration.mean()
     for store in mean_duration.index:
         df.loc[(df['Set']=='Store') & (df['Fueltype']==store), 'Duration'] = \
                                                         mean_duration.at[store]
     return df
+
 
 def extend_by_VRE(df, base_year, prune_beyond=True):
     """

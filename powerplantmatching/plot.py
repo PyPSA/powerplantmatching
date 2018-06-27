@@ -49,7 +49,7 @@ def fueltype_stats(df):
            labels=stats.index, autopct='%1.1f%%')
 
 
-def powerplant_map(df, alternative_color_style=True, scale=1e5, european_bounds=True, 
+def powerplant_map(df, alternative_color_style=True, scale=1e5, european_bounds=True,
                    legendscale=1, **kwargs):
 #   TODO: add reference circle in legend
     figsize = kwargs.get('figsize', (7,5))
@@ -59,7 +59,7 @@ def powerplant_map(df, alternative_color_style=True, scale=1e5, european_bounds=
         df = df[df.lat.notnull()]
         fig, ax = plt.subplots(figsize=figsize)
 
-        ax.scatter(df.lon, df.lat, s=df.Capacity/scale, 
+        ax.scatter(df.lon, df.lat, s=df.Capacity/scale,
                    c=df.Fueltype.map(fueltype_to_color(alternative_color_style)))
 
         ax.set_xlabel('')
@@ -415,14 +415,14 @@ def factor_comparison(dfs, keys, figsize=(7,9)):
     compare = compare.append(pd.concat([compare.groupby(level='Country').sum()],
                               keys=['Total']).swaplevel()).sort_index()/1000
     n_countries, n_fueltypes = compare.index.levshape
-    
+
 
     c= [fueltype_to_color(True)[i] for i in compare.index.levels[1]]
     rcParams["axes.prop_cycle"] = cycler(color=c)
 
     #where both are zero,
     compare[compare.sum(1)<0.5]=np.nan
-    
+
     fig, ax = plt.subplots(1,1, figsize=figsize)
     compare = compare.unstack('Country').swaplevel(axis=1).sort_index(axis=1)
     compare.T.plot(ax=ax, markevery=(0,2),

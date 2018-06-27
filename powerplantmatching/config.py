@@ -27,16 +27,16 @@ def set_target_countries(countries=None):
     global c
     if countries is None:
         c = sorted(['Austria', 'Belgium', 'Bulgaria', 'Croatia', 'Czech Republic',
-             'Denmark','Estonia', 'Finland', 'France', 'Germany', 'Greece', 
+             'Denmark','Estonia', 'Finland', 'France', 'Germany', 'Greece',
              'Hungary', 'Ireland', 'Italy', 'Latvia', 'Lithuania', 'Luxembourg',
-             'Netherlands', 'Norway', 'Poland', 'Portugal', 'Romania', 
-             'Slovakia', 'Slovenia', 'Spain', 'Sweden', 'Switzerland', 
+             'Netherlands', 'Norway', 'Poland', 'Portugal', 'Romania',
+             'Slovakia', 'Slovenia', 'Spain', 'Sweden', 'Switzerland',
              'United Kingdom'])
-    else: 
+    else:
         if isinstance(countries, str):
             countries = [countries]
-        c = countries 
-        
+        c = countries
+
 set_target_countries()
 
 
@@ -50,14 +50,14 @@ def target_countries():
 def set_target_fueltypes(fueltypes=None):
     global f
     if fueltypes is None:
-        f = sorted(['Natural Gas', 'Wind', 'Hydro', 'Oil', 'Waste', 
+        f = sorted(['Natural Gas', 'Wind', 'Hydro', 'Oil', 'Waste',
                     'Hard Coal', 'Lignite',
                     'Nuclear', 'Other', 'Solar', 'Bioenergy', 'Geothermal'])
-    else: 
+    else:
         if isinstance(fueltypes, str):
             fueltypes = [fueltypes]
-        f = fueltypes 
-        
+        f = fueltypes
+
 set_target_fueltypes()
 
 
@@ -65,7 +65,7 @@ def target_fueltypes():
     """
     Returns a list of fueltypes to which the powerplants should be standardized
     """
-    return f 
+    return f
 
 
 
@@ -81,7 +81,7 @@ def target_technologies():
 
 
 
-def target_columns(detailed_columns=True):
+def target_columns(detailed_columns=False):
     """
     Returns a list of columns to which the powerplants should be standardized. For renaming
     columns use df.rename(columns=dic, inplace=True) with dic being a dictionary
@@ -120,13 +120,13 @@ def fueltype_to_color(alternative_style=False):
     Maps a fueltype to a specific color for the plots
     """
     if alternative_style:
-#    Alternative (nicer?) fuetlype-color map 
+#    Alternative (nicer?) fuetlype-color map
         return pd.Series(data=
-              {'OCGT':'darkorange', 
-               'Hydro':'royalblue', 
-               'Run-of-river':'navy', 
-               'Ror':'navy', 
-               'Lignite':'indianred', 
+              {'OCGT':'darkorange',
+               'Hydro':'royalblue',
+               'Run-of-river':'navy',
+               'Ror':'navy',
+               'Lignite':'indianred',
               'Nuclear': 'yellow',
               'Solar':'gold',
               'Windoff':'cornflowerblue',
@@ -161,7 +161,6 @@ def fueltype_to_color(alternative_style=False):
             'Total':'gold'})
 
 
-
 def additional_data_config():
     """
     reads the config.yaml file where additional information about tokens, and
@@ -183,3 +182,36 @@ def additional_data_config():
     with open(fn) as f:
         return yaml.load(f)
 
+
+def textbox_position():
+    """
+    Returns a value for the `loc` argument of the mpl.offsetbox by country.
+    """
+    return {'Austria': 1,
+            'Belgium': 1,
+            'Bulgaria': 1,
+            'Croatia': 1,
+            'Czech Republic': 1,
+            'Denmark': 9,
+            'Estonia': 2,
+            'Finland': 1,
+            'France': 2,
+            'Germany': 9,
+            'Greece': 1,
+            'Hungary': 2,
+            'Ireland': 1,
+            'Italy': 1,
+            'Latvia': 1,
+            'Lithuania': 2,
+            'Luxembourg': 1,
+            'Netherlands': 1,
+            'Norway': 1,
+            'Poland': 1,
+            'Portugal': 1,
+            'Romania': 1,
+            'Slovakia': 1,
+            'Slovenia': 1,
+            'Spain': 2,
+            'Sweden': 1,
+            'Switzerland': 9,
+            'United Kingdom': 1}
