@@ -340,6 +340,7 @@ def fueltype_and_country_totals_bar(dfs, keys, figsize=(18,8)):
 def fueltype_totals_bar(dfs, keys, figsize=(7,4), unit='GW',
                         last_as_marker=False, axes_style='whitegrid',
                         exclude=[], **kwargs):
+    dfs = [df[~df.Fueltype.isin(exclude)] for df in dfs]
     with sns.axes_style(axes_style):
         fig, ax = plt.subplots(1,1, figsize=figsize)
         if last_as_marker:
@@ -348,8 +349,8 @@ def fueltype_totals_bar(dfs, keys, figsize=(7,4), unit='GW',
             as_marker_key = keys[-1]
             keys = keys[:-1]
         fueltotals = lookup(dfs, keys=keys, by='Fueltype', unit=unit)
-        fueltotals.plot(kind="bar",
-                           ax=ax, legend='reverse', edgecolor='none', rot=90,
+        fueltotals.plot(kind="bar", ax=ax, legend='reverse', 
+                        edgecolor='none', rot=90, 
                            **kwargs)
         if last_as_marker:
             fueltotals = lookup(as_marker, keys=as_marker_key, by='Fueltype', unit=unit)

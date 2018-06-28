@@ -19,6 +19,7 @@ from powerplantmatching.utils import set_uncommon_fueltypes_to_other as to_other
 from powerplantmatching.data import data_config
 figwidth = 10
 plt.rc('savefig', dpi=300)
+excluded_fueltypes = ['Wind','Solar','Bioenergy','Geothermal', 'Battery']
 
 
 
@@ -29,7 +30,6 @@ ax.set_facecolor('lavender')
 ax.grid(color='white', linestyle='dotted')
 fig.tight_layout(pad = 0.2)
 fig.savefig('gross_net_boxplot.png')
-excluded_fueltypes = ['Wind','Solar','Bioenergy','Geothermal']
 
 
 #%%figure 3
@@ -69,7 +69,7 @@ keys = ['CARMA', 'ENTSOE', 'ESE', 'GEO', 'OPSD', 'WRI', 'Matched w/o WEPP']
 #plot
 fig, ax = pm.plot.fueltype_totals_bar(dfs, keys, axes_style='darkgrid',
                                       last_as_marker=True, figsize=(figwidth,4.5),
-                                      exclude=['Battery', 'Solar', 'Wind'])
+                                      exclude=excluded_fueltypes)
 ax.set_xlabel('')
 ax.grid(color='white', linestyle='dotted')
 ax.legend(framealpha=0.5)
