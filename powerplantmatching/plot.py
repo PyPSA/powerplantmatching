@@ -193,7 +193,9 @@ def comparison_1dim(by='Country', include_WEPP=True, include_VRE=False,
     if how == 'scatter':
         stats.loc[:, by] = stats.index.astype(str)  #Required for seaborn scatter plot
         if len(stats.columns)-1 >= 3:
-            g = sns.pairplot(stats, diag_kind='kde', hue=by, palette='Set2')
+            g = sns.PairGrid(stats, hue=by, palette='Set2')
+            g.map_lower(plt.scatter)
+            g.add_legend()
         else:
             g = sns.pairplot(stats, diag_kind='kde', hue=by, palette='Set2',
                              x_vars=stats.columns[0], y_vars=stats.columns[1])
@@ -202,6 +204,9 @@ def comparison_1dim(by='Country', include_WEPP=True, include_VRE=False,
                 g.axes[i, j].set(xscale='log', yscale='log', xlim=(1,200), ylim=(1,200))
                 if i != j: # plot 45 degree identity line
                     g.axes[i, j].plot([1,200], [1,200], 'k-', alpha=0.25, zorder=0)
+                if i<=j:
+#                    g.axes[i, j].set_visible(False)
+                    g.axes[i, j].remove()
         figsize = kwargs.get('figsize', None)
         if figsize is not None:
             g.fig.set_size_inches(figsize)

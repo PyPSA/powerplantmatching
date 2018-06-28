@@ -114,4 +114,5 @@ german_postcode_map.py
 data/out/Matched_BNETZA_UBA.csv
 data/out/Matched_BNETZA_UBA_reduced.csv
 data/out/aggregation_groups_Unnamed dataset.csv
+matching_analysis/*.png
 config.yaml

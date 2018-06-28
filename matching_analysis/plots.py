@@ -8,6 +8,7 @@ Created on Wed Jun 27 15:46:48 2018
 
 #create plots for the paper
 import powerplantmatching as pm
+import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
@@ -28,6 +29,7 @@ ax.set_facecolor('lavender')
 ax.grid(color='white', linestyle='dotted')
 fig.tight_layout(pad = 0.2)
 fig.savefig('gross_net_boxplot.png')
+excluded_fueltypes = ['Wind','Solar','Bioenergy','Geothermal']
 
 
 #%%figure 3
@@ -39,8 +41,8 @@ uba = pm.collection.Collection('UBA', use_saved_aggregation=False)
 # Since UBA only comprises units >= 100 MW, BNETZA needs to be filtered accordingly:
 bnetza = bnetza.loc[bnetza.Capacity>=100]
 matched_uba_bnetza = rmd(cmd([uba, bnetza], labels=['UBA', 'BNETZA']))
-opsd = (OPSD.query("Country=='Germany' & Capacity >= 100")
-           .pipe(pm.cleaning.clean_single, dataset_name='OPSD', use_saved_aggregation=False))
+opsd = (OPSD().query("Country=='Germany' & Capacity >= 100")
+           .pipe(pm.cleaning.clean_single, dataset_name='OPSD', use_saved_aggregation=True))
 
 dfs = [to_other(df) for df in [opsd, matched_uba_bnetza,uba, bnetza]]
 keys = [ 'OPSD', 'Match-UBA-BNETZA', 'UBA','BNetzA']
@@ -61,7 +63,6 @@ fig.savefig('uba_bnetza_matched_comparison.png', dpi=300)
 #prepare
 dfs = [CARMA(), ENTSOE(), ESE(), GEO(), OPSD(), WRI(), 
        pm.collection.MATCHED_dataset(include_unavailables=True)]
-excluded_fueltypes = ['Wind', 'Solar']
 dfs = [df[lambda df: (~df.Fueltype.isin(excluded_fueltypes)) & (df.Set == 'PP')] for df in dfs]
 keys = ['CARMA', 'ENTSOE', 'ESE', 'GEO', 'OPSD', 'WRI', 'Matched w/o WEPP']
 
@@ -89,7 +90,7 @@ fig.savefig('stats_matched_country_comparison.png', dpi=300)
 #%% figure 6 
 
 fig, ax = pm.plot.comparison_1dim(include_WEPP=False, by='Fueltype',
-                                  axes_style='darkgrid', figsize(figwidth,5.5)) 
+                                  axes_style='darkgrid', figsize=(figwidth,4.)) 
 ax.legend(framealpha=0.5)
 ax.set_facecolor('lavender')
 fig.tight_layout(pad=0.2)
@@ -114,8 +115,9 @@ fig.savefig('powerplantmap_with_wepp.png', dpi=300)
 
 #%% figure 8
 
-stats = pm.data.Capacity_stats()
 fig, ax = pm.plot.comparison_1dim(how='scatter')
+fig.tight_layout(pad=0.2)
+fig.savefig('comparison_statitics.png', dpi=300)
 
 
 #%% figure 9 
@@ -125,8 +127,7 @@ df_dict = {0: 'CARMA',1: 'ENTSOE',2: 'ESE',
            3: 'GEO',4: 'OPSD', 5: 'WEPP', 6: 'WRI'}
 for i, name in df_dict.items():
     dfp = (data_config[name]['read_function']()
-                    .loc[lambda x: ~x.Fueltype.isin(['Wind','Solar',
-                                                     'Bioenergy','Geothermal'])])
+                    .loc[lambda x: ~x.Fueltype.isin(excluded_fueltypes)])
     dfp.loc[:,'matches'] = float(i) + 0.4*(2.*np.random.rand(len(dfp)) - 1.)
     locals()[str.lower(name)] = dfp
     
@@ -162,7 +163,7 @@ ax[1].set_title('(b)')
 
 ax[0].legend([plt.Line2D([0,0], [0,0], color=c, lw=0, markersize=4., marker='o') for c in cmap.values],
            projects, frameon=False)
-fig.tight_layout()
+fig.tight_layout(pad=0.5)
 fig.savefig('number_of_matches_per_capacity_subplots2.png', dpi=300)
 
 
