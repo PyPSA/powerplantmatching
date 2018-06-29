@@ -16,7 +16,7 @@
   </object>
 
   <schema>
-    <threshold>0.975</threshold>
+    <threshold>0.965</threshold>
 
     <property type="id">
       <name>ID</name>

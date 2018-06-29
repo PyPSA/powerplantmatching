@@ -553,6 +553,7 @@ def boxplot_gross_to_net(axes_style='darkgrid', **kwargs):
         df.boxplot(ax=ax, column='ratio', by='FuelTech', rot=90, showmeans=True)
         ax.title.set_visible(False)
         ax.xaxis.label.set_visible(False)
+        ax.set_ylabel('Net / Gross')
         ax2 = ax.twiny()
         ax2.set_xlim(ax.get_xlim())
         ax2.set_xticks([i+1 for i in range(len(dfg))])
