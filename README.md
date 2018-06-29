@@ -241,7 +241,7 @@ plant together.
 The development of powerplantmatching was helped considerably by
 in-depth discussions and exchanges of ideas and code with
 
-- Fabian Gotzens from University Juelich
+- Fabian Gotzens from Forschungszentrum Juelich and RWTH Aachen University,
 - Chris Davis from University of Groningen and
 - Johannes Friedrich, Roman Hennig and Colin McCormick of the World Resources Institute
 
