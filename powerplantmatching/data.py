@@ -45,7 +45,7 @@ net_caps = additional_data_config()['display_net_caps']
 data_config = {}
 
 
-def OPSD(rawEU=False, rawDE=False, statusDE=['operating', 'reserve', 
+def OPSD(rawEU=False, rawDE=False, statusDE=['operating', 'reserve',
                        'special_case']):
     """
     Return standardized OPSD (Open Power Systems Data) database with target column
@@ -125,7 +125,7 @@ def OPSD(rawEU=False, rawDE=False, statusDE=['operating', 'reserve',
             .pipe(scale_to_net_capacities,
                   (not data_config['OPSD']['net_capacity']))
             )
-            
+
 
 data_config['OPSD'] = {'read_function': OPSD, 'reliability_score':5,
                        'net_capacity':True}
@@ -313,7 +313,7 @@ def Capacity_stats_factsheet():
 
 
 
-def WRI(raw=False, reduced_data=True, filter_other_dbs=True):
+def WRI(raw=False, filter_other_dbs=True):
     if raw:
         return pd.read_csv(_data_in('global_power_plant_database.csv'))
     else:
@@ -467,10 +467,10 @@ def ENTSOE(update=False, raw=False, entsoe_token=None):
                 return filter(None, [pycountry_try(country) for country in l])
 
         domains = pd.read_csv(_data('in/entsoe-areamap.csv'), sep=';', header=None)
-        #search for Country abbreviations in each Name 
+        #search for Country abbreviations in each Name
         pattern = '|'.join(('(?i)'+x) for x in target_countries())
         domains = domains.assign(Country = domains[1].str.findall(pattern).str.join(', '))
-        
+
         found = (domains[1].replace('[0-9]', '', regex=True).str.split(' |,|\+|\-')
                  .apply(full_country_name).str.join(sep=', ').str.findall(pattern)
                  .str.join(sep=', ').str.strip())
@@ -545,7 +545,7 @@ def ENTSOE(update=False, raw=False, entsoe_token=None):
             entsoe = entsoe.append(df, ignore_index=True)
         if raw:
             return entsoe
-        
+
         entsoe =  (entsoe
                     .rename(columns= {'psrType': 'Fueltype',
                                        'quantity': 'Capacity',
@@ -553,35 +553,35 @@ def ENTSOE(update=False, raw=False, entsoe_token=None):
                                        'registeredResource.name': 'Name'})
                     .reindex(columns=target_columns())
                     .replace({'Fueltype':fdict})
-                    .drop_duplicates('projectID').reset_index(drop=True) 
+                    .drop_duplicates('projectID').reset_index(drop=True)
                     .assign(Name = lambda df : df.Name.str.title(),
                             file = '''https://transparency.entsoe.eu/generation/
                                         r2/installedCapacityPerProductionUnit/''',
-                            Fueltype = lambda df: 
+                            Fueltype = lambda df:
                                     df.Fueltype.replace(
                                             to_replace=
-                                                ['.*Hydro.*','Fossil Gas', 
+                                                ['.*Hydro.*','Fossil Gas',
                                                  '.*(?i)coal.*','.*Peat',
-                                                 'Marine', 'Wind.*', 
+                                                 'Marine', 'Wind.*',
                                                  '.*Oil.*', 'Biomass'],
-                                            value=['Hydro','Natural Gas', 
+                                            value=['Hydro','Natural Gas',
                                                     'Hard Coal', 'Lignite', 'Other',
                                                     'Wind', 'Oil', 'Bioenergy'],
                                             regex=True) ,
                             Capacity = lambda df : pd.to_numeric(df.Capacity),
-                            Country = lambda df : 
+                            Country = lambda df :
                                 df.Country.where(~df.Country.str.contains(','),
                                                  df.Name[df.Country.str.contains(',')]
-                                                 .apply(lambda x: 
-                                                     parse_Geoposition(x, 
+                                                 .apply(lambda x:
+                                                     parse_Geoposition(x,
                                                            return_Country=True)))
-                                 )                                       
+                                 )
                     [lambda df : df.Country.isin(target_countries())]
                     .pipe(gather_technology_info)
                     .pipe(gather_set_info)
                     .pipe(clean_technology)
                     )
-                        
+
 
         entsoe.to_csv(_data_in('entsoe_powerplants.csv'),
                       index_label='id', encoding='utf-8')
@@ -819,7 +819,7 @@ def UBA(header=9, skipfooter=26, prune_wind=True, prune_solar=True):
                                              u'PSW':'Pumped Storage',
                                              u'SWK':'Reservoir Storage',
                                              u'SWR':'Boiled Water Reactor'})))
-    uba.loc[uba.CHP.notnull(), 'Set'] = 'CHP' 
+    uba.loc[uba.CHP.notnull(), 'Set'] = 'CHP'
     uba = uba.pipe(gather_set_info)
     uba.loc[uba.Fueltype=='Wind (O)', 'Technology'] = 'Offshore'
     uba.loc[uba.Fueltype=='Wind (L)', 'Technology'] = 'Onshore'
