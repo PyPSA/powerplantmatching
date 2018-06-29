@@ -12,18 +12,53 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
-from powerplantmatching.data import CARMA, ENTSOE, ESE, GEO, OPSD, WRI, WEPP
-from powerplantmatching.collection import (reduce_matched_dataframe as rmd, 
+from powerplantmatching.config import fueltype_to_color
+from powerplantmatching.data import (CARMA, ENTSOE, ESE, GEO, OPSD, WRI, WEPP)
+from powerplantmatching.collection import (reduce_matched_dataframe as rmd,
                                            combine_multiple_datasets as cmd)
 from powerplantmatching.utils import set_uncommon_fueltypes_to_other as to_other
-from powerplantmatching.data import data_config
 figwidth = 10
 plt.rc('savefig', dpi=300)
-excluded_fueltypes = ['Wind','Solar','Bioenergy','Geothermal', 'Battery']
+excluded_fueltypes = ['Wind', 'Solar', 'Battery']
+
+#%% figure 1
+
+# Prepare
+carma = pm.data.CARMA()
+entsoe = pm.data.ENTSOE()
+ese = pm.data.ESE()
+geo = pm.data.GEO()
+opsd = pm.data.OPSD()
+wri = pm.data.WRI(filter_other_dbs=False)
+wepp = pm.data.WEPP()
+
+df_dict = {0:'CARMA', 1:'ENTSOE', 2:'ESE', 3:'GEO', 4:'OPSD', 5:'WEPP', 6:'WRI'}
+for i, name in df_dict.items():
+    dfp = (locals()[str.lower(name)]
+           .loc[lambda x: ~x.Fueltype.isin(excluded_fueltypes)])
+    dfp.loc[:,'matches'] = float(i) + 0.4*(2.*np.random.rand(len(dfp)) - 1.)
+    locals()[str.lower(name)] = dfp
+ft = sorted(set(entsoe.Fueltype))
+fig, ax = plt.subplots(figsize=(figwidth, 6))
+for i, name in df_dict.items():
+    dfr = locals()[str.lower(name)].loc[lambda x: ~x.Fueltype.isna()]
+    dfr.plot.scatter(ax=ax, x='Capacity', y='matches', logx=True, alpha=0.5,
+                     c=dfr.Fueltype.map(fueltype_to_color()), rasterized=True,
+                     s=dfr.Capacity/50.0)
+ax.set_ylim(-.5, 6.5)
+ax.set_yticks(df_dict.keys())
+ax.set_yticklabels(df_dict.values())
+ax.yaxis.label.set_visible(False)
+ax.set_xlabel(u'Capacity [$MW$]')
+#ax.set_title('Overview of the different input databases')
+ax.legend([plt.Line2D([0,0], [0,0], color=fueltype_to_color()[f], lw=0,
+                      markersize=8., marker='o') for f in pd.Series(ft)],
+           ft, frameon=False)
+fig.tight_layout()
+fig.savefig('input_datasets_by_fueltype.png', dpi=300)
 
 
-
-#%% figure 2 
+#%% figure 3
 
 fig, ax = pm.plot.boxplot_gross_to_net(figsize=(9,5), axes_style='whitegrid')
 ax.set_facecolor('lavender')
@@ -32,7 +67,7 @@ fig.tight_layout(pad = 0.2)
 fig.savefig('gross_net_boxplot.png')
 
 
-#%%figure 3
+#%%figure 4
 
 #prepare
 bnetza = pm.collection.Collection('BNETZA', use_saved_aggregation=False)
@@ -54,16 +89,16 @@ ax.set_xlabel('')
 ax.grid(color='white', linestyle='dotted')
 ax.legend(framealpha=0.5)
 ax.set_facecolor('lavender')
-fig.tight_layout(pad=0.2)
+fig.tight_layout(pad=0.5)
 fig.savefig('uba_bnetza_matched_comparison.png', dpi=300)
 
 
-#%% figure 4 
+#%% figure 5
 
 #prepare
-dfs = [CARMA(), ENTSOE(), ESE(), GEO(), OPSD(), WRI(), 
+dfs = [CARMA(), ENTSOE(), ESE(), GEO(), OPSD(), WRI(filter_other_dbs=False),
        pm.collection.MATCHED_dataset(include_unavailables=True)]
-dfs = [df[lambda df: (~df.Fueltype.isin(excluded_fueltypes)) & (df.Set == 'PP')] for df in dfs]
+dfs = [df[lambda df: (~df.Fueltype.isin(excluded_fueltypes))] for df in dfs]
 keys = ['CARMA', 'ENTSOE', 'ESE', 'GEO', 'OPSD', 'WRI', 'Matched w/o WEPP']
 
 #plot
@@ -74,23 +109,13 @@ ax.set_xlabel('')
 ax.grid(color='white', linestyle='dotted')
 ax.legend(framealpha=0.5)
 ax.set_facecolor('lavender')
-fig.tight_layout(pad=0.2)
+fig.tight_layout(pad=0.5)
 fig.savefig('db_matched_fueltype_comparison.png', dpi=300)
 
-#%% figure 5
-
-fig, ax = pm.plot.comparison_1dim(figsize=(figwidth,5.5),
-        include_WEPP=False, axes_style='darkgrid') 
-ax.legend(framealpha=0.5)
-ax.set_facecolor('lavender')
-fig.tight_layout(pad=0.2)
-fig.savefig('stats_matched_country_comparison.png', dpi=300)
-
-
-#%% figure 6 
+#%% figure 6
 
 fig, ax = pm.plot.comparison_1dim(include_WEPP=False, by='Fueltype',
-                                  axes_style='darkgrid', figsize=(figwidth,4.)) 
+                                  axes_style='darkgrid', figsize=(figwidth,4.))
 ax.legend(framealpha=0.5)
 ax.set_facecolor('lavender')
 fig.tight_layout(pad=0.2)
@@ -99,53 +124,64 @@ fig.savefig('stats_matched_fueltype_comparison.png', dpi=300)
 
 #%% figure 7
 
-m = pm.collection.MATCHED_dataset(include_unavailables=True)
-m = m[(m.Set == 'PP') & (~m.Fueltype.isin(excluded_fueltypes))]
-fig, ax = pm.plot.powerplant_map(m, scale=100)
+fig, ax = pm.plot.comparison_1dim(figsize=(figwidth,5.5),
+                                  include_WEPP=False, axes_style='darkgrid')
+ax.legend(framealpha=0.5)
+ax.set_facecolor('lavender')
 fig.tight_layout(pad=0.2)
-fig.savefig('powerplantmap_without_wepp.png', dpi=300)
-
-
-m = pm.collection.MATCHED_dataset(include_unavailables=True)
-m = m[(m.Set == 'PP') & (~m.Fueltype.isin(excluded_fueltypes))]
-fig, ax = pm.plot.powerplant_map(m, scale=100)
-fig.tight_layout(pad=0.2)
-fig.savefig('powerplantmap_with_wepp.png', dpi=300)
+fig.savefig('stats_matched_country_comparison.png', dpi=300)
 
 
 #%% figure 8
 
+m = pm.collection.MATCHED_dataset(include_unavailables=True)
+m = m[~m.Fueltype.isin(excluded_fueltypes)]
+fig, ax = pm.plot.powerplant_map(m, scale=100, alternative_color_style=True)
+ax.annotate('(a)', (-13, 65))
+fig.tight_layout(pad=0.2)
+fig.savefig('powerplantmap_without_wepp.png', dpi=300)
+
+m = pm.collection.Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_matched_reduced()
+m = m[~m.Fueltype.isin(excluded_fueltypes)]
+fig, ax = pm.plot.powerplant_map(m, scale=100, alternative_color_style=True)
+ax.annotate('(b)', (-13, 65))
+fig.tight_layout(pad=0.2)
+fig.savefig('powerplantmap_with_wepp.png', dpi=300)
+
+
+#%% figure 9
+
 fig, ax = pm.plot.comparison_1dim(how='scatter')
 fig.tight_layout(pad=0.2)
-fig.savefig('comparison_statitics.png', dpi=300)
+fig.savefig('comparison_statistics.png', dpi=300)
 
 
-#%% figure 9 
+#%% figure 10
 
 #prepare
 df_dict = {0: 'CARMA',1: 'ENTSOE',2: 'ESE',
            3: 'GEO',4: 'OPSD', 5: 'WEPP', 6: 'WRI'}
 for i, name in df_dict.items():
-    dfp = (data_config[name]['read_function']()
-                    .loc[lambda x: ~x.Fueltype.isin(excluded_fueltypes)])
-    dfp.loc[:,'matches'] = float(i) + 0.4*(2.*np.random.rand(len(dfp)) - 1.)
+    dfp = (locals()[str.lower(name)]
+           .loc[lambda x: ~x.Fueltype.isin(excluded_fueltypes)])
+    dfp.loc[:, 'matches'] = float(i) + 0.4*(2.*np.random.rand(len(dfp)) - 1.)
     locals()[str.lower(name)] = dfp
-    
+
 df = pm.collection.Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_matched_reduced()
 df['matches'] = df['projectID'].apply(len)
 df['matches'] +=  0.4*(2.*np.random.rand(len(df)) - 1.)
 
-projects = ['Matched by at least 2','OPSD', 'CARMA', 'ENTSOE', 'ESE', 'GEO', 'WRI','WEPP']
+projects = ['Matched w/ WEPP', 'OPSD', 'CARMA', 'ENTSOE', 'ESE', 'GEO', 'WRI', 'WEPP']
 cmap = pd.Series(sns.color_palette(n_colors=len(projects)), projects)
 
 #plot
 fig, ax = plt.subplots(nrows=2, sharey=False, sharex=True, figsize=(figwidth, 7))
-df.plot.scatter(x='Capacity', y='matches', logx=True, ax=ax[0], s=1., 
-                c=cmap['Matched by at least 2'], rasterized=True)
+df.plot.scatter(x='Capacity', y='matches', logx=True, ax=ax[0], s=1.,
+                c=cmap[projects[0]], rasterized=True)
 
 for i, name in df_dict.items():
     dfr = locals()[str.lower(name)]
-    dfr.plot.scatter(x='Capacity', y='matches', c=cmap[name], 
+    dfr.plot.scatter(x='Capacity', y='matches', c=cmap[name],
                      logx=True, ax=ax[1], alpha=1, s=1., rasterized=True)
 
 ax[0].set_xlim(1e-3, 1e4)
@@ -153,6 +189,8 @@ ax[0].set_ylim(1.5, 7.9)
 ax[0].set_yticks([2, 3, 4, 5, 6, 7])
 ax[0].set_ylabel('# of matches')
 ax[0].set_title('(a)')
+ax[0].legend([plt.Line2D([0,0], [0,0], color=c, lw=0, markersize=4., marker='o') for c in cmap.values],
+             projects, frameon=False)
 
 ax[1].set_ylim(-.5, 6.5)
 ax[1].set_yticks(df_dict.keys())
@@ -160,14 +198,23 @@ ax[1].set_yticklabels(df_dict.values())
 ax[1].yaxis.label.set_visible(False)
 ax[1].set_xlabel(u'Capacity [$MW$]')
 ax[1].set_title('(b)')
-
-ax[0].legend([plt.Line2D([0,0], [0,0], color=c, lw=0, markersize=4., marker='o') for c in cmap.values],
-           projects, frameon=False)
 fig.tight_layout(pad=0.5)
 fig.savefig('number_of_matches_per_capacity_subplots2.png', dpi=300)
 
 
+#%% figure 11
 
+# Prepare
+opsd = OPSD().loc[lambda x: ~x.Fueltype.isin(excluded_fueltypes)]
+wepp = WEPP().loc[lambda x: ~x.Fueltype.isin(excluded_fueltypes)]
+df_w_wepp = pm.collection.Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_matched_reduced()
+df_wo_wepp = pm.collection.Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WRI_matched_reduced()
+keys = ['WEPP', 'OPSD', 'Matched w/ WEPP', 'Matched w/o WEPP']
+dfs = [wepp, opsd, df_w_wepp, df_wo_wepp]
+dfs = [d[lambda df: (~df.Fueltype.isin(excluded_fueltypes))] for d in dfs]
 
+# Plot
+fig, ax = pm.plot.area_yearcommissioned(dfs, keys)
+fig.savefig('capacity_additions_century.png', dpi=300)
 
 
