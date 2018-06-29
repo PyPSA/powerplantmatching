@@ -77,7 +77,8 @@ uba = pm.collection.Collection('UBA', use_saved_aggregation=False)
 bnetza = bnetza.loc[bnetza.Capacity>=100]
 matched_uba_bnetza = rmd(cmd([uba, bnetza], labels=['UBA', 'BNETZA']))
 opsd = (OPSD().query("Country=='Germany' & Capacity >= 100")
-           .pipe(pm.cleaning.clean_single, dataset_name='OPSD', use_saved_aggregation=True))
+           .pipe(pm.cleaning.clean_single, dataset_name='OPSD', 
+                 use_saved_aggregation=True))
 
 dfs = [to_other(df) for df in [opsd, matched_uba_bnetza,uba, bnetza]]
 keys = [ 'OPSD', 'Match-UBA-BNETZA', 'UBA','BNetzA']
@@ -92,6 +93,12 @@ ax.set_facecolor('lavender')
 fig.tight_layout(pad=0.5)
 fig.savefig('uba_bnetza_matched_comparison.png', dpi=300)
 
+compared = pm.utils.lookup([opsd, matched_uba_bnetza], ['opsd', 'ppm'], by='Fueltype')
+print '''\n\nDifference between manual opsd matches and automatic ppm matches 
+(ppm - opsd, positive -> overestimation): \n'''
+print compared.diff(axis=1)['ppm']/1000
+print '\ntotal caps\n',  compared.sum()
+                      
 
 #%% figure 5
 
@@ -212,9 +219,17 @@ df_wo_wepp = pm.collection.Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WRI_matched_reduced(
 keys = ['WEPP', 'OPSD', 'Matched w/ WEPP', 'Matched w/o WEPP']
 dfs = [wepp, opsd, df_w_wepp, df_wo_wepp]
 dfs = [d[lambda df: (~df.Fueltype.isin(excluded_fueltypes))] for d in dfs]
-
 # Plot
 fig, ax = pm.plot.area_yearcommissioned(dfs, keys)
 fig.savefig('capacity_additions_century.png', dpi=300)
 
 
+#%% stats
+
+m_with_wepp = pm.collection.Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_matched_reduced()
+m_without_wepp = pm.collection.MATCHED_dataset(include_unavailables=True)
+stats = pm.data.Capacity_stats()
+ 
+lu = pm.utils.lookup([m_with_wepp, m_without_wepp, stats], 
+                     ['with Wepp', 'without Wepp', 'stats'], by=['Country','Fueltype'],
+                     exclude=excluded_fueltypes)

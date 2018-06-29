@@ -25,10 +25,11 @@ import itertools
 import logging
 logger = logging.getLogger(__name__)
 from .config import target_columns
-from .utils import read_csv_if_string
+from .utils import read_csv_if_string, _data_out
 from .duke import duke
 from .cleaning import clean_technology
 from .data import data_config
+import numpy as np
 
 
 def best_matches(links):
@@ -46,7 +47,8 @@ def best_matches(links):
             .groupby(links.iloc[:, 1], as_index=False, sort=False)
             .apply(lambda x: x.loc[x.scores.idxmax(), labels]))
 
-def compare_two_datasets(datasets, labels, **dukeargs):
+def compare_two_datasets(datasets, labels, use_saved_matches=False, 
+                         **dukeargs):
     """
     Duke-based horizontal match of two databases. Returns the matched
     dataframe including only the matched entries in a multi-indexed
@@ -72,8 +74,17 @@ def compare_two_datasets(datasets, labels, **dukeargs):
     datasets = list(map(read_csv_if_string, datasets))
     if not 'singlematch' in dukeargs:
         dukeargs['singlematch']=True
+    saving_path = _data_out('matches/matches_{}_{}.csv'.format(*np.sort(labels)))
+    if use_saved_matches:
+        try:
+            logger.info('Reading saved matches for datasets {} and {}'.format(*labels))
+            return pd.read_csv(saving_path, index_col=0) 
+        except (ValueError, IOError):
+            logger.warning("Non-existing saved matches for dataset '{}',{} "
+                           "continuing by matching again".format(*labels))
     links = duke(datasets, labels=labels, **dukeargs)
     matches = best_matches(links)
+    matches.to_csv(saving_path)
     return matches
 
 def cross_matches(sets_of_pairs, labels=None):
@@ -112,7 +123,8 @@ def cross_matches(sets_of_pairs, labels=None):
         ]).reset_index(drop=True)
     return matches.loc[:,labels]
 
-def link_multiple_datasets(datasets, labels, **dukeargs):
+def link_multiple_datasets(datasets, labels, use_saved_matches=False,
+                           **dukeargs):
     """
     Duke-based horizontal match of multiple databases. Returns the
     matching indices of the datasets. Compares all properties of the
@@ -136,12 +148,16 @@ def link_multiple_datasets(datasets, labels, **dukeargs):
     all_matches = []
     for c,d in combinations:
         logger.info('Comparing {0} with {1}'.format(labels[c], labels[d]))
-        match = compare_two_datasets([datasets[c],datasets[d]],[labels[c],labels[d]], **dukeargs)
+        match = compare_two_datasets([datasets[c],datasets[d]],
+                                     [labels[c],labels[d]], 
+                                     use_saved_matches=use_saved_matches,
+                                     **dukeargs)
         all_matches.append(match)
     return cross_matches(all_matches, labels=labels)
 
 
-def combine_multiple_datasets(datasets, labels, **dukeargs):
+def combine_multiple_datasets(datasets, labels, use_saved_matches=False,
+                              **dukeargs):
     """
     Duke-based horizontal match of multiple databases. Returns the
     matched dataframe including only the matched entries in a
@@ -182,8 +198,11 @@ def combine_multiple_datasets(datasets, labels, **dukeargs):
         df = df.reorder_levels([1, 0], axis=1)
         df = df.loc[:,target_columns()]
         return df.reset_index(drop=True)
-    crossmatches = link_multiple_datasets(datasets, labels, **dukeargs)
-    return combined_dataframe(crossmatches, datasets)[target_columns()]
+    crossmatches = link_multiple_datasets(datasets, labels, 
+                                          use_saved_matches=use_saved_matches,
+                                          **dukeargs)
+    return (combined_dataframe(crossmatches, datasets)
+                            .reindex(columns=target_columns(), level=0))
 
 
 def reduce_matched_dataframe(df, show_orig_names=False):
@@ -245,7 +264,9 @@ def reduce_matched_dataframe(df, show_orig_names=False):
 
     sdf = pd.DataFrame.from_dict({
         'Name': prioritise_reliability(df['Name']),
-        'Fueltype': prioritise_reliability(df['Fueltype'].replace({'Other': np.nan})).reindex(df.index, fill_value='Other'),
+        'Fueltype': prioritise_reliability(df['Fueltype']
+                        .replace({'Other': np.nan}))
+                        .reindex(df.index, fill_value='Other'),
         'Technology': prioritise_reliability(df['Technology']),
         'Country': prioritise_reliability(df['Country']),
         'Set': prioritise_reliability(df['Set']),

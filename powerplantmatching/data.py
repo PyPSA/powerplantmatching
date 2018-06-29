@@ -103,7 +103,7 @@ def OPSD(rawEU=False, rawDE=False, statusDE=['operating', 'reserve',
     opsd_DE = opsd_DE.reindex(columns=target_columns())
     return (pd.concat([opsd_EU, opsd_DE]).reset_index(drop=True)
             .replace(dict(Fueltype={'Biomass and biogas': 'Bioenergy',
-                                    'Fossil fuels': np.nan, # *NEVER EVER* set this to 'Other'!
+                                    'Fossil fuels': np.nan,  
                                     'Mixed fossil fuels': 'Other',
                                     'Natural gas': 'Natural Gas',
                                     'Non-renewable waste': 'Waste',
@@ -229,7 +229,7 @@ def CARMA(raw=False):
                   (not data_config['CARMA']['net_capacity'])))
 
 data_config['CARMA'] = {'read_function': CARMA,
-                        'clean_single_kwargs': dict(aggregate_powerplant_units=False),
+                        'clean_single_kwargs': dict(aggregate_powerplant_units=True),
                         'reliability_score':1, 'net_capacity':False}
 
 
@@ -310,7 +310,6 @@ def Capacity_stats_factsheet():
     return (df.replace(dict(Country={'Czechia':'Czech Republic'}))
               .replace(dict(Fueltype={'Gas':'Natural Gas',
                                       'Biomass':'Bioenergy'})))
-
 
 
 def WRI(raw=False, filter_other_dbs=True):

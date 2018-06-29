@@ -228,7 +228,7 @@ def aggregate_units(df, use_saved_aggregation=False, dataset_name=None,
             results['Duration'] = np.nan
         return pd.Series(results)
 
-    path_name = _data_out('aggregation_groups_{}.csv'.format(dataset_name))
+    path_name = _data_out('aggregations/aggregation_groups_{}.csv'.format(dataset_name))
     if use_saved_aggregation:
         try:
             logger.info("Reading saved aggregation groups for dataset '{}'.".format(dataset_name))
