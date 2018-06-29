@@ -119,47 +119,48 @@ def fueltype_to_color(alternative_style=False):
     """
     Maps a fueltype to a specific color for the plots
     """
+    # Alternative (nicer?) fueltype-color map
     if alternative_style:
-#    Alternative (nicer?) fuetlype-color map
         return pd.Series(data=
               {'OCGT':'darkorange',
                'Hydro':'royalblue',
                'Run-of-river':'navy',
                'Ror':'navy',
                'Lignite':'indianred',
-              'Nuclear': 'yellow',
-              'Solar':'gold',
-              'Windoff':'cornflowerblue',
-              'Windon':'steelblue',
-              'Offshore':'cornflowerblue',
-              'Onshore':'steelblue',
-              'Wind': 'steelblue',
-              "Bioenergy" : "g",
-              "Natural Gas" : "firebrick",
-              'CCGT':'firebrick',
-              'Coal':'k',
-              'Hard Coal':'dimgray',
-              "Oil" : "darkgreen",
-              "Other":"silver",
-              "Waste" : "grey",
-              "Geothermal" : "orange",
-              'Battery' : 'purple',
-              'Hydrogen Storage' : 'teal',
-              'Total':'gold'})
-
-    return pd.Series({'Bioenergy':'darkgreen',
-            'Geothermal':'pink',
-            'Hard Coal':'dimgray',
-            'Hydro':'blue',
-            'Lignite':'darkgoldenrod',
-            'Natural Gas':'red',
-            'Nuclear':'orange',
-            'Oil':'black',
-            'Other':'silver',
-            'Solar':'yellow',
-            'Waste':'purple',
-            'Wind':'cyan',
-            'Total':'gold'})
+               'Nuclear': 'yellow',
+               'Solar':'gold',
+               'Windoff':'cornflowerblue',
+               'Windon':'steelblue',
+               'Offshore':'cornflowerblue',
+               'Onshore':'steelblue',
+               'Wind': 'steelblue',
+               "Bioenergy" : "g",
+               "Natural Gas" : "firebrick",
+               'CCGT':'firebrick',
+               'Coal':'k',
+               'Hard Coal':'dimgray',
+               "Oil" : "darkgreen",
+               "Other":"silver",
+               "Waste" : "grey",
+               "Geothermal" : "orange",
+               'Battery' : 'purple',
+               'Hydrogen Storage' : 'teal',
+               'Total':'gold'})
+    else:
+        return pd.Series(
+                {'Bioenergy':'darkgreen',
+                'Geothermal':'pink',
+                'Hard Coal':'dimgray',
+                'Hydro':'blue',
+                'Lignite':'darkgoldenrod',
+                'Natural Gas':'red',
+                'Nuclear':'orange',
+                'Oil':'black',
+                'Other':'silver',
+                'Solar':'yellow',
+                'Waste':'purple',
+                'Wind':'cyan',
+                'Total':'gold'})
 
 
 def additional_data_config():
