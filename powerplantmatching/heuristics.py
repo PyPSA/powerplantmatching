@@ -64,7 +64,6 @@ def extend_by_non_matched(df, extend_by, label=None, fueltypes=None,
     if clean_added_data:
         extend_by = clean_single(extend_by, use_saved_aggregation=use_saved_aggregation,
                                  dataset_name=label)
-#    extend_by = extend_by.rename(columns={'Name':label})
     extend_by = extend_by.assign(projectID = extend_by.projectID.map(lambda x: {label : x}))
     return df.append(extend_by.reindex(columns=df.columns), ignore_index=True)
 

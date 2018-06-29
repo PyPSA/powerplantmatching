@@ -20,6 +20,7 @@ Collection of power plant data bases and statistical data
 from __future__ import print_function, absolute_import
 
 import os
+import sys
 import xlrd
 import numpy as np
 import pandas as pd
@@ -38,12 +39,14 @@ from .cleaning import (gather_fueltype_info, gather_set_info,
                        clean_technology)
 from .utils import (parse_Geoposition, _data, _data_in, _data_out)
 from .heuristics import scale_to_net_capacities
+text = str if sys.version_info >= (3,0) else unicode
 
 net_caps = additional_data_config()['display_net_caps']
 data_config = {}
 
 
-def OPSD(rawEU=False, rawDE=False, statusDE=['operating']):
+def OPSD(rawEU=False, rawDE=False, statusDE=['operating', 'reserve', 
+                       'special_case']):
     """
     Return standardized OPSD (Open Power Systems Data) database with target column
     names and fueltypes.
@@ -120,7 +123,9 @@ def OPSD(rawEU=False, rawDE=False, statusDE=['operating']):
             .pipe(clean_technology)
             .loc[lambda df: df.Country.isin(target_countries())]
             .pipe(scale_to_net_capacities,
-                  (not data_config['OPSD']['net_capacity'])))
+                  (not data_config['OPSD']['net_capacity']))
+            )
+            
 
 data_config['OPSD'] = {'read_function': OPSD, 'reliability_score':5,
                        'net_capacity':True}
@@ -198,7 +203,7 @@ def CARMA(raw=False):
                              'lon': 'lon',
                              'plant': 'Name',
                              'plant.id':'projectID'})
-            .loc[lambda df: df.Capacity > 3]
+#            .loc[lambda df: df.Capacity > 3]
             .loc[lambda df: df.Country.isin(target_countries())]
             .replace(dict(Fueltype={'COAL': 'Hard Coal',
                                     'WAT': 'Hydro',
@@ -760,7 +765,7 @@ data_config['WEPP'] = {'read_function': WEPP,
            'reliability_score':4, 'net_capacity':False}
 
 
-def UBA(header=9, skip_footer=26, prune_wind=True, prune_solar=True):
+def UBA(header=9, skipfooter=26, prune_wind=True, prune_solar=True):
     """
     Returns the UBA Database.
     The user has to download the database from:
@@ -771,11 +776,11 @@ def UBA(header=9, skip_footer=26, prune_wind=True, prune_solar=True):
     -----------
         header : int, Default 9
             The zero-indexed row in which the column headings are found.
-        skip_footer : int, Default 26
+        skipfooter : int, Default 26
 
     """
     filename = 'kraftwerke-de-ab-100-mw.xls'
-    uba = pd.read_excel(_data_in(filename), header=header, skip_footer=skip_footer,
+    uba = pd.read_excel(_data_in(filename), header=header, skipfooter=skipfooter,
                         na_values='n.b.')
     uba = uba.rename(columns={u'Kraftwerksname / Standort': 'Name',
                               u'Elektrische Bruttoleistung (MW)': 'Capacity',
@@ -786,16 +791,15 @@ def UBA(header=9, skip_footer=26, prune_wind=True, prune_solar=True):
                               u'Standort-PLZ':'PLZ'})
     uba.Name = uba.Name.replace({'\s\s+':' '}, regex=True)
     from .heuristics import PLZ_to_LatLon_map
-    uba['lon'] = uba.PLZ.map(PLZ_to_LatLon_map()['lon'])
-    uba['lat'] = uba.PLZ.map(PLZ_to_LatLon_map()['lat'])
-
-    uba.loc[:, 'Country'] = 'Germany'
-    uba.loc[:, 'File'] = filename
-    uba.loc[:, 'projectID'] = ['UBA{:03d}'.format(i + header + 2) for i in uba.index]
-    uba.loc[uba.CHP.notnull(), 'Set'] = 'CHP'
-    uba = (uba.pipe(gather_set_info))
-#              .pipe(clean_powerplantname))
-    uba.Technology = uba.Technology.replace({u'DKW':'Steam Turbine',
+    uba = (uba.assign(
+            lon = uba.PLZ.map(PLZ_to_LatLon_map()['lon']),
+            lat = uba.PLZ.map(PLZ_to_LatLon_map()['lat']),
+            YearCommissioned = uba.YearCommissioned.str.replace(
+                    "\(|\)|\/|\-", " ").str.split(' ').str[0].astype(float),
+            Country = 'Germany',
+            File = filename,
+            projectID = ['UBA{:03d}'.format(i + header + 2) for i in uba.index],
+            Technology = uba.Technology.replace({u'DKW':'Steam Turbine',
                                              u'DWR':'Pressurized Water Reactor',
                                              u'G/AK':'Steam Turbine',
                                              u'GT':'OCGT',
@@ -814,7 +818,9 @@ def UBA(header=9, skip_footer=26, prune_wind=True, prune_solar=True):
                                              u'LWK':'Run-Of-River',
                                              u'PSW':'Pumped Storage',
                                              u'SWK':'Reservoir Storage',
-                                             u'SWR':'Boiled Water Reactor'})
+                                             u'SWR':'Boiled Water Reactor'})))
+    uba.loc[uba.CHP.notnull(), 'Set'] = 'CHP' 
+    uba = uba.pipe(gather_set_info)
     uba.loc[uba.Fueltype=='Wind (O)', 'Technology'] = 'Offshore'
     uba.loc[uba.Fueltype=='Wind (L)', 'Technology'] = 'Onshore'
     uba.loc[uba.Fueltype.str.contains('Wind'), 'Fueltype'] = 'Wind'
@@ -861,7 +867,8 @@ def BNETZA(header=9, sheet_name='Gesamtkraftwerksliste BNetzA', prune_wind=True,
             The zero-indexed row in which the column headings are found.
     """
     filename = 'Kraftwerksliste_2017_2.xlsx'
-    bnetza = pd.read_excel(_data_in(filename), header=header, sheet_name=sheet_name)
+    bnetza = pd.read_excel(_data_in(filename), header=header, sheet_name=sheet_name,
+                           encoding='utf-8')
     if raw:
         return bnetza
     bnetza = bnetza.rename(columns={
@@ -886,7 +893,9 @@ def BNETZA(header=9, sheet_name='Gesamtkraftwerksliste BNetzA', prune_wind=True,
         bnetza.loc[bnetza.Name.str.len().fillna(0.0)<=4, 'Name'].fillna('')
     bnetza.Name.fillna(bnetza.Ort, inplace=True)
     add_location_b = bnetza[bnetza.Ort.notnull()].apply(lambda ds: (ds['Ort'] not in ds['Name'])
-                                            and (unicode.title(ds['Ort']) not in ds['Name']), axis=1)
+                                            and (text.title(ds['Ort']) not in ds['Name']), axis=1)
+    bnetza.YearCommissioned = bnetza.YearCommissioned.astype(text).str.replace(
+                    "[^0-9.]", " ").str.split(' ').str[0].replace('', np.nan).astype(float)
     bnetza.loc[bnetza.Ort.notnull() & add_location_b, 'Name'] =  (
                 bnetza.loc[bnetza.Ort.notnull() & add_location_b,'Ort'] + ' ' +
                 bnetza.loc[bnetza.Ort.notnull() & add_location_b,'Name'])
@@ -1013,7 +1022,7 @@ def IRENA_stats():
     df = pd.read_csv(_data_in('IRENA_CapacityStatistics2017.csv'), encoding='utf-8')
     # "Unpivot"
     df = pd.melt(df, id_vars=['Indicator', 'Technology', 'Country'], var_name='Year',
-                 value_vars=[unicode(i) for i in range(2000,2017,1)], value_name='Capacity')
+                 value_vars=[text(i) for i in range(2000,2017,1)], value_name='Capacity')
     # Drop empty
     df.dropna(axis=0, subset=['Capacity'], inplace=True)
     # Drop generations

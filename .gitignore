@@ -97,16 +97,15 @@ data/in/*WEPP*
 data/in/*wepp*
 data/out/*WEPP*
 data/out/*wepp*
-data/in/energy_storage_exchange.csv
 data/in/*IWPDCY*
 data/out/*IWPDCY*
-data/in/OldenburgHydro.csv
+data/in/projects.xls
+data/in/energy_storage_exchange.csv
+data/in/*ESE*
+data/out/*ESE*
+data/in/hydro_aggregation.csv
 data/in/renewable_power_plants.sqlite
 data/out/Export_Stock_TIMES.xlsx
-data/out/aggregation_groups_ESE.csv
-data/out/Matched_CARMA_ENTSOE_ESE_GEO_OPSD_WRI.csv
-data/out/Matched_CARMA_ENTSOE_ESE_GEO_OPSD_WRI_reduced.csv
-data/out/Matched_CARMA_ENTSOE_ESE_GEO_OPSD_WRI_reduced_vre.csv
 data/in/kraftwerke-de-ab-100-mw.xls
 data/in/Kraftwerksliste_2017_2.xlsx
 data/out/aggregation_groups_BNETZA.csv
@@ -115,4 +114,5 @@ german_postcode_map.py
 data/out/Matched_BNETZA_UBA.csv
 data/out/Matched_BNETZA_UBA_reduced.csv
 data/out/aggregation_groups_Unnamed dataset.csv
+matching_analysis/*.png
 config.yaml

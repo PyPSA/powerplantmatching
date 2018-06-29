@@ -84,7 +84,8 @@ def powerplant_map(df, alternative_color_style=True, scale=1e5, european_bounds=
 
 def comparison_single_matched_bar(df=None, include_WEPP=True, cleaned=True,
                                   use_saved_aggregation=True, figsize=(9,5),
-                                  exclude=['Geothermal','Solar','Wind']):
+                                  exclude=['Geothermal','Solar','Wind'],
+                                  axes_style='whitegrid'):
     """
     Plots two bar charts for comparison
     1.) Fueltypes on x-axis and capacity on y-axis, categorized by originating database.
@@ -125,7 +126,7 @@ def comparison_single_matched_bar(df=None, include_WEPP=True, cleaned=True,
                        exclude=exclude, by='Fueltype')/1000
     stats_reduced = lookup(df, by='Fueltype')/1000
     # Presettings for the plots
-    with sns.axes_style('darkgrid'):
+    with sns.axes_style(axes_style):
         font={'size'   : 12}
         plt.rc('font', **font)
         fig, ax = plt.subplots(nrows=1, ncols=2, sharex=False, sharey=True, figsize=figsize)
@@ -148,7 +149,8 @@ def comparison_single_matched_bar(df=None, include_WEPP=True, cleaned=True,
 
 
 def comparison_1dim(by='Country', include_WEPP=True, include_VRE=False,
-                    year=2016, how='hbar', **kwargs):
+                    year=2016, how='hbar', axes_style='whitegrid', 
+                    **kwargs):
     """
     Plots a horizontal bar chart with capacity on x-axis, ``by`` on y-axis.
 
@@ -158,37 +160,42 @@ def comparison_1dim(by='Country', include_WEPP=True, include_VRE=False,
         Allowed values: 'Country' or 'Fueltype'
 
     """
-    red_w_wepp, red_wo_wepp, wepp, statistics = gather_comparison_data(include_WEPP=include_WEPP,
-                                                                       include_VRE=include_VRE,
-                                                                       year=year)
+    red_w_wepp, red_wo_wepp, wepp, statistics = \
+                    gather_comparison_data(include_WEPP=include_WEPP,
+                                           include_VRE=include_VRE,
+                                           year=year)
     if include_WEPP:
         stats = lookup([red_w_wepp, red_wo_wepp, wepp, statistics],
                        keys=['Matched dataset w/ WEPP', 'Matched dataset w/o WEPP',
                              'WEPP only', 'Statistics OPSD'],
-                       by=by, exclude=['Geothermal','Solar','Wind'])/1000
+                       by=by, exclude=['Geothermal','Solar','Wind','Battery'])/1000
     else:
         stats = lookup([red_wo_wepp, statistics],
                        keys=['Matched dataset w/o WEPP', 'Statistics OPSD'],
-                       by=by, exclude=['Geothermal','Solar','Wind'])/1000
+                       by=by, exclude=['Geothermal','Solar','Wind','Battery'])/1000
 
     font={'size'   : 12}
     plt.rc('font', **font)
     if how == 'hbar':
-        figsize = kwargs.get('figsize', (7,5))
-        fig, ax = plt.subplots(figsize=figsize)
-        stats.plot.barh(ax=ax, stacked=False, colormap='jet')
-        ax.set_xlabel('Installed Capacity [GW]')
-        ax.yaxis.label.set_visible(False)
-        ax.set_facecolor('#d9d9d9')                  # gray background
-        ax.set_axisbelow(True)                       # puts the grid behind the bars
-        ax.grid(color='white', linestyle='dotted')   # adds white dotted grid
-        ax.legend(loc='best')
-        ax.invert_yaxis()
-        return fig, ax
+        with sns.axes_style(axes_style):
+            figsize = kwargs.get('figsize', (7,6))
+            fig, ax = plt.subplots(figsize=figsize)
+            stats.plot.barh(ax=ax, stacked=False)#, colormap='jet')
+            ax.set_xlabel('Installed Capacity [GW]')
+            ax.yaxis.label.set_visible(False)
+#           ax.set_facecolor('#d9d9d9')                  # gray background
+            ax.set_facecolor('lightgrey')
+            ax.set_axisbelow(True)                       # puts the grid behind the bars
+            ax.grid(color='white', linestyle='dotted')   # adds white dotted grid
+            ax.legend(loc='best')
+            ax.invert_yaxis()
+            return fig, ax
     if how == 'scatter':
         stats.loc[:, by] = stats.index.astype(str)  #Required for seaborn scatter plot
         if len(stats.columns)-1 >= 3:
-            g = sns.pairplot(stats, diag_kind='kde', hue=by, palette='Set2')
+            g = sns.PairGrid(stats, hue=by, palette='Set2')
+            g.map_lower(plt.scatter)
+            g.add_legend()
         else:
             g = sns.pairplot(stats, diag_kind='kde', hue=by, palette='Set2',
                              x_vars=stats.columns[0], y_vars=stats.columns[1])
@@ -197,6 +204,9 @@ def comparison_1dim(by='Country', include_WEPP=True, include_VRE=False,
                 g.axes[i, j].set(xscale='log', yscale='log', xlim=(1,200), ylim=(1,200))
                 if i != j: # plot 45 degree identity line
                     g.axes[i, j].plot([1,200], [1,200], 'k-', alpha=0.25, zorder=0)
+                if i<=j:
+#                    g.axes[i, j].set_visible(False)
+                    g.axes[i, j].remove()
         figsize = kwargs.get('figsize', None)
         if figsize is not None:
             g.fig.set_size_inches(figsize)
@@ -332,8 +342,10 @@ def fueltype_and_country_totals_bar(dfs, keys, figsize=(18,8)):
 
 
 def fueltype_totals_bar(dfs, keys, figsize=(7,4), unit='GW',
-                        last_as_marker=False):
-    with sns.axes_style('darkgrid'):
+                        last_as_marker=False, axes_style='whitegrid',
+                        exclude=[], **kwargs):
+    dfs = [df[~df.Fueltype.isin(exclude)] for df in dfs]
+    with sns.axes_style(axes_style):
         fig, ax = plt.subplots(1,1, figsize=figsize)
         if last_as_marker:
             as_marker = dfs[-1]
@@ -341,12 +353,14 @@ def fueltype_totals_bar(dfs, keys, figsize=(7,4), unit='GW',
             as_marker_key = keys[-1]
             keys = keys[:-1]
         fueltotals = lookup(dfs, keys=keys, by='Fueltype', unit=unit)
-        fueltotals.plot(kind="bar",
-                           ax=ax, legend='reverse', edgecolor='none', rot=75)
+        fueltotals.plot(kind="bar", ax=ax, legend='reverse', 
+                        edgecolor='none', rot=90, 
+                           **kwargs)
         if last_as_marker:
             fueltotals = lookup(as_marker, keys=as_marker_key, by='Fueltype', unit=unit)
-            fueltotals.plot(ax=ax, label=as_marker_key, markeredgecolor='none', rot=75,
-                            marker='D', markerfacecolor='darkslategray', linestyle='None')
+            fueltotals.plot(ax=ax, label=as_marker_key, markeredgecolor='none', rot=90,
+                            marker='D', markerfacecolor='darkslategray', linestyle='None',
+                            **kwargs)
         ax.legend(loc=0)
         ax.set_ylabel(r'Capacity [$%s$]'%unit)
         ax.xaxis.grid(False)
@@ -354,7 +368,7 @@ def fueltype_totals_bar(dfs, keys, figsize=(7,4), unit='GW',
         return fig, ax
 
 
-def matched_fueltype_totals_bar(figsize=(9,4)):
+def matched_fueltype_totals_bar(figsize=(9,4), axes_style='whitegrid'):
     from . import data
     from .collection import Carma_ENTSOE_GEO_OPSD_WRI_matched_reduced
     matched = set_uncommon_fueltypes_to_other(
@@ -377,7 +391,7 @@ def matched_fueltype_totals_bar(figsize=(9,4)):
     opsd.Capacity = opsd.Capacity/1000.
     entsoedata.Capacity =  entsoedata.Capacity/1000.
 
-    with sns.axes_style('whitegrid'):
+    with sns.axes_style(axes_style):
         fig, (ax1,ax2) = plt.subplots(1,2, figsize=figsize, sharey=True)
         databases = lookup([carma, entsoedata, ese, geo, opsd, wri],
                    keys=[ 'CARMA', 'ENTSOE','ESE', 'GEO','OPSD', 'WRI'], by='Fueltype')
@@ -397,8 +411,8 @@ def matched_fueltype_totals_bar(figsize=(9,4)):
 
 
 def country_totals_hbar(dfs, keys, exclude_fueltypes=['Solar', 'Wind'],
-                        figsize=(7,5), unit='GW'):
-    with sns.axes_style('whitegrid'):
+                        figsize=(7,5), unit='GW',axes_style='whitegrid'):
+    with sns.axes_style(axes_style):
         fig, ax = plt.subplots(1,1, figsize=figsize)
         countrytotals = lookup(dfs,
                    keys=keys, by='Country',
@@ -529,24 +543,26 @@ def bar_decomissioning_curves(df=None, ylabel=None, title=None, legend_in_subplo
     return fig, ax
 
 
-def boxplot_gross_to_net():
+def boxplot_gross_to_net(axes_style='darkgrid', **kwargs):
     """
     """
     from .heuristics import gross_to_net_factors as gtn
-    df = gtn(return_entire_data=True).loc[lambda df: df.energy_source_level_2!='Hydro']
-    df.loc[:,'FuelTech'] = df.energy_source_level_2 +'\n(' + df.technology + ')'
-    df = df.groupby('FuelTech').filter(lambda x: len(x)>=10)
-    dfg = df.groupby('FuelTech')
-    fig, ax = plt.subplots(figsize=(8,4.5))
-    df.boxplot(ax=ax, column='ratio', by='FuelTech', rot=90, showmeans=True)
-    ax.title.set_visible(False)
-    ax.xaxis.label.set_visible(False)
-    ax2 = ax.twiny()
-    ax2.set_xlim(ax.get_xlim())
-    ax2.set_xticks([i+1 for i in range(len(dfg))])
-    ax2.set_xticklabels(['$n$=%d'%(len(v)) for k, v in dfg])
-    fig.suptitle('')
-    return fig, ax
+    with sns.axes_style(axes_style):
+        df = gtn(return_entire_data=True).loc[lambda df: df.energy_source_level_2!='Hydro']
+        df.loc[:,'FuelTech'] = df.energy_source_level_2 +'\n(' + df.technology + ')'
+        df = df.groupby('FuelTech').filter(lambda x: len(x)>=10)
+        dfg = df.groupby('FuelTech')
+        # plot
+        fig, ax = plt.subplots(**kwargs)
+        df.boxplot(ax=ax, column='ratio', by='FuelTech', rot=90, showmeans=True)
+        ax.title.set_visible(False)
+        ax.xaxis.label.set_visible(False)
+        ax2 = ax.twiny()
+        ax2.set_xlim(ax.get_xlim())
+        ax2.set_xticks([i+1 for i in range(len(dfg))])
+        ax2.set_xticklabels(['$n$=%d'%(len(v)) for k, v in dfg])
+        fig.suptitle('')
+        return fig, ax
 
 
 def boxplot_matchcount(df):
@@ -714,8 +730,8 @@ def make_handler_map_to_scale_circles_as_in(ax, dont_resize_actively=False):
 def make_legend_circles_for(sizes, scale=1.0, **kw):
     return [Circle((0,0), radius=(s/scale)**0.5, **kw) for s in sizes]
 
-def draw_basemap(resolution='l', ax=None,country_linewidth=0.5, coast_linewidth=
-                     1.0, zorder=None,  **kwds):
+def draw_basemap(resolution='l', ax=None,country_linewidth=0.3, coast_linewidth=
+                     0.4, zorder=None,  **kwds):
     if ax is None:
         ax = plt.gca()
     m = Basemap(*(list(ax.viewLim.min) + list(ax.viewLim.max)), resolution=resolution, ax=ax, **kwds)
