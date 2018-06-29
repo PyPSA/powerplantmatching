@@ -149,7 +149,7 @@ def comparison_single_matched_bar(df=None, include_WEPP=True, cleaned=True,
 
 
 def comparison_1dim(by='Country', include_WEPP=True, include_VRE=False,
-                    year=2016, how='hbar', axes_style='whitegrid', 
+                    year=2016, how='hbar', axes_style='whitegrid',
                     **kwargs):
     """
     Plots a horizontal bar chart with capacity on x-axis, ``by`` on y-axis.
@@ -167,11 +167,11 @@ def comparison_1dim(by='Country', include_WEPP=True, include_VRE=False,
     if include_WEPP:
         stats = lookup([red_w_wepp, red_wo_wepp, wepp, statistics],
                        keys=['Matched dataset w/ WEPP', 'Matched dataset w/o WEPP',
-                             'WEPP only', 'Statistics OPSD'],
+                             'WEPP only', 'Statistics ENTSO-E SO&AF'],
                        by=by, exclude=['Geothermal','Solar','Wind','Battery'])/1000
     else:
         stats = lookup([red_wo_wepp, statistics],
-                       keys=['Matched dataset w/o WEPP', 'Statistics OPSD'],
+                       keys=['Matched dataset w/o WEPP', 'Statistics ENTSO-E SO&AF'],
                        by=by, exclude=['Geothermal','Solar','Wind','Battery'])/1000
 
     font={'size'   : 12}
@@ -204,9 +204,10 @@ def comparison_1dim(by='Country', include_WEPP=True, include_VRE=False,
                 g.axes[i, j].set(xscale='log', yscale='log', xlim=(1,200), ylim=(1,200))
                 if i != j: # plot 45 degree identity line
                     g.axes[i, j].plot([1,200], [1,200], 'k-', alpha=0.25, zorder=0)
-                if i<=j:
-#                    g.axes[i, j].set_visible(False)
+                if i<j:
                     g.axes[i, j].remove()
+                if i==j and i!=3:
+                    g.axes[i, j].annotate('Identical', (7, 10))
         figsize = kwargs.get('figsize', None)
         if figsize is not None:
             g.fig.set_size_inches(figsize)
@@ -247,13 +248,13 @@ def comparison_countries_fueltypes_bar(dfs=None, ylabel=None, include_WEPP=True,
         if include_WEPP:
             stats = lookup([red_w_wepp, red_wo_wepp, wepp, statistics],
                            keys=['Matched dataset w/ WEPP', 'Matched dataset w/o WEPP',
-                                 'WEPP only', 'Statistics OPSD'],
+                                 'WEPP only', 'Statistics ENTSO-E SO&AF'],
                            by='Country, Fueltype')/1000
             set.update(countries, set(red_w_wepp.Country), set(red_wo_wepp.Country),
                        set(wepp.Country), set(statistics.Country))
         else:
             stats = lookup([red_wo_wepp, statistics],
-                           keys=['Matched dataset w/o WEPP', 'Statistics OPSD'],
+                           keys=['Matched dataset w/o WEPP', 'Statistics ENTSO-E SO&AF'],
                            by='Country, Fueltype')/1000
             set.update(countries, set(red_wo_wepp.Country), set(statistics.Country))
     else:
@@ -353,8 +354,8 @@ def fueltype_totals_bar(dfs, keys, figsize=(7,4), unit='GW',
             as_marker_key = keys[-1]
             keys = keys[:-1]
         fueltotals = lookup(dfs, keys=keys, by='Fueltype', unit=unit)
-        fueltotals.plot(kind="bar", ax=ax, legend='reverse', 
-                        edgecolor='none', rot=90, 
+        fueltotals.plot(kind="bar", ax=ax, legend='reverse',
+                        edgecolor='none', rot=90,
                            **kwargs)
         if last_as_marker:
             fueltotals = lookup(as_marker, keys=as_marker_key, by='Fueltype', unit=unit)
@@ -556,6 +557,7 @@ def boxplot_gross_to_net(axes_style='darkgrid', **kwargs):
         fig, ax = plt.subplots(**kwargs)
         df.boxplot(ax=ax, column='ratio', by='FuelTech', rot=90, showmeans=True)
         ax.title.set_visible(False)
+        ax.set_ylabel('Ratio of gross/net [$-$]')
         ax.xaxis.label.set_visible(False)
         ax2 = ax.twiny()
         ax2.set_xlim(ax.get_xlim())
@@ -585,20 +587,28 @@ def boxplot_matchcount(df):
     return fig
 
 
-def area_yearcommissioned(dfs, figsize=(7,5), ylabel='Capacity [$GW$]'):
+def area_yearcommissioned(dfs, keys, figsize=(7,5), ylabel='Capacity [$GW$]'):
     """
     Plots an area chart by commissioning year.
+
+    Parameters
+    ----------
+        dfs : list
+            containing pd.DataFrames to plot
+        keys : list
+            containing the names used as ax.title
+        figsize : tuple
+        ylabel : str
     """
-    dfp = {}
-    for n, df in dfs.items():
-        dfp[n] = df.pivot_table(values='Capacity', index='YearCommissioned',
-                                columns='Fueltype', aggfunc='sum')/1000
+    dfp = [df.pivot_table(values='Capacity', index='YearCommissioned',
+                          columns='Fueltype', aggfunc='sum')/1000
+           for df in dfs]
     labels_mpatches = collections.OrderedDict()
     fig, ax = plt.subplots(nrows=2, ncols=2, sharex=True, sharey=True,
                            squeeze=False, figsize=figsize)
     ax[0,0].set_xlim((1900,2016))
     i,j = (0,0)
-    for n, df in dfp.items():
+    for a, df in enumerate(dfp):
         if j==2: i+=1; j=0
         colors = df.columns.to_series().map(fueltype_to_color()).tolist()
         df.plot.area(ax=ax[i,j], stacked=True, legend=False, color=colors,
@@ -608,16 +618,16 @@ def area_yearcommissioned(dfs, figsize=(7,5), ylabel='Capacity [$GW$]'):
         for u, v in enumerate(stats_labels):
             if v not in labels_mpatches:
                 labels_mpatches[v] = mpatches.Patch(color=colors[u], label=v)
-        ax[i,j].set_title(n)
+        ax[i,j].set_title(keys[a])
         ax[i,j].set_facecolor('#d9d9d9')
         ax[i,j].set_axisbelow(True)
         ax[i,j].grid(color='white', linestyle='dotted')
         ax[i,j].set_ylabel(ylabel)
+        ax[i,j].set_ylim((0, 31))
         j+=1
-    #ax[-1,0].legend(fontsize=12, loc='center left', bbox_to_anchor=(1, 0.5))
     fig.tight_layout()
     # Legend
-    fig.subplots_adjust(bottom=0.2)
+    fig.subplots_adjust(bottom=0.25)
     labels_mpatches = collections.OrderedDict(sorted(labels_mpatches.items()))
     fig.legend(labels_mpatches.values(), labels_mpatches.keys(),
                loc=8, ncol=len(labels_mpatches)/2, facecolor='#d9d9d9')
@@ -727,16 +737,22 @@ def make_handler_map_to_scale_circles_as_in(ax, dont_resize_actively=False):
         return e
     return {Circle: HandlerPatch(patch_func=legend_circle_handler)}
 
+
 def make_legend_circles_for(sizes, scale=1.0, **kw):
     return [Circle((0,0), radius=(s/scale)**0.5, **kw) for s in sizes]
 
-def draw_basemap(resolution='l', ax=None,country_linewidth=0.3, coast_linewidth=
-                     0.4, zorder=None,  **kwds):
+
+def draw_basemap(resolution='l', ax=None,country_linewidth=0.3,
+                 coast_linewidth=0.4, zorder=None, fillcontinents=True, **kwds):
     if ax is None:
         ax = plt.gca()
-    m = Basemap(*(list(ax.viewLim.min) + list(ax.viewLim.max)), resolution=resolution, ax=ax, **kwds)
+    m = Basemap(*(list(ax.viewLim.min) + list(ax.viewLim.max)),
+                resolution=resolution, ax=ax, **kwds)
     m.drawcoastlines(linewidth=coast_linewidth, zorder=zorder)
     m.drawcountries(linewidth=country_linewidth, zorder=zorder)
+    if fillcontinents:
+        m.fillcontinents(color='lavender', lake_color='skyblue', alpha=0.25,
+                         zorder=0)
     return m
 
 
