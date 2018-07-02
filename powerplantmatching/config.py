@@ -145,6 +145,7 @@ def fueltype_to_color(alternative_style=False):
                "Geothermal" : "orange",
                'Battery' : 'purple',
                'Hydrogen Storage' : 'teal',
+               'Electro-mechanical':'teal',
                'Total':'gold'})
     else:
         return pd.Series(
