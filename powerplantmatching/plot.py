@@ -29,7 +29,8 @@ import seaborn as sns
 from .config import fueltype_to_life, fueltype_to_color, textbox_position
 from .cleaning import clean_single
 from .data import CARMA, ENTSOE, Capacity_stats, ESE, GEO, OPSD, WEPP, WRI
-from .collection import (Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_matched_reduced_VRE,
+from .collection import (MATCHED_dataset,
+                         Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_matched_reduced_VRE,
                          Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_matched_reduced,
                          Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WRI_matched_reduced_VRE,
                          Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WRI_matched_reduced)
@@ -150,7 +151,7 @@ def comparison_single_matched_bar(df=None, include_WEPP=True, cleaned=True,
 
 def comparison_1dim(by='Country', include_WEPP=True, include_VRE=False,
                     year=2016, how='hbar', axes_style='whitegrid',
-                    **kwargs):
+                    exclude=['Geothermal','Solar','Wind','Battery'], **kwargs):
     """
     Plots a horizontal bar chart with capacity on x-axis, ``by`` on y-axis.
 
@@ -168,11 +169,11 @@ def comparison_1dim(by='Country', include_WEPP=True, include_VRE=False,
         stats = lookup([red_w_wepp, red_wo_wepp, wepp, statistics],
                        keys=['Matched dataset w/ WEPP', 'Matched dataset w/o WEPP',
                              'WEPP only', 'Statistics ENTSO-E SO&AF'],
-                       by=by, exclude=['Geothermal','Solar','Wind','Battery'])/1000
+                       by=by, exclude=exclude)/1000
     else:
         stats = lookup([red_wo_wepp, statistics],
                        keys=['Matched dataset w/o WEPP', 'Statistics ENTSO-E SO&AF'],
-                       by=by, exclude=['Geothermal','Solar','Wind','Battery'])/1000
+                       by=by, exclude=exclude)/1000
 
     font={'size'   : 12}
     plt.rc('font', **font)
@@ -216,7 +217,7 @@ def comparison_1dim(by='Country', include_WEPP=True, include_VRE=False,
 
 def comparison_countries_fueltypes_bar(dfs=None, ylabel=None, include_WEPP=True,
         include_VRE=False, show_indicators=True, legend_in_subplots=False, year=2015,
-        figsize=(7,5)):
+        exclude=None, figsize=(7,5)):
     """
     Plots per country an analysis, how the given datasets differ by fueltype.
 
@@ -249,22 +250,23 @@ def comparison_countries_fueltypes_bar(dfs=None, ylabel=None, include_WEPP=True,
             stats = lookup([red_w_wepp, red_wo_wepp, wepp, statistics],
                            keys=['Matched dataset w/ WEPP', 'Matched dataset w/o WEPP',
                                  'WEPP only', 'Statistics ENTSO-E SO&AF'],
-                           by='Country, Fueltype')/1000
+                           by='Country, Fueltype', exclude=exclude)/1000
             set.update(countries, set(red_w_wepp.Country), set(red_wo_wepp.Country),
                        set(wepp.Country), set(statistics.Country))
         else:
             stats = lookup([red_wo_wepp, statistics],
                            keys=['Matched dataset w/o WEPP', 'Statistics ENTSO-E SO&AF'],
-                           by='Country, Fueltype')/1000
+                           by='Country, Fueltype', exclude=exclude)/1000
             set.update(countries, set(red_wo_wepp.Country), set(statistics.Country))
     else:
-        stats = (lookup(dfs.values(), keys=dfs.keys(), by='Country, Fueltype')
-                 .replace({0.0: np.nan})     # Do this in order to show only
-                 .dropna(axis=0, how='all')  # relevant fueltypes for each
-                 .fillna(0.0))/1000          # country (if all zero->drop!).
+        stats = lookup(dfs.values(), keys=dfs.keys(), by='Country, Fueltype')/1000
         stats.sort_index(axis=1, inplace=True)
         for k, v in dfs.items():
             set.update(countries, set(v.Country))
+    # Filter stats
+    stats = (stats.replace({0.0: np.nan})     # Do this in order to show only
+                  .dropna(axis=0, how='all')  # relevant fueltypes for each
+                  .fillna(0.0))               # country (if all zero->drop!).
 
     # Presettings for the plots
     font={'size'   : 12}
@@ -631,7 +633,8 @@ def area_yearcommissioned(dfs, keys, figsize=(7,5), ylabel='Capacity [$GW$]'):
     fig.subplots_adjust(bottom=0.25)
     labels_mpatches = collections.OrderedDict(sorted(labels_mpatches.items()))
     fig.legend(labels_mpatches.values(), labels_mpatches.keys(),
-               loc=8, ncol=len(labels_mpatches)/2, facecolor='#d9d9d9')
+               loc=8, ncol=len(labels_mpatches)/2, facecolor='#d9d9d9',
+               prop={'size': 10})
     return fig, ax
 
 
@@ -660,7 +663,8 @@ def gather_comparison_data(include_WEPP=True, include_VRE=False, **kwargs):
     if include_VRE:
         red_wo_wepp = Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WRI_matched_reduced_VRE()
     else:
-        red_wo_wepp = Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WRI_matched_reduced()
+        red_wo_wepp = MATCHED_dataset(include_unavailables=True)
+        #red_wo_wepp = Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WRI_matched_reduced()
         red_wo_wepp.query(queryexpr, inplace=True)
     red_wo_wepp.query('(YearCommissioned <= {:04d}) or (YearCommissioned != YearCommissioned)'.format(yr), inplace=True)
     # 4: Statistics
