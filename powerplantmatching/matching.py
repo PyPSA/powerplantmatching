@@ -276,7 +276,8 @@ def reduce_matched_dataframe(df, show_orig_names=False):
         'lon': prioritise_reliability(df['lon']),
         'File': df['File'].apply(concat_strings, axis=1),
         'projectID': df['projectID'].apply(lambda x: dict(x.dropna()), axis=1)
-    })
+    }).reindex(target_columns(), axis=1)
+
     if 'Duration' in target_columns():
         sdf = sdf.assign(Duration= prioritise_reliability(df['Duration']))
 
