@@ -53,7 +53,7 @@ def extend_by_non_matched(df, extend_by, label=None, fueltypes=None,
         label = extend_by
         extend_by = data_config[label]['read_function']()
 
-    included_ids = df.projectID.map(lambda d: d.get(label)).dropna().tolist()
+    included_ids = df.projectID.map(lambda d: d.get(label)).dropna().sum()
     remaining_ids = ~ extend_by.projectID.isin(included_ids)
 
     extend_by = extend_by.loc[remaining_ids]
