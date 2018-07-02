@@ -19,7 +19,8 @@ from powerplantmatching.collection import (reduce_matched_dataframe as rmd,
 from powerplantmatching.utils import set_uncommon_fueltypes_to_other as to_other
 figwidth = 10
 plt.rc('savefig', dpi=300)
-excluded_fueltypes = ['Wind', 'Solar', 'Battery']
+excluded_fueltypes = ['Wind', 'Solar', 'Battery', 'Hydrogen Storage',
+                      'Electro-mechanical']
 
 #%% figure 1
 
@@ -28,7 +29,8 @@ carma = pm.data.CARMA()
 entsoe = pm.data.ENTSOE()
 ese = pm.data.ESE()
 geo = pm.data.GEO()
-opsd = pm.data.OPSD()
+opsd = (pm.data.OPSD()
+        .assign(Fueltype=lambda df: df.Fueltype.fillna('Hard Coal')))
 wri = pm.data.WRI(filter_other_dbs=False)
 wepp = pm.data.WEPP()
 
@@ -43,7 +45,7 @@ fig, ax = plt.subplots(figsize=(figwidth, 6))
 for i, name in df_dict.items():
     dfr = locals()[str.lower(name)].loc[lambda x: ~x.Fueltype.isna()]
     dfr.plot.scatter(ax=ax, x='Capacity', y='matches', logx=True, alpha=0.5,
-                     c=dfr.Fueltype.map(fueltype_to_color()), rasterized=True,
+                     c=dfr.Fueltype.map(fueltype_to_color(True)), rasterized=True,
                      s=dfr.Capacity/50.0)
 ax.set_ylim(-.5, 6.5)
 ax.set_yticks(df_dict.keys())
@@ -51,7 +53,7 @@ ax.set_yticklabels(df_dict.values())
 ax.yaxis.label.set_visible(False)
 ax.set_xlabel(u'Capacity [$MW$]')
 #ax.set_title('Overview of the different input databases')
-ax.legend([plt.Line2D([0,0], [0,0], color=fueltype_to_color()[f], lw=0,
+ax.legend([plt.Line2D([0,0], [0,0], color=fueltype_to_color(True)[f], lw=0,
                       markersize=8., marker='o') for f in pd.Series(ft)],
            ft, frameon=False)
 fig.tight_layout()
@@ -76,9 +78,11 @@ uba = pm.collection.Collection('UBA', use_saved_aggregation=False)
 # Since UBA only comprises units >= 100 MW, BNETZA needs to be filtered accordingly:
 bnetza = bnetza.loc[bnetza.Capacity>=100]
 matched_uba_bnetza = rmd(cmd([uba, bnetza], labels=['UBA', 'BNETZA']))
-opsd = (OPSD().query("Country=='Germany' & Capacity >= 100")
-           .pipe(pm.cleaning.clean_single, dataset_name='OPSD', 
-                 use_saved_aggregation=True))
+opsd = (OPSD()
+        .pipe(pm.cleaning.clean_single, dataset_name='OPSD',
+                 use_saved_aggregation=True)
+        .query("Country=='Germany' & Capacity >= 100"))
+
 
 dfs = [to_other(df) for df in [opsd, matched_uba_bnetza,uba, bnetza]]
 keys = [ 'OPSD', 'Match-UBA-BNETZA', 'UBA','BNetzA']
@@ -94,11 +98,11 @@ fig.tight_layout(pad=0.5)
 fig.savefig('uba_bnetza_matched_comparison.png', dpi=300)
 
 compared = pm.utils.lookup([opsd, matched_uba_bnetza], ['opsd', 'ppm'], by='Fueltype')
-print '''\n\nDifference between manual opsd matches and automatic ppm matches 
+print '''\n\nDifference between manual opsd matches and automatic ppm matches
 (ppm - opsd, positive -> overestimation): \n'''
 print compared.diff(axis=1)['ppm']/1000
 print '\ntotal caps\n',  compared.sum()
-                      
+
 
 #%% figure 5
 
@@ -122,7 +126,8 @@ fig.savefig('db_matched_fueltype_comparison.png', dpi=300)
 #%% figure 6
 
 fig, ax = pm.plot.comparison_1dim(include_WEPP=False, by='Fueltype',
-                                  axes_style='darkgrid', figsize=(figwidth,4.))
+                                  axes_style='darkgrid', figsize=(figwidth,4.),
+                                  exclude=excluded_fueltypes)
 ax.legend(framealpha=0.5)
 ax.set_facecolor('lavender')
 fig.tight_layout(pad=0.2)
@@ -132,7 +137,8 @@ fig.savefig('stats_matched_fueltype_comparison.png', dpi=300)
 #%% figure 7
 
 fig, ax = pm.plot.comparison_1dim(figsize=(figwidth,5.5),
-                                  include_WEPP=False, axes_style='darkgrid')
+                                  include_WEPP=False, axes_style='darkgrid',
+                                  exclude=excluded_fueltypes)
 ax.legend(framealpha=0.5)
 ax.set_facecolor('lavender')
 fig.tight_layout(pad=0.2)
@@ -166,6 +172,7 @@ fig.savefig('comparison_statistics.png', dpi=300)
 #%% figure 10
 
 #prepare
+opsd = OPSD()
 df_dict = {0: 'CARMA',1: 'ENTSOE',2: 'ESE',
            3: 'GEO',4: 'OPSD', 5: 'WEPP', 6: 'WRI'}
 for i, name in df_dict.items():
@@ -215,13 +222,30 @@ fig.savefig('number_of_matches_per_capacity_subplots2.png', dpi=300)
 opsd = OPSD().loc[lambda x: ~x.Fueltype.isin(excluded_fueltypes)]
 wepp = WEPP().loc[lambda x: ~x.Fueltype.isin(excluded_fueltypes)]
 df_w_wepp = pm.collection.Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_matched_reduced()
-df_wo_wepp = pm.collection.Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WRI_matched_reduced()
+df_wo_wepp = pm.collection.MATCHED_dataset(include_unavailables=True)
 keys = ['WEPP', 'OPSD', 'Matched w/ WEPP', 'Matched w/o WEPP']
 dfs = [wepp, opsd, df_w_wepp, df_wo_wepp]
 dfs = [d[lambda df: (~df.Fueltype.isin(excluded_fueltypes))] for d in dfs]
 # Plot
+reload(pm.plot)
 fig, ax = pm.plot.area_yearcommissioned(dfs, keys)
-fig.savefig('capacity_additions_century.png', dpi=300)
+#fig.tight_layout()
+fig.savefig('capacity_additions_century.png', dpi=200)
+
+
+#%% Table 4 - Data
+
+yr_wepp = df_w_wepp.pivot_table(values='YearCommissioned', index='Country',
+                                aggfunc='count')
+count_wepp = df_w_wepp.pivot_table(values='Name', index='Country',
+                                   aggfunc='count')
+ratio_wepp = yr_wepp.iloc[:,0].div(count_wepp.iloc[:,0])
+
+yr_wo = df_wo_wepp.pivot_table(values='YearCommissioned', index='Country',
+                                aggfunc='count')
+count_wo = df_wo_wepp.pivot_table(values='Name', index='Country',
+                                  aggfunc='count')
+ratio_wo = yr_wo.iloc[:,0].div(count_wo.iloc[:,0])
 
 
 #%% stats
@@ -229,7 +253,13 @@ fig.savefig('capacity_additions_century.png', dpi=300)
 m_with_wepp = pm.collection.Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_matched_reduced()
 m_without_wepp = pm.collection.MATCHED_dataset(include_unavailables=True)
 stats = pm.data.Capacity_stats()
- 
-lu = pm.utils.lookup([m_with_wepp, m_without_wepp, stats], 
+
+lu = pm.utils.lookup([m_with_wepp, m_without_wepp, stats],
                      ['with Wepp', 'without Wepp', 'stats'], by=['Country','Fueltype'],
                      exclude=excluded_fueltypes)
+
+#%% Figure 12
+fig, ax = pm.plot.comparison_countries_fueltypes_bar(
+        include_WEPP=True, include_VRE=False, show_indicators=False, year=2015,
+        legend_in_subplots=False, exclude=excluded_fueltypes, figsize=(18,10))
+fig.savefig('comparison_countries_fueltypes.png', dpi=200)
