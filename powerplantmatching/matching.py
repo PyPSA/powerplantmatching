@@ -29,7 +29,7 @@ from .utils import read_csv_if_string, _data_out
 from .duke import duke
 from .cleaning import clean_technology
 from .data import data_config
-import numpy as np
+
 
 
 def best_matches(links):
@@ -47,7 +47,7 @@ def best_matches(links):
             .groupby(links.iloc[:, 1], as_index=False, sort=False)
             .apply(lambda x: x.loc[x.scores.idxmax(), labels]))
 
-def compare_two_datasets(datasets, labels, use_saved_matches=False, 
+def compare_two_datasets(datasets, labels, use_saved_matches=False,
                          **dukeargs):
     """
     Duke-based horizontal match of two databases. Returns the matched
@@ -78,7 +78,7 @@ def compare_two_datasets(datasets, labels, use_saved_matches=False,
     if use_saved_matches:
         try:
             logger.info('Reading saved matches for datasets {} and {}'.format(*labels))
-            return pd.read_csv(saving_path, index_col=0) 
+            return pd.read_csv(saving_path, index_col=0)
         except (ValueError, IOError):
             logger.warning("Non-existing saved matches for dataset '{}',{} "
                            "continuing by matching again".format(*labels))
@@ -149,7 +149,7 @@ def link_multiple_datasets(datasets, labels, use_saved_matches=False,
     for c,d in combinations:
         logger.info('Comparing {0} with {1}'.format(labels[c], labels[d]))
         match = compare_two_datasets([datasets[c],datasets[d]],
-                                     [labels[c],labels[d]], 
+                                     [labels[c],labels[d]],
                                      use_saved_matches=use_saved_matches,
                                      **dukeargs)
         all_matches.append(match)
@@ -198,7 +198,7 @@ def combine_multiple_datasets(datasets, labels, use_saved_matches=False,
         df = df.reorder_levels([1, 0], axis=1)
         df = df.loc[:,target_columns()]
         return df.reset_index(drop=True)
-    crossmatches = link_multiple_datasets(datasets, labels, 
+    crossmatches = link_multiple_datasets(datasets, labels,
                                           use_saved_matches=use_saved_matches,
                                           **dukeargs)
     return (combined_dataframe(crossmatches, datasets)
