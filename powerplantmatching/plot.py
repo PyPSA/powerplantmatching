@@ -26,10 +26,11 @@ from matplotlib.lines import Line2D
 from matplotlib.offsetbox import AnchoredText
 import seaborn as sns
 
-from .config import fueltype_to_life, fueltype_to_color
+from .config import fueltype_to_life, fueltype_to_color, textbox_position
 from .cleaning import clean_single
 from .data import CARMA, ENTSOE, Capacity_stats, ESE, GEO, OPSD, WEPP, WRI
-from .collection import (Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_matched_reduced_VRE,
+from .collection import (MATCHED_dataset,
+                         Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_matched_reduced_VRE,
                          Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_matched_reduced,
                          Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WRI_matched_reduced_VRE,
                          Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WRI_matched_reduced)
@@ -37,7 +38,7 @@ from .utils import lookup, set_uncommon_fueltypes_to_other
 
 
 def Show_all_plots():
-    bar_comparison_single_matched()
+    comparison_single_matched_bar()
     comparison_1dim(by='Country')
     comparison_1dim(by='Fueltype')
     return
@@ -49,7 +50,7 @@ def fueltype_stats(df):
            labels=stats.index, autopct='%1.1f%%')
 
 
-def powerplant_map(df, alternative_color_style=True, scale=1e5, european_bounds=True, 
+def powerplant_map(df, alternative_color_style=True, scale=1e5, european_bounds=True,
                    legendscale=1, **kwargs):
 #   TODO: add reference circle in legend
     figsize = kwargs.get('figsize', (7,5))
@@ -59,7 +60,7 @@ def powerplant_map(df, alternative_color_style=True, scale=1e5, european_bounds=
         df = df[df.lat.notnull()]
         fig, ax = plt.subplots(figsize=figsize)
 
-        ax.scatter(df.lon, df.lat, s=df.Capacity/scale, 
+        ax.scatter(df.lon, df.lat, s=df.Capacity/scale,
                    c=df.Fueltype.map(fueltype_to_color(alternative_color_style)))
 
         ax.set_xlabel('')
@@ -148,9 +149,9 @@ def comparison_single_matched_bar(df=None, include_WEPP=True, cleaned=True,
     return fig, ax
 
 
-def comparison_1dim(by='Country', include_WEPP=True, include_VRE=False,
-                    year=2016, how='hbar', axes_style='whitegrid', 
-                    **kwargs):
+def comparison_1dim(dfs=None, keys=None, by='Country', include_WEPP=True, include_VRE=False,
+                    year=2016, how='hbar', axes_style='whitegrid',
+                    exclude=['Geothermal','Solar','Wind','Battery'], **kwargs):
     """
     Plots a horizontal bar chart with capacity on x-axis, ``by`` on y-axis.
 
@@ -160,19 +161,17 @@ def comparison_1dim(by='Country', include_WEPP=True, include_VRE=False,
         Allowed values: 'Country' or 'Fueltype'
 
     """
-    red_w_wepp, red_wo_wepp, wepp, statistics = \
-                    gather_comparison_data(include_WEPP=include_WEPP,
-                                           include_VRE=include_VRE,
-                                           year=year)
-    if include_WEPP:
-        stats = lookup([red_w_wepp, red_wo_wepp, wepp, statistics],
-                       keys=['Matched dataset w/ WEPP', 'Matched dataset w/o WEPP',
-                             'WEPP only', 'Statistics OPSD'],
-                       by=by, exclude=['Geothermal','Solar','Wind','Battery'])/1000
-    else:
-        stats = lookup([red_wo_wepp, statistics],
-                       keys=['Matched dataset w/o WEPP', 'Statistics OPSD'],
-                       by=by, exclude=['Geothermal','Solar','Wind','Battery'])/1000
+    if dfs is None and keys is None:
+
+        dfs = list(gather_comparison_data(include_WEPP=include_WEPP,
+                                          include_VRE=include_VRE, year=year))
+        if include_WEPP:
+            keys=['Matched dataset w/ WEPP', 'Matched dataset w/o WEPP',
+                             'WEPP only', 'Statistics ENTSO-E SO&AF']
+        else:
+            ['Matched dataset w/o WEPP', 'Statistics ENTSO-E SO&AF']
+
+    stats = lookup(df=dfs, keys=keys, by=by, exclude=exclude)/1000
 
     font={'size'   : 12}
     plt.rc('font', **font)
@@ -204,9 +203,10 @@ def comparison_1dim(by='Country', include_WEPP=True, include_VRE=False,
                 g.axes[i, j].set(xscale='log', yscale='log', xlim=(1,200), ylim=(1,200))
                 if i != j: # plot 45 degree identity line
                     g.axes[i, j].plot([1,200], [1,200], 'k-', alpha=0.25, zorder=0)
-                if i<=j:
-#                    g.axes[i, j].set_visible(False)
+                if i<j:
                     g.axes[i, j].remove()
+                if i==j and i!=3:
+                    g.axes[i, j].annotate('Identical', (7, 10))
         figsize = kwargs.get('figsize', None)
         if figsize is not None:
             g.fig.set_size_inches(figsize)
@@ -215,7 +215,7 @@ def comparison_1dim(by='Country', include_WEPP=True, include_VRE=False,
 
 def comparison_countries_fueltypes_bar(dfs=None, ylabel=None, include_WEPP=True,
         include_VRE=False, show_indicators=True, legend_in_subplots=False, year=2015,
-        figsize=(7,5)):
+        exclude=None, figsize=(7,5)):
     """
     Plots per country an analysis, how the given datasets differ by fueltype.
 
@@ -247,20 +247,25 @@ def comparison_countries_fueltypes_bar(dfs=None, ylabel=None, include_WEPP=True,
         if include_WEPP:
             stats = lookup([red_w_wepp, red_wo_wepp, wepp, statistics],
                            keys=['Matched dataset w/ WEPP', 'Matched dataset w/o WEPP',
-                                 'WEPP only', 'Statistics OPSD'],
-                           by='Country, Fueltype')/1000
+                                 'WEPP only', 'Statistics ENTSO-E SO&AF'],
+                           by='Country, Fueltype', exclude=exclude)/1000
             set.update(countries, set(red_w_wepp.Country), set(red_wo_wepp.Country),
                        set(wepp.Country), set(statistics.Country))
         else:
             stats = lookup([red_wo_wepp, statistics],
-                           keys=['Matched dataset w/o WEPP', 'Statistics OPSD'],
-                           by='Country, Fueltype')/1000
+                           keys=['Matched dataset w/o WEPP', 'Statistics ENTSO-E SO&AF'],
+                           by='Country, Fueltype', exclude=exclude)/1000
             set.update(countries, set(red_wo_wepp.Country), set(statistics.Country))
     else:
-        stats = lookup(dfs.values(), keys=dfs.keys(), by='Country, Fueltype')/1000
+        stats = lookup(dfs.values(), keys=dfs.keys(), by='Country, Fueltype',
+                       exclude=exclude)/1000
         stats.sort_index(axis=1, inplace=True)
         for k, v in dfs.items():
             set.update(countries, set(v.Country))
+    # Filter stats
+    stats = (stats.replace({0.0: np.nan})     # Do this in order to show only
+                  .dropna(axis=0, how='all')  # relevant fueltypes for each
+                  .fillna(0.0))               # country (if all zero->drop!).
 
     # Presettings for the plots
     font={'size'   : 12}
@@ -269,7 +274,7 @@ def comparison_countries_fueltypes_bar(dfs=None, ylabel=None, include_WEPP=True,
     nrows, ncols = gather_nrows_ncols(len(countries))
     i,j = [0, 0]
     labels_mpatches = collections.OrderedDict()
-    fig, ax = plt.subplots(nrows=nrows, ncols=ncols, sharex=True, sharey=False,
+    fig, ax = plt.subplots(nrows=nrows, ncols=ncols, sharex=False, sharey=False,
                            squeeze=False, figsize=figsize)
     for country in sorted(countries):
         if j==ncols: i+=1; j=0
@@ -278,11 +283,12 @@ def comparison_countries_fueltypes_bar(dfs=None, ylabel=None, include_WEPP=True,
         if show_indicators:
             ctry = stats.loc[country]
             r_sq = round(ctry.corr().iloc[0,1]**2, 3)
-            #TODO: Make sure that matched is always in first and stats in last column!
+            #TODO: Assure that matched is always in first + stats in last column.
             cov = round(ctry.iloc[:,0].sum() / ctry.iloc[:,-1].sum(), 3)
             txt = AnchoredText("\n" + r'$R^{2} = $%s'%r_sq + "\n"
                                r'$\frac{\sum P_{match}}{\sum P_{stats}} = $%s'%cov,
-                               loc=2, prop={'size':11})
+                               loc=textbox_position()[country],
+                               prop={'size':11})
             txt.patch.set(boxstyle='round', alpha=0.5)
             ax[i,j].add_artist(txt)
         # Pass the legend information into the Ordered Dict
@@ -300,7 +306,7 @@ def comparison_countries_fueltypes_bar(dfs=None, ylabel=None, include_WEPP=True,
         ax[i,j].grid(color='white', linestyle='dotted')
         ax[i,j].set_title(country)
         ax[i,0].set_ylabel(ylabel)
-        ax[-1,j].xaxis.label.set_visible(False)
+        ax[i,j].xaxis.label.set_visible(False)
         j+=1
     # After the loop, do the rest of the layouting.
     fig.tight_layout()
@@ -349,8 +355,8 @@ def fueltype_totals_bar(dfs, keys, figsize=(7,4), unit='GW',
             as_marker_key = keys[-1]
             keys = keys[:-1]
         fueltotals = lookup(dfs, keys=keys, by='Fueltype', unit=unit)
-        fueltotals.plot(kind="bar", ax=ax, legend='reverse', 
-                        edgecolor='none', rot=90, 
+        fueltotals.plot(kind="bar", ax=ax, legend='reverse',
+                        edgecolor='none', rot=90,
                            **kwargs)
         if last_as_marker:
             fueltotals = lookup(as_marker, keys=as_marker_key, by='Fueltype', unit=unit)
@@ -429,14 +435,14 @@ def factor_comparison(dfs, keys, figsize=(7,9)):
     compare = compare.append(pd.concat([compare.groupby(level='Country').sum()],
                               keys=['Total']).swaplevel()).sort_index()/1000
     n_countries, n_fueltypes = compare.index.levshape
-    
+
 
     c= [fueltype_to_color(True)[i] for i in compare.index.levels[1]]
     rcParams["axes.prop_cycle"] = cycler(color=c)
 
     #where both are zero,
     compare[compare.sum(1)<0.5]=np.nan
-    
+
     fig, ax = plt.subplots(1,1, figsize=figsize)
     compare = compare.unstack('Country').swaplevel(axis=1).sort_index(axis=1)
     compare.T.plot(ax=ax, markevery=(0,2),
@@ -552,6 +558,7 @@ def boxplot_gross_to_net(axes_style='darkgrid', **kwargs):
         fig, ax = plt.subplots(**kwargs)
         df.boxplot(ax=ax, column='ratio', by='FuelTech', rot=90, showmeans=True)
         ax.title.set_visible(False)
+        ax.set_ylabel('Ratio of gross/net [$-$]')
         ax.xaxis.label.set_visible(False)
         ax.set_ylabel('Net / Gross')
         ax2 = ax.twiny()
@@ -562,30 +569,71 @@ def boxplot_gross_to_net(axes_style='darkgrid', **kwargs):
         return fig, ax
 
 
-def area_yearcommissioned(dfs, figsize=(7,5), ylabel='Capacity [$GW$]'):
+def boxplot_matchcount(df):
+    """
+    Makes a boxplot for the capacities grouped by the number of matches.
+    Attention: Currently only works for the full dataset with original
+    names as the last columns.
+    """
+    # Mend needed data
+    df = df.copy()  # TODO: Make this more dynamic.
+    df.loc[:, 'Matches'] = df.copy().loc[:,'CARMA':].notnull().sum(axis=1)
+
+    # Plot
+    fig, ax = plt.subplots(figsize=(8,4.5))
+    df.boxplot(ax=ax, column='Capacity', by='Matches', showmeans=True)
+    ax.title.set_visible(False)
+    ax.set_xlabel('Number of datasets participating in match [$-$]')
+    ax.set_ylabel('Capacity [$MW$]')
+    fig.suptitle('')
+    return fig
+
+
+def area_yearcommissioned(dfs, keys, figsize=(7,5), ylabel='Capacity [$GW$]'):
     """
     Plots an area chart by commissioning year.
+
+    Parameters
+    ----------
+        dfs : list
+            containing pd.DataFrames to plot
+        keys : list
+            containing the names used as ax.title
+        figsize : tuple
+        ylabel : str
     """
-    dfp = {}
-    for n, df in dfs.items():
-        dfp[n] = df.pivot_table(values='Capacity', index='YearCommissioned',
-                                columns='Fueltype', aggfunc='sum')/1000
+    dfp = [df.pivot_table(values='Capacity', index='YearCommissioned',
+                          columns='Fueltype', aggfunc='sum')/1000
+           for df in dfs]
+    labels_mpatches = collections.OrderedDict()
     fig, ax = plt.subplots(nrows=2, ncols=2, sharex=True, sharey=True,
                            squeeze=False, figsize=figsize)
     ax[0,0].set_xlim((1900,2016))
-    colors = dfp[dfs.keys()[-1]].columns.to_series().map(fueltype_to_color()).tolist()
     i,j = (0,0)
-    for n, df in dfp.items():
+    for a, df in enumerate(dfp):
         if j==2: i+=1; j=0
-        df.plot.area(ax=ax[i,j],stacked=True,legend=False,color=colors)
-        ax[i,j].set_title(n)
+        colors = df.columns.to_series().map(fueltype_to_color()).tolist()
+        df.plot.area(ax=ax[i,j], stacked=True, legend=False, color=colors,
+                     linewidth=0.0)
+        # Pass the legend information into the Ordered Dict
+        stats_handle, stats_labels = ax[i,j].get_legend_handles_labels()
+        for u, v in enumerate(stats_labels):
+            if v not in labels_mpatches:
+                labels_mpatches[v] = mpatches.Patch(color=colors[u], label=v)
+        ax[i,j].set_title(keys[a])
         ax[i,j].set_facecolor('#d9d9d9')
         ax[i,j].set_axisbelow(True)
         ax[i,j].grid(color='white', linestyle='dotted')
         ax[i,j].set_ylabel(ylabel)
+        ax[i,j].set_ylim((0, 31))
         j+=1
-    ax[-1,-1].legend(fontsize=12, loc='center left', bbox_to_anchor=(1, 0.5))
     fig.tight_layout()
+    # Legend
+    fig.subplots_adjust(bottom=0.25)
+    labels_mpatches = collections.OrderedDict(sorted(labels_mpatches.items()))
+    fig.legend(labels_mpatches.values(), labels_mpatches.keys(),
+               loc=8, ncol=len(labels_mpatches)/2, facecolor='#d9d9d9',
+               prop={'size': 10})
     return fig, ax
 
 
@@ -614,7 +662,8 @@ def gather_comparison_data(include_WEPP=True, include_VRE=False, **kwargs):
     if include_VRE:
         red_wo_wepp = Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WRI_matched_reduced_VRE()
     else:
-        red_wo_wepp = Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WRI_matched_reduced()
+        red_wo_wepp = MATCHED_dataset(include_unavailables=True)
+        #red_wo_wepp = Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WRI_matched_reduced()
         red_wo_wepp.query(queryexpr, inplace=True)
     red_wo_wepp.query('(YearCommissioned <= {:04d}) or (YearCommissioned != YearCommissioned)'.format(yr), inplace=True)
     # 4: Statistics
@@ -629,7 +678,7 @@ def matchcount_stats(df):
     """
     Plots the number of matches against the number of involved databases, across all databases.
     """
-    df = df.copy().iloc[:,0:7]
+    df = df.copy().iloc[:,-8:]
     df.loc[:,'MatchCount'] = df.notnull().sum(axis=1)
     df.groupby(['MatchCount']).size().plot.bar()
     return
@@ -692,16 +741,22 @@ def make_handler_map_to_scale_circles_as_in(ax, dont_resize_actively=False):
         return e
     return {Circle: HandlerPatch(patch_func=legend_circle_handler)}
 
+
 def make_legend_circles_for(sizes, scale=1.0, **kw):
     return [Circle((0,0), radius=(s/scale)**0.5, **kw) for s in sizes]
 
-def draw_basemap(resolution='l', ax=None,country_linewidth=0.3, coast_linewidth=
-                     0.4, zorder=None,  **kwds):
+
+def draw_basemap(resolution='l', ax=None,country_linewidth=0.3,
+                 coast_linewidth=0.4, zorder=None, fillcontinents=True, **kwds):
     if ax is None:
         ax = plt.gca()
-    m = Basemap(*(list(ax.viewLim.min) + list(ax.viewLim.max)), resolution=resolution, ax=ax, **kwds)
+    m = Basemap(*(list(ax.viewLim.min) + list(ax.viewLim.max)),
+                resolution=resolution, ax=ax, **kwds)
     m.drawcoastlines(linewidth=coast_linewidth, zorder=zorder)
     m.drawcountries(linewidth=country_linewidth, zorder=zorder)
+    if fillcontinents:
+        m.fillcontinents(color='lavender', lake_color='skyblue', alpha=0.25,
+                         zorder=0)
     return m
 
 
