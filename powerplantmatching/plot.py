@@ -149,7 +149,7 @@ def comparison_single_matched_bar(df=None, include_WEPP=True, cleaned=True,
     return fig, ax
 
 
-def comparison_1dim(by='Country', include_WEPP=True, include_VRE=False,
+def comparison_1dim(dfs=None, keys=None, by='Country', include_WEPP=True, include_VRE=False,
                     year=2016, how='hbar', axes_style='whitegrid',
                     exclude=['Geothermal','Solar','Wind','Battery'], **kwargs):
     """
@@ -161,19 +161,17 @@ def comparison_1dim(by='Country', include_WEPP=True, include_VRE=False,
         Allowed values: 'Country' or 'Fueltype'
 
     """
-    red_w_wepp, red_wo_wepp, wepp, statistics = \
-                    gather_comparison_data(include_WEPP=include_WEPP,
-                                           include_VRE=include_VRE,
-                                           year=year)
-    if include_WEPP:
-        stats = lookup([red_w_wepp, red_wo_wepp, wepp, statistics],
-                       keys=['Matched dataset w/ WEPP', 'Matched dataset w/o WEPP',
-                             'WEPP only', 'Statistics ENTSO-E SO&AF'],
-                       by=by, exclude=exclude)/1000
-    else:
-        stats = lookup([red_wo_wepp, statistics],
-                       keys=['Matched dataset w/o WEPP', 'Statistics ENTSO-E SO&AF'],
-                       by=by, exclude=exclude)/1000
+    if dfs is None and keys is None:
+
+        dfs = list(gather_comparison_data(include_WEPP=include_WEPP,
+                                          include_VRE=include_VRE, year=year))
+        if include_WEPP:
+            keys=['Matched dataset w/ WEPP', 'Matched dataset w/o WEPP',
+                             'WEPP only', 'Statistics ENTSO-E SO&AF']
+        else:
+            ['Matched dataset w/o WEPP', 'Statistics ENTSO-E SO&AF']
+
+    stats = lookup(df=dfs, keys=keys, by=by, exclude=exclude)/1000
 
     font={'size'   : 12}
     plt.rc('font', **font)
@@ -259,7 +257,8 @@ def comparison_countries_fueltypes_bar(dfs=None, ylabel=None, include_WEPP=True,
                            by='Country, Fueltype', exclude=exclude)/1000
             set.update(countries, set(red_wo_wepp.Country), set(statistics.Country))
     else:
-        stats = lookup(dfs.values(), keys=dfs.keys(), by='Country, Fueltype')/1000
+        stats = lookup(dfs.values(), keys=dfs.keys(), by='Country, Fueltype',
+                       exclude=exclude)/1000
         stats.sort_index(axis=1, inplace=True)
         for k, v in dfs.items():
             set.update(countries, set(v.Country))
