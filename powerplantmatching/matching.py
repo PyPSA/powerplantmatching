@@ -121,7 +121,11 @@ def cross_matches(sets_of_pairs, labels=None):
                    .apply(lambda x: x.loc[x.isnull().sum(axis=1).idxmin()]),
             matches[matches[i].isnull()]
         ]).reset_index(drop=True)
-    return matches.loc[:,labels]
+    matches.loc[:,'length'] = matches.notna().sum(axis=1)
+    return (matches.sort_values(by='length', ascending=False)
+                      .reset_index(drop=True)
+                      .drop('length', axis=1)
+                      .loc[:,labels])
 
 def link_multiple_datasets(datasets, labels, use_saved_matches=False,
                            **dukeargs):
