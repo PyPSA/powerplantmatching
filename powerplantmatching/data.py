@@ -306,7 +306,7 @@ def Capacity_stats(raw=False, level=2, **selectors):
 
 def WRI(raw=False, filter_other_dbs=True):
     if raw:
-        return pd.read_csv(_data_in('global_power_plant_database.csv'))
+        return pd.read_csv(_data_in('global_power_plant_database.csv'), encoding='utf-8')
     else:
         if filter_other_dbs:
             other_dbs = ['GEODB', 'CARMA', 'WRI', 'Open Power System Data']

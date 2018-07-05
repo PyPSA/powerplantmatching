@@ -41,9 +41,9 @@ uba = pm.collection.Collection('UBA', use_saved_aggregation=False)
 # Since UBA only comprises units >= 100 MW, BNETZA needs to be filtered accordingly:
 bnetza = bnetza.loc[bnetza.Capacity>=100]
 matched_uba_bnetza = rmd(cmd([uba, bnetza], labels=['UBA', 'BNETZA']))
-opsd = (OPSD().query("Country=='Germany' & Capacity >= 100")
-           .pipe(pm.cleaning.clean_single, dataset_name='OPSD', 
-                 use_saved_aggregation=True))
+opsd = (OPSD().pipe(pm.cleaning.clean_single, dataset_name='OPSD', 
+                 use_saved_aggregation=True)
+               .query("Country=='Germany' & Capacity >= 100"))
 
 dfs = [to_other(df) for df in [opsd, matched_uba_bnetza,uba, bnetza]]
 keys = [ 'OPSD', 'Match-UBA-BNETZA', 'UBA','BNetzA']
