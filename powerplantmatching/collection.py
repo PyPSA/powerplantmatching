@@ -31,7 +31,7 @@ from .heuristics import (extend_by_non_matched, extend_by_VRE, remove_oversea_ar
                          manual_corrections)
 
 
-def Collection(datasets, update=False, use_saved_aggregation=False, 
+def Collection(datasets, update=False, use_saved_aggregation=False,
                use_saved_matches=False, reduced=True,
                custom_config={}, **dukeargs):
     """
@@ -86,7 +86,7 @@ def Collection(datasets, update=False, use_saved_aggregation=False,
                               dataset_name=name,
                               **conf.get('clean_single_kwargs', {}))
             dfs.append(df)
-        matched = combine_multiple_datasets(dfs, datasets, 
+        matched = combine_multiple_datasets(dfs, datasets,
                                             use_saved_matches=use_saved_matches,
                                             **dukeargs)
         matched.to_csv(outfn_matched, index_label='id', encoding='utf-8')
@@ -109,16 +109,16 @@ def Collection(datasets, update=False, use_saved_aggregation=False,
         return sdf
 
 
-def Carma_ENTSOE_GEO_OPSD_WRI_matched(update=False, 
-                                      use_saved_matches=False, 
+def Carma_ENTSOE_GEO_OPSD_WRI_matched(update=False,
+                                      use_saved_matches=False,
                                       use_saved_aggregation=False):
     return Collection(['CARMA', 'ENTSOE', 'GEO', 'OPSD', 'WRI'],
                       update=update, use_saved_matches=use_saved_matches,
                       use_saved_aggregation=use_saved_aggregation,
                       reduced=False)
 
-def Carma_ENTSOE_GEO_OPSD_WRI_matched_reduced(update=False,                                       
-                                              use_saved_matches=False, 
+def Carma_ENTSOE_GEO_OPSD_WRI_matched_reduced(update=False,
+                                              use_saved_matches=False,
                                               use_saved_aggregation=False):
     return Collection(['CARMA', 'ENTSOE', 'GEO', 'OPSD', 'WRI'],
                       update=update, use_saved_matches=use_saved_matches,
@@ -158,17 +158,17 @@ def MATCHED_dataset(aggregated_hydros=False, rescaled_hydros=False,
     matched = (extend_by_non_matched(matched, OPSD(), 'OPSD', clean_added_data=True,
                                     use_saved_aggregation=True)
                                     #remaining fossi fuels as hard coal
-                                    .assign(Fueltype = 
+                                    .assign(Fueltype =
                                             lambda df: df.Fueltype.fillna('Hard Coal')))
-    
-#   drop matches between only low reliability-data, this is necessary since 
-#   a lot of those are decommissioned: Probably we should filter 
+
+#   drop matches between only low reliability-data, this is necessary since
+#   a lot of those are decommissioned: Probably we should filter
 #   by mean reliability larger than 3
 #    some countries only appear in GEO and CARMA
-#    matched = matched[matched.projectID.apply(lambda x : x.keys() not in 
+#    matched = matched[matched.projectID.apply(lambda x : x.keys() not in
 #                                              [['GEO', 'CARMA'], ['CARMA', 'GEO']] )
 #                      | matched.Country.isin(['Croatia', 'Czech Republic', 'Estonia'])]
-    
+
 
     if aggregated_hydros:
         hydro = Aggregated_hydro(scaled_capacity=rescaled_hydros)
@@ -201,7 +201,7 @@ def Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched(update=False,
                                           use_saved_matches=False,
                                           use_saved_aggregation=False):
     return Collection(['CARMA', 'ENTSOE', 'ESE', 'GEO', 'OPSD', 'WRI'],
-                      update=update, 
+                      update=update,
                       use_saved_matches=use_saved_matches,
                       use_saved_aggregation=use_saved_aggregation,
                       reduced=False)
@@ -258,7 +258,7 @@ def Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WRI_matched_reduced_VRE(update=False,
 # --- The next three definitions include ESE+IWPDCY+WEPP as well ---
 
 #unpublishable
-def Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_matched(update=False, 
+def Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_matched(update=False,
                                                       use_saved_matches=False,
                                                       use_saved_aggregation=False):
     return Collection(['CARMA', 'ENTSOE', 'ESE', 'GEO', 'IWPDCY', 'OPSD', 'WEPP', 'WRI'],
@@ -267,7 +267,7 @@ def Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_matched(update=False,
                       reduced=False)
 
 #unpublishable
-def Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_matched_reduced(update=False, 
+def Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_matched_reduced(update=False,
                                                               use_saved_matches=False,
                                                               use_saved_aggregation=False):
     return Collection(['CARMA', 'ENTSOE', 'ESE', 'GEO', 'IWPDCY', 'OPSD', 'WEPP', 'WRI'],
@@ -277,7 +277,7 @@ def Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_matched_reduced(update=False,
 
 #unpublishable
 def Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_matched_reduced_VRE(update=False,
-                                  use_saved_matches=False, use_saved_aggregation=False, 
+                                  use_saved_matches=False, use_saved_aggregation=False,
                                   base_year=2015, update_concat=False):
     if update_concat:
         logger.info('Read base reduced dataframe...')
