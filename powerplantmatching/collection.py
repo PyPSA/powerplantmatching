@@ -292,5 +292,5 @@ def Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_matched_reduced_VRE(update=False,
     else:
         logger.info('Read existing reduced_vre dataframe...')
         df = pd.read_csv(_data_out('Matched_CARMA_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_reduced_vre.csv'),
-                         index_col=0, encoding='utf-8')
+                         index_col=0, encoding='utf-8', low_memory=False)
     return df
