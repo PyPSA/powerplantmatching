@@ -65,6 +65,7 @@ def clean_powerplantname(df):
     name = (name
             .replace(regex=True, to_replace=pattern, value=' ')
             .replace('\s+', ' ', regex=True)
+            .replace('"', '', regex=True)
             .str.strip()
             .str.capitalize())
 
