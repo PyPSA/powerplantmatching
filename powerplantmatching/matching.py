@@ -231,12 +231,11 @@ def reduce_matched_dataframe(df, show_orig_names=False):
         combined_dataframe() or match_multiple_datasets()
     """
 
-
     def concat_strings(s):
         if s.isnull().all():
             return np.nan
         else:
-            return s[s.notnull()].str.cat(sep = ', ')
+            return s[s.notnull()].str.cat(sep=', ')
 
     # define which databases are present and get their reliability_score
     sources = df.columns.levels[1]
@@ -245,8 +244,8 @@ def reduce_matched_dataframe(df, show_orig_names=False):
 
     def prioritise_reliability(df, how='mean'):
         """
-        Take the first most reliable value if dtype==String, else take mean of most
-        reliable values
+        Take the first most reliable value if dtype==str,
+        else take mean of most reliable values
         """
 
         # Arrange columns in descending order of reliability
@@ -268,14 +267,15 @@ def reduce_matched_dataframe(df, show_orig_names=False):
 
     sdf = pd.DataFrame.from_dict({
         'Name': prioritise_reliability(df['Name']),
-        'Fueltype': prioritise_reliability(df['Fueltype']
-                        .replace({'Other': np.nan}))
-                        .reindex(df.index, fill_value='Other'),
+        'Fueltype': (prioritise_reliability(df['Fueltype']
+                                            .replace({'Other': np.nan}))
+                     .reindex(df.index, fill_value='Other')),
         'Technology': prioritise_reliability(df['Technology']),
         'Country': prioritise_reliability(df['Country']),
         'Set': prioritise_reliability(df['Set']),
         'Capacity': prioritise_reliability(df['Capacity'], how='median'),
-        'YearCommissioned': df['YearCommissioned'].max(axis=1),
+        'YearCommissioned': df['YearCommissioned'].min(axis=1),
+        'Retrofit': df['Retrofit'].max(axis=1),
         'lat': prioritise_reliability(df['lat']),
         'lon': prioritise_reliability(df['lon']),
         'File': df['File'].apply(concat_strings, axis=1),
@@ -283,7 +283,7 @@ def reduce_matched_dataframe(df, show_orig_names=False):
     }).reindex(target_columns(), axis=1)
 
     if 'Duration' in target_columns():
-        sdf = sdf.assign(Duration= prioritise_reliability(df['Duration']))
+        sdf = sdf.assign(Duration=prioritise_reliability(df['Duration']))
 
     if show_orig_names:
         sdf = sdf.assign(**dict(df.Name))

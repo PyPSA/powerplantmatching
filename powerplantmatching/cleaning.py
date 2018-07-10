@@ -1,33 +1,32 @@
 # -*- coding: utf-8 -*-
-## Copyright 2015-2016 Fabian Hofmann (FIAS), Jonas Hoersch (FIAS)
+# Copyright 2015-2016 Fabian Hofmann (FIAS), Jonas Hoersch (FIAS)
 
-## This program is free software; you can redistribute it and/or
-## modify it under the terms of the GNU General Public License as
-## published by the Free Software Foundation; either version 3 of the
-## License, or (at your option) any later version.
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 3 of the
+# License, or (at your option) any later version.
 
-## This program is distributed in the hope that it will be useful,
-## but WITHOUT ANY WARRANTY; without even the implied warranty of
-## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-## GNU General Public License for more details.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 
-## You should have received a copy of the GNU General Public License
-## along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-Functions for vertically cleaning a dataset
+Functions for vertically cleaning a dataset.
 """
 from __future__ import absolute_import, print_function
+
+from .config import target_columns, target_technologies
+from .duke import duke
+from .utils import (_data_out)
 
 import numpy as np
 import pandas as pd
 import networkx as nx
 import logging
 logger = logging.getLogger(__name__)
-
-from .config import target_columns, target_technologies
-from .utils import read_csv_if_string
-from .duke import duke
-from .utils import (_data_out)
 
 
 def clean_powerplantname(df):
@@ -44,24 +43,25 @@ def clean_powerplantname(df):
     """
     df = df[df.Name.notnull()]
     name = df.Name.replace(regex=True, value=' ',
-                           to_replace=list('-/,')+
-                                      ['\(', '\)', '\[', '\]','\+', '[0-9]'])
+                           to_replace=['-', '/', ',', '\(', '\)', '\[', '\]',
+                                       '\+', '[0-9]'])
 
     common_words = pd.Series(sum(name.str.split(), [])).value_counts()
     cw = list(common_words[common_words >= 20].index)
 
     pattern = [('(?i)(^|\s)'+x+'(?=\s|$)')
                for x in (cw +
-                        ['[a-z]','I','II','III','IV','V','VI','VII','VIII',
-                        'IX','X','XI','Grupo','parque','eolico','gas',
-                        'biomasa','COGENERACION','gt','unnamed',
-                        'tratamiento de purines','planta','de','la','station',
-                        'power','storage','plant','stage','pumped','project',
-                        'dt','gud', 'hkw', 'kbr', 'Kernkraft', 'Kernkraftwerk',
-                        'kwg', 'krb', 'ohu', 'gkn', 'Gemeinschaftskernkraftwerk',
-                        'kki', 'kkp', 'kle', 'wkw', 'rwe', 'bis', 'nordsee', 'ostsee',
-                        'dampfturbinenanlage', 'ikw', 'kw', 'kohlekraftwerk',
-                        'raffineriekraftwerk'])]
+                         ['[a-z]', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII',
+                          'VIII', 'IX', 'X', 'XI', 'Grupo', 'parque', 'eolico',
+                          'gas', 'biomasa', 'COGENERACION', 'gt', 'unnamed',
+                          'tratamiento de purines', 'planta', 'de', 'la',
+                          'station', 'power', 'storage', 'plant', 'stage',
+                          'pumped', 'project', 'dt', 'gud', 'hkw', 'kbr',
+                          'Kernkraft', 'Kernkraftwerk', 'kwg', 'krb', 'ohu',
+                          'gkn', 'Gemeinschaftskernkraftwerk', 'kki', 'kkp',
+                          'kle', 'wkw', 'rwe', 'bis', 'nordsee', 'ostsee',
+                          'dampfturbinenanlage', 'ikw', 'kw', 'kohlekraftwerk',
+                          'raffineriekraftwerk'])]
     name = (name
             .replace(regex=True, to_replace=pattern, value=' ')
             .replace('\s+', ' ', regex=True)
@@ -81,11 +81,11 @@ def gather_fueltype_info(df, search_col=['Name', 'Technology']):
 
     for i in search_col:
         found_b = df[i].dropna().str.contains('(?i)lignite|brown')
-        fueltype.loc[found_b.reindex(fueltype.index, fill_value=False)] = 'Lignite'
+        fueltype.loc[found_b.reindex(fueltype.index,
+                                     fill_value=False)] = 'Lignite'
     fueltype.replace({'Coal': 'Hard Coal'}, inplace=True)
 
     return df.assign(Fueltype=fueltype)
-
 
 
 def gather_technology_info(df, search_col=['Name', 'Fueltype']):
@@ -102,8 +102,8 @@ def gather_technology_info(df, search_col=['Name', 'Fueltype']):
 
         exists_i = technology.index.intersection(found.index)
         if len(exists_i) > 0:
-            technology.loc[exists_i] = (technology.loc[exists_i]
-                                        .str.cat(found.loc[exists_i], sep=', '))
+            technology.loc[exists_i] = (technology.loc[exists_i].str
+                                        .cat(found.loc[exists_i], sep=', '))
 
         new_i = found.index.difference(technology.index)
         technology = technology.append(found[new_i])
@@ -130,24 +130,26 @@ def gather_set_info(df, search_col=['Name', 'Fueltype', 'Technology']):
         Set.loc[isStore_b] = 'Store'
 
     df = df.assign(Set=Set)
-    df.loc[:,'Set'].fillna('PP', inplace=True)
+    df.loc[:, 'Set'].fillna('PP', inplace=True)
     return df
 
 
 def clean_technology(df, generalize_hydros=False):
     tech = df['Technology'].dropna()
-    if len(tech)==0:
+    if len(tech) == 0:
         return df
     tech = tech.replace(
-            {' and ': ', ', ' Power Plant': '', 'Battery':''}, regex=True)
+            {' and ': ', ', ' Power Plant': '', 'Battery': ''}, regex=True)
     if generalize_hydros:
         tech[tech.str.contains('pump', case=False)] = 'Pumped Storage'
         tech[tech.str.contains('reservoir|lake', case=False)] = 'Reservoir'
-        tech[tech.str.contains('run-of-river|weir|water', case=False)] = 'Run-Of-River'
+        tech[tech.str.contains('run-of-river|weir|water', case=False)] =\
+            'Run-Of-River'
         tech[tech.str.contains('dam', case=False)] = 'Reservoir'
     tech = tech.replace({'Gas turbine': 'OCGT'})
     tech[tech.str.contains('combined cycle|combustion', case=False)] = 'CCGT'
-    tech[tech.str.contains('steam turbine|critical thermal', case=False)] = 'Steam Turbine'
+    tech[tech.str.contains('steam turbine|critical thermal', case=False)] =\
+        'Steam Turbine'
     tech[tech.str.contains('ocgt|open cycle', case=False)] = 'OCGT'
     tech = (tech.str.title()
                 .str.split(', ')
@@ -212,32 +214,40 @@ def aggregate_units(df, use_saved_aggregation=False, dataset_name=None,
         the most frequent values for the rest of the columns
 
         """
-        results = {'Name': x['Name'].value_counts().index[0],
-                   'Country': x['Country'].value_counts(dropna=False).index[0],
-                   'Fueltype': x['Fueltype'].value_counts(dropna=False).index[0],
-                   'Technology': x['Technology'].value_counts(dropna=False).index[0],
-                   'Set' : x['Set'].value_counts(dropna=False).index[0],
-                   'File': x['File'].value_counts(dropna=False).index[0],
-                   'Capacity': x['Capacity'].fillna(0.).sum(),
-                   'lat': x['lat'].astype(float).mean(),
-                   'lon': x['lon'].astype(float).mean(),
-                   'YearCommissioned': x['YearCommissioned'].min(),
-                   'projectID': list(x['projectID'])}
+        results = {
+                'Name': x['Name'].value_counts().index[0],
+                'Country': x['Country'].value_counts(dropna=False).index[0],
+                'Fueltype': x['Fueltype'].value_counts(dropna=False).index[0],
+                'Technology': (x['Technology'].value_counts(dropna=False)
+                                              .index[0]),
+                'Set': x['Set'].value_counts(dropna=False).index[0],
+                'File': x['File'].value_counts(dropna=False).index[0],
+                'Capacity': x['Capacity'].fillna(0.).sum(),
+                'lat': x['lat'].astype(float).mean(),
+                'lon': x['lon'].astype(float).mean(),
+                'YearCommissioned': x['YearCommissioned'].min(),
+                'Retrofit': x['Retrofit'].max(),
+                'projectID': list(x['projectID'])}
         if ('Duration' in target_columns()) & ('Duration' in x):
-            results['Duration'] = (x.Duration * x.Capacity / x.Capacity.sum()).sum()
+            results['Duration'] = ((x.Duration * x.Capacity / x.Capacity.sum())
+                                   .sum())
         elif ('Duration' in target_columns()):
             results['Duration'] = np.nan
         return pd.Series(results)
 
-    path_name = _data_out('aggregations/aggregation_groups_{}.csv'.format(dataset_name))
+    path_name = _data_out('aggregations/aggregation_groups_{}.csv'
+                          .format(dataset_name))
     if use_saved_aggregation:
         try:
-            logger.info("Reading saved aggregation groups for dataset '{}'.".format(dataset_name))
-            groups = pd.read_csv(path_name, header=None, index_col=0).reindex(index=df.index)
+            logger.info("Reading saved aggregation groups for dataset '{}'."
+                        .format(dataset_name))
+            groups = (pd.read_csv(path_name, header=None, index_col=0)
+                        .reindex(index=df.index))
             df = df.assign(grouped=groups.values)
         except (ValueError, IOError):
             logger.warning("Non-existing saved links for dataset '{0}', "
-                           "continuing by aggregating again".format(dataset_name))
+                           "continuing by aggregating again"
+                           .format(dataset_name))
             if 'grouped' in df:
                 df.drop('grouped', axis=1, inplace=True)
 
@@ -253,8 +263,9 @@ def aggregate_units(df, use_saved_aggregation=False, dataset_name=None,
     df = df.groupby('grouped').apply(prop_for_groups)
     if 'Duration' in df:
         df['Duration'] = df['Duration'].replace(0., np.nan)
-    df = df.reset_index(drop=True).pipe(clean_powerplantname)
-    df = df.loc[:, target_columns(detailed_columns=detailed_columns)]
+    df = (df
+          .reset_index(drop=True).pipe(clean_powerplantname)
+          .reindex(target_columns(detailed_columns=detailed_columns), axis=1))
     if return_aggregation_groups:
         return df, grouped
     else:
@@ -292,31 +303,35 @@ def clean_single(df, dataset_name=None, aggregate_powerplant_units=True,
         aggregation algorithm again
 
     """
-    if aggregate_powerplant_units and use_saved_aggregation and dataset_name is None:
-        raise ValueError('``aggregate_powerplant_units`` is True but no ``dataset_name`` was given!')
+    if (aggregate_powerplant_units and use_saved_aggregation and
+       dataset_name is None):
+            raise ValueError('``aggregate_powerplant_units`` is True but no '
+                             '``dataset_name`` was given!')
     if dataset_name is None:
-        dataset_name='Unnamed dataset'
+        dataset_name = 'Unnamed dataset'
 
     logger.info("Cleaning plant names in '{}'.".format(dataset_name))
     df = clean_powerplantname(df)
 
     if aggregate_powerplant_units:
-        logger.info("Aggregating blocks to entire units in '{}'.".format(dataset_name))
+        logger.info("Aggregating blocks to entire units in "
+                    "'{}'.".format(dataset_name))
         if return_aggregation_groups:
-            df, grouped = aggregate_units(df,
-                                          use_saved_aggregation=use_saved_aggregation,
-                                          dataset_name=dataset_name,
-                                          detailed_columns=detailed_columns,
-                                          return_aggregation_groups=True)
+            df, grouped = aggregate_units(
+                    df, use_saved_aggregation=use_saved_aggregation,
+                    dataset_name=dataset_name,
+                    detailed_columns=detailed_columns,
+                    return_aggregation_groups=True)
         else:
-            df = aggregate_units(df, use_saved_aggregation=use_saved_aggregation,
-                                 dataset_name=dataset_name, detailed_columns=detailed_columns)
+            df = aggregate_units(df,
+                                 use_saved_aggregation=use_saved_aggregation,
+                                 dataset_name=dataset_name,
+                                 detailed_columns=detailed_columns)
 
     else:
         df['projectID'] = df['projectID'].dropna().map(lambda x: [x])
-    df =  clean_technology(df)
+    df = clean_technology(df)
     if return_aggregation_groups:
         return df, grouped
     else:
         return df
-

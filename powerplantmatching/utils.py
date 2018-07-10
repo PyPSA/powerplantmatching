@@ -162,7 +162,7 @@ def parse_Geoposition(loc, zipcode='', country=None, return_Country=False,
 
         if use_saved_position is not None:
             saved = pd.read_csv(_data('parsed_locations.csv'),
-                                index_col=[0,1], encoding='utf-8')
+                                index_col=[0, 1], encoding='utf-8')
             if saved.index.contains((loc, country)):
                 return saved.loc[(loc, country)].values
 
