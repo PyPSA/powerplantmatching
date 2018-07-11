@@ -109,35 +109,35 @@ def to_TIMES(df=None, use_scaled_capacity=False, baseyear=2015):
            (df.Technology.str.contains('offshore', case=False)),
            'TimesType'] += 'F'
     df.loc[(df.Fueltype == 'Wind') &
-           (df.Technology.str.contains('offshore', case=False) is False),
+           ~(df.Technology.str.contains('offshore', case=False)),
            'TimesType'] += 'N'
     df.loc[(df.Fueltype == 'Solar') &
            (df.Technology.str.contains('CSP', case=False)),
            'TimesType'] += 'CSP'
     df.loc[(df.Fueltype == 'Solar') &
-           (df.Technology.str.contains('CSP', case=False) is False),
+           ~(df.Technology.str.contains('CSP', case=False)),
            'TimesType'] += 'SPV'
     df.loc[(df.Fueltype == 'Natural Gas') &
            (df.Technology.str.contains('CCGT', case=False)),
            'TimesType'] += '-CCGT'
     df.loc[(df.Fueltype == 'Natural Gas') &
-           (df.Technology.str.contains('CCGT', case=False) is False) &
+           ~(df.Technology.str.contains('CCGT', case=False)) &
            (df.Technology.str.contains('OCGT', case=False)),
            'TimesType'] += '-OCGT'
     df.loc[(df.Fueltype == 'Natural Gas') &
-           (df.Technology.str.contains('CCGT', case=False) is False) &
-           (df['Technology'].str.contains('OCGT', case=False) is False),
+           ~(df.Technology.str.contains('CCGT', case=False)) &
+           ~(df['Technology'].str.contains('OCGT', case=False)),
            'TimesType'] += '-ST'
     df.loc[(df.Fueltype == 'Hydro') &
            (df.Technology.str.contains('pumped storage', case=False)),
            'TimesType'] += '-PST'
     df.loc[(df.Fueltype == 'Hydro') &
            (df.Technology.str.contains('run-of-river', case=False)) &
-           (df.Technology.str.contains('pumped storage', case=False) is False),
+           ~(df.Technology.str.contains('pumped storage', case=False)),
            'TimesType'] += '-ROR'
     df.loc[(df.Fueltype == 'Hydro') &
-           (df.Technology.str.contains('run-of-river', case=False) is False) &
-           (df.Technology.str.contains('pumped storage', case=False) is False),
+           ~(df.Technology.str.contains('run-of-river', case=False)) &
+           ~(df.Technology.str.contains('pumped storage', case=False)),
            'TimesType'] += '-STO'
 
     if None in set(df.TimesType):

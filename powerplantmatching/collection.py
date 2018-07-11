@@ -106,7 +106,7 @@ def Collection(datasets, update=False, use_saved_aggregation=False,
                               encoding='utf-8')
         if 'projectID' in sdf and reduced:
             try:  # ast.literal_eval() seems to be unstable when NaN are given.
-                sdf.projectID = (sdf.projectID.str.replace('\[nan\]','[]')
+                sdf.projectID = (sdf.projectID.str.replace('\[nan\]', '[]')
                                  .apply(lambda df: ast.literal_eval(df)))
             except ValueError:
                 pass
@@ -166,7 +166,7 @@ def MATCHED_dataset(aggregated_hydros=False, rescaled_hydros=False,
     matched = (extend_by_non_matched(matched, OPSD(), 'OPSD',
                                      clean_added_data=True,
                                      use_saved_aggregation=True)
-               # remaining fossi fuels as hard coal
+               # remaining fossil fuels as hard coal
                .assign(Fueltype=lambda df: df.Fueltype.fillna('Hard Coal')))
 
     # drop matches between only low reliability-data, this is necessary since
