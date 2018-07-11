@@ -208,7 +208,7 @@ def combine_multiple_datasets(datasets, labels, use_saved_matches=False,
         return (pd.concat(datasets, axis=1,
                           keys=cross_matches.columns.tolist())
                 .reorder_levels([1, 0], axis=1)
-                .reindex(columns=target_columns())
+                .reindex(columns=target_columns(), level=0)
                 .reset_index(drop=True))
     crossmatches = link_multiple_datasets(datasets, labels,
                                           use_saved_matches=use_saved_matches,
