@@ -108,7 +108,7 @@ def OPSD(rawEU=False, rawDE=False,
     if statusDE is not None:
         opsd_DE = opsd_DE.loc[opsd_DE.Status.isin(statusDE)]
     opsd_DE = opsd_DE.reindex(columns=target_columns())
-    return (pd.concat([opsd_EU, opsd_DE]).reset_index(drop=True)
+    return (pd.concat([opsd_EU, opsd_DE], ignore_index=True)
             .replace(dict(Fueltype={'Biomass and biogas': 'Bioenergy',
                                     # Fossil fuels MUST NOT be set to 'Other',
                                     # because 'Other' would be kept in final
@@ -136,6 +136,7 @@ def OPSD(rawEU=False, rawDE=False,
             .pipe(gather_set_info)
             .pipe(clean_technology)
             .loc[lambda df: df.Country.isin(target_countries())]
+            .reset_index(drop=True)
             .pipe(scale_to_net_capacities,
                   (not data_config['OPSD']['net_capacity']))
             )
@@ -1083,13 +1084,14 @@ def OPSD_VRE():
 
     df = pd.concat((read_opsd_res(r) for r in ['DE', 'DK', 'CH']),
                    ignore_index=True)
-    df.loc[:, 'Country'] = df.Country.str.title()
-    df.loc[:, 'File'] = 'renewable_power_plants.sqlite'
-    df.loc[:, 'Set'] = 'PP'
-    df = df.replace({'NaT': np.NaN,
-                     None: np.NaN,
-                     '': np.NaN})
-    for col in ['YearCommissioned', 'Capacity', 'lat', 'lon']:
+    df = (df.assign(Retrofit=df.YearCommissioned,
+                    Country=df.Country.str.title(),
+                    File='renewable_power_plants.sqlite',
+                    Set='PP')
+            .replace({'NaT': np.NaN,
+                      None: np.NaN,
+                      '': np.NaN}))
+    for col in ['YearCommissioned', 'Retrofit', 'Capacity', 'lat', 'lon']:
         df.loc[:, col] = df[col].astype(np.float)
     d = {u'Connected unit': 'PV',
          u'Integrated unit': 'PV',
@@ -1099,7 +1101,7 @@ def OPSD_VRE():
          u'Onshore wind energy': 'Onshore',
          u'Offshore wind energy': 'Offshore'}
     df.Technology.replace(d, inplace=True)
-    return df
+    return df.reindex(columns=target_columns()).drop('Name', axis=1)
 
 
 def IRENA_stats():
