@@ -105,7 +105,7 @@ data/in/*ESE*
 data/out/*ESE*
 data/in/hydro_aggregation.csv
 data/in/renewable_power_plants.sqlite
-data/out/Export_Stock_TIMES.xlsx
+data/out/Export_Stock_TIMES*.xlsx
 data/in/kraftwerke-de-ab-100-mw.xls
 data/in/Kraftwerksliste_2017_2.xlsx
 data/out/aggregation_groups_BNETZA.csv
