@@ -1,35 +1,35 @@
 # -*- coding: utf-8 -*-
-## Copyright 2015-2016 Fabian Hofmann (FIAS), Jonas Hoersch (FIAS)
+# Copyright 2015-2016 Fabian Hofmann (FIAS), Jonas Hoersch (FIAS)
 
-## This program is free software; you can redistribute it and/or
-## modify it under the terms of the GNU General Public License as
-## published by the Free Software Foundation; either version 3 of the
-## License, or (at your option) any later version.
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 3 of the
+# License, or (at your option) any later version.
 
-## This program is distributed in the hope that it will be useful,
-## but WITHOUT ANY WARRANTY; without even the implied warranty of
-## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-## GNU General Public License for more details.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 
-## You should have received a copy of the GNU General Public License
-## along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 Functions for linking and combining different datasets
 """
 
 from __future__ import absolute_import, print_function
 
-import pandas as pd
-import numpy as np
-import itertools
-import logging
-logger = logging.getLogger(__name__)
 from .config import target_columns
 from .utils import read_csv_if_string, _data_out
 from .duke import duke
 from .cleaning import clean_technology
 from .data import data_config
 
+import pandas as pd
+import numpy as np
+import itertools
+import logging
+logger = logging.getLogger(__name__)
 
 
 def best_matches(links):
@@ -47,6 +47,7 @@ def best_matches(links):
             .groupby(links.iloc[:, 1], as_index=False, sort=False)
             .apply(lambda x: x.loc[x.scores.idxmax(), labels]))
 
+
 def compare_two_datasets(datasets, labels, use_saved_matches=False,
                          **dukeargs):
     """
@@ -54,7 +55,7 @@ def compare_two_datasets(datasets, labels, use_saved_matches=False,
     dataframe including only the matched entries in a multi-indexed
     pandas.Dataframe. Compares all properties of the given columns
     ['Name','Fueltype', 'Technology', 'Country',
-    'Capacity','Geoposition'] in order to determine the same
+    'Capacity','lat', 'lon'] in order to determine the same
     powerplant in different two datasets. The match is in one-to-one
     mode, that is every entry of the initial databases has maximally
     one link in order to obtain unique entries in the resulting
@@ -72,12 +73,14 @@ def compare_two_datasets(datasets, labels, use_saved_matches=False,
 
     """
     datasets = list(map(read_csv_if_string, datasets))
-    if not 'singlematch' in dukeargs:
-        dukeargs['singlematch']=True
-    saving_path = _data_out('matches/matches_{}_{}.csv'.format(*np.sort(labels)))
+    if not ('singlematch' in dukeargs):
+        dukeargs['singlematch'] = True
+    saving_path = _data_out('matches/matches_{}_{}.csv'
+                            .format(*np.sort(labels)))
     if use_saved_matches:
         try:
-            logger.info('Reading saved matches for datasets {} and {}'.format(*labels))
+            logger.info('Reading saved matches for datasets {} and {}'
+                        .format(*labels))
             return pd.read_csv(saving_path, index_col=0)
         except (ValueError, IOError):
             logger.warning("Non-existing saved matches for dataset '{}',{} "
@@ -86,6 +89,7 @@ def compare_two_datasets(datasets, labels, use_saved_matches=False,
     matches = best_matches(links)
     matches.to_csv(saving_path)
     return matches
+
 
 def cross_matches(sets_of_pairs, labels=None):
     """
@@ -121,11 +125,13 @@ def cross_matches(sets_of_pairs, labels=None):
                    .apply(lambda x: x.loc[x.isnull().sum(axis=1).idxmin()]),
             matches[matches[i].isnull()]
         ]).reset_index(drop=True)
-    matches.loc[:,'length'] = matches.notna().sum(axis=1)
-    return (matches.sort_values(by='length', ascending=False)
-                      .reset_index(drop=True)
-                      .drop('length', axis=1)
-                      .loc[:,labels])
+    return (matches
+            .assign(length=matches.notna().sum(axis=1))
+            .sort_values(by='length', ascending=False)
+            .reset_index(drop=True)
+            .drop('length', axis=1)
+            .reindex(columns=labels))
+
 
 def link_multiple_datasets(datasets, labels, use_saved_matches=False,
                            **dukeargs):
@@ -133,7 +139,7 @@ def link_multiple_datasets(datasets, labels, use_saved_matches=False,
     Duke-based horizontal match of multiple databases. Returns the
     matching indices of the datasets. Compares all properties of the
     given columns ['Name','Fueltype', 'Technology', 'Country',
-    'Capacity','Geoposition'] in order to determine the same
+    'Capacity','lat', 'lon'] in order to determine the same
     powerplant in different datasets. The match is in one-to-one mode,
     that is every entry of the initial databases has maximally one
     link to the other database.  This leads to unique entries in the
@@ -150,12 +156,11 @@ def link_multiple_datasets(datasets, labels, use_saved_matches=False,
     datasets = list(map(read_csv_if_string, datasets))
     combinations = list(itertools.combinations(range(len(labels)), 2))
     all_matches = []
-    for c,d in combinations:
+    for c, d in combinations:
         logger.info('Comparing {0} with {1}'.format(labels[c], labels[d]))
-        match = compare_two_datasets([datasets[c],datasets[d]],
-                                     [labels[c],labels[d]],
-                                     use_saved_matches=use_saved_matches,
-                                     **dukeargs)
+        match = compare_two_datasets(
+                [datasets[c], datasets[d]], [labels[c], labels[d]],
+                use_saved_matches=use_saved_matches, **dukeargs)
         all_matches.append(match)
     return cross_matches(all_matches, labels=labels)
 
@@ -167,7 +172,7 @@ def combine_multiple_datasets(datasets, labels, use_saved_matches=False,
     matched dataframe including only the matched entries in a
     multi-indexed pandas.Dataframe. Compares all properties of the
     given columns ['Name','Fueltype', 'Technology', 'Country',
-    'Capacity','Geoposition'] in order to determine the same
+    'Capacity','lat', 'lon'] in order to determine the same
     powerplant in different datasets. The match is in one-to-one mode,
     that is every entry of the initial databases has maximally one
     link to the other database.  This leads to unique entries in the
@@ -197,32 +202,25 @@ def combine_multiple_datasets(datasets, labels, use_saved_matches=False,
         """
         datasets = list(map(read_csv_if_string, datasets))
         for i, data in enumerate(datasets):
-            datasets[i] = data.reindex(cross_matches.iloc[:, i]).reset_index(drop=True)
-        df = pd.concat(datasets, axis=1, keys=cross_matches.columns.tolist())
-        df = df.reorder_levels([1, 0], axis=1)
-        df = df.loc[:,target_columns()]
-        return df.reset_index(drop=True)
+            datasets[i] = (data
+                           .reindex(cross_matches.iloc[:, i])
+                           .reset_index(drop=True))
+        return (pd.concat(datasets, axis=1,
+                          keys=cross_matches.columns.tolist())
+                .reorder_levels([1, 0], axis=1)
+                .reindex(columns=target_columns())
+                .reset_index(drop=True))
     crossmatches = link_multiple_datasets(datasets, labels,
                                           use_saved_matches=use_saved_matches,
                                           **dukeargs)
     return (combined_dataframe(crossmatches, datasets)
-                            .reindex(columns=target_columns(), level=0))
+            .reindex(columns=target_columns(), level=0))
 
 
 def reduce_matched_dataframe(df, show_orig_names=False):
     """
-    Returns a new reduced dataframe with all names of the powerplants, according
-    to the following logic:
-        - Averages:             longitude and latitude
-        - Most frequent value:  Country, Fueltype and Technology
-        - Median:               Capacity,
-        - Max:                  YearCommissioned*
-
-    * Two cases in which it both makes sense to choose the latest year:
-    Case A: Plant has been retrofitted (e.g. 1973,1974,1973,2008)
-         -> Choose 2008.
-    Case B: Some dbs refer to the construction year, others to grid
-        synchronization year.  (1973,1974,1973,1972) -> Choose 1974.
+    Reduce a matched dataframe to a unique set of columns. For each entry
+    take the value of the most reliable data source included in that match.
 
     Parameters
     ----------

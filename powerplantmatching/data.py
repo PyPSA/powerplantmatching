@@ -31,6 +31,7 @@ import pycountry
 import logging
 from textwrap import dedent
 from six.moves import reduce
+
 from .config import target_countries, target_columns, additional_data_config
 from .cleaning import (gather_fueltype_info, gather_set_info,
                        gather_technology_info, clean_powerplantname,
@@ -475,7 +476,8 @@ def ENTSOE(update=False, raw=False, entsoe_token=None):
     Returns the list of installed generators provided by the ENTSO-E
     Trasparency Project. Geographical information is not given.
     If update=True, the dataset is parsed through a request to
-    'https://transparency.entsoe.eu/generation/r2/installedCapacityPerProductionUnit/show',
+    'https://transparency.entsoe.eu/generation/r2/\
+    installedCapacityPerProductionUnit/show',
     Internet connection requiered. If raw=True, the same request is done, but
     the unprocessed data is returned.
 
@@ -515,12 +517,14 @@ def ENTSOE(update=False, raw=False, entsoe_token=None):
                               header=None)
         # Search for Country abbreviations in each Name
         pattern = '|'.join(('(?i)'+x) for x in target_countries())
-        domains = domains.assign(
-                Country=domains[1].str.findall(pattern).str.join(', '))
-
-        found = (domains[1].replace('[0-9]', '', regex=True)
-                 .str.split(' |,|\+|\-').apply(full_country_name)
-                 .str.join(sep=', ').str.findall(pattern)
+        domains = domains.assign(Country=domains[1]
+                                 .str.findall(pattern)
+                                 .str.join(', '))
+        found = (domains[1]
+                 .replace('[0-9]', '', regex=True)
+                 .str.split(' |,|\+|\-')
+                 .apply(full_country_name).str.join(sep=', ')
+                 .str.findall(pattern)
                  .str.join(sep=', ').str.strip())
         domains.Country = (domains.loc[:, 'Country'].fillna('')
                            .str.cat(found.fillna(''), sep=', ')
@@ -533,7 +537,7 @@ def ENTSOE(update=False, raw=False, entsoe_token=None):
                  'A04': 'Generation',
                  'A05': 'Load',
                  'B01': 'Biomass',
-                 'B02': 'Lignite',              # 'Fossil Brown coal/Lignite'
+                 'B02': 'Lignite',  # 'Fossil Brown coal/Lignite',
                  'B03': 'Fossil Coal-derived gas',
                  'B04': 'Fossil Gas',
                  'B05': 'Fossil Hard coal',
@@ -619,19 +623,18 @@ def ENTSOE(update=False, raw=False, entsoe_token=None):
                                               '.*(?i)coal.*', '.*Peat',
                                               'Marine', 'Wind.*',
                                               '.*Oil.*', 'Biomass'],
-                                  value=['Hydro', 'Natural Gas', 'Hard Coal',
-                                         'Other', 'Other', 'Wind', 'Oil',
-                                         'Bioenergy'],
+                                  value=['Hydro', 'Natural Gas',
+                                         'Hard Coal', 'Other', 'Other',
+                                         'Wind', 'Oil', 'Bioenergy'],
                                   regex=True),
                           Capacity=lambda df: pd.to_numeric(df.Capacity),
                           Country=lambda df:
                               df.Country.where(~df.Country.str.contains(','),
-                                               df.Name[df.Country.str.
-                                                       contains(',')]
-                                                 .apply(lambda x:
-                                                        parse_Geoposition(x,
-                                                          return_Country=True)))
-                          )
+                                               df.Name[df.Country
+                                                       .str.contains(',')]
+                                               .apply(
+                                                lambda x: parse_Geoposition(
+                                                    x, return_Country=True))))
                   [lambda df: df.Country.isin(target_countries())]
                   .pipe(gather_technology_info)
                   .pipe(gather_set_info)
@@ -905,7 +908,7 @@ data_config['UBA'] = {
         'read_function': UBA,
         'clean_single_kwargs': dict(aggregate_powerplant_units=False),
         'net_capacity': False,
-        'reliability_score': 2}
+        'reliability_score': 5}
 
 
 def BNETZA(header=9, sheet_name='Gesamtkraftwerksliste BNetzA',
@@ -944,78 +947,79 @@ def BNETZA(header=9, sheet_name='Gesamtkraftwerksliste BNetzA',
             'YearCommissioned',
             u'PLZ\n(Standort Kraftwerk)': 'PLZ'})
     # If BNetzA-Name is empty replace by company, if this is empty by city.
+
     from .heuristics import PLZ_to_LatLon_map
-    bnetza['lon'] = bnetza.PLZ.map(PLZ_to_LatLon_map()['lon'])
-    bnetza['lat'] = bnetza.PLZ.map(PLZ_to_LatLon_map()['lat'])
-    bnetza.loc[bnetza.Name.str.len().fillna(0.0) <= 4, 'Name'] = (
-        bnetza.loc[bnetza.Name.str.len().fillna(0.0) <= 4, 'Unternehmen'] + ' '
-        + bnetza.loc[bnetza.Name.str.len().fillna(0.0) <= 4, 'Name'].fillna('')
-        )
-    bnetza.Name.fillna(bnetza.Ort, inplace=True)
-    add_location_b = bnetza[bnetza.Ort.notnull()].apply(
-            lambda ds: (ds['Ort'] not in ds['Name']) and
-                       (text.title(ds['Ort']) not in ds['Name']), axis=1)
-    bnetza.YearCommissioned = (bnetza.YearCommissioned.astype(text)
-                               .str.replace("[^0-9.]", " ")
-                               .str.split(' ')
-                               .str[0].replace('', np.nan).astype(float))
-    bnetza.loc[bnetza.Ort.notnull() & add_location_b, 'Name'] = (
-                bnetza.loc[bnetza.Ort.notnull() & add_location_b, 'Ort'] + ' '
-                + bnetza.loc[bnetza.Ort.notnull() & add_location_b, 'Name'])
-    bnetza.Name.replace('\s+', ' ', regex=True, inplace=True)
-    # Filter by Status
+
     pattern = '|'.join(['.*(?i)betrieb', '.*(?i)gehindert', '(?i)vorl.*ufig.*',
                         'Sicherheitsbereitschaft', 'Sonderfall'])
-    bnetza = (bnetza.loc[bnetza.Status.str.contains(pattern, regex=True,
-                                                    case=False)]
-                    .loc[lambda df: df.projectID.notna()])
-    # Technologies
-    bnetza.Blockname.replace(
-            to_replace=['.*(GT|gasturbine).*',
-                        '.*(DT|HKW|(?i)dampfturbine|(?i)heizkraftwerk).*',
-                        '.*GuD.*'],
-            value=['OCGT', 'Steam Turbine', 'CCGT'], regex=True, inplace=True)
-    bnetza = gather_technology_info(bnetza, search_col=['Name', 'Fueltype',
-                                                        'Blockname'])
-    bnetza.loc[bnetza.Fueltype.str.contains('Onshore', case=False),
-               'Technology'] = 'Onshore'
-    bnetza.loc[bnetza.Fueltype.str.contains('Offshore', case=False),
-               'Technology'] = 'Offshore'
-    bnetza.loc[bnetza.Fueltype.str.contains('solare', case=False),
-               'Technology'] = 'PV'
-    bnetza.loc[bnetza.Fueltype.str.contains('Laufwasser', case=False),
-               'Technology'] = 'Run-Of-River'
-    bnetza.loc[bnetza.Fueltype.str.contains('Speicherwasser', case=False),
-               'Technology'] = 'Reservoir'
-    bnetza.loc[bnetza.Fueltype == u'Pumpspeicher',
-               'Technology'] = 'Pumped Storage'
+
+    bnetza = (bnetza.assign(
+              lon=bnetza.PLZ.map(PLZ_to_LatLon_map()['lon']),
+              lat=bnetza.PLZ.map(PLZ_to_LatLon_map()['lat']),
+              Name=bnetza.Name.where(bnetza.Name.str.len().fillna(0) > 4,
+                                     bnetza.Unternehmen + ' ' +
+                                     bnetza.Name.fillna(''))
+                              .fillna(bnetza.Ort),
+              YearCommissioned=bnetza.YearCommissioned
+              .astype(text)
+              .str.replace("[^0-9.]", " ")
+              .str.split(' ')
+              .str[0].replace('', np.nan)
+              .astype(float),
+              Blockname=bnetza.Blockname.replace
+              (to_replace=['.*(GT|gasturbine).*',
+                           '.*(DT|HKW|(?i)dampfturbine|(?i)heizkraftwerk).*',
+                           '.*GuD.*'],
+               value=['OCGT', 'Steam Turbine', 'CCGT'],
+               regex=True))
+              [lambda df: df.projectID.notna() &
+               df.Status.str.contains(pattern, regex=True, case=False)]
+              .pipe(gather_technology_info, search_col=['Name', 'Fueltype',
+                                                        'Blockname']))
+
+    add_location_b = (bnetza[bnetza.Ort.notnull()]
+                      .apply(lambda ds: (ds['Ort'] not in ds['Name'])
+                             and (text.title(ds['Ort']) not in ds['Name']),
+                             axis=1))
+    bnetza.loc[bnetza.Ort.notnull() & add_location_b, 'Name'] = (
+                bnetza.loc[bnetza.Ort.notnull() & add_location_b, 'Ort']
+                + ' '
+                + bnetza.loc[bnetza.Ort.notnull() & add_location_b, 'Name'])
+    bnetza.Name.replace('\s+', ' ', regex=True, inplace=True)
+
+    techmap = {'solare': 'PV',
+               'Laufwasser': 'Run-Of-River',
+               'Speicherwasser': 'Reservoir',
+               'Pumpspeicher': 'Pumped Storage'}
+    for fuel in techmap:
+        bnetza.loc[bnetza.Fueltype.str.contains(fuel, case=False),
+                   'Technology'] = techmap[fuel]
     # Fueltypes
     bnetza.Fueltype.replace(
             to_replace=['(.*(?i)wasser.*|Pump.*)', 'Erdgas', 'Steinkohle',
                         'Braunkohle', 'Wind.*', 'Solar.*',
-                        '.*(?i)energietr.*ger.*\n.*', 'Kern.*',
-                        'Mineral.l.*', 'Biom.*', '.*(?i)(e|r|n)gas', 'Geoth.*',
-                        'Abfall'],
+                        '.*(?i)energietr.*ger.*\n.*', 'Kern.*', 'Mineral.l.*',
+                        'Biom.*', '.*(?i)(e|r|n)gas', 'Geoth.*', 'Abfall'],
             value=['Hydro', 'Natural Gas', 'Hard Coal', 'Lignite', 'Wind',
                    'Solar', 'Other', 'Nuclear', 'Oil', 'Bioenergy', 'Other',
                    'Geothermal', 'Waste'],
             regex=True, inplace=True)
     if prune_wind:
-        bnetza = bnetza.loc[lambda x: x.Fueltype != 'Wind']
+        bnetza = bnetza[lambda x: x.Fueltype != 'Wind']
     if prune_solar:
-        bnetza = bnetza.loc[lambda x: x.Fueltype != 'Solar']
+        bnetza = bnetza[lambda x: x.Fueltype != 'Solar']
     # Filter by country
     bnetza = bnetza[~bnetza.Bundesland.isin([u'Österreich', 'Schweiz',
                                              'Luxemburg'])]
-    bnetza.loc[:, 'Country'] = 'Germany'
-    # Remaining columns
-    bnetza.loc[:, 'File'] = filename
-    bnetza.loc[:, 'Set'] = (bnetza.Set.fillna('Nein').str.title()
-                            .replace({u'Ja': 'CHP', u'Nein': 'PP'}))
-    bnetza = (bnetza.reindex(columns=target_columns())
-                    .pipe(scale_to_net_capacities,
-                          (not data_config['BNETZA']['net_capacity'])))
-    return bnetza
+    return (bnetza.assign(Country='Germany',
+                          File=filename,
+                          Set=bnetza.Set.fillna('Nein')
+                          .str.title()
+                          .replace({u'Ja': 'CHP', u'Nein': 'PP'}))
+            .reindex(columns=target_columns())
+            .pipe(scale_to_net_capacities,
+                  not data_config['BNETZA']['net_capacity'])
+            .reset_index(drop=True))
 
 
 data_config['BNETZA'] = {'read_function': BNETZA, 'net_capacity': True,
