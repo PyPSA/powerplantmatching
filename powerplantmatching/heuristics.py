@@ -236,11 +236,11 @@ def aggregate_VRE_by_commyear(df, target_fueltypes=None, agg_geo_by=None):
     df = df[df.Fueltype.isin(target_fueltypes)]
     df = average_empty_commyears(df)
     df.Technology.fillna('-', inplace=True)
-    df = df.groupby(['Country', 'YearCommissioned', 'Fueltype', 'Technology'])\
-           .agg(f).reset_index().replace({'-': np.NaN})
+    df = (df.groupby(['Country', 'YearCommissioned', 'Fueltype', 'Technology'])
+            .agg(f).reset_index().replace({'-': np.NaN}))
     df.columns = df.columns.droplevel(level=1)
-    df.loc[:, 'Set'] = 'PP'
-    return df
+    return df.assign(Set='PP',
+                     Retrofit=df.YearCommissioned)
 
 
 def derive_vintage_cohorts_from_statistics(df, base_year=2015):
@@ -330,6 +330,7 @@ def derive_vintage_cohorts_from_statistics(df, base_year=2015):
             dfe = pd.concat([dfe, add[add.Capacity > 0.0]], ignore_index=True)
     dfe.Year = dfe.Year.apply(pd.to_numeric)
     dfe.rename(columns={'Year': 'YearCommissioned'}, inplace=True)
+    dfe = dfe.assign(Retrofit=dfe.YearCommissioned)
     return dfe[~np.isclose(dfe.Capacity, 0)]
 
 
@@ -338,6 +339,13 @@ def manual_corrections(df):
     Here, manual corrections are being processed which are not (yet) solved by
     the data mending, matching or reducing algorithms.
     """
+    # Filter matches based only on GEO & CARMA unless they are in 4 countries
+    df = (df[lambda x: x.projectID.apply(lambda p: p.keys() not in
+                                         [['GEO', 'CARMA'], ['CARMA', 'GEO']])
+             | df.Country.isin(['Croatia', 'Czech Republic', 'Estonia',
+                                'Luxembourg'])
+             | df.Name.isin(['Grafenrheinfeld'])])
+
     # German CAES plant Huntorf
     df.loc[df.Name.str.contains('huntorf', case=False).fillna(False),
            'Technology'] = 'CAES'
@@ -345,9 +353,6 @@ def manual_corrections(df):
     # Czech Lignite underrepresented, extend by missing WEPP records
     df = extend_by_non_matched(df, 'WEPP', fueltypes='Lignite',
                                countries='Czech Republic')
-
-    # Bulgarian plant 'Varna' decommissioned at 01.01.2015
-    df = df.loc[lambda x: ~(x.Name == 'Varna')]
 
     # Polish plant Kozienice Block 11 not yet online in 2015 and 2016
     df.loc[lambda x: (x.Name == 'Kozienice'), 'Capacity'] = 2820
