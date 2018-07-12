@@ -103,7 +103,7 @@ def Collection(datasets, update=False, use_saved_aggregation=False,
             sdf = pd.read_csv(outfn_reduced, index_col=0, encoding='utf-8')
         else:
             sdf = pd.read_csv(outfn_matched, index_col=0, header=[0, 1],
-                              encoding='utf-8')
+                              encoding='utf-8', low_memory=False)
         if 'projectID' in sdf and reduced:
             try:  # ast.literal_eval() seems to be unstable when NaN are given.
                 sdf.projectID = (sdf.projectID.str.replace('\[nan\]', '[]')
