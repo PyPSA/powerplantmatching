@@ -176,14 +176,13 @@ def to_TIMES(df=None, use_scaled_capacity=False, baseyear=2015):
             for reg in regions:
                 if reg in data_regions.groups:
                     ct_group = data_regions.get_group(reg)
-                    # Here, all matched units existing in baseyear are being
-                    # filtered. This is needed since there can be units in the
-                    # system which are actually already over their lifetime,
-                    # but still online in baseyear.
+                    # Here, all matched units existing in the dataset are being
+                    # considered. This is needed since there can be units in
+                    # the system which are actually already beyond their
+                    # assumed technical lifetimes but still online in baseyear.
                     if yr == baseyear:
-                        series = ct_group.apply(lambda x: x[cap_column]
-                                                if yr >= x['YearCommissioned']
-                                                else 0, axis=1)
+                        series = ct_group.apply(lambda x: x[cap_column],
+                                                axis=1)
                     # Here all matched units that are not retired in yr,
                     # are being filtered.
                     elif yr > baseyear:

@@ -23,7 +23,8 @@ from .data import data_config, OPSD, ESE
 from .cleaning import clean_single
 from .matching import combine_multiple_datasets, reduce_matched_dataframe
 from .heuristics import (extend_by_non_matched, extend_by_VRE,
-                         remove_oversea_areas, manual_corrections)
+                         remove_oversea_areas, manual_corrections,
+                         average_empty_commyears)
 
 import pandas as pd
 import os
@@ -306,6 +307,7 @@ def Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_matched_reduced_VRE(
                 use_saved_matches=use_saved_matches,
                 use_saved_aggregation=use_saved_aggregation)
               .pipe(manual_corrections)
+              .pipe(average_empty_commyears)
               .pipe(extend_by_VRE, base_year=base_year, prune_beyond=True)
               .pipe(remove_oversea_areas))
         df.to_csv(_data_out('Matched_CARMA_ENTSOE_ESE_GEO_'
