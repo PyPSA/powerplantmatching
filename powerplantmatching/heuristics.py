@@ -192,10 +192,13 @@ def average_empty_commyears(df):
                                  .transform('mean'), inplace=True)
     if df.YearCommissioned.isnull().any():
         count = len(df[df.YearCommissioned.isnull()])
-        raise(ValueError('''There are still *{0}* empty values for 'YearCommissioned'
-                            in the DataFrame. These should be either be filled
-                            manually or dropped to continue.'''.format(count)))
+        raise(ValueError(
+                '''There are still *{0}* empty values for 'YearCommissioned'
+                in the DataFrame. These should be either be filled
+                manually or dropped to continue.'''.format(count)))
+    # Cast to integers and apply these values to the 'Retrofit' column too:
     df.loc[:, 'YearCommissioned'] = df.YearCommissioned.astype(int)
+    df.Retrofit.fillna(df.YearCommissioned.astype(int), inplace=True)
     return df
 
 
