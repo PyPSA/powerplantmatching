@@ -1,3 +1,139 @@
-entsoe_token:
+# io confiig
+entsoe_token: 
 ese_path: Downloads/projects.xls
+opsd_vres_base_year: 2016
+
+#matching config
+matching_sources:
+    - CARMA
+    - ENTSOE
+    - ESE
+    - GEO
+    - GPD
+    - IWPDCY
+    - OPSD
+#    - WEPP
+
+fully_included_sources:
+    - OPSD
+    - ESE
+
+#data config
 display_net_caps: true
+target_columns:
+    - Name
+    - Fueltype
+    - Technology
+    - Set
+    - Country
+    - Capacity
+#    - Efficiency
+    - Duration
+    - YearCommissioned
+    - Retrofit
+    - lat
+    - lon
+    - File
+    - projectID
+target_countries:
+    - Austria
+    - Belgium
+    - Bulgaria
+    - Croatia
+    - Czech Republic
+    - Denmark
+    - Estonia
+    - Finland
+    - France
+    - Germany
+    - Greece
+    - Hungary
+    - Ireland
+    - Italy
+    - Latvia
+    - Lithuania
+    - Luxembourg
+    - Netherlands
+    - Norway
+    - Poland
+    - Portugal
+    - Romania
+    - Slovakia
+    - Slovenia
+    - Spain
+    - Sweden
+    - Switzerland
+    - United Kingdom
+target_fueltypes:
+    - Bioenergy
+    - Geothermal
+    - Hard Coal
+    - Hydro
+    - Lignite
+    - Natural Gas
+    - Nuclear
+    - Oil
+    - Other
+    - Solar
+    - Waste
+    - Wind
+target_sets:
+    - CHP
+    - PP
+    - Stores
+target_technologies:
+    - CCGT
+    - OCGT
+    - Steam Turbine
+    - Combustion Engine
+    - Run-Of-River
+    - Pumped Storage
+    - Reservoir
+    - Marine
+    - Onshore
+    - Offshore
+    - PV
+    - CSP
+
+# heuristic config
+fuel_to_lifetime:
+    Bioenergy: 20
+    Geothermal: 15
+    Hard Coal: 45
+    Hydro: 100
+    Lignite: 45
+    Natural Gas: 40
+    Nuclear: 50
+    Oil: 40
+    Other: 5
+    Solar: 25
+    Waste: 25
+    Wind: 25
+
+# plotting config
+fuel_to_color:
+    OCGT: darkorange
+    Hydro: royalblue
+    Run-of-river: navy
+    Ror: navy
+    Lignite: indianred
+    Nuclear: yellow
+    Solar: gold
+    Windoff: cornflowerblue
+    Windon: steelblue
+    Offshore: cornflowerblue
+    Onshore: steelblue
+    Wind: steelblue
+    Bioenergy: g
+    Natural Gas: firebrick
+    CCGT: firebrick
+    Coal: k
+    Hard Coal: dimgray
+    Oil: darkgreen
+    Other: silver
+    Waste: grey
+    Geothermal: orange
+    Battery: purple
+    Hydrogen Storage: teal
+    Electro-mechanical: teal
+    Total: gold
