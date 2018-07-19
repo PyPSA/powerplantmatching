@@ -36,6 +36,8 @@ from .collection import (
         Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WRI_matched_reduced_VRE,
         Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WRI_matched_reduced)
 from .utils import lookup, set_uncommon_fueltypes_to_other
+import logging
+logger = logging.getLogger(__name__)
 
 
 def Show_all_plots():
@@ -233,7 +235,7 @@ def comparison_1dim(dfs=None, keys=None, by='Country', include_WEPP=True,
 def comparison_countries_fueltypes_bar(
         dfs=None, ylabel=None, include_WEPP=True, include_VRE=False,
         show_indicators=True, legend_in_subplots=False, year=2015,
-        exclude=None, figsize=(27, 15)):
+        exclude=None, figsize=(27, 15), **kwargs):
     """
     Plots per country an analysis, how the given datasets differ by fueltype.
 
@@ -255,6 +257,7 @@ def comparison_countries_fueltypes_bar(
     year : int
         Only plot units with a commissioning year smaller or equal this value
     """
+    threshold = kwargs.get('threshold', -1)
     if ylabel is None:
         ylabel = u'Capacity [$GW$]'
 
@@ -290,6 +293,12 @@ def comparison_countries_fueltypes_bar(
                   .dropna(axis=0, how='all')  # relevant fueltypes for each
                   .fillna(0.0))               # country (if all zero->drop!).
 
+    if (show_indicators or threshold >= 0.) and len(stats.columns) < 2:
+        logger.warn('At least two objects for comparison needed when using '
+                    '`show_indicators` or `threshold`. Arguments ignored.')
+        show_indicators = False
+        threshold = -1
+
     # Presettings for the plots
     font = {'size': 12}
     plt.rc('font', **font)
@@ -306,11 +315,28 @@ def comparison_countries_fueltypes_bar(
         # Perform the plot
         stats.loc[country].plot.bar(ax=ax[i, j], stacked=False, legend=False,
                                     colormap='jet')
+        if show_indicators or threshold >= 0.0:
+            # TODO: Assure that matched is always in 1st+stats in last column.
+            colm = stats.loc[country].columns[0]
+            cols = stats.loc[country].columns[-1]
+        if threshold >= 0.0:
+            ctry = stats.loc[country]
+            ctry.loc[:, 'ratio'] = abs(ctry[colm] - ctry[cols])/ctry[cols]
+            ctry.loc[:, 'delta'] = abs(ctry[colm] - ctry[cols])
+            ctry.loc[:, 'mean'] = ctry.loc[:, colm:cols].apply(np.mean, axis=1)
+            ctry = (ctry.reset_index(drop=True)
+                        .loc[lambda x: x['ratio'] >= threshold])
+            circles = [mpatches.Ellipse(xy=(float(x),  r['mean']),
+                                        height=(r['delta'])*2.5,
+                                        width=4./ctry.index.max(),
+                                        color='g', alpha=0.5)
+                       for x, r in ctry.iterrows()]
+            for c in circles:
+                ax[i, j].add_artist(c)
         if show_indicators:
             ctry = stats.loc[country]
             r_sq = round(ctry.corr().iloc[0, 1]**2, 3)
-            # TODO: Assure that matched is always in 1st+stats in last column.
-            cov = round(ctry.iloc[:, 0].sum() / ctry.iloc[:, -1].sum(), 3)
+            cov = round(ctry[colm].sum() / ctry[cols].sum(), 3)
             txt = AnchoredText(
                     "\n" + r'$R^{2} = $%s' % r_sq + "\n"
                     r'$\frac{\sum P_{match}}{\sum P_{stats}} = $%s' % cov,
@@ -326,6 +352,10 @@ def comparison_countries_fueltypes_bar(
                     labels_mpatches[v] = mpatches.Patch(
                             color=stats_handle[u].patches[0].get_facecolor(),
                             label=v)
+            if threshold >= 0.0:
+                label = 'Threshold (={}%) marker'.format(int(threshold*100.))
+                labels_mpatches[label] = mpatches.Patch(color='g', alpha=0.5,
+                                                        label=label)
         else:
             ax[i, j].legend(fontsize=9, loc='best')
         # Format the subplots nicely
