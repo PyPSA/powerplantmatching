@@ -18,7 +18,7 @@ Functions for vertically cleaning a dataset.
 """
 from __future__ import absolute_import, print_function
 
-from .config import target_columns, target_technologies
+from .config import get_config
 from .duke import duke
 from .utils import (_data_out)
 
@@ -44,7 +44,7 @@ def clean_powerplantname(df):
     df = df[df.Name.notnull()]
     name = df.Name.replace(regex=True, value=' ',
                            to_replace=['-', '/', ',', '\(', '\)', '\[', '\]',
-                                       '\+', '[0-9]'])
+                                       '"', '\+', '[0-9]'])
 
     common_words = pd.Series(sum(name.str.split(), [])).value_counts()
     cw = list(common_words[common_words >= 20].index)
@@ -88,12 +88,16 @@ def gather_fueltype_info(df, search_col=['Name', 'Technology']):
     return df.assign(Fueltype=fueltype)
 
 
-def gather_technology_info(df, search_col=['Name', 'Fueltype']):
+def gather_technology_info(df, search_col=['Name', 'Fueltype'],
+                           config=None):
+    if config is None:
+        config = get_config()
+
     technology = (df['Technology'].dropna()
                   if 'Technology' in df
                   else pd.Series())
 
-    pattern = '|'.join(('(?i)'+x) for x in target_technologies())
+    pattern = '|'.join(('(?i)'+x) for x in config['target_technologies'])
     for i in search_col:
         found = (df[i].dropna()
                  .str.findall(pattern)
@@ -186,8 +190,10 @@ def cliques(df, dataduplicates):
     return df.assign(grouped=grouped)
 
 
-def aggregate_units(df, use_saved_aggregation=False, dataset_name=None,
-                    detailed_columns=False, return_aggregation_groups=False):
+def aggregate_units(df, dataset_name=None,
+                    pre_clean_name=True,
+                    use_saved_aggregation=False,
+                    config=None):
     """
     Vertical cleaning of the database. Cleans the "Name"-column, sums
     up the capacity of powerplant units which are determined to belong
@@ -207,33 +213,39 @@ def aggregate_units(df, use_saved_aggregation=False, dataset_name=None,
         custom name for dataset identification, choose your own
         identification in case no metadata is passed to the function
     """
-    def prop_for_groups(x):
-        """
-        Function for grouping duplicates within one dataset. Sums up
-        the capacity, takes mean from latitude and longitude, takes
-        the most frequent values for the rest of the columns
+    if config is None:
+        config = get_config()
 
-        """
-        results = {
-                'Name': x['Name'].value_counts().index[0],
-                'Country': x['Country'].value_counts(dropna=False).index[0],
-                'Fueltype': x['Fueltype'].value_counts(dropna=False).index[0],
-                'Technology': (x['Technology'].value_counts(dropna=False)
-                                              .index[0]),
-                'Set': x['Set'].value_counts(dropna=False).index[0],
-                'File': x['File'].value_counts(dropna=False).index[0],
-                'Capacity': x['Capacity'].fillna(0.).sum(),
-                'lat': x['lat'].astype(float).mean(),
-                'lon': x['lon'].astype(float).mean(),
-                'YearCommissioned': x['YearCommissioned'].min(),
-                'Retrofit': x['Retrofit'].max(),
-                'projectID': list(x['projectID'])}
-        if ('Duration' in target_columns()) & ('Duration' in x):
-            results['Duration'] = ((x.Duration * x.Capacity / x.Capacity.sum())
-                                   .sum())
-        elif ('Duration' in target_columns()):
-            results['Duration'] = np.nan
-        return pd.Series(results)
+    logger.info("Aggregating blocks to entire units in "
+                "'{}'.".format(dataset_name))
+
+    def most_frequent(ds):
+        return ds.value_counts(dropna=False).index[0]
+
+    weighted_cols = [col for col in ['Efficiency', 'Duration']
+                     if col in config['target_columns']]
+    df = df.assign(**{col: df[col] * df.Capacity for col in weighted_cols})
+
+    props_for_groups = pd.Series({
+                'Name': most_frequent,
+                'Country': most_frequent,
+                'Fueltype': most_frequent,
+                'Technology': most_frequent,
+                'Set': most_frequent,
+                'File': most_frequent,
+                'Capacity': pd.Series.sum,
+                'lat': pd.Series.mean,
+                'lon': pd.Series.mean,
+                'YearCommissioned': pd.Series.min,
+                'Retrofit': pd.Series.max,
+                'projectID': list,
+                'Duration': pd.Series.sum,  # note this is weighted sum
+                'Efficiency': pd.Series.mean  # note this is weighted mean
+                })[config['target_columns']].to_dict()
+#
+    if pre_clean_name:
+        logger.info("Cleaning plant names in '{}'.".format(dataset_name))
+        df = clean_powerplantname(df)
 
     path_name = _data_out('aggregations/aggregation_groups_{}.csv'
                           .format(dataset_name))
@@ -258,80 +270,78 @@ def aggregate_units(df, use_saved_aggregation=False, dataset_name=None,
             df.grouped.to_csv(path_name)
         except IndexError:
             pass
-
-    grouped = df.set_index('projectID')['grouped']
-    df = df.groupby('grouped').apply(prop_for_groups)
-    if 'Duration' in df:
-        df['Duration'] = df['Duration'].replace(0., np.nan)
+    df = df.groupby('grouped').agg(props_for_groups)
     df = (df
-          .reset_index(drop=True).pipe(clean_powerplantname)
-          .reindex(target_columns(detailed_columns=detailed_columns), axis=1))
-    if return_aggregation_groups:
-        return df, grouped
-    else:
-        return df
+          .assign(**{col: df[col].div(df['Capacity'])
+                  for col in weighted_cols})
+          .reset_index(drop=True)
+          .pipe(clean_powerplantname)
+          .reindex(columns=config['target_columns']))
+    return df
 
 
-def clean_single(df, dataset_name=None, aggregate_powerplant_units=True,
-                 use_saved_aggregation=False, detailed_columns=False,
-                 return_aggregation_groups=False):
-    """
-    Vertical cleaning of the database. Cleans the "Name"-column, sums
-    up the capacity of powerplant units which are determined to belong
-    to the same plant.
-
-    Parameters
-    ----------
-    df : pandas.Dataframe or string
-        dataframe or csv-file to use for the resulting database
-
-    dataset_name : str
-        Only sensible if ``aggregate_units`` is set to True.  custom name
-        for dataset identification, choose your own identification in
-        case no metadata is passed to the function
-
-    aggregate_units : Boolean, default True
-        Whether or not the power plant units should be aggregated
-
-    use_saved_aggregation : Boolean, default False
-        Only sensible if aggregate_units is set to True.
-        Whether to use the automatically saved aggregation file, which
-        is stored in data/aggregation_groups_XX.csv with XX
-        being either a custom name for the dataset or the name passed
-        with the metadata of the pd.DataFrame. This saves time if you
-        want to have aggregated powerplants without running the
-        aggregation algorithm again
-
-    """
-    if (aggregate_powerplant_units and use_saved_aggregation and
-       dataset_name is None):
-            raise ValueError('``aggregate_powerplant_units`` is True but no '
-                             '``dataset_name`` was given!')
-    if dataset_name is None:
-        dataset_name = 'Unnamed dataset'
-
-    logger.info("Cleaning plant names in '{}'.".format(dataset_name))
-    df = clean_powerplantname(df)
-
-    if aggregate_powerplant_units:
-        logger.info("Aggregating blocks to entire units in "
-                    "'{}'.".format(dataset_name))
-        if return_aggregation_groups:
-            df, grouped = aggregate_units(
-                    df, use_saved_aggregation=use_saved_aggregation,
-                    dataset_name=dataset_name,
-                    detailed_columns=detailed_columns,
-                    return_aggregation_groups=True)
-        else:
-            df = aggregate_units(df,
-                                 use_saved_aggregation=use_saved_aggregation,
-                                 dataset_name=dataset_name,
-                                 detailed_columns=detailed_columns)
-
-    else:
-        df['projectID'] = df['projectID'].dropna().map(lambda x: [x])
-    df = clean_technology(df)
-    if return_aggregation_groups:
-        return df, grouped
-    else:
-        return df
+# def clean_single(df, dataset_name=None,
+#                 aggregate_powerplant_units=True,
+#                 use_saved_aggregation=False,
+#                 return_aggregation_groups=False,
+#                 config=None):
+#    """
+#    Vertical cleaning of the database. Cleans the "Name"-column, sums
+#    up the capacity of powerplant units which are determined to belong
+#    to the same plant.
+#
+#    Parameters
+#    ----------
+#    df : pandas.Dataframe or string
+#        dataframe or csv-file to use for the resulting database
+#
+#    dataset_name : str
+#        Only sensible if ``aggregate_units`` is set to True.  custom name
+#        for dataset identification, choose your own identification in
+#        case no metadata is passed to the function
+#
+#    aggregate_units : Boolean, default True
+#        Whether or not the power plant units should be aggregated
+#
+#    use_saved_aggregation : Boolean, default False
+#        Only sensible if aggregate_units is set to True.
+#        Whether to use the automatically saved aggregation file, which
+#        is stored in data/aggregation_groups_XX.csv with XX
+#        being either a custom name for the dataset or the name passed
+#        with the metadata of the pd.DataFrame. This saves time if you
+#        want to have aggregated powerplants without running the
+#        aggregation algorithm again
+#
+#    """
+#    if config is None:
+#        config = get_config()
+#
+#    if (aggregate_powerplant_units and use_saved_aggregation and
+#       dataset_name is None):
+#            raise ValueError('``aggregate_powerplant_units`` is True but no '
+#                             '``dataset_name`` was given!')
+#    if dataset_name is None:
+#        dataset_name = 'Unnamed dataset'
+#
+#    logger.info("Cleaning plant names in '{}'.".format(dataset_name))
+#    df = clean_powerplantname(df)
+#
+#    if aggregate_powerplant_units:
+#        if return_aggregation_groups:
+#            df, grouped = aggregate_units(
+#                    df, use_saved_aggregation=use_saved_aggregation,
+#                    dataset_name=dataset_name,
+#                    return_aggregation_groups=True,
+#                    config=config)
+#        else:
+#            df = aggregate_units(df,
+#                                 use_saved_aggregation=use_saved_aggregation,
+#                                 dataset_name=dataset_name,
+#                                 config=config)
+#
+#    else:
+#        df['projectID'] = df['projectID'].dropna().map(lambda x: [x])
+#    if return_aggregation_groups:
+#        return df, grouped
+#    else:
+#        return df

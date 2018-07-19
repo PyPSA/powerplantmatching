@@ -20,10 +20,11 @@ from __future__ import print_function
 
 from .utils import set_uncommon_fueltypes_to_other, _data_in, _data_out
 from .data import data_config, OPSD, ESE
-from .cleaning import clean_single
+from .cleaning import aggregate_units
 from .matching import combine_multiple_datasets, reduce_matched_dataframe
 from .heuristics import (extend_by_non_matched, extend_by_VRE,
                          remove_oversea_areas, manual_corrections)
+from .config import get_config
 
 import pandas as pd
 import os
@@ -63,11 +64,15 @@ def Collection(datasets, update=False, use_saved_aggregation=False,
         conf.update(custom_config.get(name, {}))
 
         df = conf['read_function'](**conf.get('read_kwargs', {}))
-        return clean_single(df, use_saved_aggregation=use_saved_aggregation,
-                            dataset_name=name,
-                            **conf.get('clean_single_kwargs', {}))
+        if not conf.get('aggregated_units', False):
+            return aggregate_units(df,
+                                   use_saved_aggregation=use_saved_aggregation,
+                                   dataset_name=name)
+        else:
+            return df.assign(projectID=df.projectID.map(lambda x: {name: [x]}))
 
     datasets = sorted(datasets)
+    logger.info('Collect combined dataset for {}'.format(', '.join(datasets)))
     outfn_matched = _data_out('Matched_{}.csv'
                               .format('_'.join(map(str.upper, datasets))))
     outfn_reduced = _data_out('Matched_{}_reduced.csv'
@@ -86,9 +91,14 @@ def Collection(datasets, update=False, use_saved_aggregation=False,
             conf.update(custom_config.get(name, {}))
 
             df = conf['read_function'](**conf.get('read_kwargs', {}))
-            df = clean_single(df, use_saved_aggregation=use_saved_aggregation,
-                              dataset_name=name,
-                              **conf.get('clean_single_kwargs', {}))
+            if not conf.get('aggregated_units', False):
+                df = aggregate_units(
+                        df, use_saved_aggregation=use_saved_aggregation,
+                        dataset_name=name,
+                        **conf.get('clean_single_kwargs', {}))
+            else:
+                df = df.assign(projectID=df.projectID.map(
+                        lambda x: {name: [x]}))
             dfs.append(df)
         matched = combine_multiple_datasets(
                 dfs, datasets, use_saved_matches=use_saved_matches, **dukeargs)
@@ -113,27 +123,11 @@ def Collection(datasets, update=False, use_saved_aggregation=False,
         return sdf
 
 
-def Carma_ENTSOE_GEO_OPSD_WRI_matched(update=False,
-                                      use_saved_matches=False,
-                                      use_saved_aggregation=False):
-    return Collection(['CARMA', 'ENTSOE', 'GEO', 'OPSD', 'WRI'],
-                      update=update, use_saved_matches=use_saved_matches,
-                      use_saved_aggregation=use_saved_aggregation,
-                      reduced=False)
-
-
-def Carma_ENTSOE_GEO_OPSD_WRI_matched_reduced(update=False,
-                                              use_saved_matches=False,
-                                              use_saved_aggregation=False):
-    return Collection(['CARMA', 'ENTSOE', 'GEO', 'OPSD', 'WRI'],
-                      update=update, use_saved_matches=use_saved_matches,
-                      use_saved_aggregation=use_saved_aggregation,
-                      reduced=True)
-
-
-def MATCHED_dataset(aggregated_hydros=False, rescaled_hydros=False,
-                    subsume_uncommon_fueltypes=False,
-                    include_unavailables=False, **kwargs):
+def MATCHED_dataset(config=None,
+                    extend_by_vres=False,
+                    collection_kwargs={},
+                    extendby_kwargs={'use_saved_aggregation': True},
+                    subsume_uncommon_fueltypes=False):
     """
     This returns the actual match between the databases Carma, ENTSOE, ESE,
     GEO, IWPDCY, OPSD and WRI with an additional manipulation on the hydro
@@ -153,52 +147,52 @@ def MATCHED_dataset(aggregated_hydros=False, rescaled_hydros=False,
             "Geothermal", "Waste" and "Mixed Fueltypes" are declared as
             "Other".
     """
+    if config is None:
+        config = get_config()
 
-    if include_unavailables:
-        matched = Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WRI_matched_reduced(
-                    **kwargs)
-        matched = extend_by_non_matched(matched, ESE(), 'ESE',
-                                        clean_added_data=False)
+    matched = Collection(config['matching_sources'], **collection_kwargs)
 
-    else:
-        matched = Carma_ENTSOE_GEO_OPSD_WRI_matched_reduced(**kwargs)
-    columns = matched.columns
-    matched = (extend_by_non_matched(matched, OPSD(), 'OPSD',
-                                     clean_added_data=True,
-                                     use_saved_aggregation=True)
-               # remaining fossil fuels as hard coal
-               .assign(Fueltype=lambda df: df.Fueltype.fillna('Hard Coal')))
+    for source in config['fully_included_sources']:
+        matched = extend_by_non_matched(matched,
+                                        source,
+                                        **extendby_kwargs,
+                                        config=config)
 
     # drop matches between only low reliability-data, this is necessary since
-    # a lot of those are decommissioned: Probably we should filter
-    # by mean reliability larger than 3.
-    # some countries only appear in GEO and CARMA
+    # a lot of those are decommissioned, however some countries only appear in
+    # GEO and CARMA
     matched = (matched[matched.projectID.apply(lambda x: x.keys() not in
                [['GEO', 'CARMA'], ['CARMA', 'GEO']]) |
                matched.Country.isin(['Croatia', 'Czech Republic', 'Estonia'])])
 
-    if aggregated_hydros:
-        hydro = Aggregated_hydro(scaled_capacity=rescaled_hydros)
-        matched = matched[matched.Fueltype != 'Hydro']
-        matched = pd.concat([matched, hydro], ignore_index=True)
+    if extend_by_vres:
+        matched = extend_by_VRE(matched,
+                                base_year=config['opsd_vres_base_year'])
+
     if subsume_uncommon_fueltypes:
         matched = set_uncommon_fueltypes_to_other(matched)
-    return matched[columns]
+    return matched
 
 
-def Aggregated_hydro(update=False, scaled_capacity=False):
-    fn = _data_in('hydro_aggregation.csv')
-#    if update or not os.path.exists(outfn):
-#        # Generate the matched database
-#        raise NotImplemented()
-#        # matched_df = ...
-#
-#        # matched_df.to_csv(outfn)
-#        # return matched_df
-    hydro = pd.read_csv(fn, index_col='id')
-    if scaled_capacity:
-        hydro.Capacity = hydro.loc[:, 'Scaled Capacity']
-    return hydro.drop('Scaled Capacity', axis=1)
+#  ============================================================================
+# From here on the funcions will be deprecated soonly!
+
+def Carma_ENTSOE_GEO_OPSD_WRI_matched(update=False,
+                                      use_saved_matches=False,
+                                      use_saved_aggregation=False):
+    return Collection(['CARMA', 'ENTSOE', 'GEO', 'OPSD', 'WRI'],
+                      update=update, use_saved_matches=use_saved_matches,
+                      use_saved_aggregation=use_saved_aggregation,
+                      reduced=False)
+
+
+def Carma_ENTSOE_GEO_OPSD_WRI_matched_reduced(update=False,
+                                              use_saved_matches=False,
+                                              use_saved_aggregation=False):
+    return Collection(['CARMA', 'ENTSOE', 'GEO', 'OPSD', 'WRI'],
+                      update=update, use_saved_matches=use_saved_matches,
+                      use_saved_aggregation=use_saved_aggregation,
+                      reduced=True)
 
 
 # --- The next two definitions include ESE as well ---

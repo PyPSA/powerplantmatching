@@ -26,8 +26,8 @@ from matplotlib.lines import Line2D
 from matplotlib.offsetbox import AnchoredText
 import seaborn as sns
 
-from .config import fueltype_to_life, fueltype_to_color, textbox_position
-from .cleaning import clean_single
+from .config import get_config
+from .cleaning import aggregate_units
 from .data import CARMA, ENTSOE, Capacity_stats, ESE, GEO, OPSD, WEPP, WRI
 from .collection import (
         MATCHED_dataset,
@@ -48,11 +48,12 @@ def Show_all_plots():
 def fueltype_stats(df):
     stats = lookup(set_uncommon_fueltypes_to_other(df), by='Fueltype')
     plt.pie(stats, colors=stats.index.to_series()
-                               .map(fueltype_to_color(True)).fillna('gray'),
+                               .map(get_config()['fueltype_to_color'])
+                               .fillna('gray'),
             labels=stats.index, autopct='%1.1f%%')
 
 
-def powerplant_map(df, alternative_style=True, scale=1e5,
+def powerplant_map(df, scale=1e5,
                    european_bounds=True, legendscale=1, **kwargs):
     # TODO: add reference circle in legend
     figsize = kwargs.get('figsize', (7, 5))
@@ -63,7 +64,7 @@ def powerplant_map(df, alternative_style=True, scale=1e5,
         fig, ax = plt.subplots(figsize=figsize)
 
         ax.scatter(df.lon, df.lat, s=df.Capacity/scale,
-                   c=df.Fueltype.map(fueltype_to_color(alternative_style)))
+                   c=df.Fueltype.map(get_config()['fueltype_to_color']))
 
         ax.set_xlabel('')
         ax.set_ylabel('')
@@ -74,7 +75,7 @@ def powerplant_map(df, alternative_style=True, scale=1e5,
         ax.set_facecolor('white')
         fig.tight_layout(pad=0.5)
 
-        legendcols = (pd.Series(fueltype_to_color(alternative_style))
+        legendcols = (pd.Series(get_config()['fueltype_to_color'])
                         .reindex(shown_fueltypes))
         handles = sum(legendcols.apply(lambda x:
                       make_legend_circles_for([10.], scale=scale*legendscale,
@@ -106,19 +107,19 @@ def comparison_single_matched_bar(df=None, include_WEPP=True, cleaned=True,
                   .loc[lambda x:  ~x.Fueltype.isin(exclude)])
 
     if cleaned:
-        carma = clean_single(CARMA(), dataset_name='CARMA',
-                             use_saved_aggregation=use_saved_aggregation)
-        entsoe = clean_single(ENTSOE(), dataset_name='ENTSOE',
-                              use_saved_aggregation=use_saved_aggregation)
-        geo = clean_single(GEO(), dataset_name='GEO',
-                           aggregate_powerplant_units=False)
-        opsd = clean_single(OPSD(), dataset_name='OPSD',
-                            use_saved_aggregation=use_saved_aggregation)
-        wri = clean_single(WRI(), dataset_name='WRI',
-                           use_saved_aggregation=use_saved_aggregation)
-        if include_WEPP:
-            wepp = clean_single(WEPP(), dataset_name='WEPP',
+        carma = aggregate_units(CARMA(), dataset_name='CARMA',
                                 use_saved_aggregation=use_saved_aggregation)
+        entsoe = aggregate_units(ENTSOE(), dataset_name='ENTSOE',
+                                 use_saved_aggregation=use_saved_aggregation)
+        geo = aggregate_units(GEO(), dataset_name='GEO',
+                              aggregate_powerplant_units=False)
+        opsd = aggregate_units(OPSD(), dataset_name='OPSD',
+                               use_saved_aggregation=use_saved_aggregation)
+        wri = aggregate_units(WRI(), dataset_name='WRI',
+                              use_saved_aggregation=use_saved_aggregation)
+        if include_WEPP:
+            wepp = aggregate_units(WEPP(), dataset_name='WEPP',
+                                   use_saved_aggregation=use_saved_aggregation)
     else:
         carma = CARMA()
         entsoe = ENTSOE()
@@ -314,7 +315,7 @@ def comparison_countries_fueltypes_bar(
             txt = AnchoredText(
                     "\n" + r'$R^{2} = $%s' % r_sq + "\n"
                     r'$\frac{\sum P_{match}}{\sum P_{stats}} = $%s' % cov,
-                    loc=textbox_position()[country],
+                    loc=get_config()['textbox_position'][country],
                     prop={'size': 11})
             txt.patch.set(boxstyle='round', alpha=0.5)
             ax[i, j].add_artist(txt)
@@ -466,7 +467,7 @@ def factor_comparison(dfs, keys, figsize=(7, 9)):
                       keys=['Total']).swaplevel()).sort_index()/1000
     n_countries, n_fueltypes = compare.index.levshape
 
-    c = [fueltype_to_color(True)[i] for i in compare.index.levels[1]]
+    c = [get_config()['fueltype_to_color'][i] for i in compare.index.levels[1]]
     rcParams["axes.prop_cycle"] = cycler(color=c)
 
     # where both are zero,
@@ -515,7 +516,7 @@ def bar_decomissioning_curves(df=None, ylabel=None, title=None,
             raise RuntimeError("The data to be plotted does not yet exist.")
     df = df.copy()
 
-    df.loc[:, 'Life'] = df.Fueltype.map(fueltype_to_life())
+    df.loc[:, 'Life'] = df.Fueltype.map(get_config()['fueltype_to_color'])
 
     # Insert periodwise capacities
     df.loc[:, 2015] = df.loc[:, 'Capacity']
@@ -543,7 +544,9 @@ def bar_decomissioning_curves(df=None, ylabel=None, title=None,
         for yr in range(2015, 2055, 5):
             k = cntry_grp.groupby(['Fueltype']).sum()/1000
             stats.loc[:, yr] = k[yr]
-        colors = stats.index.to_series().map(fueltype_to_color()).tolist()
+        colors = (stats.index.to_series()
+                  .map(get_config()['fueltype_to_color'])
+                  .tolist())
         stats.T.plot.bar(ax=ax[i, j], stacked=True, legend=False, color=colors)
         # Pass the legend information into the Ordered Dict
         if not legend_in_subplots:
@@ -648,7 +651,9 @@ def area_yearcommissioned(dfs, keys, figsize=(7, 5),
         if j == 2:
             i += 1
             j = 0
-        colors = df.columns.to_series().map(fueltype_to_color()).tolist()
+        colors = (df.columns.to_series()
+                  .map(get_config()['fueltype_to_color'])
+                  .tolist())
         df.plot.area(ax=ax[i, j], stacked=True, legend=False, color=colors,
                      linewidth=0.0)
         # Pass the legend information into the Ordered Dict

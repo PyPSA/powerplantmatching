@@ -114,6 +114,13 @@ def read_csv_if_string(data):
     return data
 
 
+def to_list_if_string(obj):
+    if isinstance(obj, str):
+        return [obj]
+    else:
+        obj
+
+
 def map_projectID(df, dataset_name, ID):
     if isinstance(df.projectID.iloc[0], text):
         return df['projectID'] == ID
