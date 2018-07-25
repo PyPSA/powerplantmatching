@@ -13,6 +13,7 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+import math
 import numpy as np
 import pandas as pd
 import collections
@@ -233,9 +234,8 @@ def comparison_1dim(dfs=None, keys=None, by='Country', include_WEPP=True,
 
 
 def comparison_countries_fueltypes_bar(
-        dfs=None, ylabel=None, include_WEPP=True, include_VRE=False,
-        show_indicators=True, legend_in_subplots=False, year=2015,
-        exclude=None, figsize=(27, 15), **kwargs):
+        dfs=None, include_WEPP=True, include_VRE=False, exclude=None,
+        show_indicators=True, year=2015, **kwargs):
     """
     Plots per country an analysis, how the given datasets differ by fueltype.
 
@@ -244,22 +244,28 @@ def comparison_countries_fueltypes_bar(
     dfs : dict
         keys : labels
         values : pandas.Dataframe containing the data to be plotted
-    ylabel : str
-        Label for y-axis
     include_WEPP : bool
         Switch to include WEPP-based data
     include_VRE : bool
         Switch to include VRE data
-    show_coverage : bool
+    show_indicators : bool
         Switch whether to calculate a coverage between to datasets
-    legend_in_subplots : bool
-        Switch whether to show the legend in subplots (True) or below (False)
     year : int
         Only plot units with a commissioning year smaller or equal this value
     """
     threshold = kwargs.get('threshold', -1)
-    if ylabel is None:
-        ylabel = u'Capacity [$GW$]'
+    ylabel = kwargs.get('ylabel', u'Capacity [$GW$]')
+    mode = kwargs.get('mode', 'screen')  # valid: ['screen', 'print']
+    if mode == 'screen':
+        figsize = (27, 15)  # Ratio close to FullHD Resolution
+        orientation = 'landscape'
+        bottom_space = 0.14
+    elif mode == 'print':
+        figsize = (16.54, 23.38)  # For Din (A2, A3, A4, etc.) paper print
+        orientation = 'portrait'
+        bottom_space = 0.07
+    else:
+        raise ValueError('Wrong print mode given!')
 
     countries = set()
     if dfs is None:
@@ -303,7 +309,8 @@ def comparison_countries_fueltypes_bar(
     font = {'size': 12}
     plt.rc('font', **font)
     # Loop through countries.
-    nrows, ncols = gather_nrows_ncols(len(countries))
+    nrows, ncols, rem = gather_nrows_ncols(len(countries),
+                                           orientation=orientation)
     i, j = [0, 0]
     labels_mpatches = collections.OrderedDict()
     fig, ax = plt.subplots(nrows=nrows, ncols=ncols, sharex=False,
@@ -345,19 +352,16 @@ def comparison_countries_fueltypes_bar(
             txt.patch.set(boxstyle='round', alpha=0.5)
             ax[i, j].add_artist(txt)
         # Pass the legend information into the Ordered Dict
-        if not legend_in_subplots:
-            stats_handle, stats_labels = ax[i, j].get_legend_handles_labels()
-            for u, v in enumerate(stats_labels):
-                if v not in labels_mpatches:
-                    labels_mpatches[v] = mpatches.Patch(
-                            color=stats_handle[u].patches[0].get_facecolor(),
-                            label=v)
-            if threshold >= 0.0:
-                label = 'Threshold (={}%) marker'.format(int(threshold*100.))
-                labels_mpatches[label] = mpatches.Patch(color='g', alpha=0.5,
-                                                        label=label)
-        else:
-            ax[i, j].legend(fontsize=9, loc='best')
+        stats_handle, stats_labels = ax[i, j].get_legend_handles_labels()
+        for u, v in enumerate(stats_labels):
+            if v not in labels_mpatches:
+                labels_mpatches[v] = mpatches.Patch(
+                        color=stats_handle[u].patches[0].get_facecolor(),
+                        label=v)
+        if threshold >= 0.0:
+            label = 'Threshold (={}%) marker'.format(int(threshold*100.))
+            labels_mpatches[label] = mpatches.Patch(color='g', alpha=0.5,
+                                                    label=label)
         # Format the subplots nicely
         ax[i, j].set_facecolor('#d9d9d9')
         ax[i, j].set_axisbelow(True)
@@ -368,12 +372,12 @@ def comparison_countries_fueltypes_bar(
         j += 1
     # After the loop, do the rest of the layouting.
     fig.tight_layout()
-    if not legend_in_subplots:
-        fig.subplots_adjust(bottom=0.14)
-        labels_mpatches = collections.OrderedDict(sorted(
-                labels_mpatches.items()))
-        fig.legend(labels_mpatches.values(), labels_mpatches.keys(),
-                   loc=8, ncol=len(labels_mpatches), facecolor='#d9d9d9')
+    # Legend
+    fig.subplots_adjust(bottom=bottom_space)
+    labels_mpatches = collections.OrderedDict(sorted(
+            labels_mpatches.items()))
+    fig.legend(labels_mpatches.values(), labels_mpatches.keys(),
+               loc=8, ncol=len(labels_mpatches), facecolor='#d9d9d9')
     return fig, ax
 
 
@@ -756,7 +760,7 @@ def matchcount_stats(df):
     return
 
 
-def gather_nrows_ncols(x):
+def gather_nrows_ncols(x, orientation='landscape'):
     """
     Derives [nrows, ncols] based on x plots, so that a subplot looks nicely.
 
@@ -764,9 +768,11 @@ def gather_nrows_ncols(x):
     ----------
     x : int, Number of subplots between [0, 42]
     """
-    import math
-
     def calc(n, m):
+        if n <= 0:
+            n = 1
+        if m <= 0:
+            m = 1
         while (n*m < x):
             m += 1
         return n, m
@@ -776,23 +782,30 @@ def gather_nrows_ncols(x):
     elif x <= 0:
         raise ValueError('The given number of subplots is less or equal zero.')
     elif x > 42:
-        raise ValueError('Are you sure that you want to put more than 42 '
-                         'subplots in one diagram?\nYou better don\'t, it '
-                         'looks squeezed. Otherwise adapt the code.')
+        raise ValueError("Are you sure that you want to put more than 42 "
+                         "subplots in one diagram?\n You better don't, it "
+                         "looks squeezed. Otherwise adapt the code.")
     k = math.sqrt(x)
     if k.is_integer():
-        return [int(k), int(k)]  # square format
+        return [int(k), int(k), 0]  # Square format!
     else:
         k = int(math.floor(k))
         # Solution 1
         n, m = calc(k, k+1)
-        sol1 = n*m
+        sol1 = {'n': n, 'm': m, 'dif': (m*n) - x}
         # Solution 2:
         n, m = calc(k-1, k+1)
-        sol2 = n*m
-        if sol2 > sol1:
-            n, m = calc(k, k+1)
-        return [n, m]
+        sol2 = {'n': n, 'm': m, 'dif': (m*n) - x}
+        if (((sol1['dif'] <= sol2['dif']) & (sol1['n'] >= 2)) |
+                (x in [7, 13, 14])):
+            n, m = [sol1['n'], sol1['m']]
+        else:
+            n, m = [sol2['n'], sol2['m']]
+        remainder = m*n - x
+        if orientation == 'landscape':
+            return n, m, remainder
+        else:
+            return m, n, remainder
 
 
 def make_handler_map_to_scale_circles_as_in(ax,
