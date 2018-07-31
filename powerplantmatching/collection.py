@@ -34,9 +34,9 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def Collection(datasets, update=False, use_saved_aggregation=False,
-               use_saved_matches=False, reduced=True,
-               custom_config={}, **dukeargs):
+def collect(datasets, update=False, use_saved_aggregation=False,
+            use_saved_matches=False, reduced=True,
+            custom_config={}, **dukeargs):
     """
     Return the collection for a given list of datasets in matched or
     reduced form.
@@ -50,6 +50,9 @@ def Collection(datasets, update=False, use_saved_aggregation=False,
     use_saved_aggregation : bool
         Aggregate units based on cached aggregation group files (True)
         or to do an vertical update (False)
+    use_saved_matches : bool
+        Match datasets based on cached matched pair files (True)
+        or to do an horizontal matching (False)
     reduced : bool
         Switch as to return the reduced (True) or matched (False) dataset.
     custom_config : dict
@@ -123,29 +126,38 @@ def Collection(datasets, update=False, use_saved_aggregation=False,
         return sdf
 
 
-def MATCHED_dataset(config=None,
-                    extend_by_vres=False,
-                    collection_kwargs={},
-                    extendby_kwargs={'use_saved_aggregation': True},
-                    subsume_uncommon_fueltypes=False):
+def Collection(**kwargs):
+    return collect(**kwargs)
+
+
+def matched_data(config=None,
+                 extend_by_vres=False,
+                 extendby_kwargs={'use_saved_aggregation': True},
+                 subsume_uncommon_fueltypes=False,
+                 **collection_kwargs):
     """
-    This returns the actual match between the databases Carma, ENTSOE, ESE,
-    GEO, IWPDCY, OPSD and WRI with an additional manipulation on the hydro
-    powerplants. The latter were adapted in terms of the power plant
-    technology (Run-of-river, Reservoir, Pumped-Storage) and were
-    quantitatively  adjusted to the ENTSOE-statistics. For more information
-    about the technology and adjustment, see the hydro-aggreation.py file.
+    Return the full matched dataset including all data sources listed in
+    config.yaml/matching_sources. The combined data is additionally extended
+    by non-matched entries of sources given in
+    config.yaml/fully_inculded_souces.
+
 
     Parameters
     ----------
-    rescaled_hydros : Boolean, default False
-            Whether to rescale hydro powerplant capacity in order to
-            fulfill the statistics of the ENTSOE-data and receive better
-            covering of the country totals.
-    subsume_uncommon_fueltypes : Boolean, default False
-            Whether to reduce the fueltype specification such that
-            "Geothermal", "Waste" and "Mixed Fueltypes" are declared as
-            "Other".
+    config : Dict, default None
+            Define a configuration varying from the setting in config.yaml.
+            Relevant keywords are 'matching_sources', 'fully_included_sources'.
+    extend_by_vres : Boolean, default False
+            Whether extend the dataset by variable renewable energy sources
+            given by powerplantmatching.data.opsd_vres()
+    extendby_kwargs : Dict, default {'use_saved_aggregation': True}
+            Dict of keywordarguments passed to powerplatnmatchting.
+            heuristics.extend_by_non_matched
+    subsume_uncommon_fueltypes : Boolean, defautl False
+            Whether to replace uncommon fueltype specification by 'Other'
+    **collection_kwargs : kwargs
+            keywordarguments passed to powerplantmatching.collection.Collection
+
     """
     if config is None:
         config = get_config()
@@ -155,8 +167,8 @@ def MATCHED_dataset(config=None,
     for source in config['fully_included_sources']:
         matched = extend_by_non_matched(matched,
                                         source,
-                                        **extendby_kwargs,
-                                        config=config)
+                                        config=config,
+                                        **extendby_kwargs)
 
     # drop matches between only low reliability-data, this is necessary since
     # a lot of those are decommissioned, however some countries only appear in
@@ -174,8 +186,14 @@ def MATCHED_dataset(config=None,
     return matched
 
 
+def MATCHED_dataset(**kwargs):
+    logger.warning('MATCHED_dataset deprecated soonly, please use matched_data'
+                   ' instead')
+    return matched_data(**kwargs)
+
+
 #  ============================================================================
-# From here on the funcions will be deprecated soonly!
+# From here on, functions will be deprecated soonly!
 
 def Carma_ENTSOE_GEO_OPSD_WRI_matched(update=False,
                                       use_saved_matches=False,

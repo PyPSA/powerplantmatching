@@ -116,7 +116,7 @@ def cross_matches(sets_of_pairs, labels=None):
     for i in labels:
         base = [m.set_index(i) for m in m_all if i in m]
         match_base = pd.concat(base, axis=1).reset_index()
-        matches = pd.concat([matches, match_base])
+        matches = pd.concat([matches, match_base], sort=True)
 
     matches = matches.drop_duplicates().reset_index(drop=True)
     for i in labels:
@@ -216,7 +216,7 @@ def combine_multiple_datasets(datasets, labels, use_saved_matches=False,
     crossmatches = link_multiple_datasets(datasets, labels,
                                           use_saved_matches=use_saved_matches,
                                           **dukeargs)
-    return (combined_dataframe(crossmatches, datasets)
+    return (combined_dataframe(crossmatches, datasets, config)
             .reindex(columns=config['target_columns'], level=0))
 
 
@@ -294,4 +294,4 @@ def reduce_matched_dataframe(df, show_orig_names=False, config=None):
     if show_orig_names:
         return sdf
     else:
-        sdf.reindex(columns=config['target_columns'])
+        return sdf.reindex(columns=config['target_columns'])

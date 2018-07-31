@@ -224,7 +224,10 @@ def aggregate_units(df, dataset_name=None,
 
     weighted_cols = [col for col in ['Efficiency', 'Duration']
                      if col in config['target_columns']]
-    df = df.assign(**{col: df[col] * df.Capacity for col in weighted_cols})
+    df = (df.assign(**{col: df[col] * df.Capacity for col in 
+                      weighted_cols})
+          .assign(lat=df.lat.astype(float),
+                  lon=df.lon.astype(float)))
 
     props_for_groups = pd.Series({
                 'Name': most_frequent,
@@ -238,7 +241,7 @@ def aggregate_units(df, dataset_name=None,
                 'lon': pd.Series.mean,
                 'YearCommissioned': pd.Series.min,
                 'Retrofit': pd.Series.max,
-                'projectID': list,
+                'projectID': pd.Series.tolist,
                 'Duration': pd.Series.sum,  # note this is weighted sum
                 'Efficiency': pd.Series.mean  # note this is weighted mean
                 })[config['target_columns']].to_dict()

@@ -403,12 +403,12 @@ def GPD(raw=False, filter_other_dbs=True, config=None):
 
 
 data_config['GPD'] = {'read_function': GPD,
-                      'aggregated_units': True,
+                      'aggregated_units': False,
                       'reliability_score':  3}
 
 
 def WRI(**kwargs):
-    logger.warning("'WRI' deprecated soon, use GPD instead")
+    logger.warning("'WRI' deprecated soonly, please use GPD instead")
     return GPD(**kwargs)
 
 
@@ -668,6 +668,7 @@ def ENTSOE(update=False, raw=False, entsoe_token=None, config=None):
         entsoe = pd.read_csv(_data_in('entsoe_powerplants.csv'),
                              index_col='id', encoding='utf-8')
         return (entsoe[entsoe.Country.isin(config['target_countries'])]
+                .reindex(columns=config['target_columns'])
                 .pipe(scale_to_net_capacities,
                       (not data_config['ENTSOE']['net_capacity'])))
 
@@ -933,7 +934,7 @@ def UBA(header=9, skipfooter=26, prune_wind=True, prune_solar=True,
 
 data_config['UBA'] = {
         'read_function': UBA,
-        'aggregated_units': True,
+        'aggregated_units': False,
         'net_capacity': False,
         'reliability_score': 5}
 

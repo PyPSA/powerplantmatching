@@ -32,6 +32,6 @@ def get_config(filename=None, **overrides):
         config.update(overrides)
 
         sha1digest = hashlib.sha1(pickle.dumps(overrides)).digest()
-        config['hash'] = base64.encodebytes(sha1digest).decode('ascii')[2:12]
+        config['hash'] = base64.encodestring(sha1digest).decode('ascii')[2:12]
 
     return config

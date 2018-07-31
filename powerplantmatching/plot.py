@@ -30,7 +30,7 @@ from .config import get_config
 from .cleaning import aggregate_units
 from .data import CARMA, ENTSOE, Capacity_stats, ESE, GEO, OPSD, WEPP, WRI
 from .collection import (
-        MATCHED_dataset,
+        matched_data,
         Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_matched_reduced_VRE,
         Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_matched_reduced,
         Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WRI_matched_reduced_VRE,
@@ -64,18 +64,19 @@ def powerplant_map(df, scale=1e5,
         fig, ax = plt.subplots(figsize=figsize)
 
         ax.scatter(df.lon, df.lat, s=df.Capacity/scale,
-                   c=df.Fueltype.map(get_config()['fueltype_to_color']))
+                   c=df.Fueltype.map(get_config()['fuel_to_color']),
+                   edgecolor='face')
 
         ax.set_xlabel('')
         ax.set_ylabel('')
         if european_bounds:
             ax.set_xlim(-13, 34)
             ax.set_ylim(35, 71.65648314)
-        draw_basemap()
+        draw_basemap(fillcontinents=False)
         ax.set_facecolor('white')
         fig.tight_layout(pad=0.5)
 
-        legendcols = (pd.Series(get_config()['fueltype_to_color'])
+        legendcols = (pd.Series(get_config()['fuel_to_color'])
                         .reindex(shown_fueltypes))
         handles = sum(legendcols.apply(lambda x:
                       make_legend_circles_for([10.], scale=scale*legendscale,
@@ -179,13 +180,15 @@ def comparison_1dim(dfs=None, keys=None, by='Country', include_WEPP=True,
     """
     if dfs is None and keys is None:
 
-        dfs = list(gather_comparison_data(include_WEPP=include_WEPP,
-                                          include_VRE=include_VRE, year=year))
+        dfs = [df for df in gather_comparison_data(include_WEPP=include_WEPP,
+                                                   include_VRE=include_VRE,
+                                                   year=year)
+               if df is not None]
         if include_WEPP:
             keys = ['Matched dataset w/ WEPP', 'Matched dataset w/o WEPP',
                     'WEPP only', 'Statistics ENTSO-E SO&AF']
         else:
-            ['Matched dataset w/o WEPP', 'Statistics ENTSO-E SO&AF']
+            keys = ['Matched dataset w/o WEPP', 'Statistics ENTSO-E SO&AF']
 
     stats = lookup(df=dfs, keys=keys, by=by, exclude=exclude)/1000
 
@@ -652,7 +655,7 @@ def area_yearcommissioned(dfs, keys, figsize=(7, 5),
             i += 1
             j = 0
         colors = (df.columns.to_series()
-                  .map(get_config()['fueltype_to_color'])
+                  .map(get_config()['fuel_to_color'])
                   .tolist())
         df.plot.area(ax=ax[i, j], stacked=True, legend=False, color=colors,
                      linewidth=0.0)
@@ -708,7 +711,7 @@ def gather_comparison_data(include_WEPP=True, include_VRE=False, **kwargs):
         red_wo_wepp =\
             Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WRI_matched_reduced_VRE()
     else:
-        red_wo_wepp = MATCHED_dataset(include_unavailables=True)
+        red_wo_wepp = matched_data()
         # red_wo_wepp = Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WRI_matched_reduced()
         red_wo_wepp.query(queryexpr, inplace=True)
     red_wo_wepp.query(s.format(yr), inplace=True)
