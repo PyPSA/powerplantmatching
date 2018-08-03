@@ -105,6 +105,18 @@ def OPSD(rawEU=False, rawDE=False,
                             'Commissioned': 'YearCommissioned',
                             'Source': 'File'},
                    inplace=True)
+
+    # --- TEMPORARY DATA FIX
+    # As of OPSD package version 28/02/2018, Vianden is falsely claimed to be
+    # 'Run-of-river' instead of 'Pumped Storage'. An issue was opened at GitHub
+    # https://github.com/Open-Power-System-Data/conventional_power_plants/issues/11
+    # so this section can be deleted, as soon as OPSD fixed it.
+    for s in ['BNA1675', 'BNA0978', 'BNA0979', 'BNA0980', 'BNA0981', 'BNA0982',
+              'BNA0983', 'BNA0984', 'BNA0985', 'BNA0986', 'BNA0987']:
+        ix = opsd_DE.loc[lambda x: x.Id == s].index
+        opsd_DE.loc[ix, 'Technology'] = 'Pumped storage'
+    # -------------------------------------------------------------------------
+
     opsd_DE['Fueltype'].fillna(opsd_DE['Energy_Source_Level_1'], inplace=True)
     opsd_DE['Retrofit'].fillna(opsd_DE['YearCommissioned'], inplace=True)
     opsd_DE['projectID'] = opsd_DE['Id']
