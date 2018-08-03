@@ -164,7 +164,7 @@ def matched_data(config=None,
     if config is None:
         config = get_config()
 
-    matched = Collection(config['matching_sources'], **collection_kwargs)
+    matched = collect(config['matching_sources'], **collection_kwargs)
 
     for source in config['fully_included_sources']:
         matched = extend_by_non_matched(matched,
