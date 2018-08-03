@@ -110,6 +110,7 @@ def Collection(datasets, update=False, use_saved_aggregation=False,
                 sdf.projectID = (sdf.projectID.str.replace('\[nan\]', '[]')
                                  .apply(lambda df: ast.literal_eval(df)))
             except ValueError:
+                logger.warn('Could not evaluate `projectID` str to dicts.')
                 pass
         return sdf
 
