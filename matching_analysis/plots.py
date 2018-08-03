@@ -12,8 +12,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
-from powerplantmatching.config import fueltype_to_color
-from powerplantmatching.data import (CARMA, ENTSOE, ESE, GEO, OPSD, WRI, WEPP)
+from powerplantmatching.config import get_config
+from powerplantmatching.data import (CARMA, ENTSOE, ESE, GEO, OPSD, WRI, WEPP,
+                                     GPD)
 from powerplantmatching.collection import (reduce_matched_dataframe as rmd,
                                            combine_multiple_datasets as cmd)
 from powerplantmatching.utils import (set_uncommon_fueltypes_to_other
@@ -22,6 +23,7 @@ figwidth = 10
 plt.rc('savefig', dpi=300)
 excluded_fueltypes = ['Wind', 'Solar', 'Battery', 'Hydrogen Storage',
                       'Electro-mechanical']
+fueltype_to_color = get_config()['fuel_to_color']
 
 # %% figure 1
 
@@ -47,7 +49,7 @@ fig, ax = plt.subplots(figsize=(figwidth, 6))
 for i, name in df_dict.items():
     dfr = locals()[str.lower(name)].loc[lambda x: ~x.Fueltype.isna()]
     dfr.plot.scatter(ax=ax, x='Capacity', y='matches', logx=True, alpha=0.5,
-                     c=dfr.Fueltype.map(fueltype_to_color(True)),
+                     c=dfr.Fueltype.map(fueltype_to_color),
                      rasterized=True, s=dfr.Capacity/50.0)
 ax.set_ylim(-.5, 6.5)
 ax.set_yticks(df_dict.keys())
@@ -55,7 +57,7 @@ ax.set_yticklabels(df_dict.values())
 ax.yaxis.label.set_visible(False)
 ax.set_xlabel(u'Capacity [$MW$]')
 # ax.set_title('Overview of the different input databases')
-ax.legend([plt.Line2D([0, 0], [0, 0], color=fueltype_to_color(True)[f], lw=0,
+ax.legend([plt.Line2D([0, 0], [0, 0], color=fueltype_to_color[f], lw=0,
                       markersize=8., marker='o') for f in pd.Series(ft)],
           ft, frameon=False)
 fig.tight_layout()
@@ -82,7 +84,7 @@ uba = pm.collection.Collection('UBA', use_saved_aggregation=False)
 bnetza = bnetza.loc[bnetza.Capacity >= 100]
 matched_uba_bnetza = rmd(cmd([uba, bnetza], labels=['UBA', 'BNETZA']))
 opsd = (OPSD()
-        .pipe(pm.cleaning.clean_single, dataset_name='OPSD',
+        .pipe(pm.cleaning.aggregate_units, dataset_name='OPSD',
               use_saved_aggregation=True)
         .query("Country=='Germany' & Capacity >= 100"))
 
@@ -102,19 +104,19 @@ fig.savefig('uba_bnetza_matched_comparison.png', dpi=300)
 
 compared = pm.utils.lookup([opsd, matched_uba_bnetza], ['opsd', 'ppm'],
                            by='Fueltype')
-print '''\n\nDifference between manual opsd matches and automatic ppm matches
-(ppm - opsd, positive -> overestimation): \n'''
-print compared.diff(axis=1)['ppm']/1000
-print '\ntotal caps\n',  compared.sum()
+print('''\n\nDifference between manual opsd matches and automatic ppm matches
+(ppm - opsd, positive -> overestimation): \n''')
+print(compared.diff(axis=1)['ppm']/1000)
+print('\ntotal caps\n',  compared.sum())
 
 
 # %% Figure 5
 
 # Prepare
-dfs = [CARMA(), ENTSOE(), ESE(), GEO(), OPSD(), WRI(filter_other_dbs=False),
-       pm.collection.MATCHED_dataset(include_unavailables=True)]
+dfs = [CARMA(), ENTSOE(), ESE(), GEO(), GPD(filter_other_dbs=False), OPSD(),
+       pm.collection.matched_data()]
 dfs = [df[lambda df: (~df.Fueltype.isin(excluded_fueltypes))] for df in dfs]
-keys = ['CARMA', 'ENTSOE', 'ESE', 'GEO', 'OPSD', 'WRI', 'Matched w/o WEPP']
+keys = ['CARMA', 'ENTSOE', 'ESE', 'GEO', 'GPD', 'OPSD', 'Matched Data']
 
 # Plot
 fig, ax = pm.plot.fueltype_totals_bar(dfs, keys, axes_style='darkgrid',
@@ -153,10 +155,10 @@ fig.savefig('stats_matched_country_comparison.png', dpi=300)
 
 # %% Figure 8
 
-m = pm.collection.MATCHED_dataset(include_unavailables=True)
+m = pm.collection.matched_data()
 m = m[~m.Fueltype.isin(excluded_fueltypes)]
-fig, ax = pm.plot.powerplant_map(m, scale=100, alternative_color_style=True)
-ax.annotate('(a)', (-13, 65))
+fig, ax = pm.plot.powerplant_map(m, scale=100)
+#ax.annotate('(a)', (-13, 65))
 fig.tight_layout(pad=0.2)
 fig.savefig('powerplantmap_without_wepp.png', dpi=300)
 
@@ -230,7 +232,8 @@ fig.savefig('number_of_matches_per_capacity_subplots2.png', dpi=300)
 # Prepare
 opsd = OPSD().loc[lambda x: ~x.Fueltype.isin(excluded_fueltypes)]
 wepp = WEPP().loc[lambda x: ~x.Fueltype.isin(excluded_fueltypes)]
-df_w_wepp = pm.collection.Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_matched_reduced()
+df_w_wepp = pm.collection.\
+    Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_matched_reduced()
 df_wo_wepp = pm.collection.MATCHED_dataset(include_unavailables=True)
 keys = ['WEPP', 'OPSD', 'Matched w/ WEPP', 'Matched w/o WEPP']
 dfs = [wepp, opsd, df_w_wepp, df_wo_wepp]
@@ -259,7 +262,8 @@ ratio_wo = yr_wo.iloc[:, 0].div(count_wo.iloc[:, 0])
 
 # %% Stats
 
-m_with_wepp = pm.collection.Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_matched_reduced()
+m_with_wepp = pm.collection.\
+    Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_matched_reduced()
 m_without_wepp = pm.collection.MATCHED_dataset(include_unavailables=True)
 stats = pm.data.Capacity_stats()
 

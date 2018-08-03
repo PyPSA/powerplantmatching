@@ -32,7 +32,7 @@ import logging
 from textwrap import dedent
 from six.moves import reduce
 
-from .config import target_countries, target_columns, additional_data_config
+from .config import get_config
 from .cleaning import (gather_fueltype_info, gather_set_info,
                        gather_technology_info, clean_powerplantname,
                        clean_technology)
@@ -43,12 +43,13 @@ from six import iteritems, string_types
 logger = logging.getLogger(__name__)
 text = str if sys.version_info >= (3, 0) else unicode
 cget = pycountry.countries.get
-net_caps = additional_data_config()['display_net_caps']
+net_caps = get_config()['display_net_caps']
 data_config = {}
 
 
 def OPSD(rawEU=False, rawDE=False,
-         statusDE=['operating', 'reserve', 'special_case']):
+         statusDE=['operating', 'reserve', 'special_case'],
+         config=None):
     """
     Return standardized OPSD (Open Power Systems Data) database with
     target column names and fueltypes.
@@ -64,6 +65,8 @@ def OPSD(rawEU=False, rawDE=False,
         Filter DE entries by operational status ['operating', 'shutdown',
         'reserve', etc.]
     """
+    if config is None:
+        config = get_config()
 
     opsd_EU = pd.read_csv(_data_in('conventional_power_plants_EU.csv'),
                           na_values=' ', encoding='utf-8')
@@ -87,7 +90,7 @@ def OPSD(rawEU=False, rawDE=False,
                    inplace=True)
     opsd_EU.loc[:, 'Retrofit'] = opsd_EU.YearCommissioned
     opsd_EU.loc[:, 'projectID'] = 'OEU' + opsd_EU.index.astype(str)
-    opsd_EU = opsd_EU.reindex(columns=target_columns())
+    opsd_EU = opsd_EU.reindex(columns=config['target_columns'])
     opsd_DE.columns = opsd_DE.columns.str.title()
     # If BNetzA-Name is empty replace by company, if this is empty by city.
     opsd_DE.Name_Bnetza.fillna(opsd_DE.Company, inplace=True)
@@ -107,7 +110,7 @@ def OPSD(rawEU=False, rawDE=False,
     opsd_DE['projectID'] = opsd_DE['Id']
     if statusDE is not None:
         opsd_DE = opsd_DE.loc[opsd_DE.Status.isin(statusDE)]
-    opsd_DE = opsd_DE.reindex(columns=target_columns())
+    opsd_DE = opsd_DE.reindex(columns=config['target_columns'])
     return (pd.concat([opsd_EU, opsd_DE], ignore_index=True)
             .replace(dict(Fueltype={'Biomass and biogas': 'Bioenergy',
                                     # Fossil fuels MUST NOT be set to 'Other',
@@ -135,7 +138,7 @@ def OPSD(rawEU=False, rawDE=False,
             # .pipe(gather_technology_info)
             .pipe(gather_set_info)
             .pipe(clean_technology)
-            .loc[lambda df: df.Country.isin(target_countries())]
+            .loc[lambda df: df.Country.isin(config['target_countries'])]
             .reset_index(drop=True)
             .pipe(scale_to_net_capacities,
                   (not data_config['OPSD']['net_capacity']))
@@ -147,11 +150,14 @@ data_config['OPSD'] = {'read_function': OPSD,
                        'net_capacity': True}
 
 
-def GEO(raw=False):
+def GEO(raw=False, config=None):
     """
     Return standardized GEO database with target column names and fueltypes.
 
     """
+    if config is None:
+        config = get_config()
+
     def read_globalenergyobservatory():
         import pandas as pd
         import sqlite3
@@ -194,35 +200,39 @@ def GEO(raw=False):
     GEOdata.loc[:, 'Retrofit'] = GEOdata.Retrofit.fillna(
             GEOdata.YearCommissioned)
     return (GEOdata
-            .loc[lambda df: df.Country.isin(target_countries())]
+            .loc[lambda df: df.Country.isin(config['target_countries'])]
             .replace({col: {'Gas': 'Natural Gas'}
                       for col in {'Fueltype', 'FuelClassification1',
                                   'FuelClassification2'}})
             .pipe(gather_fueltype_info, search_col=['FuelClassification1'])
-            .pipe(gather_technology_info, search_col=['FuelClassification1'])
+            .pipe(gather_technology_info, search_col=['FuelClassification1'],
+                  config=config)
             .pipe(gather_set_info)
             .pipe(clean_powerplantname)
             .pipe(clean_technology, generalize_hydros=True)
-            .reindex(columns=target_columns())
+            .reindex(columns=config['target_columns'])
             .pipe(scale_to_net_capacities,
                   (not data_config['GEO']['net_capacity'])))
 
 
 data_config['GEO'] = {'read_function': GEO,
-                      'clean_single_kwargs':
-                          dict(aggregate_powerplant_units=False),
+                      'aggregated_units': True,
                       'reliability_score': 3, 'net_capacity': False}
 
 
-def CARMA(raw=False):
+def CARMA(raw=False, config=None):
     """
     Return standardized Carma database with target column names and fueltypes.
     Only includes powerplants with capacity > 4 MW.
     """
+    if config is None:
+        config = get_config()
+
     carmadata = pd.read_csv(_data_in('Full_CARMA_2009_Dataset_1.csv'),
                             encoding='utf-8', low_memory=False)
     if raw:
         return carmadata
+
     return (carmadata
             .rename(columns={'Geoposition': 'Geoposition',
                              'cap': 'Capacity',
@@ -234,7 +244,7 @@ def CARMA(raw=False):
                              'plant': 'Name',
                              'plant.id': 'projectID'})
             # .loc[lambda df: df.Capacity > 3]
-            .loc[lambda df: df.Country.isin(target_countries())]
+            .loc[lambda df: df.Country.isin(config['target_countries'])]
             .replace(dict(Fueltype={'COAL': 'Hard Coal',
                                     'WAT': 'Hydro',
                                     'FGAS': 'Natural Gas',
@@ -250,29 +260,30 @@ def CARMA(raw=False):
                                     'BSOL': 'Bioenergy',
                                     'OTH': 'Other'}))
             .pipe(clean_powerplantname)
-            .pipe(gather_technology_info)
+            .pipe(gather_technology_info, config=config)
             .pipe(gather_set_info)
             .pipe(clean_technology)
             .drop_duplicates()
-            .reindex(columns=target_columns())
+            .reindex(columns=config['target_columns'])
             .pipe(scale_to_net_capacities,
                   (not data_config['CARMA']['net_capacity'])))
 
 
 data_config['CARMA'] = {'read_function': CARMA,
-                        'clean_single_kwargs':
-                            dict(aggregate_powerplant_units=True),
                         'reliability_score': 1, 'net_capacity': False}
 
 
-def IWPDCY():
+def IWPDCY(config=None):
     """
     This data is not yet available. Was extracted manually from
     the 'International Water Power & Dam Country Yearbook'.
     """
+    if config is None:
+        config = get_config()
+
     fn = 'IWPDCY.csv'
     IWPDCY = (pd.read_csv(_data_in(fn), encoding='utf-8', index_col='id')
-                .reindex(columns=target_columns())
+                .reindex(columns=config['target_columns'])
                 .pipe(gather_set_info))
     IWPDCY.File = fn
     IWPDCY.projectID = 'IWPDCY' + IWPDCY.index.astype(str)
@@ -280,12 +291,11 @@ def IWPDCY():
 
 
 data_config['IWPDCY'] = {'read_function': IWPDCY,
-                         'clean_single_kwargs':
-                             dict(aggregate_powerplant_units=False),
+                         'aggregated_units': True,
                          'reliability_score': 3}
 
 
-def Capacity_stats(raw=False, level=2, **selectors):
+def Capacity_stats(raw=False, level=2, config=None, **selectors):
     """
     Standardize the entsoe database for statistical use.
 
@@ -304,6 +314,9 @@ def Capacity_stats(raw=False, level=2, **selectors):
     df : pd.DataFrame
          Capacity statistics per country and fuel-type
     """
+    if config is None:
+        config = get_config()
+
     opsd_aggregated = pd.read_csv(
             _data_in('national_generation_capacity_stacked.csv'),
             encoding='utf-8', index_col=0)
@@ -323,7 +336,7 @@ def Capacity_stats(raw=False, level=2, **selectors):
                                               lambda c: cget(alpha_2=c).name),
                                               index=df.index).str.title()))
                   .replace(dict(country={'Czechia': 'Czech Republic'}))
-                  .loc[lambda df: df.country.isin(target_countries())]
+                  .loc[lambda df: df.country.isin(config['target_countries'])]
                   .rename(columns={'technology': 'Fueltype'})
                   .replace(dict(Fueltype={
                           'Bioenergy and other renewable fuels': 'Bioenergy',
@@ -348,59 +361,65 @@ def Capacity_stats_factsheet():
                                       'Biomass': 'Bioenergy'})))
 
 
-def WRI(raw=False, filter_other_dbs=True):
+def GPD(raw=False, filter_other_dbs=True, config=None):
     """
     Importer for the `Global Power Plant Database`.
     """
     if raw:
         return pd.read_csv(_data_in('global_power_plant_database.csv'),
                            encoding='utf-8')
+
+    if config is None:
+        config = get_config()
+
+    if filter_other_dbs:
+        other_dbs = ['GEODB', 'CARMA', 'Open Power System Data']
     else:
-        if filter_other_dbs:
-            other_dbs = ['GEODB', 'CARMA', 'Open Power System Data']
-        else:
-            other_dbs = []
-        return (pd.read_csv(_data_in('global_power_plant_database.csv'),
-                            encoding='utf-8')
-                [lambda df: (df.country_long.isin(target_countries()) &
-                             ~df.geolocation_source.isin(other_dbs))]
-                .rename(columns=lambda x: x.title())
-                .assign(Country=lambda df: df['Country_Long'],
-                        Retrofit=lambda df: df['Commissioning_Year'])
-                .rename(columns={'Fuel1': 'Fueltype',
-                                 'Latitude': 'lat',
-                                 'Longitude': 'lon',
-                                 'Capacity_Mw': 'Capacity',
-                                 'Commissioning_Year': 'YearCommissioned',
-                                 'Source': 'File'
-                                 })
-                .replace(dict(Fueltype={'Coal': 'Hard Coal',
-                                        'Biomass': 'Bioenergy',
-                                        'Gas': 'Natural Gas',
-                                        'Wave and Tidal': 'Other'}))
-                .reindex(columns=target_columns())
-                .pipe(gather_technology_info)
-                .pipe(gather_set_info)
-                .pipe(clean_powerplantname)
-                .assign(projectID=lambda df: 'WRI' + df.index.astype(str))
-                )
+        other_dbs = []
+    return (pd.read_csv(_data_in('global_power_plant_database.csv'),
+                        encoding='utf-8')
+            [lambda df: (df.country_long.isin(config['target_countries']) &
+                         ~df.geolocation_source.isin(other_dbs))]
+            .rename(columns=lambda x: x.title())
+            .assign(Country=lambda df: df['Country_Long'],
+                    Retrofit=lambda df: df['Commissioning_Year'])
+            .rename(columns={'Fuel1': 'Fueltype',
+                             'Latitude': 'lat',
+                             'Longitude': 'lon',
+                             'Capacity_Mw': 'Capacity',
+                             'Commissioning_Year': 'YearCommissioned',
+                             'Source': 'File'
+                             })
+            .replace(dict(Fueltype={'Coal': 'Hard Coal',
+                                    'Biomass': 'Bioenergy',
+                                    'Gas': 'Natural Gas',
+                                    'Wave and Tidal': 'Other'}))
+            .reindex(columns=config['target_columns'])
+            .pipe(gather_technology_info, config=config)
+            .pipe(gather_set_info)
+            .pipe(clean_powerplantname)
+            .assign(projectID=lambda df: 'GPD' + df.index.astype(str))
+            )
 
 
-data_config['WRI'] = {'read_function': WRI,
-                      'clean_single_kwargs':
-                          dict(aggregate_powerplant_units=False),
+data_config['GPD'] = {'read_function': GPD,
+                      'aggregated_units': False,
                       'reliability_score':  3}
 
 
-def ESE(update=False, path=None, raw=False):
+def WRI(**kwargs):
+    logger.warning("'WRI' deprecated soonly, please use GPD instead")
+    return GPD(**kwargs)
+
+
+def ESE(raw=False, config=None):
     """
     This database is not given within the repository because of its
-    restrictive license. Just download the database from the link given
-    in the README file (last section: Data Sources) and set the
-    arguments of this function to update=True and
-    path='path/to/database/projects.xls'. This will integrate the database
-    into your local powerplantmatching/data and can then be used as the
-    other databases.
+    restrictive license.
+    Get it by clicking 'Export Data XLS' on https://goo.gl/gVMwKJ and
+    put the downloaded 'projects.xls' file into
+    /path/to/powerplantmatching/data/in/.
+
 
     Parameters
     ----------
@@ -410,20 +429,18 @@ def ESE(update=False, path=None, raw=False):
         location of the downloaded projects.xls file
 
     """
-    saved_version = _data_in('energy_storage_exchange.csv')
-    if os.path.exists(saved_version) and (update is False):
-        return pd.read_csv(saved_version, index_col='id', encoding='utf-8')
+    if config is None:
+        config = get_config()
 
-    if path is None:
-        path = additional_data_config()['ese_path']
+    path = _data_in('projects.xls')
 
     assert os.path.exists(path), dedent('''
-        The ESE database has not been cached in your local repository, yet (or
-        you requested an update). Due to copyright issues it cannot be
-        downloaded automatically. Get it by clicking 'Export Data XLS' on
-        https://goo.gl/gVMwKJ and set ese_path in your config.csv to its full
-        path. We couldn't find it at '{}' just now.
-    ''').format(path)
+        The ESE database has not been cached in your local repository, yet.
+        Due to copyright issues it cannot be downloaded automatically.
+        Get it by clicking 'Export Data XLS' on https://goo.gl/gVMwKJ and
+        put the downloaded 'projects.xls' file into
+        /path/to/powerplantmatching/data/in/.
+        ''').format(path)
 
     # Work-around to rewrite the longitude cell types from dates to
     # numbers, would also work the other way around, if there were
@@ -441,7 +458,7 @@ def ESE(update=False, path=None, raw=False):
     data = pd.read_excel(book, na_values=u'n/a', engine='xlrd')
     if raw:
         return data
-    data = (data
+    return (data
             .rename(columns={'Project Name': 'Name',
                              'Technology Type': 'Technology',
                              'Longitude': 'lon',
@@ -452,27 +469,26 @@ def ESE(update=False, path=None, raw=False):
                     projectID=data.index.values,
                     Capacity=data['Rated Power in kW']/1e3,
                     YearCommissioned=pd.DatetimeIndex(
+                            data['Commissioning Date']).year,
+                    Retrofit=pd.DatetimeIndex(
                             data['Commissioning Date']).year)
             [lambda df: (df.Status == 'Operational') &
              (df.Fueltype != 'Thermal Storage') &
-             df.Country.isin(target_countries())]
+             df.Country.isin(config['target_countries'])]
             .pipe(clean_powerplantname)
             .pipe(clean_technology, generalize_hydros=True)
             .replace(dict(Fueltype={u'Electro-chemical': 'Battery',
                                     u'Pumped Hydro Storage': 'Hydro'}))
-            .reindex(columns=target_columns(detailed_columns=True))
+            .reindex(columns=config['target_columns'])
             .reset_index(drop=True)
             .assign(projectID=lambda df: 'ESE' + df.projectID.astype(str)))
-    data.to_csv(saved_version, index_label='id', encoding='utf-8')
-    return data
 
 
 data_config['ESE'] = {'read_function': ESE,
-                      'clean_single_kwargs': dict(detailed_columns=True),
                       'reliability_score': 4}
 
 
-def ENTSOE(update=False, raw=False, entsoe_token=None):
+def ENTSOE(update=False, raw=False, entsoe_token=None, config=None):
     """
     Returns the list of installed generators provided by the ENTSO-E
     Trasparency Project. Geographical information is not given.
@@ -498,9 +514,12 @@ def ENTSOE(update=False, raw=False, entsoe_token=None):
     https://transparency.entsoe.eu/content/static_content/Static%20content/
     web%20api/Guide.html#_authentication_and_authorisation
     """
+    if config is None:
+        config = get_config()
+
     if update or raw:
-        if additional_data_config()['entsoe_token'] is not np.nan:
-            entsoe_token = additional_data_config()['entsoe_token']
+        if config['entsoe_token'] is not np.nan:
+            entsoe_token = config['entsoe_token']
         assert entsoe_token is not None, "entsoe_token is missing"
 
         def full_country_name(l):
@@ -517,7 +536,7 @@ def ENTSOE(update=False, raw=False, entsoe_token=None):
         domains = pd.read_csv(_data('in/entsoe-areamap.csv'), sep=';',
                               header=None)
         # Search for Country abbreviations in each Name
-        pattern = '|'.join(('(?i)'+x) for x in target_countries())
+        pattern = '|'.join(('(?i)'+x) for x in config['target_countries'])
         domains = domains.assign(Country=domains[1]
                                  .str.findall(pattern)
                                  .str.join(', '))
@@ -613,7 +632,7 @@ def ENTSOE(update=False, raw=False, entsoe_token=None):
                                    'quantity': 'Capacity',
                                    'registeredResource.mRID': 'projectID',
                                    'registeredResource.name': 'Name'})
-                  .reindex(columns=target_columns())
+                  .reindex(columns=config['target_columns'])
                   .replace({'Fueltype': fdict})
                   .drop_duplicates('projectID').reset_index(drop=True)
                   .assign(Name=lambda df: df.Name.str.title(),
@@ -636,8 +655,8 @@ def ENTSOE(update=False, raw=False, entsoe_token=None):
                                                .apply(
                                                 lambda x: parse_Geoposition(
                                                     x, return_Country=True))))
-                  [lambda df: df.Country.isin(target_countries())]
-                  .pipe(gather_technology_info)
+                  [lambda df: df.Country.isin(config['target_countries'])]
+                  .pipe(gather_technology_info, config=config)
                   .pipe(gather_set_info)
                   .pipe(clean_technology)
                   )
@@ -648,7 +667,8 @@ def ENTSOE(update=False, raw=False, entsoe_token=None):
     else:
         entsoe = pd.read_csv(_data_in('entsoe_powerplants.csv'),
                              index_col='id', encoding='utf-8')
-        return (entsoe[entsoe.Country.isin(target_countries())]
+        return (entsoe[entsoe.Country.isin(config['target_countries'])]
+                .reindex(columns=config['target_columns'])
                 .pipe(scale_to_net_capacities,
                       (not data_config['ENTSOE']['net_capacity'])))
 
@@ -658,12 +678,15 @@ data_config['ENTSOE'] = {'read_function': ENTSOE,
                          'net_capacity': True}
 
 
-def WEPP(raw=False):
+def WEPP(raw=False, config=None):
     """
     Return standardized WEPP (Platts, World Elecrtric Power Plants Database)
     database with target column names and fueltypes.
 
     """
+    if config is None:
+        config = get_config()
+
     # Define the appropriate datatype for each column (some columns e.g.
     # 'YEAR' cannot be integers, as there are N/A values, which np.int
     # does not yet(?) support.)
@@ -704,7 +727,7 @@ def WEPP(raw=False):
          'GIBRALTAR': u'SPAIN',
          'SCOTLAND': u'UNITED KINGDOM'}
     wepp.Country = wepp.Country.replace(c).str.title()
-    wepp = wepp[wepp.Country.isin(target_countries())]
+    wepp = wepp[wepp.Country.isin(config['target_countries'])]
     # Drop any rows with plants which are not: In operation (OPR) or
     # under construction (CON)
     wepp = wepp[wepp.Status.isin(['OPR', 'CON'])]
@@ -801,7 +824,7 @@ def WEPP(raw=False):
     wepp.loc[wepp.Utype.isin(chp_pattern), 'Set'] = 'CHP'
     wepp.loc[wepp.Set.isnull(), 'Set'] = 'PP'
     # Drop any columns we do not need
-    wepp = wepp.reindex(columns=target_columns())
+    wepp = wepp.reindex(columns=config['target_columns'])
     # Clean up the mess
     wepp.Fueltype = wepp.Fueltype.str.title()
     wepp.loc[wepp.Technology.str.len() > 4, 'Technology'] = \
@@ -819,11 +842,12 @@ data_config['WEPP'] = {
         'net_capacity': False}
 
 
-def UBA(header=9, skipfooter=26, prune_wind=True, prune_solar=True):
+def UBA(header=9, skipfooter=26, prune_wind=True, prune_solar=True,
+        config=None):
     """
     Returns the UBA Database.
     The user has to download the database from:
-        ``https://www.umweltbundesamt.de/dokument/datenbank-kraftwerke-in-deutschland``
+    ``https://www.umweltbundesamt.de/dokument/datenbank-kraftwerke-in-deutschland``
     and has to place it into the ``data/In`` folder.
 
     Parameters:
@@ -833,6 +857,9 @@ def UBA(header=9, skipfooter=26, prune_wind=True, prune_solar=True):
         skipfooter : int, Default 26
 
     """
+    if config is None:
+        config = get_config()
+
     filename = 'kraftwerke-de-ab-100-mw.xls'
     uba = pd.read_excel(_data_in(filename), header=header,
                         skipfooter=skipfooter, na_values='n.b.')
@@ -899,7 +926,7 @@ def UBA(header=9, skipfooter=26, prune_wind=True, prune_solar=True):
         uba = uba.loc[lambda x: x.Fueltype != 'Wind']
     if prune_solar:
         uba = uba.loc[lambda x: x.Fueltype != 'Solar']
-    uba = (uba.reindex(columns=target_columns())
+    uba = (uba.reindex(columns=config['target_columns'])
               .pipe(scale_to_net_capacities,
                     (not data_config['UBA']['net_capacity'])))
     return uba
@@ -907,13 +934,14 @@ def UBA(header=9, skipfooter=26, prune_wind=True, prune_solar=True):
 
 data_config['UBA'] = {
         'read_function': UBA,
-        'clean_single_kwargs': dict(aggregate_powerplant_units=False),
+        'aggregated_units': False,
         'net_capacity': False,
         'reliability_score': 5}
 
 
 def BNETZA(header=9, sheet_name='Gesamtkraftwerksliste BNetzA',
-           prune_wind=True, prune_solar=True, raw=False):
+           prune_wind=True, prune_solar=True, raw=False,
+           config=None):
     """
     Returns the database put together by Germany's 'Federal Network Agency'
     (dt. 'Bundesnetzagentur' (BNetzA)). The database can be downloaded from:
@@ -927,6 +955,9 @@ def BNETZA(header=9, sheet_name='Gesamtkraftwerksliste BNetzA',
         header : int, Default 9
             The zero-indexed row in which the column headings are found.
     """
+    if config is None:
+        config = get_config()
+
     filename = 'Kraftwerksliste_2017_2.xlsx'
     bnetza = pd.read_excel(_data_in(filename), header=header,
                            sheet_name=sheet_name, encoding='utf-8')
@@ -975,8 +1006,9 @@ def BNETZA(header=9, sheet_name='Gesamtkraftwerksliste BNetzA',
                regex=True))
               [lambda df: df.projectID.notna() &
                df.Status.str.contains(pattern, regex=True, case=False)]
-              .pipe(gather_technology_info, search_col=['Name', 'Fueltype',
-                                                        'Blockname']))
+              .pipe(gather_technology_info,
+                    search_col=['Name', 'Fueltype', 'Blockname'],
+                    config=config))
 
     add_location_b = (bnetza[bnetza.Ort.notnull()]
                       .apply(lambda ds: (ds['Ort'] not in ds['Name'])
@@ -1017,7 +1049,7 @@ def BNETZA(header=9, sheet_name='Gesamtkraftwerksliste BNetzA',
                           Set=bnetza.Set.fillna('Nein')
                           .str.title()
                           .replace({u'Ja': 'CHP', u'Nein': 'PP'}))
-            .reindex(columns=target_columns())
+            .reindex(columns=config['target_columns'])
             .pipe(scale_to_net_capacities,
                   not data_config['BNETZA']['net_capacity'])
             .reset_index(drop=True))
@@ -1027,7 +1059,7 @@ data_config['BNETZA'] = {'read_function': BNETZA, 'net_capacity': True,
                          'reliability_score': 3}
 
 
-def OPSD_VRE():
+def OPSD_VRE(config=None):
     """
     Return standardized OPSD (Open Power Systems Data) renewables (VRE)
     database with target column names and fueltypes.
@@ -1037,6 +1069,9 @@ def OPSD_VRE():
         http://data.open-power-system-data.org/renewable_power_plants/
 
     """
+    if config is None:
+        config = get_config()
+
     def read_opsd_res(country):
         import pandas as pd
         import sqlite3
@@ -1101,13 +1136,16 @@ def OPSD_VRE():
          u'Onshore wind energy': 'Onshore',
          u'Offshore wind energy': 'Offshore'}
     df.Technology.replace(d, inplace=True)
-    return df.reindex(columns=target_columns()).drop('Name', axis=1)
+    return df.reindex(columns=config['target_columns']).drop('Name', axis=1)
 
 
-def IRENA_stats():
+def IRENA_stats(config=None):
     """
     Reads the IRENA Capacity Statistics 2017 Database
     """
+    if config is None:
+        config = get_config()
+
     # Read the raw dataset
     df = pd.read_csv(_data_in('IRENA_CapacityStatistics2017.csv'),
                      encoding='utf-8')
@@ -1124,7 +1162,7 @@ def IRENA_stats():
     # Drop countries out of scope
     df.Country.replace({'Czechia': u'Czech Republic',
                         'UK': u'United Kingdom'}, inplace=True)
-    df = df[df.Country.isin(target_countries())]
+    df = df[df.Country.isin(config['target_countries'])]
     # Convert to numeric
     df.Year = df.Year.astype(int)
     df.Capacity = df.Capacity.str.strip().str.replace(' ', '').astype(float)

@@ -19,7 +19,7 @@ Functions for linking and combining different datasets
 
 from __future__ import absolute_import, print_function
 
-from .config import target_columns
+from .config import get_config
 from .utils import read_csv_if_string, _data_out
 from .duke import duke
 from .cleaning import clean_technology
@@ -116,7 +116,7 @@ def cross_matches(sets_of_pairs, labels=None):
     for i in labels:
         base = [m.set_index(i) for m in m_all if i in m]
         match_base = pd.concat(base, axis=1).reset_index()
-        matches = pd.concat([matches, match_base])
+        matches = pd.concat([matches, match_base], sort=True)
 
     matches = matches.drop_duplicates().reset_index(drop=True)
     for i in labels:
@@ -166,7 +166,7 @@ def link_multiple_datasets(datasets, labels, use_saved_matches=False,
 
 
 def combine_multiple_datasets(datasets, labels, use_saved_matches=False,
-                              **dukeargs):
+                              config=None, **dukeargs):
     """
     Duke-based horizontal match of multiple databases. Returns the
     matched dataframe including only the matched entries in a
@@ -186,7 +186,10 @@ def combine_multiple_datasets(datasets, labels, use_saved_matches=False,
         Names of the databases in alphabetical order and corresponding
         order to the datasets
     """
-    def combined_dataframe(cross_matches, datasets):
+    if config is None:
+        config = get_config()
+
+    def combined_dataframe(cross_matches, datasets, config):
         """
         Use this function to create a matched dataframe on base of the
         cross matches and a list of the databases. Always order the
@@ -208,16 +211,16 @@ def combine_multiple_datasets(datasets, labels, use_saved_matches=False,
         return (pd.concat(datasets, axis=1,
                           keys=cross_matches.columns.tolist())
                 .reorder_levels([1, 0], axis=1)
-                .reindex(columns=target_columns(), level=0)
+                .reindex(columns=config['target_columns'], level=0)
                 .reset_index(drop=True))
     crossmatches = link_multiple_datasets(datasets, labels,
                                           use_saved_matches=use_saved_matches,
                                           **dukeargs)
-    return (combined_dataframe(crossmatches, datasets)
-            .reindex(columns=target_columns(), level=0))
+    return (combined_dataframe(crossmatches, datasets, config)
+            .reindex(columns=config['target_columns'], level=0))
 
 
-def reduce_matched_dataframe(df, show_orig_names=False):
+def reduce_matched_dataframe(df, show_orig_names=False, config=None):
     """
     Reduce a matched dataframe to a unique set of columns. For each entry
     take the value of the most reliable data source included in that match.
@@ -234,6 +237,9 @@ def reduce_matched_dataframe(df, show_orig_names=False):
             return np.nan
         else:
             return s[s.notnull()].str.cat(sep=', ')
+
+    if config is None:
+        config = get_config()
 
     # define which databases are present and get their reliability_score
     sources = df.columns.levels[1]
@@ -272,19 +278,20 @@ def reduce_matched_dataframe(df, show_orig_names=False):
         'Country': prioritise_reliability(df['Country']),
         'Set': prioritise_reliability(df['Set']),
         'Capacity': prioritise_reliability(df['Capacity'], how='median'),
+        'Duration': prioritise_reliability(df['Duration']),
         'YearCommissioned': df['YearCommissioned'].min(axis=1),
         'Retrofit': df['Retrofit'].max(axis=1),
         'lat': prioritise_reliability(df['lat']),
         'lon': prioritise_reliability(df['lon']),
         'File': df['File'].apply(concat_strings, axis=1),
         'projectID': df['projectID'].apply(lambda x: dict(x.dropna()), axis=1)
-    }).reindex(target_columns(), axis=1)
-
-    if 'Duration' in target_columns():
-        sdf = sdf.assign(Duration=prioritise_reliability(df['Duration']))
+    }).reindex(config['target_columns'], axis=1)
 
     if show_orig_names:
         sdf = sdf.assign(**dict(df.Name))
     sdf = clean_technology(sdf, generalize_hydros=False)
     sdf.reset_index(drop=True)
-    return sdf if show_orig_names else sdf.reindex(columns=target_columns())
+    if show_orig_names:
+        return sdf
+    else:
+        return sdf.reindex(columns=config['target_columns'])

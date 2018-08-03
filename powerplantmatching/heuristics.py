@@ -20,17 +20,17 @@ Functions to modify and adjust power plant datasets
 from __future__ import absolute_import, print_function
 import pandas as pd
 import numpy as np
-from .utils import lookup, _data_in
-from .config import fueltype_to_life
-from .cleaning import (clean_single, clean_technology)
+from .utils import lookup, _data_in, to_list_if_string
+from .config import get_config
+from .cleaning import (aggregate_units, clean_technology)
 import logging
 from six import iteritems
 logger = logging.getLogger(__name__)
 
 
 def extend_by_non_matched(df, extend_by, label=None, fueltypes=None,
-                          countries=None, clean_added_data=True,
-                          use_saved_aggregation=True):
+                          countries=None, aggregate_added_data=True,
+                          config=None, **aggkwargs):
     """
     Returns the matched dataframe with additional entries of non-matched
     powerplants of a reliable source.
@@ -50,28 +50,33 @@ def extend_by_non_matched(df, extend_by, label=None, fueltypes=None,
     """
     from .data import data_config
 
+    if config is None:
+        config = get_config()
+
     if isinstance(extend_by, str):
         label = extend_by
         extend_by = data_config[label]['read_function']()
 
     included_ids = df.projectID.map(lambda d: d.get(label)).dropna().sum()
     remaining_ids = ~ extend_by.projectID.isin(included_ids)
-
     extend_by = extend_by.loc[remaining_ids]
 
     if fueltypes is not None:
-        if isinstance(fueltypes, str):
-            fueltypes = [fueltypes]
-        extend_by = extend_by[extend_by.Fueltype.isin(fueltypes)]
+        extend_by = extend_by[extend_by.Fueltype.isin(
+                to_list_if_string(fueltypes))]
     if countries is not None:
-        if isinstance(countries, str):
-            countries = [countries]
-        extend_by = extend_by[extend_by.Country.isin(countries)]
-    if clean_added_data:
-        extend_by = clean_single(extend_by, dataset_name=label,
-                                 use_saved_aggregation=use_saved_aggregation)
-    extend_by = extend_by.assign(
-            projectID=extend_by.projectID.map(lambda x: {label: x}))
+        extend_by = extend_by[extend_by.Country.isin(
+                to_list_if_string(countries))]
+
+    if aggregate_added_data:
+        extend_by = aggregate_units(extend_by, dataset_name=label,
+                                    config=config, **aggkwargs)
+        extend_by = extend_by.assign(
+                projectID=extend_by.projectID.map(lambda x: {label: x}))
+    else:
+        extend_by = extend_by.assign(
+                projectID=extend_by.projectID.map(lambda x: {label: [x]}))
+
     return df.append(extend_by.reindex(columns=df.columns), ignore_index=True)
 
 
@@ -192,11 +197,10 @@ def average_empty_commyears(df):
                                  .transform('mean'), inplace=True)
     if df.YearCommissioned.isnull().any():
         count = len(df[df.YearCommissioned.isnull()])
-        raise(ValueError(
-                '''There are still *{0}* empty values for 'YearCommissioned'
-                in the DataFrame. These should be either be filled
-                manually or dropped to continue.'''.format(count)))
-    # Cast to integers and apply these values to the 'Retrofit' column too:
+        raise(ValueError('''There are still *{0}* empty values for
+                            'YearCommissioned' in the DataFrame. These should
+                            be either be filled manually or dropped to
+                            continue.'''.format(count)))
     df.loc[:, 'YearCommissioned'] = df.YearCommissioned.astype(int)
     df.Retrofit.fillna(df.YearCommissioned.astype(int), inplace=True)
     return df
@@ -246,7 +250,7 @@ def aggregate_VRE_by_commyear(df, target_fueltypes=None, agg_geo_by=None):
                      Retrofit=df.YearCommissioned)
 
 
-def derive_vintage_cohorts_from_statistics(df, base_year=2015):
+def derive_vintage_cohorts_from_statistics(df, base_year=2015, config=None):
     """
     This function assumes an age-distribution for given capacity statistics
     and returns a df, containing how much of capacity has been built for every
@@ -306,13 +310,16 @@ def derive_vintage_cohorts_from_statistics(df, base_year=2015):
                     break
         return mat
 
+    if config is None:
+        config = get_config()
+
     dfe = pd.DataFrame(columns=df.columns)
     for c, df_country in df.groupby(['Country']):
         for tech, dfs in df_country.groupby(['Technology']):
             dfs.set_index('Year', drop=False, inplace=True)
             y_start = dfs.index[0]
             y_end = dfs.index[-1]
-            life = fueltype_to_life()[dfs.Fueltype.iloc[0]]
+            life = config['fueltype_to_life'][dfs.Fueltype.iloc[0]]
             mat = (pd.DataFrame(columns=range(y_start-life+1, y_end+life),
                                 index=range(y_start-life+1, y_end))
                      .astype(np.float))

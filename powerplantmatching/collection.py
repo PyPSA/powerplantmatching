@@ -18,13 +18,14 @@ Processed datasets of merged and/or adjusted data
 """
 from __future__ import print_function
 
-from .utils import set_uncommon_fueltypes_to_other, _data_in, _data_out
-from .data import data_config, OPSD, ESE
-from .cleaning import clean_single
+from .utils import set_uncommon_fueltypes_to_other, _data_out
+from .data import data_config
+from .cleaning import aggregate_units
 from .matching import combine_multiple_datasets, reduce_matched_dataframe
 from .heuristics import (extend_by_non_matched, extend_by_VRE,
                          remove_oversea_areas, manual_corrections,
                          average_empty_commyears)
+from .config import get_config
 
 import pandas as pd
 import os
@@ -34,9 +35,9 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def Collection(datasets, update=False, use_saved_aggregation=False,
-               use_saved_matches=False, reduced=True,
-               custom_config={}, **dukeargs):
+def collect(datasets, update=False, use_saved_aggregation=False,
+            use_saved_matches=False, reduced=True,
+            custom_config={}, **dukeargs):
     """
     Return the collection for a given list of datasets in matched or
     reduced form.
@@ -50,6 +51,9 @@ def Collection(datasets, update=False, use_saved_aggregation=False,
     use_saved_aggregation : bool
         Aggregate units based on cached aggregation group files (True)
         or to do an vertical update (False)
+    use_saved_matches : bool
+        Match datasets based on cached matched pair files (True)
+        or to do an horizontal matching (False)
     reduced : bool
         Switch as to return the reduced (True) or matched (False) dataset.
     custom_config : dict
@@ -64,11 +68,15 @@ def Collection(datasets, update=False, use_saved_aggregation=False,
         conf.update(custom_config.get(name, {}))
 
         df = conf['read_function'](**conf.get('read_kwargs', {}))
-        return clean_single(df, use_saved_aggregation=use_saved_aggregation,
-                            dataset_name=name,
-                            **conf.get('clean_single_kwargs', {}))
+        if not conf.get('aggregated_units', False):
+            return aggregate_units(df,
+                                   use_saved_aggregation=use_saved_aggregation,
+                                   dataset_name=name)
+        else:
+            return df.assign(projectID=df.projectID.map(lambda x: {name: [x]}))
 
     datasets = sorted(datasets)
+    logger.info('Collect combined dataset for {}'.format(', '.join(datasets)))
     outfn_matched = _data_out('Matched_{}.csv'
                               .format('_'.join(map(str.upper, datasets))))
     outfn_reduced = _data_out('Matched_{}_reduced.csv'
@@ -87,9 +95,14 @@ def Collection(datasets, update=False, use_saved_aggregation=False,
             conf.update(custom_config.get(name, {}))
 
             df = conf['read_function'](**conf.get('read_kwargs', {}))
-            df = clean_single(df, use_saved_aggregation=use_saved_aggregation,
-                              dataset_name=name,
-                              **conf.get('clean_single_kwargs', {}))
+            if not conf.get('aggregated_units', False):
+                df = aggregate_units(
+                        df, use_saved_aggregation=use_saved_aggregation,
+                        dataset_name=name,
+                        **conf.get('clean_single_kwargs', {}))
+            else:
+                df = df.assign(projectID=df.projectID.map(
+                        lambda x: {name: [x]}))
             dfs.append(df)
         matched = combine_multiple_datasets(
                 dfs, datasets, use_saved_matches=use_saved_matches, **dukeargs)
@@ -115,6 +128,75 @@ def Collection(datasets, update=False, use_saved_aggregation=False,
         return sdf
 
 
+def Collection(**kwargs):
+    return collect(**kwargs)
+
+
+def matched_data(config=None,
+                 extend_by_vres=False,
+                 extendby_kwargs={'use_saved_aggregation': True},
+                 subsume_uncommon_fueltypes=False,
+                 **collection_kwargs):
+    """
+    Return the full matched dataset including all data sources listed in
+    config.yaml/matching_sources. The combined data is additionally extended
+    by non-matched entries of sources given in
+    config.yaml/fully_inculded_souces.
+
+
+    Parameters
+    ----------
+    config : Dict, default None
+            Define a configuration varying from the setting in config.yaml.
+            Relevant keywords are 'matching_sources', 'fully_included_sources'.
+    extend_by_vres : Boolean, default False
+            Whether extend the dataset by variable renewable energy sources
+            given by powerplantmatching.data.opsd_vres()
+    extendby_kwargs : Dict, default {'use_saved_aggregation': True}
+            Dict of keywordarguments passed to powerplatnmatchting.
+            heuristics.extend_by_non_matched
+    subsume_uncommon_fueltypes : Boolean, defautl False
+            Whether to replace uncommon fueltype specification by 'Other'
+    **collection_kwargs : kwargs
+            keywordarguments passed to powerplantmatching.collection.Collection
+
+    """
+    if config is None:
+        config = get_config()
+
+    matched = Collection(config['matching_sources'], **collection_kwargs)
+
+    for source in config['fully_included_sources']:
+        matched = extend_by_non_matched(matched,
+                                        source,
+                                        config=config,
+                                        **extendby_kwargs)
+
+    # drop matches between only low reliability-data, this is necessary since
+    # a lot of those are decommissioned, however some countries only appear in
+    # GEO and CARMA
+    matched = (matched[matched.projectID.apply(lambda x: x.keys() not in
+               [['GEO', 'CARMA'], ['CARMA', 'GEO']]) |
+               matched.Country.isin(['Croatia', 'Czech Republic', 'Estonia'])])
+
+    if extend_by_vres:
+        matched = extend_by_VRE(matched,
+                                base_year=config['opsd_vres_base_year'])
+
+    if subsume_uncommon_fueltypes:
+        matched = set_uncommon_fueltypes_to_other(matched)
+    return matched
+
+
+def MATCHED_dataset(**kwargs):
+    logger.warning('MATCHED_dataset deprecated soonly, please use matched_data'
+                   ' instead')
+    return matched_data(**kwargs)
+
+
+#  ============================================================================
+# From here on, functions will be deprecated soonly!
+
 def Carma_ENTSOE_GEO_OPSD_WRI_matched(update=False,
                                       use_saved_matches=False,
                                       use_saved_aggregation=False):
@@ -131,76 +213,6 @@ def Carma_ENTSOE_GEO_OPSD_WRI_matched_reduced(update=False,
                       update=update, use_saved_matches=use_saved_matches,
                       use_saved_aggregation=use_saved_aggregation,
                       reduced=True)
-
-
-def MATCHED_dataset(aggregated_hydros=False, rescaled_hydros=False,
-                    subsume_uncommon_fueltypes=False,
-                    include_unavailables=False, **kwargs):
-    """
-    This returns the actual match between the databases Carma, ENTSOE, ESE,
-    GEO, IWPDCY, OPSD and WRI with an additional manipulation on the hydro
-    powerplants. The latter were adapted in terms of the power plant
-    technology (Run-of-river, Reservoir, Pumped-Storage) and were
-    quantitatively  adjusted to the ENTSOE-statistics. For more information
-    about the technology and adjustment, see the hydro-aggreation.py file.
-
-    Parameters
-    ----------
-    rescaled_hydros : Boolean, default False
-            Whether to rescale hydro powerplant capacity in order to
-            fulfill the statistics of the ENTSOE-data and receive better
-            covering of the country totals.
-    subsume_uncommon_fueltypes : Boolean, default False
-            Whether to reduce the fueltype specification such that
-            "Geothermal", "Waste" and "Mixed Fueltypes" are declared as
-            "Other".
-    """
-
-    if include_unavailables:
-        matched = Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WRI_matched_reduced(
-                    **kwargs)
-        matched = extend_by_non_matched(matched, ESE(), 'ESE',
-                                        clean_added_data=False)
-
-    else:
-        matched = Carma_ENTSOE_GEO_OPSD_WRI_matched_reduced(**kwargs)
-    columns = matched.columns
-    matched = (extend_by_non_matched(matched, OPSD(), 'OPSD',
-                                     clean_added_data=True,
-                                     use_saved_aggregation=True)
-               # remaining fossil fuels as hard coal
-               .assign(Fueltype=lambda df: df.Fueltype.fillna('Hard Coal')))
-
-    # drop matches between only low reliability-data, this is necessary since
-    # a lot of those are decommissioned: Probably we should filter
-    # by mean reliability larger than 3.
-    # some countries only appear in GEO and CARMA
-    matched = (matched[matched.projectID.apply(lambda x: x.keys() not in
-               [['GEO', 'CARMA'], ['CARMA', 'GEO']]) |
-               matched.Country.isin(['Croatia', 'Czech Republic', 'Estonia'])])
-
-    if aggregated_hydros:
-        hydro = Aggregated_hydro(scaled_capacity=rescaled_hydros)
-        matched = matched[matched.Fueltype != 'Hydro']
-        matched = pd.concat([matched, hydro], ignore_index=True)
-    if subsume_uncommon_fueltypes:
-        matched = set_uncommon_fueltypes_to_other(matched)
-    return matched[columns]
-
-
-def Aggregated_hydro(update=False, scaled_capacity=False):
-    fn = _data_in('hydro_aggregation.csv')
-#    if update or not os.path.exists(outfn):
-#        # Generate the matched database
-#        raise NotImplemented()
-#        # matched_df = ...
-#
-#        # matched_df.to_csv(outfn)
-#        # return matched_df
-    hydro = pd.read_csv(fn, index_col='id')
-    if scaled_capacity:
-        hydro.Capacity = hydro.loc[:, 'Scaled Capacity']
-    return hydro.drop('Scaled Capacity', axis=1)
 
 
 # --- The next two definitions include ESE as well ---
