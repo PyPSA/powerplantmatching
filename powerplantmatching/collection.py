@@ -151,11 +151,11 @@ def matched_data(config=None,
             Relevant keywords are 'matching_sources', 'fully_included_sources'.
     extend_by_vres : Boolean, default False
             Whether extend the dataset by variable renewable energy sources
-            given by powerplantmatching.data.opsd_vres()
+            given by powerplantmatching.data.OPSD_VRE()
     extendby_kwargs : Dict, default {'use_saved_aggregation': True}
             Dict of keywordarguments passed to powerplatnmatchting.
             heuristics.extend_by_non_matched
-    subsume_uncommon_fueltypes : Boolean, defautl False
+    subsume_uncommon_fueltypes : Boolean, default False
             Whether to replace uncommon fueltype specification by 'Other'
     **collection_kwargs : kwargs
             keywordarguments passed to powerplantmatching.collection.Collection
@@ -195,7 +195,7 @@ def MATCHED_dataset(**kwargs):
 
 
 #  ============================================================================
-# From here on, functions will be deprecated soonly!
+# From here on, functions will be deprecated soon!
 
 def Carma_ENTSOE_GEO_OPSD_WRI_matched(update=False,
                                       use_saved_matches=False,

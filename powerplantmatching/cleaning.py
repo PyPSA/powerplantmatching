@@ -224,10 +224,9 @@ def aggregate_units(df, dataset_name=None,
 
     weighted_cols = [col for col in ['Efficiency', 'Duration']
                      if col in config['target_columns']]
-    df = (df.assign(**{col: df[col] * df.Capacity for col in 
-                      weighted_cols})
-          .assign(lat=df.lat.astype(float),
-                  lon=df.lon.astype(float)))
+    df = (df.assign(**{col: df[col] * df.Capacity for col in weighted_cols})
+            .assign(lat=df.lat.astype(float),
+                    lon=df.lon.astype(float)))
 
     props_for_groups = pd.Series({
                 'Name': most_frequent,
