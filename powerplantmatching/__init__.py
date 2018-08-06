@@ -26,4 +26,15 @@ from __future__ import absolute_import
 from . import (config, cleaning, data, heuristics, export, matching, utils,
                collection, plot)
 
+# Logging: General Settings
 import logging
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=20)
+logger.setLevel('INFO')
+# Logging: File
+logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] " +
+                                 "[%(levelname)-5.5s]  %(message)s")
+fileHandler = logging.FileHandler(utils._data_out('PPM.log'))
+fileHandler.setFormatter(logFormatter)
+logger.addHandler(fileHandler)
+logger.info('Initialization complete.')
