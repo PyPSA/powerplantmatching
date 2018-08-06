@@ -31,7 +31,6 @@ import pandas as pd
 import os
 import ast
 import logging
-
 logger = logging.getLogger(__name__)
 
 
@@ -291,8 +290,8 @@ def Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WRI_matched_reduced_VRE(
 # unpublishable
 def Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_matched(
         update=False, use_saved_matches=False, use_saved_aggregation=False):
-    return Collection(['CARMA', 'ENTSOE', 'ESE', 'GEO',
-                       'IWPDCY', 'OPSD', 'WEPP', 'WRI'],
+    return Collection(datasets=['CARMA', 'ENTSOE', 'ESE', 'GEO',
+                                'GPD', 'IWPDCY', 'OPSD', 'WEPP'],
                       update=update, use_saved_matches=use_saved_matches,
                       use_saved_aggregation=use_saved_aggregation,
                       reduced=False)
@@ -301,8 +300,8 @@ def Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_matched(
 # unpublishable
 def Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_matched_reduced(
         update=False, use_saved_matches=False, use_saved_aggregation=False):
-    return Collection(['CARMA', 'ENTSOE', 'ESE', 'GEO',
-                       'IWPDCY', 'OPSD', 'WEPP', 'WRI'],
+    return Collection(datasets=['CARMA', 'ENTSOE', 'ESE', 'GEO',
+                                'GPD', 'IWPDCY', 'OPSD', 'WEPP'],
                       update=update,
                       use_saved_matches=use_saved_matches,
                       use_saved_aggregation=use_saved_aggregation,

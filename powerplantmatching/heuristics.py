@@ -319,7 +319,7 @@ def derive_vintage_cohorts_from_statistics(df, base_year=2015, config=None):
             dfs.set_index('Year', drop=False, inplace=True)
             y_start = dfs.index[0]
             y_end = dfs.index[-1]
-            life = config['fueltype_to_life'][dfs.Fueltype.iloc[0]]
+            life = config['fuel_to_lifetime'][dfs.Fueltype.iloc[0]]
             mat = (pd.DataFrame(columns=range(y_start-life+1, y_end+life),
                                 index=range(y_start-life+1, y_end))
                      .astype(np.float))
