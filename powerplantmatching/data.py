@@ -470,6 +470,16 @@ def ESE(raw=False, config=None):
     data = pd.read_excel(book, na_values=u'n/a', engine='xlrd')
     if raw:
         return data
+
+    # --- TEMPORARY DATA FIX
+    # Currently, Vianden is claimed to have only 1096 MW rated power while it
+    # actually has 1291 MW since 2014.
+    # --> This section can be deleted, once DOE ESE fixed it.
+    ix = (data.dropna(subset=['Project Name'])
+              .loc[lambda x: x['Project Name'].str.contains('Vianden')].index)
+    data.loc[ix, 'Rated Power in kW'] = 1291000
+    # ------------------
+
     return (data
             .rename(columns={'Project Name': 'Name',
                              'Technology Type': 'Technology',
@@ -497,7 +507,7 @@ def ESE(raw=False, config=None):
 
 
 data_config['ESE'] = {'read_function': ESE,
-                      'reliability_score': 4}
+                      'reliability_score': 6}
 
 
 def ENTSOE(update=False, raw=False, entsoe_token=None, config=None):
