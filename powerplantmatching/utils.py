@@ -18,8 +18,11 @@ Utility functions for checking data completness and supporting other functions
 """
 
 from __future__ import print_function, absolute_import
+
+from .config import get_config
 from os.path import dirname
 import os
+import time
 import pandas as pd
 import six
 import pycountry as pyc
@@ -36,8 +39,13 @@ def _data_in(fn):
     return os.path.join(dirname(__file__), '..', 'data', 'in', fn)
 
 
-def _data_out(fn):
-    return os.path.join(dirname(__file__), '..', 'data', 'out', fn)
+def _data_out(fn, config=None):
+    if config is None:
+        return os.path.join(dirname(__file__), '..', 'data', 'out',
+                            'default', fn)
+    else:
+        return os.path.join(dirname(__file__), '..', 'data', 'out',
+                            config['hash'], fn)
 
 
 # Logging: General Settings
@@ -50,8 +58,8 @@ fileHandler = logging.FileHandler(_data_out('PPM.log'))
 fileHandler.setFormatter(logFormatter)
 logger.addHandler(fileHandler)
 # Logging: Console
-consoleHandler = logging.StreamHandler()
-logger.addHandler(consoleHandler)
+# consoleHandler = logging.StreamHandler()
+# logger.addHandler(consoleHandler)
 text = str if sys.version_info >= (3, 0) else unicode
 
 
@@ -95,6 +103,34 @@ def lookup(df, keys=None, by='Country, Fueltype', exclude=None, unit='MW'):
         return (dfs/scaling).round(3)
     else:
         return (lookup_single(df)/scaling).fillna(0.).round(3)
+
+
+def correct_manually(df, name, config=None):
+    from .data import data_config
+    if config is None:
+        config = get_config()
+
+    corrections = (pd.read_csv(_data_in('manual_corrections.csv'),
+                               encoding='utf-8',
+                               parse_dates=['last_update'])
+                   [lambda df: df[name].notnull()]
+                   .set_index(name))
+    if len(corrections) == 0:
+        return df.reindex(columns=config['target_columns'])
+    source_file = data_config[name]['source_file']
+    # assume OPSD files are updated on the same time
+    if isinstance(source_file, list):
+        source_file = source_file[0]
+    outdated = (pd.Timestamp(time.ctime(os.path.getmtime(source_file)))
+                > corrections.last_update).any()
+    if outdated:
+        logger.warning('Manual corrections in {0} for file {1} older than last'
+                       ' update of the source file, please update your manual '
+                       'corrections.'.format(os.path.abspath(
+                               _data_in('manual_corrections.csv')), name))
+    df = df.set_index('projectID').copy()
+    df.update(corrections)
+    return df.reset_index().reindex(columns=config['target_columns'])
 
 
 def set_uncommon_fueltypes_to_other(df, fillna_other=True, **kwargs):

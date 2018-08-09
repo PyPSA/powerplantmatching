@@ -17,10 +17,12 @@ import base64
 import os
 from six.moves import cPickle as pickle
 import yaml
-from .utils import _data
+import logging
+logger = logging.getLogger(__name__)
 
 
 def get_config(filename=None, **overrides):
+    from .utils import _data, _data_out
     if filename is None:
         filename = _data('../config.yaml')
     assert os.path.exists(filename), (
@@ -32,6 +34,18 @@ def get_config(filename=None, **overrides):
         config.update(overrides)
 
         sha1digest = hashlib.sha1(pickle.dumps(overrides)).digest()
-        config['hash'] = base64.encodestring(sha1digest).decode('ascii')[2:12]
-
+        if len(dict(**overrides)) == 0:
+            config['hash'] = 'default'
+        else:
+            config['hash'] = base64.encodestring(sha1digest)\
+                             .decode('ascii')[2:12]
+    if not os.path.isdir(_data_out('.', config=config)):
+        os.mkdir(os.path.abspath(_data_out('.', config=config)))
+        os.mkdir(os.path.abspath(_data_out('matches', config=config)))
+        os.mkdir(os.path.abspath(_data_out('aggregations', config=config)))
+        logger.info('Outputs for this configuration will be saved under {}'
+                    .format(os.path.abspath(
+                            _data_out('.', config=config))))
+        with open(_data_out('config.yaml', config=config), 'w') as file:
+            yaml.dump(config, file, default_flow_style=False)
     return config

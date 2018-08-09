@@ -49,7 +49,7 @@ def best_matches(links):
 
 
 def compare_two_datasets(datasets, labels, use_saved_matches=False,
-                         **dukeargs):
+                         config=None, **dukeargs):
     """
     Duke-based horizontal match of two databases. Returns the matched
     dataframe including only the matched entries in a multi-indexed
@@ -72,11 +72,14 @@ def compare_two_datasets(datasets, labels, use_saved_matches=False,
 
 
     """
+    if config is None:
+        config = get_config()
+
     datasets = list(map(read_csv_if_string, datasets))
     if not ('singlematch' in dukeargs):
         dukeargs['singlematch'] = True
     saving_path = _data_out('matches/matches_{}_{}.csv'
-                            .format(*np.sort(labels)))
+                            .format(*np.sort(labels)), config=config)
     if use_saved_matches:
         try:
             logger.info('Reading saved matches for datasets {} and {}'
@@ -134,7 +137,7 @@ def cross_matches(sets_of_pairs, labels=None):
 
 
 def link_multiple_datasets(datasets, labels, use_saved_matches=False,
-                           **dukeargs):
+                           config=None, **dukeargs):
     """
     Duke-based horizontal match of multiple databases. Returns the
     matching indices of the datasets. Compares all properties of the
@@ -153,6 +156,9 @@ def link_multiple_datasets(datasets, labels, use_saved_matches=False,
         Names of the databases in alphabetical order and corresponding
         order to the datasets
     """
+    if config is None:
+        config = get_config()
+
     datasets = list(map(read_csv_if_string, datasets))
     combinations = list(itertools.combinations(range(len(labels)), 2))
     all_matches = []
@@ -160,7 +166,7 @@ def link_multiple_datasets(datasets, labels, use_saved_matches=False,
         logger.info('Comparing {0} with {1}'.format(labels[c], labels[d]))
         match = compare_two_datasets(
                 [datasets[c], datasets[d]], [labels[c], labels[d]],
-                use_saved_matches=use_saved_matches, **dukeargs)
+                use_saved_matches=use_saved_matches, config=config, **dukeargs)
         all_matches.append(match)
     return cross_matches(all_matches, labels=labels)
 
@@ -215,7 +221,7 @@ def combine_multiple_datasets(datasets, labels, use_saved_matches=False,
                 .reset_index(drop=True))
     crossmatches = link_multiple_datasets(datasets, labels,
                                           use_saved_matches=use_saved_matches,
-                                          **dukeargs)
+                                          config=config, **dukeargs)
     return (combined_dataframe(crossmatches, datasets, config)
             .reindex(columns=config['target_columns'], level=0))
 

@@ -29,14 +29,14 @@ from .config import get_config
 
 import pandas as pd
 import os
-import ast
+from ast import literal_eval as liteval
 import logging
 logger = logging.getLogger(__name__)
 
 
 def collect(datasets, update=False, use_saved_aggregation=False,
             use_saved_matches=False, reduced=True,
-            custom_config={}, **dukeargs):
+            custom_config={}, config=None, **dukeargs):
     """
     Return the collection for a given list of datasets in matched or
     reduced form.
@@ -60,71 +60,62 @@ def collect(datasets, update=False, use_saved_aggregation=False,
     **dukeargs : keyword-args for duke
     """
 
-    # Deal with the case that only one dataset is requested
-    if isinstance(datasets, str):
-        name = datasets
+    if config is None:
+        config = get_config()
+
+    def df_by_name(name):
         conf = data_config[name].copy()
         conf.update(custom_config.get(name, {}))
 
-        df = conf['read_function'](**conf.get('read_kwargs', {}))
+        df = conf['read_function'](**conf.get('read_kwargs', {}),
+                                   config=config)
         if not conf.get('aggregated_units', False):
             return aggregate_units(df,
                                    use_saved_aggregation=use_saved_aggregation,
-                                   dataset_name=name)
+                                   dataset_name=name,
+                                   config=config)
         else:
             return df.assign(projectID=df.projectID.map(lambda x: {name: [x]}))
+
+    # Deal with the case that only one dataset is requested
+    if isinstance(datasets, str):
+        return df_by_name(datasets)
 
     datasets = sorted(datasets)
     logger.info('Collect combined dataset for {}'.format(', '.join(datasets)))
     outfn_matched = _data_out('Matched_{}.csv'
-                              .format('_'.join(map(str.upper, datasets))))
+                              .format('_'.join(map(str.upper, datasets))),
+                              config=config)
     outfn_reduced = _data_out('Matched_{}_reduced.csv'
-                              .format('_'.join(map(str.upper, datasets))))
+                              .format('_'.join(map(str.upper, datasets))),
+                              config=config)
 
     if not update and not os.path.exists(outfn_reduced
                                          if reduced else outfn_matched):
         logger.warning("Forcing update since the cache file is missing")
-        update = True
-        use_saved_aggregation = True
+        update, use_saved_aggregation = True, True
 
     if update:
-        dfs = []
-        for name in datasets:
-            conf = data_config[name].copy()
-            conf.update(custom_config.get(name, {}))
-
-            df = conf['read_function'](**conf.get('read_kwargs', {}))
-            if not conf.get('aggregated_units', False):
-                df = aggregate_units(
-                        df, use_saved_aggregation=use_saved_aggregation,
-                        dataset_name=name,
-                        **conf.get('clean_single_kwargs', {}))
-            else:
-                df = df.assign(projectID=df.projectID.map(
-                        lambda x: {name: [x]}))
-            dfs.append(df)
+        dfs = [df_by_name(name) for name in datasets]
         matched = combine_multiple_datasets(
-                dfs, datasets, use_saved_matches=use_saved_matches, **dukeargs)
+                dfs, datasets, use_saved_matches=use_saved_matches, **dukeargs,
+                config=config)
         matched.to_csv(outfn_matched, index_label='id', encoding='utf-8')
 
-        reduced_df = reduce_matched_dataframe(matched)
+        reduced_df = reduce_matched_dataframe(matched, config=config)
         reduced_df.to_csv(outfn_reduced, index_label='id', encoding='utf-8')
 
         return reduced_df if reduced else matched
     else:
         if reduced:
-            sdf = pd.read_csv(outfn_reduced, index_col=0, encoding='utf-8')
+            df = pd.read_csv(outfn_reduced, index_col=0, encoding='utf-8')
+            df.projectID = (df.projectID.apply(lambda df: liteval(df)))
         else:
-            sdf = pd.read_csv(outfn_matched, index_col=0, header=[0, 1],
-                              encoding='utf-8', low_memory=False)
-        if 'projectID' in sdf and reduced:
-            try:  # ast.literal_eval() seems to be unstable when NaN are given.
-                sdf.projectID = (sdf.projectID.str.replace('\[nan\]', '[]')
-                                 .apply(lambda df: ast.literal_eval(df)))
-            except ValueError:
-                logger.warn('Could not evaluate `projectID` str to dicts.')
-                pass
-        return sdf
+            df = pd.read_csv(outfn_matched, index_col=0, header=[0, 1],
+                             encoding='utf-8', low_memory=False)
+            df.projectID = (df.projectID.stack().dropna().apply(
+                    lambda df: liteval(df)).unstack())
+        return df
 
 
 def Collection(**kwargs):
@@ -174,9 +165,11 @@ def matched_data(config=None,
     # drop matches between only low reliability-data, this is necessary since
     # a lot of those are decommissioned, however some countries only appear in
     # GEO and CARMA
-    matched = (matched[matched.projectID.apply(lambda x: x.keys() not in
-               [['GEO', 'CARMA'], ['CARMA', 'GEO']]) |
-               matched.Country.isin(['Croatia', 'Czech Republic', 'Estonia'])])
+    if len(matched.columns.levels) > 1:
+        matched = (matched[matched.projectID.apply(lambda x: sorted(x.keys())
+                   not in [['CARMA', 'GEO']]) |
+                   matched.Country.isin(
+                           ['Croatia', 'Czech Republic', 'Estonia'])])
 
     if extend_by_vres:
         matched = extend_by_VRE(matched,
@@ -196,83 +189,81 @@ def MATCHED_dataset(**kwargs):
 #  ============================================================================
 # From here on, functions will be deprecated soon!
 
-def Carma_ENTSOE_GEO_OPSD_WRI_matched(update=False,
+def Carma_ENTSOE_GEO_GPD_OPSD_matched(update=False,
                                       use_saved_matches=False,
                                       use_saved_aggregation=False):
-    return Collection(['CARMA', 'ENTSOE', 'GEO', 'OPSD', 'WRI'],
-                      update=update, use_saved_matches=use_saved_matches,
-                      use_saved_aggregation=use_saved_aggregation,
-                      reduced=False)
+    return collect(['CARMA', 'ENTSOE', 'GEO', 'GPD', 'OPSD'],
+                   update=update, use_saved_matches=use_saved_matches,
+                   use_saved_aggregation=use_saved_aggregation,
+                   reduced=False)
 
 
-def Carma_ENTSOE_GEO_OPSD_WRI_matched_reduced(update=False,
+def Carma_ENTSOE_GEO_GPD_OPSD_matched_reduced(update=False,
                                               use_saved_matches=False,
                                               use_saved_aggregation=False):
-    return Collection(['CARMA', 'ENTSOE', 'GEO', 'OPSD', 'WRI'],
-                      update=update, use_saved_matches=use_saved_matches,
-                      use_saved_aggregation=use_saved_aggregation,
-                      reduced=True)
+    return collect(['CARMA', 'ENTSOE', 'GEO', 'GPD', 'OPSD'],
+                   update=update, use_saved_matches=use_saved_matches,
+                   use_saved_aggregation=use_saved_aggregation,
+                   reduced=True)
 
 
 # --- The next two definitions include ESE as well ---
 
 # unpublishable
-def Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched(update=False,
+def Carma_ENTSOE_ESE_GEO_GPD_OPSD_matched(update=False,
                                           use_saved_matches=False,
                                           use_saved_aggregation=False):
-    return Collection(['CARMA', 'ENTSOE', 'ESE', 'GEO', 'OPSD', 'WRI'],
-                      update=update,
-                      use_saved_matches=use_saved_matches,
-                      use_saved_aggregation=use_saved_aggregation,
-                      reduced=False)
+    return collect(['CARMA', 'ENTSOE', 'ESE', 'GEO', 'GPD', 'OPSD'],
+                   update=update,
+                   use_saved_matches=use_saved_matches,
+                   use_saved_aggregation=use_saved_aggregation,
+                   reduced=False)
 
 
 # unpublishable
-def Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced(update=False,
+def Carma_ENTSOE_ESE_GEO_GPD_OPSD_matched_reduced(update=False,
                                                   use_saved_matches=False,
                                                   use_saved_aggregation=False):
-    return Collection(['CARMA', 'ENTSOE', 'ESE', 'GEO', 'OPSD', 'WRI'],
-                      update=update, use_saved_matches=use_saved_matches,
-                      use_saved_aggregation=use_saved_aggregation,
-                      reduced=True)
+    return collect(['CARMA', 'ENTSOE', 'ESE', 'GEO', 'GPD', 'OPSD'],
+                   update=update, use_saved_matches=use_saved_matches,
+                   use_saved_aggregation=use_saved_aggregation,
+                   reduced=True)
 
 # --- The next three definitions include ESE+IWPDCY as well ---
 
 
 # unpublishable
-def Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WRI_matched(update=False,
+def Carma_ENTSOE_ESE_GEO_GPD_IWPDCY_OPSD_matched(update=False,
                                                  use_saved_matches=False,
                                                  use_saved_aggregation=False):
-    return Collection(['CARMA', 'ENTSOE', 'ESE', 'GEO',
-                       'IWPDCY', 'OPSD', 'WRI'],
-                      update=update, use_saved_matches=use_saved_matches,
-                      use_saved_aggregation=use_saved_aggregation,
-                      reduced=False)
+    return collect(['CARMA', 'ENTSOE', 'ESE', 'GEO', 'GPD', 'IWPDCY', 'OPSD'],
+                   update=update, use_saved_matches=use_saved_matches,
+                   use_saved_aggregation=use_saved_aggregation,
+                   reduced=False)
 
 
 # unpublishable
-def Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WRI_matched_reduced(
+def Carma_ENTSOE_ESE_GEO_GPD_IWPDCY_OPSD_matched_reduced(
         update=False, use_saved_matches=False, use_saved_aggregation=False):
-    return Collection(['CARMA', 'ENTSOE', 'ESE',
-                       'GEO', 'IWPDCY', 'OPSD', 'WRI'],
-                      update=update,
-                      use_saved_matches=use_saved_matches,
-                      use_saved_aggregation=use_saved_aggregation,
-                      reduced=True)
+    return collect(['CARMA', 'ENTSOE', 'ESE', 'GEO', 'GPD', 'IWPDCY', 'OPSD'],
+                   update=update,
+                   use_saved_matches=use_saved_matches,
+                   use_saved_aggregation=use_saved_aggregation,
+                   reduced=True)
 
 
 # unpublishable
-def Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WRI_matched_reduced_VRE(
+def Carma_ENTSOE_ESE_GEO_GPD_IWPDCY_OPSD_matched_reduced_VRE(
         update=False, use_saved_matches=False, use_saved_aggregation=False,
         update_concat=False, base_year=2016):
     if update_concat:
         logger.info('Read base reduced dataframe...')
-        df = Collection(['CARMA', 'ENTSOE', 'ESE', 'GEO',
-                         'IWPDCY', 'OPSD', 'WRI'],
-                        update=update,
-                        use_saved_matches=use_saved_matches,
-                        use_saved_aggregation=use_saved_aggregation,
-                        reduced=True)
+        df = collect(['CARMA', 'ENTSOE', 'ESE', 'GEO', 'GPD',
+                      'IWPDCY', 'OPSD'],
+                     update=update,
+                     use_saved_matches=use_saved_matches,
+                     use_saved_aggregation=use_saved_aggregation,
+                     reduced=True)
         df = extend_by_VRE(df, base_year=base_year)
         df.to_csv(_data_out('Matched_CARMA_ENTSOE_ESE_GEO_'
                             'IWPDCY_OPSD_WRI_reduced_vre.csv'),
@@ -288,9 +279,9 @@ def Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WRI_matched_reduced_VRE(
 # --- The next three definitions include ESE+IWPDCY+WEPP as well ---
 
 # unpublishable
-def Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_matched(
+def Carma_ENTSOE_ESE_GEO_GPD_IWPDCY_OPSD_WEPP_matched(
         update=False, use_saved_matches=False, use_saved_aggregation=False):
-    return Collection(datasets=['CARMA', 'ENTSOE', 'ESE', 'GEO',
+    return collect(datasets=['CARMA', 'ENTSOE', 'ESE', 'GEO',
                                 'GPD', 'IWPDCY', 'OPSD', 'WEPP'],
                       update=update, use_saved_matches=use_saved_matches,
                       use_saved_aggregation=use_saved_aggregation,
@@ -298,9 +289,9 @@ def Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_matched(
 
 
 # unpublishable
-def Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_matched_reduced(
+def Carma_ENTSOE_ESE_GEO_GPD_IWPDCY_OPSD_WEPP_matched_reduced(
         update=False, use_saved_matches=False, use_saved_aggregation=False):
-    return Collection(datasets=['CARMA', 'ENTSOE', 'ESE', 'GEO',
+    return collect(datasets=['CARMA', 'ENTSOE', 'ESE', 'GEO',
                                 'GPD', 'IWPDCY', 'OPSD', 'WEPP'],
                       update=update,
                       use_saved_matches=use_saved_matches,
@@ -309,12 +300,12 @@ def Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_matched_reduced(
 
 
 # unpublishable
-def Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_matched_reduced_VRE(
+def Carma_ENTSOE_ESE_GEO_GPD_IWPDCY_OPSD_WEPP_matched_reduced_VRE(
         update=False, use_saved_matches=False, use_saved_aggregation=False,
         base_year=2015, update_concat=False):
     if update_concat:
         logger.info('Read base reduced dataframe...')
-        df = (Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_matched_reduced(
+        df = (Carma_ENTSOE_ESE_GEO_GPD_IWPDCY_OPSD_WEPP_matched_reduced(
                 update=update,
                 use_saved_matches=use_saved_matches,
                 use_saved_aggregation=use_saved_aggregation)

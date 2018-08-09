@@ -20,7 +20,7 @@ from __future__ import absolute_import, print_function
 
 from .config import get_config
 from .duke import duke
-from .utils import (_data_out)
+from .utils import _data_out
 
 import numpy as np
 import pandas as pd
@@ -250,7 +250,7 @@ def aggregate_units(df, dataset_name=None,
         df = clean_powerplantname(df)
 
     path_name = _data_out('aggregations/aggregation_groups_{}.csv'
-                          .format(dataset_name))
+                          .format(dataset_name), config=config)
     if use_saved_aggregation:
         try:
             logger.info("Reading saved aggregation groups for dataset '{}'."
@@ -259,8 +259,8 @@ def aggregate_units(df, dataset_name=None,
                         .reindex(index=df.index))
             df = df.assign(grouped=groups.values)
         except (ValueError, IOError):
-            logger.warning("Non-existing saved links for dataset '{0}', "
-                           "continuing by aggregating again"
+            logger.warning("Non-existing saved aggregation groups for dataset"
+                           '{0}, continuing by aggregating again'
                            .format(dataset_name))
             if 'grouped' in df:
                 df.drop('grouped', axis=1, inplace=True)

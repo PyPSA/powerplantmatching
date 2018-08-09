@@ -23,7 +23,7 @@ import pandas as pd
 import numpy as np
 import pycountry
 from .collection import \
-    Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_matched_reduced_VRE
+    Carma_ENTSOE_ESE_GEO_GPD_IWPDCY_OPSD_WEPP_matched_reduced_VRE
 from .heuristics import set_denmark_region_id, set_known_retire_years
 from .utils import _data_out
 import logging

@@ -37,4 +37,4 @@ logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] " +
 fileHandler = logging.FileHandler(utils._data_out('PPM.log'))
 fileHandler.setFormatter(logFormatter)
 logger.addHandler(fileHandler)
-logger.info('Initialization complete.')
+# logger.info('Initialization complete.')

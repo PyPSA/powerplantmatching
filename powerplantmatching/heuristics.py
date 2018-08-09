@@ -57,9 +57,12 @@ def extend_by_non_matched(df, extend_by, label=None, fueltypes=None,
         label = extend_by
         extend_by = data_config[label]['read_function']()
 
-    included_ids = df.projectID.map(lambda d: d.get(label)).dropna().sum()
-    remaining_ids = ~ extend_by.projectID.isin(included_ids)
-    extend_by = extend_by.loc[remaining_ids]
+    if len(df.columns.levels) > 1:
+        included_ids = df['projectID', label].dropna().sum()
+    else:
+        included_ids = df.projectID.dropna().map(lambda d: d.get(label)).sum()
+
+    extend_by = extend_by.loc[~ extend_by.projectID.isin(included_ids)]
 
     if fueltypes is not None:
         extend_by = extend_by[extend_by.Fueltype.isin(
@@ -77,7 +80,14 @@ def extend_by_non_matched(df, extend_by, label=None, fueltypes=None,
         extend_by = extend_by.assign(
                 projectID=extend_by.projectID.map(lambda x: {label: [x]}))
 
-    return df.append(extend_by.reindex(columns=df.columns), ignore_index=True)
+    if len(df.columns.levels) > 1:
+        return df.append(
+                pd.concat([extend_by], keys=[label], axis=1)
+                .swaplevel(axis=1)
+                .reindex(columns=df.columns), ignore_index=True)
+    else:
+        return df.append(extend_by.reindex(columns=df.columns),
+                         ignore_index=True)
 
 
 def rescale_capacities_to_country_totals(df, fueltypes):

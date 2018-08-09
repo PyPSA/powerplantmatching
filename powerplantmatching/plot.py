@@ -32,10 +32,10 @@ from .cleaning import aggregate_units
 from .data import CARMA, ENTSOE, Capacity_stats, ESE, GEO, OPSD, WEPP, WRI
 from .collection import (
         matched_data,
-        Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_matched_reduced_VRE,
-        Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_matched_reduced,
-        Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WRI_matched_reduced_VRE,
-        Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WRI_matched_reduced)
+        Carma_ENTSOE_ESE_GEO_GPD_IWPDCY_OPSD_WEPP_matched_reduced_VRE,
+        Carma_ENTSOE_ESE_GEO_GPD_IWPDCY_OPSD_WEPP_matched_reduced,
+        Carma_ENTSOE_ESE_GEO_GPD_IWPDCY_OPSD_matched_reduced_VRE,
+        Carma_ENTSOE_ESE_GEO_GPD_IWPDCY_OPSD_matched_reduced)
 from .utils import lookup, set_uncommon_fueltypes_to_other
 import logging
 logger = logging.getLogger(__name__)
@@ -104,10 +104,10 @@ def comparison_single_matched_bar(df=None, include_WEPP=True, cleaned=True,
     """
     if df is None:
         if include_WEPP:
-            df = (Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_matched_reduced()
+            df = (Carma_ENTSOE_ESE_GEO_GPD_IWPDCY_OPSD_WEPP_matched_reduced()
                   .loc[lambda x:  ~x.Fueltype.isin(exclude)])
         else:
-            df = (Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WRI_matched_reduced()
+            df = (Carma_ENTSOE_ESE_GEO_GPD_IWPDCY_OPSD_matched_reduced()
                   .loc[lambda x:  ~x.Fueltype.isin(exclude)])
 
     if cleaned:
@@ -548,7 +548,7 @@ def bar_decomissioning_curves(df=None, ylabel=None, title=None,
     if ylabel is None:
         ylabel = 'Capacity [GW]'
     if df is None:
-        df = Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_matched_reduced_VRE()
+        df = Carma_ENTSOE_ESE_GEO_GPD_IWPDCY_OPSD_WEPP_matched_reduced_VRE()
         if df is None:
             raise RuntimeError("The data to be plotted does not yet exist.")
     df = df.copy()
@@ -730,10 +730,10 @@ def gather_comparison_data(include_WEPP=True, include_VRE=False, **kwargs):
 
         if include_VRE:
             red_w_wepp =\
-                Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_matched_reduced_VRE()
+                Carma_ENTSOE_ESE_GEO_GPD_IWPDCY_OPSD_WEPP_matched_reduced_VRE()
         else:
             red_w_wepp =\
-                Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_matched_reduced()
+                Carma_ENTSOE_ESE_GEO_GPD_IWPDCY_OPSD_WEPP_matched_reduced()
             red_w_wepp.query(queryexpr, inplace=True)
             wepp.query(queryexpr, inplace=True)
         red_w_wepp.query(s.format(yr), inplace=True)
@@ -743,10 +743,10 @@ def gather_comparison_data(include_WEPP=True, include_VRE=False, **kwargs):
     # 3: Reduced w/o WEPP
     if include_VRE:
         red_wo_wepp =\
-            Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WRI_matched_reduced_VRE()
+            Carma_ENTSOE_ESE_GEO_GPD_IWPDCY_OPSD_matched_reduced_VRE()
     else:
         red_wo_wepp = matched_data()
-        # red_wo_wepp = Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WRI_matched_reduced()
+        # red_wo_wepp = Carma_ENTSOE_ESE_GEO_GPD_IWPDCY_OPSD_matched_reduced()
         red_wo_wepp.query(queryexpr, inplace=True)
     red_wo_wepp.query(s.format(yr), inplace=True)
     # 4: Statistics

@@ -88,31 +88,29 @@ ENV/
 
 # Rope project settings
 .ropeproject
-coal-types.xlsx
-config.csv
 config.yaml
+coal-types.xlsx
 data/*WEPP*
 data/*wepp*
 data/in/*WEPP*
 data/in/*wepp*
-data/out/*WEPP*
-data/out/*wepp*
 data/in/*IWPDCY*
-data/out/*IWPDCY*
 data/in/projects.xls
 data/in/energy_storage_exchange.csv
 data/in/*ESE*
-data/out/*ESE*
 data/in/hydro_aggregation.csv
 data/in/renewable_power_plants.sqlite
-data/out/Export_Stock_TIMES*.xlsx
 data/in/kraftwerke-de-ab-100-mw.xls
 data/in/Kraftwerksliste_2017_2.xlsx
-data/out/aggregation_groups_BNETZA.csv
-data/out/aggregation_groups_UBA.csv
 german_postcode_map.py
-data/out/Matched_BNETZA_UBA.csv
-data/out/Matched_BNETZA_UBA_reduced.csv
-data/out/aggregation_groups_Unnamed dataset.csv
 matching_analysis/*.png
-config.yaml
+
+data/out/*
+!data/out/default
+data/out/default/*WEPP*
+data/out/default/*wepp*
+data/out/default/*IWPDCY*
+data/out/default/*ESE*
+data/out/default/Export_Stock_TIMES*.xlsx
+data/out/default/Matched_BNETZA_UBA.csv
+data/out/default/Matched_BNETZA_UBA_reduced.csv
