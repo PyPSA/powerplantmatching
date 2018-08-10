@@ -54,7 +54,7 @@ logging.basicConfig(level=logging.INFO)
 # Logging: File
 logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] "
                                  "[%(levelname)-5.5s]  %(message)s")
-fileHandler = logging.FileHandler(_data_out('PPM.log'))
+fileHandler = logging.FileHandler(_data_out('../PPM.log'))
 fileHandler.setFormatter(logFormatter)
 logger.addHandler(fileHandler)
 # Logging: Console
