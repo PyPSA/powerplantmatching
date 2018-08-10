@@ -23,6 +23,7 @@ power plant databases.
 
 from __future__ import absolute_import
 
+from .utils import _data_out
 from . import (config, cleaning, data, heuristics, export, matching, utils,
                collection, plot)
 
@@ -34,7 +35,7 @@ logger.setLevel('INFO')
 # Logging: File
 logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] " +
                                  "[%(levelname)-5.5s]  %(message)s")
-fileHandler = logging.FileHandler(utils._data_out('PPM.log'))
+fileHandler = logging.FileHandler(_data_out('PPM.log'))
 fileHandler.setFormatter(logFormatter)
 logger.addHandler(fileHandler)
 # logger.info('Initialization complete.')

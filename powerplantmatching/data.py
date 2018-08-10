@@ -729,7 +729,7 @@ def WEPP(raw=False, config=None):
                  'COUNTRY': str, 'AREA': str, 'SUBREGION': str,
                  'POSTCODE': str, 'PARENT': str, 'ELECTYPE': str,
                  'BUSTYPE': str, 'COMPID': np.int32, 'LOCATIONID': np.int32,
-                 'UNITID': np.int32}
+                 'UNITID': str}
     # Now read the Platts WEPP Database
     wepp = pd.read_csv(data_config['WEPP']['source_file'], dtype=datatypes,
                        encoding='utf-8')

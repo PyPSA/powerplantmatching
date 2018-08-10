@@ -57,10 +57,11 @@ def extend_by_non_matched(df, extend_by, label=None, fueltypes=None,
         label = extend_by
         extend_by = data_config[label]['read_function']()
 
-    if len(df.columns.levels) > 1:
+    if df.columns.nlevels > 1:
         included_ids = df['projectID', label].dropna().sum()
     else:
-        included_ids = df.projectID.dropna().map(lambda d: d.get(label)).sum()
+        included_ids = (df.projectID.dropna().map(lambda d: d.get(label))
+                          .dropna().sum())
 
     extend_by = extend_by.loc[~ extend_by.projectID.isin(included_ids)]
 
@@ -80,7 +81,7 @@ def extend_by_non_matched(df, extend_by, label=None, fueltypes=None,
         extend_by = extend_by.assign(
                 projectID=extend_by.projectID.map(lambda x: {label: [x]}))
 
-    if len(df.columns.levels) > 1:
+    if df.columns.nlevels > 1:
         return df.append(
                 pd.concat([extend_by], keys=[label], axis=1)
                 .swaplevel(axis=1)
