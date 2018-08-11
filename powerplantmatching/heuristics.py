@@ -373,7 +373,8 @@ def manual_corrections(df):
 
     # Czech Lignite underrepresented, extend by missing WEPP records
     df = extend_by_non_matched(df, 'WEPP', fueltypes='Lignite',
-                               countries='Czech Republic')
+                               countries='Czech Republic',
+                               use_saved_aggregation=True)
 
     # Polish plant Kozienice Block 11 not yet online in 2015 and 2016
     df.loc[lambda x: (x.Name == 'Kozienice'), 'Capacity'] = 2820
