@@ -199,7 +199,7 @@ def average_empty_commyears(df):
     # 1st try: Fill with both country- and fueltypespecific averages
     df.YearCommissioned.fillna(df.groupby(['Country', 'Fueltype'])
                                  .YearCommissioned
-                                 .transform("mean"), inplace=True)
+                                 .transform('mean'), inplace=True)
     # 2nd try: Fill remaining with only fueltype-specific average
     df.YearCommissioned.fillna(df.groupby(['Fueltype']).YearCommissioned
                                  .transform('mean'), inplace=True)

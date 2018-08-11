@@ -216,8 +216,8 @@ def aggregate_units(df, dataset_name=None,
     if config is None:
         config = get_config()
 
-    logger.info("Aggregating blocks to entire units in "
-                "'{}'.".format(dataset_name))
+    logger.info("Aggregating blocks to entire units in '{}'."
+                .format(dataset_name))
 
     def most_frequent(ds):
         return ds.value_counts(dropna=False).index[0]
@@ -244,7 +244,7 @@ def aggregate_units(df, dataset_name=None,
                 'Duration': pd.Series.sum,  # note this is weighted sum
                 'Efficiency': pd.Series.mean  # note this is weighted mean
                 })[config['target_columns']].to_dict()
-#
+
     if pre_clean_name:
         logger.info("Cleaning plant names in '{}'.".format(dataset_name))
         df = clean_powerplantname(df)
