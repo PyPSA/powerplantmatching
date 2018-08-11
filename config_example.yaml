@@ -95,6 +95,12 @@ target_technologies:
     - PV
     - CSP
 
+# Allowed countries for matches of only CARMA and GEO
+CARMA_GEO_countries:
+    - Croatia
+    - Czech Republic
+    - Estonia
+
 # heuristic config
 fuel_to_lifetime:
     Bioenergy: 20
@@ -137,3 +143,34 @@ fuel_to_color:
     Hydrogen Storage: teal
     Electro-mechanical: teal
     Total: gold
+
+    # Returns a value for the `loc` argument of the mpl.offsetbox by country.
+textbox_position:
+    'Austria': 1
+    'Belgium': 1
+    'Bulgaria': 1
+    'Croatia': 1
+    'Czech Republic': 1
+    'Denmark': 9
+    'Estonia': 2
+    'Finland': 1
+    'France': 2
+    'Germany': 9
+    'Greece': 1
+    'Hungary': 1
+    'Ireland': 1
+    'Italy': 1
+    'Latvia': 1
+    'Lithuania': 1
+    'Luxembourg': 1
+    'Netherlands': 1
+    'Norway': 1
+    'Poland': 1
+    'Portugal': 1
+    'Romania': 1
+    'Slovakia': 1
+    'Slovenia': 1
+    'Spain': 1
+    'Sweden': 1
+    'Switzerland': 1
+    'United Kingdom': 1

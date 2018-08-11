@@ -158,27 +158,26 @@ def matched_data(config=None,
     matched = collect(config['matching_sources'], **collection_kwargs)
 
     for source in config['fully_included_sources']:
-        matched = extend_by_non_matched(matched,
-                                        source,
-                                        config=config,
+        matched = extend_by_non_matched(matched, source, config=config,
                                         **extendby_kwargs)
 
-    # drop matches between only low reliability-data, this is necessary since
+    # Drop matches between only low reliability-data, this is necessary since
     # a lot of those are decommissioned, however some countries only appear in
     # GEO and CARMA
+    allowed_countries = config['CARMA_GEO_countries']
     if matched.columns.nlevels > 1:
-        matched = matched  # same filter as below for multitindex
+        other = [s for s in config['matching_sources']
+                 if s not in ['CARMA', 'GEO']]
+        bool_vector = pd.Series(True, index=matched.index)
+        for o in other:
+            bool_vector &= matched.projectID[o].isna()
+        matched = matched[~(bool_vector) |
+                          matched.Country.GEO.isin(allowed_countries) |
+                          matched.Country.CARMA.isin(allowed_countries)]
     else:
-        matched = (matched[matched.projectID.apply(
-                lambda x: sorted(x.keys()) not in [['CARMA', 'GEO']]) |
-                matched.Country.isin(['Croatia', 'Czech Republic',
-                                      'Estonia'])])
-
-    if matched.columns.nlevels > 1:
-        matched = (matched[matched.projectID.apply(lambda x: sorted(x.keys())
-                   not in [['CARMA', 'GEO']]) |
-                   matched.Country.isin(
-                           ['Croatia', 'Czech Republic', 'Estonia'])])
+        matched = matched[matched.projectID.apply(lambda x: sorted(x.keys())
+                          not in [['CARMA', 'GEO']]) |
+                          matched.Country.isin(allowed_countries)]
 
     if extend_by_vres:
         matched = extend_by_VRE(matched,
@@ -190,7 +189,7 @@ def matched_data(config=None,
 
 
 def MATCHED_dataset(**kwargs):
-    logger.warning('MATCHED_dataset deprecated soonly, please use matched_data'
+    logger.warning('MATCHED_dataset deprecated soon, please use matched_data'
                    ' instead')
     return matched_data(**kwargs)
 
