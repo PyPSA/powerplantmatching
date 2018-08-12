@@ -67,15 +67,15 @@ def collect(datasets, update=False, use_saved_aggregation=False,
         conf = data_config[name].copy()
         conf.update(custom_config.get(name, {}))
 
-        df = conf['read_function'](**conf.get('read_kwargs', {}),
-                                   config=config)
+        df = conf['read_function'](config=config,
+                                   **conf.get('read_kwargs', {}))
         if not conf.get('aggregated_units', False):
             return aggregate_units(df,
                                    use_saved_aggregation=use_saved_aggregation,
                                    dataset_name=name,
                                    config=config)
         else:
-            return df.assign(projectID=df.projectID.map(lambda x: {name: [x]}))
+            return df.assign(projectID=df.projectID.map(lambda x: [x]))
 
     # Deal with the case that only one dataset is requested
     if isinstance(datasets, str):
@@ -98,8 +98,8 @@ def collect(datasets, update=False, use_saved_aggregation=False,
     if update:
         dfs = [df_by_name(name) for name in datasets]
         matched = combine_multiple_datasets(
-                dfs, datasets, use_saved_matches=use_saved_matches, **dukeargs,
-                config=config)
+                dfs, datasets, use_saved_matches=use_saved_matches,
+                config=config, **dukeargs)
         matched.to_csv(outfn_matched, index_label='id', encoding='utf-8')
 
         reduced_df = reduce_matched_dataframe(matched, config=config)
@@ -165,7 +165,9 @@ def matched_data(config=None,
     # drop matches between only low reliability-data, this is necessary since
     # a lot of those are decommissioned, however some countries only appear in
     # GEO and CARMA
-    if len(matched.columns.levels) > 1:
+    if matched.columns.nlevels > 1:
+        matched = matched  # same filter as below for multitindex
+    else:
         matched = (matched[matched.projectID.apply(lambda x: sorted(x.keys())
                    not in [['CARMA', 'GEO']]) |
                    matched.Country.isin(
