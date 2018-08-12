@@ -193,9 +193,11 @@ def GEO(raw=False, config=None):
     geo = read_globalenergyobservatory()
     if raw:
         return geo
-    geo = geo.assign(Retrofit=geo.Retrofit.astype(float),
-                     projectID='GEO' + geo.projectID.astype(str),
-                     YearCommissioned=(
+    geo = (geo.assign(Retrofit=geo.Retrofit.astype(float),
+                      projectID='GEO' + geo.projectID.astype(str)))
+    # Necessary to do this in two steps, since Retrofit cannot be assigned to
+    # itself (see above) and re-used for YearCommissioned in one step.
+    geo = geo.assign(YearCommissioned=(
                              geo.YearCommissioned.astype(text)
                              .str.replace("[a-zA-Z]", '')
                              .str.replace("[^0-9.]", " ")
@@ -204,9 +206,7 @@ def GEO(raw=False, config=None):
                              .str.slice(0, 4)
                              .astype(float)
                              .fillna(geo.Retrofit)))
-    geo.loc[lambda x: x.projectID == 'GEO42367', 'YearCommissioned'] = 1936
-    geo.loc[:, 'Retrofit'] = geo.Retrofit.fillna(
-            geo.YearCommissioned)
+    geo = geo.assign(Retrofit=geo.Retrofit.fillna(geo.YearCommissioned))
     return (geo
             .loc[lambda df: df.Country.isin(config['target_countries'])]
             .replace({col: {'Gas': 'Natural Gas'}
@@ -728,8 +728,8 @@ def WEPP(raw=False, config=None):
                  'RETIRE': np.float64, 'CITY': str, 'STATE': str,
                  'COUNTRY': str, 'AREA': str, 'SUBREGION': str,
                  'POSTCODE': str, 'PARENT': str, 'ELECTYPE': str,
-                 'BUSTYPE': str, 'COMPID': np.int32, 'LOCATIONID': np.int32,
-                 'UNITID': np.int32}
+                 'BUSTYPE': str, 'COMPID': str, 'LOCATIONID': str,
+                 'UNITID': str}
     # Now read the Platts WEPP Database
     wepp = pd.read_csv(data_config['WEPP']['source_file'], dtype=datatypes,
                        encoding='utf-8')
@@ -753,10 +753,9 @@ def WEPP(raw=False, config=None):
          'GIBRALTAR': u'SPAIN',
          'SCOTLAND': u'UNITED KINGDOM'}
     wepp.Country = wepp.Country.replace(c).str.title()
-    wepp = wepp[wepp.Country.isin(config['target_countries'])]
-    # Drop any rows with plants which are not: In operation (OPR) or
-    # under construction (CON)
-    wepp = wepp[wepp.Status.isin(['OPR', 'CON'])]
+    wepp = (wepp.loc[lambda df: df.Country.isin(config['target_countries'])]
+                .loc[lambda df: df.Status.isin(['OPR', 'CON'])]
+                .assign(File=data_config['WEPP']['source_file']))
     # Replace fueltypes
     d = {'AGAS': 'Bioenergy',    # Syngas from gasified agricultural waste
          'BFG': 'Other',         # blast furnance gas -> "Hochofengas"
@@ -899,7 +898,7 @@ def UBA(header=9, skipfooter=26, prune_wind=True, prune_solar=True,
             u'Standort-PLZ': 'PLZ'})
     from .heuristics import PLZ_to_LatLon_map
     uba = (uba.assign(
-            Name = uba.Name.replace({'\s\s+': ' '}, regex=True),
+            Name=uba.Name.replace({'\s\s+': ' '}, regex=True),
             lon=uba.PLZ.map(PLZ_to_LatLon_map()['lon']),
             lat=uba.PLZ.map(PLZ_to_LatLon_map()['lat']),
             YearCommissioned=uba.YearCommissioned.str.replace(
@@ -954,7 +953,7 @@ def UBA(header=9, skipfooter=26, prune_wind=True, prune_solar=True,
         uba = uba.loc[lambda x: x.Fueltype != 'Solar']
     return (uba.loc[lambda df: df.Fueltype.isin(config['target_fueltypes'])]
             .pipe(scale_to_net_capacities,
-                (not data_config['UBA']['net_capacity']))
+                  (not data_config['UBA']['net_capacity']))
             .pipe(correct_manually, 'UBA', config=config))
 
 

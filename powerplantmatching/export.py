@@ -77,7 +77,7 @@ def to_TIMES(df=None, use_scaled_capacity=False, baseyear=2015):
     Transform a given dataset into the TIMES format and export as .xlsx.
     """
     if df is None:
-        df = Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_matched_reduced_VRE()
+        df = Carma_ENTSOE_ESE_GEO_GPD_IWPDCY_OPSD_WEPP_matched_reduced_VRE()
         if df is None:
             raise RuntimeError("The data to be exported does not yet exist.")
     df = df.loc[(df.YearCommissioned.isnull()) |

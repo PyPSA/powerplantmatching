@@ -60,8 +60,8 @@ def extend_by_non_matched(df, extend_by, label=None, fueltypes=None,
     if df.columns.nlevels > 1:
         included_ids = df['projectID', label].dropna().sum()
     else:
-        included_ids = (df.projectID
-                        .dropna().map(lambda d: d.get(label)).dropna().sum())
+        included_ids = (df.projectID.dropna().map(lambda d: d.get(label))
+                          .dropna().sum())
 
     extend_by = extend_by.loc[~ extend_by.projectID.isin(included_ids)]
 
@@ -199,7 +199,7 @@ def average_empty_commyears(df):
     # 1st try: Fill with both country- and fueltypespecific averages
     df.YearCommissioned.fillna(df.groupby(['Country', 'Fueltype'])
                                  .YearCommissioned
-                                 .transform("mean"), inplace=True)
+                                 .transform('mean'), inplace=True)
     # 2nd try: Fill remaining with only fueltype-specific average
     df.YearCommissioned.fillna(df.groupby(['Fueltype']).YearCommissioned
                                  .transform('mean'), inplace=True)
@@ -373,7 +373,8 @@ def manual_corrections(df):
 
     # Czech Lignite underrepresented, extend by missing WEPP records
     df = extend_by_non_matched(df, 'WEPP', fueltypes='Lignite',
-                               countries='Czech Republic')
+                               countries='Czech Republic',
+                               use_saved_aggregation=True)
 
     # Polish plant Kozienice Block 11 not yet online in 2015 and 2016
     df.loc[lambda x: (x.Name == 'Kozienice'), 'Capacity'] = 2820
