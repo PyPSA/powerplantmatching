@@ -36,7 +36,7 @@
     <property>
       <name>TECHNOLOGY</name> 
       <comparator>no.priv.garshol.duke.comparators.QGramComparator</comparator>
-      <low>0.05</low>
+      <low>0.25</low>
       <high>0.51</high>
     </property>
     <property>

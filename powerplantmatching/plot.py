@@ -496,7 +496,7 @@ def country_totals_hbar(dfs, keys, exclude_fueltypes=['Solar', 'Wind'],
         return fig, ax
 
 
-def factor_comparison(dfs, keys, figsize=(7, 9)):
+def factor_comparison(dfs, keys, figsize=(12, 9)):
     dfs = [set_uncommon_fueltypes_to_other(df) for df in dfs]
     compare = lookup(dfs, keys=keys, exclude=['Solar', 'Wind']).fillna(0.)
     compare = compare.append(
@@ -504,7 +504,7 @@ def factor_comparison(dfs, keys, figsize=(7, 9)):
                       keys=['Total']).swaplevel()).sort_index()/1000
     n_countries, n_fueltypes = compare.index.levshape
 
-    c = [get_config()['fueltype_to_color'][i] for i in compare.index.levels[1]]
+    c = [get_config()['fuel_to_color'][i] for i in compare.index.levels[1]]
     rcParams["axes.prop_cycle"] = cycler(color=c)
 
     # where both are zero,

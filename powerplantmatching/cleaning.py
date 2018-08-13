@@ -216,9 +216,6 @@ def aggregate_units(df, dataset_name=None,
     if config is None:
         config = get_config()
 
-    logger.info("Aggregating blocks to entire units in '{}'."
-                .format(dataset_name))
-
     def most_frequent(ds):
         return ds.value_counts(dropna=False).index[0]
 
@@ -249,8 +246,12 @@ def aggregate_units(df, dataset_name=None,
         logger.info("Cleaning plant names in '{}'.".format(dataset_name))
         df = clean_powerplantname(df)
 
+    logger.info("Aggregating blocks to entire units in '{}'."
+                .format(dataset_name))
+
     path_name = _data_out('aggregations/aggregation_groups_{}.csv'
                           .format(dataset_name), config=config)
+
     if use_saved_aggregation:
         try:
             logger.info("Reading saved aggregation groups for dataset '{}'."

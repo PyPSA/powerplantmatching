@@ -34,8 +34,8 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def collect(datasets, update=False, use_saved_aggregation=False,
-            use_saved_matches=False, reduced=True,
+def collect(datasets, update=False, use_saved_aggregation=True,
+            use_saved_matches=True, reduced=True,
             custom_config={}, config=None, **dukeargs):
     """
     Return the collection for a given list of datasets in matched or
@@ -166,12 +166,8 @@ def matched_data(config=None,
     # GEO and CARMA
     allowed_countries = config['CARMA_GEO_countries']
     if matched.columns.nlevels > 1:
-        other = [s for s in config['matching_sources']
-                 if s not in ['CARMA', 'GEO']]
-        bool_vector = pd.Series(True, index=matched.index)
-        for o in other:
-            bool_vector &= matched.projectID[o].isna()
-        matched = matched[~(bool_vector) |
+        other = list(set(config['matching_sources']) - set(['CARMA', 'GEO']))
+        matched = matched[~matched.projectID[other].isna().all(1) |
                           matched.Country.GEO.isin(allowed_countries) |
                           matched.Country.CARMA.isin(allowed_countries)]
     else:
