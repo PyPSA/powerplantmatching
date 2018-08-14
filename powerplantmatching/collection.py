@@ -174,7 +174,6 @@ def matched_data(config=None,
         matched = matched[matched.projectID.apply(lambda x: sorted(x.keys())
                           not in [['CARMA', 'GEO']]) |
                           matched.Country.isin(allowed_countries)]
-
     if extend_by_vres:
         matched = extend_by_VRE(matched,
                                 base_year=config['opsd_vres_base_year'])

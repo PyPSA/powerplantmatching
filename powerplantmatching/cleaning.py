@@ -38,7 +38,7 @@ def clean_powerplantname(df):
     Parameters
     ----------
     df : pandas.Dataframe
-        dataframe which should be cleaned
+        dataframe to be cleaned
 
     """
     df = df[df.Name.notnull()]
@@ -77,6 +77,15 @@ def clean_powerplantname(df):
 
 
 def gather_fueltype_info(df, search_col=['Name', 'Technology']):
+    """
+    Parses in search_col columns for distinct coal specifications, e.g.
+    'lignite', and passes this information to the 'Fueltype' column.
+
+    Parameter
+    ---------
+    search_col : list, default is ['Name', 'Technology']
+        Specify the columns to be parsed
+    """
     fueltype = pd.Series(df['Fueltype'])
 
     for i in search_col:
@@ -90,6 +99,20 @@ def gather_fueltype_info(df, search_col=['Name', 'Technology']):
 
 def gather_technology_info(df, search_col=['Name', 'Fueltype'],
                            config=None):
+    """
+    Parses in search_col columns for distinct technology specifications, e.g.
+    'Run-of-River', and passes this information to the 'Technology' column.
+
+    Parameter
+    ---------
+    search_col : list, default is ['Name', 'Fueltype']
+        Specify the columns to be parsed
+    config : dict, default None
+        Add custom specific configuration,
+        e.g. powerplantmatching.config.get_config(target_countries='Italy'),
+        defaults to powerplantmatching.config.get_config()
+
+    """
     if config is None:
         config = get_config()
 
@@ -116,6 +139,20 @@ def gather_technology_info(df, search_col=['Name', 'Fueltype'],
 
 
 def gather_set_info(df, search_col=['Name', 'Fueltype', 'Technology']):
+    """
+    Parses in search_col columns for distinct set specifications, e.g.
+    'Store', and passes this information to the 'Set' column.
+
+    Parameter
+    ---------
+    search_col : list, default is ['Name', 'Fueltype', 'Technology']
+        Specify the columns to be parsed
+    config : dict, default None
+        Add custom specific configuration,
+        e.g. powerplantmatching.config.get_config(target_countries='Italy'),
+        defaults to powerplantmatching.config.get_config()
+
+    """
     Set = (df['Set'].copy()
            if 'Set' in df
            else pd.Series(index=df.index))
@@ -139,6 +176,21 @@ def gather_set_info(df, search_col=['Name', 'Fueltype', 'Technology']):
 
 
 def clean_technology(df, generalize_hydros=False):
+    """
+    Clean the 'Technology' by condensing down the value into one claim. This
+    procedure might reduce the scope of information, however is crucial for
+    comparing different data sources.
+
+    Parameter
+    ---------
+    search_col : list, default is ['Name', 'Fueltype', 'Technology']
+        Specify the columns to be parsed
+    config : dict, default None
+        Add custom specific configuration,
+        e.g. powerplantmatching.config.get_config(target_countries='Italy'),
+        defaults to powerplantmatching.config.get_config()
+
+    """
     tech = df['Technology'].dropna()
     if len(tech) == 0:
         return df
@@ -192,6 +244,7 @@ def cliques(df, dataduplicates):
 
 def aggregate_units(df, dataset_name=None,
                     pre_clean_name=True,
+                    save_aggregation=True,
                     use_saved_aggregation=False,
                     config=None):
     """
@@ -202,16 +255,18 @@ def aggregate_units(df, dataset_name=None,
     Parameters
     ----------
     df : pandas.Dataframe or string
-        dataframe or csv-file to use for the resulting database
+        Dataframe or name to use for the resulting database
+    dataset_name : str, default None
+        Specify the name of your df, required if use_saved_aggregation is set
+        to True.
+    pre_clean_name : Boolean, default True
+        Whether to clean the 'Name'-column before aggregating.
     use_saved_aggregation : bool (default False):
         Whether to use the automaticly saved aggregation file, which
-        is stored in data/aggregation_groups_XX.csv with XX being
-        either a custom name for the dataset. This saves time if you
+        is stored in data/out/default/aggregations/aggregation_groups_XX.csv
+        with XX being the name for the dataset. This saves time if you
         want to have aggregated powerplants without running the
         aggregation algorithm again
-    dataset_name : str
-        custom name for dataset identification, choose your own
-        identification in case no metadata is passed to the function
     """
     if config is None:
         config = get_config()
@@ -252,7 +307,7 @@ def aggregate_units(df, dataset_name=None,
     path_name = _data_out('aggregations/aggregation_groups_{}.csv'
                           .format(dataset_name), config=config)
 
-    if use_saved_aggregation:
+    if use_saved_aggregation & save_aggregation:
         try:
             logger.info("Reading saved aggregation groups for dataset '{}'."
                         .format(dataset_name))
@@ -269,10 +324,8 @@ def aggregate_units(df, dataset_name=None,
     if 'grouped' not in df:
         duplicates = duke(df)
         df = cliques(df, duplicates)
-        try:
+        if save_aggregation:
             df.grouped.to_csv(path_name)
-        except IndexError:
-            pass
     df = df.groupby('grouped').agg(props_for_groups)
     df = (df
           .assign(**{col: df[col].div(df['Capacity'])
