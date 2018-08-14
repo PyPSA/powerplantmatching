@@ -73,6 +73,7 @@ def extend_by_non_matched(df, extend_by, label=None, fueltypes=None,
                 to_list_if_string(countries))]
 
     if aggregate_added_data:
+        aggkwargs.update({'save_aggregation': False})
         extend_by = aggregate_units(extend_by, dataset_name=label,
                                     config=config, **aggkwargs)
         extend_by = extend_by.assign(

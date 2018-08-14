@@ -51,19 +51,21 @@ def OPSD(rawEU=False, rawDE=False,
          statusDE=['operating', 'reserve', 'special_case'],
          config=None):
     """
-    Return standardized OPSD (Open Power Systems Data) database with
-    target column names and fueltypes.
+    Importer for the OPSD (Open Power Systems Data) database.
 
     Parameters
     ----------
-
     rawEU : Boolean, default False
         Whether to return the raw EU (=non-DE) database.
     rawDE : Boolean, default False
         Whether to return the raw DE database.
-    statusDE : list
+    statusDE : list, default ['operating', 'reserve', 'special_case']
         Filter DE entries by operational status ['operating', 'shutdown',
         'reserve', etc.]
+    config : dict, default None
+        Add custom specific configuration,
+        e.g. powerplantmatching.config.get_config(target_countries='Italy'),
+        defaults to powerplantmatching.config.get_config()
     """
     if config is None:
         config = get_config()
@@ -113,10 +115,6 @@ def OPSD(rawEU=False, rawDE=False,
     opsd_DE = opsd_DE.reindex(columns=config['target_columns'])
     return (pd.concat([opsd_EU, opsd_DE], ignore_index=True)
             .replace(dict(Fueltype={'Biomass and biogas': 'Bioenergy',
-                                    # Fossil fuels MUST NOT be set to 'Other',
-                                    # because 'Other' would be kept in final
-                                    # dataset due to OPSD's high reliabiliy
-                                    # score. Thus -> Leave this as np.nan!
                                     'Fossil fuels': np.nan,
                                     'Mixed fossil fuels': 'Other',
                                     'Natural gas': 'Natural Gas',
@@ -156,8 +154,16 @@ data_config['OPSD'] = {'read_function': OPSD,
 
 def GEO(raw=False, config=None):
     """
-    Return standardized GEO database with target column names and fueltypes.
+    Importer for the GEO database.
 
+    Parameters
+    ----------
+    raw : Boolean, default False
+        Whether to return the original dataset
+    config : dict, default None
+        Add custom specific configuration,
+        e.g. powerplantmatching.config.get_config(target_countries='Italy'),
+        defaults to powerplantmatching.config.get_config()
     """
     if config is None:
         config = get_config()
@@ -212,11 +218,11 @@ def GEO(raw=False, config=None):
             .replace({col: {'Gas': 'Natural Gas'}
                       for col in {'Fueltype', 'FuelClassification1',
                                   'FuelClassification2'}})
-            .loc[lambda df: df.Fueltype.isin(config['target_fueltypes'])]
             .pipe(gather_fueltype_info, search_col=['FuelClassification1'])
             .pipe(gather_technology_info, search_col=['FuelClassification1'],
                   config=config)
             .pipe(gather_set_info)
+            .loc[lambda df: df.Fueltype.isin(config['target_fueltypes'])]
             .pipe(clean_powerplantname)
             .pipe(clean_technology, generalize_hydros=True)
             .pipe(scale_to_net_capacities,
@@ -225,7 +231,7 @@ def GEO(raw=False, config=None):
 
 
 data_config['GEO'] = {'read_function': GEO,
-                      'aggregated_units': True,
+                      'aggregated_units': False,
                       'reliability_score': 3,
                       'net_capacity': False,
                       'source_file': _data_in('global_energy_observatory'
@@ -234,8 +240,16 @@ data_config['GEO'] = {'read_function': GEO,
 
 def CARMA(raw=False, config=None):
     """
-    Return standardized Carma database with target column names and fueltypes.
-    Only includes powerplants with capacity > 4 MW.
+    Importer for the Carma database.
+
+    Parameters
+    ----------
+    raw : Boolean, default False
+        Whether to return the original dataset
+    config : dict, default None
+        Add custom specific configuration,
+        e.g. powerplantmatching.config.get_config(target_countries='Italy'),
+        defaults to powerplantmatching.config.get_config()
     """
     if config is None:
         config = get_config()
@@ -293,6 +307,13 @@ def IWPDCY(config=None):
     """
     This data is not yet available. Was extracted manually from
     the 'International Water Power & Dam Country Yearbook'.
+
+    Parameters
+    ----------
+    config : dict, default None
+        Add custom specific configuration,
+        e.g. powerplantmatching.config.get_config(target_countries='Italy'),
+        defaults to powerplantmatching.config.get_config()
     """
     if config is None:
         config = get_config()
@@ -315,7 +336,7 @@ data_config['IWPDCY'] = {'read_function': IWPDCY,
 
 def Capacity_stats(raw=False, level=2, config=None, **selectors):
     """
-    Standardize the entsoe database for statistical use.
+    Standardize the aggregated capacity statistics provided by the ENTSO-E.
 
     Parameters
     ----------
@@ -389,6 +410,15 @@ def Capacity_stats_factsheet(config=None):
 def GPD(raw=False, filter_other_dbs=True, config=None):
     """
     Importer for the `Global Power Plant Database`.
+
+    Parameters
+    ----------
+
+    config : dict, default None
+        Add custom specific configuration,
+        e.g. powerplantmatching.config.get_config(target_countries='Italy'),
+        defaults to powerplantmatching.config.get_config()
+
     """
     if raw:
         return pd.read_csv(_data_in('global_power_plant_database.csv'),
@@ -442,20 +472,22 @@ def WRI(**kwargs):
 
 def ESE(raw=False, config=None):
     """
+    Importer for the ESE database.
     This database is not given within the repository because of its
     restrictive license.
     Get it by clicking 'Export Data XLS' on https://goo.gl/gVMwKJ and
-    put the downloaded 'projects.xls' file into
+    save the downloaded 'projects.xls' file in
     /path/to/powerplantmatching/data/in/.
 
 
     Parameters
     ----------
-    update : Boolean, Default False
-        Wether to update the database according to the database given in path
-    path : str
-        location of the downloaded projects.xls file
-
+    raw : Boolean, default False
+        Whether to return the original dataset
+    config : dict, default None
+        Add custom specific configuration,
+        e.g. powerplantmatching.config.get_config(target_countries='Italy'),
+        defaults to powerplantmatching.config.get_config()
     """
     if config is None:
         config = get_config()
@@ -513,7 +545,7 @@ data_config['ESE'] = {'read_function': ESE,
 
 def ENTSOE(update=False, raw=False, entsoe_token=None, config=None):
     """
-    Returns the list of installed generators provided by the ENTSO-E
+    Importer for the list of installed generators provided by the ENTSO-E
     Trasparency Project. Geographical information is not given.
     If update=True, the dataset is parsed through a request to
     'https://transparency.entsoe.eu/generation/r2/\
@@ -531,11 +563,16 @@ def ENTSOE(update=False, raw=False, entsoe_token=None, config=None):
         the ENTSO-E transparency platform
     entsoe_token: String
         Security token of the ENTSO-E Transparency platform
+    config : dict, default None
+        Add custom specific configuration,
+        e.g. powerplantmatching.config.get_config(target_countries='Italy'),
+        defaults to powerplantmatching.config.get_config()
 
     Note: For obtaining a security token refer to section 2 of the
     RESTful API documentation of the ENTSOE-E Transparency platform
     https://transparency.entsoe.eu/content/static_content/Static%20content/
-    web%20api/Guide.html#_authentication_and_authorisation
+    web%20api/Guide.html#_authentication_and_authorisation. Please save the
+    token in your config.yaml file (key 'entsoe_token').
     """
     if config is None:
         config = get_config()
@@ -706,8 +743,18 @@ data_config['ENTSOE'] = {'read_function': ENTSOE,
 
 def WEPP(raw=False, config=None):
     """
-    Return standardized WEPP (Platts, World Elecrtric Power Plants Database)
-    database with target column names and fueltypes.
+    Importer for the standardized WEPP (Platts, World Elecrtric Power
+    Plants Database). This database is not provided by this repository because
+    of its restrictive licence.
+
+    Parameters
+    ----------
+    raw : Boolean, default False
+        Whether to return the original dataset
+    config : dict, default None
+        Add custom specific configuration,
+        e.g. powerplantmatching.config.get_config(target_countries='Italy'),
+        defaults to powerplantmatching.config.get_config()
 
     """
     if config is None:
@@ -871,16 +918,19 @@ data_config['WEPP'] = {
 def UBA(header=9, skipfooter=26, prune_wind=True, prune_solar=True,
         config=None):
     """
-    Returns the UBA Database.
-    The user has to download the database from:
-    ``https://www.umweltbundesamt.de/dokument/datenbank-kraftwerke-in'
-    -deutschland`` and has to place it into the ``data/In`` folder.
+    Importer for the UBA Database. Please download the data from
+    ``https://www.umweltbundesamt.de/dokument/datenbank-kraftwerke-in
+    -deutschland`` and place it in ``powerplantmatching/data/in``.
 
     Parameters:
     -----------
-        header : int, Default 9
-            The zero-indexed row in which the column headings are found.
-        skipfooter : int, Default 26
+    header : int, Default 9
+        The zero-indexed row in which the column headings are found.
+    skipfooter : int, Default 26
+    config : dict, default None
+        Add custom specific configuration,
+        e.g. powerplantmatching.config.get_config(target_countries='Italy'),
+        defaults to powerplantmatching.config.get_config()
 
     """
     if config is None:
@@ -969,17 +1019,24 @@ def BNETZA(header=9, sheet_name='Gesamtkraftwerksliste BNetzA',
            prune_wind=True, prune_solar=True, raw=False,
            config=None):
     """
-    Returns the database put together by Germany's 'Federal Network Agency'
-    (dt. 'Bundesnetzagentur' (BNetzA)). The database can be downloaded from:
+    Importer for the database put together by Germany's 'Federal Network
+    Agency' (dt. 'Bundesnetzagentur' (BNetzA)).
+    Please download the data from
     ``https://www.bundesnetzagentur.de/DE/Sachgebiete/ElektrizitaetundGas/
     Unternehmen_Institutionen/Versorgungssicherheit/Erzeugungskapazitaeten/
     Kraftwerksliste/kraftwerksliste-node.html``
-    and has to place it into the ``data/In`` folder.
+    and place it in ``powerplantmatching/data/in``.
 
     Parameters:
     -----------
-        header : int, Default 9
-            The zero-indexed row in which the column headings are found.
+    header : int, Default 9
+        The zero-indexed row in which the column headings are found.
+    raw : Boolean, default False
+        Whether to return the original dataset
+    config : dict, default None
+        Add custom specific configuration,
+        e.g. powerplantmatching.config.get_config(target_countries='Italy'),
+        defaults to powerplantmatching.config.get_config()
     """
     if config is None:
         config = get_config()
@@ -1090,13 +1147,19 @@ data_config['BNETZA'] = {'read_function': BNETZA, 'net_capacity': True,
 
 def OPSD_VRE(config=None):
     """
-    Return standardized OPSD (Open Power Systems Data) renewables (VRE)
-    database with target column names and fueltypes.
+    Importer for the OPSD (Open Power Systems Data) renewables (VRE)
+    database.
 
-    This sqlite database is very big and therefore not part of the package.
+    This sqlite database is very big and hence not part of the package.
     It needs to be obtained here:
         http://data.open-power-system-data.org/renewable_power_plants/
 
+    Parameters
+    ----------
+    config : dict, default None
+        Add custom specific configuration,
+        e.g. powerplantmatching.config.get_config(target_countries='Italy'),
+        defaults to powerplantmatching.config.get_config()
     """
     if config is None:
         config = get_config()
@@ -1174,6 +1237,13 @@ def OPSD_VRE(config=None):
 def IRENA_stats(config=None):
     """
     Reads the IRENA Capacity Statistics 2017 Database
+
+    Parameters
+    ----------
+    config : dict, default None
+        Add custom specific configuration,
+        e.g. powerplantmatching.config.get_config(target_countries='Italy'),
+        defaults to powerplantmatching.config.get_config()
     """
     if config is None:
         config = get_config()
