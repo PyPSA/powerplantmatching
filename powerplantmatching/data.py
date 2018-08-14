@@ -212,11 +212,11 @@ def GEO(raw=False, config=None):
             .replace({col: {'Gas': 'Natural Gas'}
                       for col in {'Fueltype', 'FuelClassification1',
                                   'FuelClassification2'}})
-            .loc[lambda df: df.Fueltype.isin(config['target_fueltypes'])]
             .pipe(gather_fueltype_info, search_col=['FuelClassification1'])
             .pipe(gather_technology_info, search_col=['FuelClassification1'],
                   config=config)
             .pipe(gather_set_info)
+            .loc[lambda df: df.Fueltype.isin(config['target_fueltypes'])]
             .pipe(clean_powerplantname)
             .pipe(clean_technology, generalize_hydros=True)
             .pipe(scale_to_net_capacities,
@@ -256,7 +256,6 @@ def CARMA(raw=False, config=None):
                              'plant': 'Name',
                              'plant.id': 'projectID'})
             .assign(projectID=lambda df: 'CARMA' + df.projectID.astype(str))
-            # .loc[lambda df: df.Capacity > 3]
             .loc[lambda df: df.Country.isin(config['target_countries'])]
             .replace(dict(Fueltype={'COAL': 'Hard Coal',
                                     'WAT': 'Hydro',
