@@ -126,6 +126,8 @@ def OPSD(rawEU=False, rawDE=False,
                                     'Other fossil fuels': 'Other',
                                     'Other fuels': 'Other'},
                           Set={'IPP': 'PP'}))
+            .replace({'Capacity': {0.0: np.nan}})
+            .dropna(subset=['Capacity'])
             .replace({'Country': {'UK': u'GB', '[ \t]+|[ \t]+$.': ''}},
                      regex=True)  # UK->GB, strip whitespace
             .assign(Name=lambda df: df.Name.str.title().str.strip(),
@@ -321,6 +323,7 @@ def IWPDCY(config=None):
                         encoding='utf-8', index_col='id')
             .loc[lambda df: df.Fueltype.isin(config['target_fueltypes'])]
             .loc[lambda df: df.Country.isin(config['target_countries'])]
+            .dropna(subset=['Capacity'])
             .pipe(gather_set_info)
             .assign(File='IWPDCY.csv',
                     projectID=lambda df: 'IWPDCY' + df.index.astype(str))
@@ -716,6 +719,8 @@ def ENTSOE(update=False, raw=False, entsoe_token=None, config=None):
                                                     x, return_Country=True))))
                   .loc[lambda df: df.Country.isin(config['target_countries'])]
                   .loc[lambda df: df.Fueltype.isin(config['target_fueltypes'])]
+                  .replace({'Capacity': {0.0: np.nan}})
+                  .dropna(subset=['Capacity'])
                   .pipe(gather_technology_info, config=config)
                   .pipe(gather_set_info)
                   .pipe(clean_technology)

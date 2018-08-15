@@ -154,7 +154,7 @@ def to_list_if_string(obj):
     if isinstance(obj, str):
         return [obj]
     else:
-        obj
+        return obj
 
 
 def map_projectID(df, dataset_name, ID):
