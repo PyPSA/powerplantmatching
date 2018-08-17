@@ -812,8 +812,10 @@ def gather_nrows_ncols(x, orientation='landscape'):
         remainder = m*n - x
         if orientation == 'landscape':
             return n, m, remainder
-        else:
+        elif orientation == 'portrait':
             return m, n, remainder
+        else:
+            raise ValueError('Wrong `orientation` given!')
 
 
 def make_handler_map_to_scale_circles_as_in(ax,
