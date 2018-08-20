@@ -266,6 +266,7 @@ def parmap(f, arg_list, config=None):
         config = get_config()
     if config['parallel_duke_processes']:
         nprocs = min(multiprocessing.cpu_count(), config['process_limit'])
+        logger.info('Run process with {} parallel threads.'.format(nprocs))
         q_in = multiprocessing.Queue(1)
         q_out = multiprocessing.Queue()
 

@@ -94,7 +94,8 @@ def collect(datasets, update=False, use_saved_aggregation=True,
     if not update and not os.path.exists(outfn_reduced
                                          if reduced else outfn_matched):
         logger.warning("Forcing update since the cache file is missing")
-        update, use_saved_aggregation = True, True
+        update = True
+        use_saved_aggregation = True
 
     if update:
         dfs = parmap(df_by_name, datasets)
