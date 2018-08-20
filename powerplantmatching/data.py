@@ -36,7 +36,8 @@ from .config import get_config
 from .cleaning import (gather_fueltype_info, gather_set_info,
                        gather_technology_info, clean_powerplantname,
                        clean_technology)
-from .utils import (parse_Geoposition, _data, _data_in, correct_manually)
+from .utils import (fill_geoposition, _data, _data_in, _data_out,
+                    correct_manually, config_filter)
 from .heuristics import scale_to_net_capacities
 from six import iteritems, string_types
 
@@ -126,8 +127,9 @@ def OPSD(rawEU=False, rawDE=False,
                                     'Other fossil fuels': 'Other',
                                     'Other fuels': 'Other'},
                           Set={'IPP': 'PP'}))
-            .replace({'Country': {'UK': u'GB', '[ \t]+|[ \t]+$.': ''}},
-                     regex=True)  # UK->GB, strip whitespace
+            .replace({'Country': {'UK': u'GB', '[ \t]+|[ \t]+$.': ''},
+                      'Capacity': {0.: np.nan}}, regex=True)
+            .dropna(subset=['Capacity'])
             .assign(Name=lambda df: df.Name.str.title().str.strip(),
                     Fueltype=lambda df: df.Fueltype.str.title().str.strip(),
                     Country=lambda df: (pd.Series(df.Country.apply(
@@ -323,6 +325,7 @@ def IWPDCY(config=None):
             .loc[lambda df: df.Fueltype.isin(config['target_fueltypes'])]
             .loc[lambda df: df.Country.isin(config['target_countries'])]
             .pipe(gather_set_info)
+            .dropna(subset=['Capacity'])
             .assign(File='IWPDCY.csv',
                     projectID=lambda df: 'IWPDCY' + df.index.astype(str))
             .pipe(correct_manually, 'IWPDCY', config=config))
@@ -582,6 +585,11 @@ def ENTSOE(update=False, raw=False, entsoe_token=None, config=None):
             entsoe_token = config['entsoe_token']
         assert entsoe_token is not None, "entsoe_token is missing"
 
+        if update:
+            fn = _data_out('aggregations/aggregation_groups_ENTSOE.csv')
+            if os.path.isfile(fn):
+                os.remove(fn)
+
         def full_country_name(l):
             def pycountry_try(c):
                 try:
@@ -684,55 +692,59 @@ def ENTSOE(update=False, raw=False, entsoe_token=None, config=None):
             df['Country'] = domains.loc[i, 'Country']
             logger.info("Received data on %d power plants", len(df))
             entsoe = entsoe.append(df, ignore_index=True)
+
         if raw:
             return entsoe
 
-        entsoe = (entsoe
-                  .rename(columns={'psrType': 'Fueltype',
-                                   'quantity': 'Capacity',
-                                   'registeredResource.mRID': 'projectID',
-                                   'registeredResource.name': 'Name'})
-                  .reindex(columns=config['target_columns'])
-                  .replace({'Fueltype': fdict})
-                  .drop_duplicates('projectID').reset_index(drop=True)
-                  .assign(Name=lambda df: df.Name.str.title(),
-                          file='''https://transparency.entsoe.eu/generation/
-                                  r2/installedCapacityPerProductionUnit/''',
-                          Fueltype=lambda df: df.Fueltype.replace(
-                                  to_replace=['.*Hydro.*', 'Fossil Gas',
-                                              '.*(?i)coal.*', '.*Peat',
-                                              'Marine', 'Wind.*',
-                                              '.*Oil.*', 'Biomass'],
-                                  value=['Hydro', 'Natural Gas',
-                                         'Hard Coal', 'Other', 'Other',
-                                         'Wind', 'Oil', 'Bioenergy'],
-                                  regex=True),
-                          Capacity=lambda df: pd.to_numeric(df.Capacity),
-                          Country=lambda df:
-                              df.Country.where(~df.Country.str.contains(','),
-                                               df.Name[df.Country
-                                                       .str.contains(',')]
-                                               .apply(
-                                                lambda x: parse_Geoposition(
-                                                    x, return_Country=True))))
-                  .loc[lambda df: df.Country.isin(config['target_countries'])]
-                  .loc[lambda df: df.Fueltype.isin(config['target_fueltypes'])]
-                  .pipe(gather_technology_info, config=config)
-                  .pipe(gather_set_info)
-                  .pipe(clean_technology)
-                  )
+        entsoe = (
+                entsoe
+                .rename(columns={'psrType': 'Fueltype',
+                                 'quantity': 'Capacity',
+                                 'registeredResource.mRID': 'projectID',
+                                 'registeredResource.name': 'Name'})
+                .reindex(columns=config['target_columns'])
+                .replace({'Fueltype': fdict})
+                .assign(Country_length=lambda df: df.Country.str.len())
+                .sort_values('Country_length')
+                .drop_duplicates('projectID')
+                .sort_values('Country')
+                .reset_index(drop=True)
+                .assign(Name=lambda df: df.Name.str.title(),
+                        file='''https://transparency.entsoe.eu/generation/
+                        r2/installedCapacityPerProductionUnit/''',
+                        Fueltype=lambda df: df.Fueltype.replace(
+                                {'Fossil Hard coal': 'Hard Coal',
+                                 'Fossil Coal-derived gas': 'Other',
+                                 '.*Hydro.*': 'Hydro',
+                                 '.*Oil.*': 'Oil',
+                                 '.*Peat': 'Bioenergy',
+                                 'Biomass': 'Bioenergy',
+                                 'Fossil Gas': 'Natural Gas',
+                                 'Marine': 'Other',
+                                 'Wind Offshore': 'Offshore',
+                                 'Wind Onshore': 'Onshore'}, regex=True),
+                        Capacity=lambda df: pd.to_numeric(df.Capacity))
+                .pipe(clean_powerplantname)
+                .pipe(fill_geoposition, use_saved_locations=True)
+                .pipe(config_filter, config=config)
+                .replace({'Capacity': {0.: np.nan}})
+                .dropna(subset=['Capacity'])
+                .pipe(gather_technology_info, config=config)
+                .pipe(gather_set_info)
+                .pipe(clean_technology))
 
         entsoe.to_csv(data_config['ENTSOE']['source_file'],
                       index_label='id', encoding='utf-8')
-        return entsoe
+
     else:
         entsoe = pd.read_csv(data_config['ENTSOE']['source_file'],
                              index_col='id', encoding='utf-8')
-        return (entsoe[entsoe.Country.isin(config['target_countries'])]
-                .loc[lambda df: df.Fueltype.isin(config['target_fueltypes'])]
-                .pipe(scale_to_net_capacities,
-                      (not data_config['ENTSOE']['net_capacity']))
-                .pipe(correct_manually, 'ENTSOE', config=config))
+
+    return (entsoe[entsoe.Country.isin(config['target_countries'])]
+            .loc[lambda df: df.Fueltype.isin(config['target_fueltypes'])]
+            .pipe(scale_to_net_capacities,
+                  (not data_config['ENTSOE']['net_capacity']))
+            .pipe(correct_manually, 'ENTSOE', config=config))
 
 
 data_config['ENTSOE'] = {'read_function': ENTSOE,

@@ -44,7 +44,7 @@ def clean_powerplantname(df):
     df = df[df.Name.notnull()]
     name = df.Name.replace(regex=True, value=' ',
                            to_replace=['-', '/', ',', '\(', '\)', '\[', '\]',
-                                       '"', '\+', '[0-9]'])
+                                       '"', '_', '\+', '[0-9]'])
 
     common_words = pd.Series(sum(name.str.split(), [])).value_counts()
     cw = list(common_words[common_words >= 20].index)

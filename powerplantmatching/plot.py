@@ -537,6 +537,7 @@ def factor_comparison(dfs, keys, figsize=(12, 9)):
     ax.set_xlabel('')
     ax.set_ylabel('Capacity [GW]')
     fig.tight_layout(pad=0.5)
+    return fig, ax
 
 
 def bar_decomissioning_curves(df=None, ylabel=None, title=None,

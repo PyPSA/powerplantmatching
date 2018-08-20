@@ -56,11 +56,11 @@ as part of the
 Optional but recommended:
 
 5. Download the [ESE dataset](https://goo.gl/gVMwKJ). For integrating the data into powerplantmatching, the path of the downloaded file has to be added to the config.yaml file with the keyword 'ese_path' (default is set to 'Downloads/projects.xls').
-6. Add your ENTSOE security token to the config file. The token can be obtained by following section 2 of the [RESTful API documentation](https://transparency.entsoe.eu/content/static_content/Static%20content/web%20api/Guide.html#_authentication_and_authorisation) of the ENTSOE-E Transparency platform.
+6. Add your ENTSOE security token to the config.yaml file. The token can be obtained by following section 2 of the [RESTful API documentation](https://transparency.entsoe.eu/content/static_content/Static%20content/web%20api/Guide.html#_authentication_and_authorisation) of the ENTSOE-E Transparency platform.
 
-### Info (May 7 2018)
+Optional: 
 
-If you are currently having problems with untracked/missing git lfs files, please run 'git lfs pull' in the repo. If files can still not be tracked and remain missing, please contact us (or open an issue), ideally sending the lfs object id of the missing file.
+7. Add your Google API key to the config.yaml file to enable geoparsing. The key can be obtained by following the [instructions](https://developers.google.com/maps/documentation/geocoding/get-api-key). 
 
 
 ## Processed Data

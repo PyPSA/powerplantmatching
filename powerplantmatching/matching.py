@@ -20,7 +20,7 @@ Functions for linking and combining different datasets
 from __future__ import absolute_import, print_function
 
 from .config import get_config
-from .utils import read_csv_if_string, _data_out
+from .utils import read_csv_if_string, _data_out, parmap
 from .duke import duke
 from .cleaning import clean_technology
 from .data import data_config
@@ -159,15 +159,18 @@ def link_multiple_datasets(datasets, labels, use_saved_matches=False,
     if config is None:
         config = get_config()
 
-    datasets = list(map(read_csv_if_string, datasets))
+    dfs = list(map(read_csv_if_string, datasets))
     combinations = list(itertools.combinations(range(len(labels)), 2))
-    all_matches = []
-    for c, d in combinations:
-        logger.info('Comparing {0} with {1}'.format(labels[c], labels[d]))
-        match = compare_two_datasets(
-                [datasets[c], datasets[d]], [labels[c], labels[d]],
-                use_saved_matches=use_saved_matches, config=config, **dukeargs)
-        all_matches.append(match)
+
+    def comp_dfs(dfs_lbs):
+        logger.info('Comparing {0} with {1}'.format(*dfs_lbs[2:]))
+        return compare_two_datasets(dfs_lbs[:2], dfs_lbs[2:],
+                                    use_saved_matches=use_saved_matches,
+                                    config=config, **dukeargs)
+
+    mapargs = [[dfs[c], dfs[d], labels[c], labels[d]] for c, d in combinations]
+    all_matches = parmap(comp_dfs, mapargs)
+
     return cross_matches(all_matches, labels=labels)
 
 

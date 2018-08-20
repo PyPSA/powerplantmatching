@@ -18,7 +18,7 @@ Processed datasets of merged and/or adjusted data
 """
 from __future__ import print_function
 
-from .utils import set_uncommon_fueltypes_to_other, _data_out
+from .utils import set_uncommon_fueltypes_to_other, _data_out, parmap
 from .data import data_config
 from .cleaning import aggregate_units
 from .matching import combine_multiple_datasets, reduce_matched_dataframe
@@ -30,6 +30,7 @@ from .config import get_config
 import pandas as pd
 import os
 from ast import literal_eval as liteval
+from multiprocessing import Pool
 import logging
 logger = logging.getLogger(__name__)
 
@@ -96,7 +97,7 @@ def collect(datasets, update=False, use_saved_aggregation=True,
         update, use_saved_aggregation = True, True
 
     if update:
-        dfs = [df_by_name(name) for name in datasets]
+        dfs = parmap(df_by_name, datasets)
         matched = combine_multiple_datasets(
                 dfs, datasets, use_saved_matches=use_saved_matches,
                 config=config, **dukeargs)
@@ -180,7 +181,7 @@ def matched_data(config=None,
 
     if subsume_uncommon_fueltypes:
         matched = set_uncommon_fueltypes_to_other(matched)
-    return matched
+    return matched[matched.lat.notnull()]
 
 
 def MATCHED_dataset(**kwargs):
