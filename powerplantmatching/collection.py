@@ -158,9 +158,10 @@ def matched_data(config=None,
 
     matched = collect(config['matching_sources'], **collection_kwargs)
 
-    for source in config['fully_included_sources']:
-        matched = extend_by_non_matched(matched, source, config=config,
-                                        **extendby_kwargs)
+    if isinstance(config['fully_included_sources'], list):
+        for source in config['fully_included_sources']:
+            matched = extend_by_non_matched(matched, source, config=config,
+                                            **extendby_kwargs)
 
     # Drop matches between only low reliability-data, this is necessary since
     # a lot of those are decommissioned, however some countries only appear in

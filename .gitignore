@@ -111,6 +111,8 @@ data/out/default/*WEPP*
 data/out/default/*wepp*
 data/out/default/*IWPDCY*
 data/out/default/*ESE*
+data/out/default/aggregations/*
+data/out/default/matches/*
 data/out/default/Export_Stock_TIMES*.xlsx
 data/out/default/Matched_BNETZA_UBA.csv
 data/out/default/Matched_BNETZA_UBA_reduced.csv

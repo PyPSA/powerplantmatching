@@ -272,7 +272,6 @@ def CARMA(raw=False, config=None):
                              'plant': 'Name',
                              'plant.id': 'projectID'})
             .assign(projectID=lambda df: 'CARMA' + df.projectID.astype(str))
-            # .loc[lambda df: df.Capacity > 3]
             .loc[lambda df: df.Country.isin(config['target_countries'])]
             .replace(dict(Fueltype={'COAL': 'Hard Coal',
                                     'WAT': 'Hydro',
@@ -324,6 +323,7 @@ def IWPDCY(config=None):
                         encoding='utf-8', index_col='id')
             .loc[lambda df: df.Fueltype.isin(config['target_fueltypes'])]
             .loc[lambda df: df.Country.isin(config['target_countries'])]
+            .dropna(subset=['Capacity'])
             .pipe(gather_set_info)
             .dropna(subset=['Capacity'])
             .assign(File='IWPDCY.csv',

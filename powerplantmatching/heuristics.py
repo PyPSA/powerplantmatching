@@ -84,7 +84,7 @@ def extend_by_non_matched(df, extend_by, label=None, fueltypes=None,
 
     if df.columns.nlevels > 1:
         return df.append(
-                pd.concat([extend_by], keys=[label], axis=1)
+                pd.concat([extend_by], keys=[label], axis=1) #, ignore_index=True ??
                 .swaplevel(axis=1)
                 .reindex(columns=df.columns), ignore_index=True)
     else:
@@ -361,20 +361,14 @@ def manual_corrections(df):
     Here, manual corrections are being processed which are not (yet) solved by
     the data mending, matching or reducing algorithms.
     """
-    # Filter matches based only on GEO & CARMA unless they are in 4 countries
-    df = (df[lambda x: x.projectID.apply(lambda p: p.keys() not in
-                                         [['GEO', 'CARMA'], ['CARMA', 'GEO']])
-             | df.Country.isin(['Croatia', 'Czech Republic', 'Estonia',
-                                'Luxembourg'])
-             | df.Name.isin(['Grafenrheinfeld'])])
-
-    # German CAES plant Huntorf
-    df.loc[df.Name.str.contains('huntorf', case=False).fillna(False),
-           'Technology'] = 'CAES'
-
-    # Czech Lignite underrepresented, extend by missing WEPP records
+    # Czech+Bulgarian Lignite underrepresented, extend by missing WEPP records
     df = extend_by_non_matched(df, 'WEPP', fueltypes='Lignite',
-                               countries='Czech Republic',
+                               countries=['Czech Republic', 'Bulgaria'],
+                               use_saved_aggregation=True)
+
+    # Italian Gas underrepresented, extend by missing WEPP records
+    df = extend_by_non_matched(df, 'WEPP', fueltypes='Natural Gas',
+                               countries='Italy',
                                use_saved_aggregation=True)
 
     # Polish plant Kozienice Block 11 not yet online in 2015 and 2016
