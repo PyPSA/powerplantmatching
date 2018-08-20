@@ -131,7 +131,7 @@ def correct_manually(df, name, config=None):
     if config is None:
         config = get_config()
 
-    corrections = (pd.read_csv(_data_in('manual_corrections.csv'),
+    corrections = (pd.read_csv(_data('manual_corrections.csv'),
                                encoding='utf-8',
                                parse_dates=['last_update'])
                    [lambda df: df[name].notnull()]
@@ -283,7 +283,7 @@ def parmap(f, arg_list, config=None):
 
         return [x for i, x in sorted(res)]
     else:
-        return list(map(f, X))
+        return list(map(f, arg_list))
 
 
 def country_alpha_2(country):
@@ -313,10 +313,15 @@ def breakdown_matches(df):
     sources = pd.concat(
             [data_config[s]['read_function']().set_index('projectID')
              for s in sources])
-    stackedIDs = (df['projectID']
-                  .apply(pd.Series).stack()
-                  .apply(pd.Series).stack()
-                  .dropna())
+    if df.index.nlevels > 1:
+        stackedIDs = (df['projectID'].stack()
+                      .apply(pd.Series).stack()
+                      .dropna())
+    else:
+        stackedIDs = (df['projectID']
+                      .apply(pd.Series).stack()
+                      .apply(pd.Series).stack()
+                      .dropna())
     return (sources
             .reindex(stackedIDs)
             .set_axis(stackedIDs.to_frame('projectID')
@@ -407,6 +412,11 @@ def fill_geoposition(df, use_saved_locations=False):
         powerplantmatching/data/parsed_locations.csv
     """
     logger.info("Parse geopositions for missing lat/lon values")
+
+    if use_saved_locations and get_config()['google_api_key'] is None:
+        logger.warning('Geoparsing not possible as no google api key was '
+                       'found, please add the key to your config.yaml if you '
+                       'want to enable it.')
 
     geodata = (df
                .apply(lambda ds:

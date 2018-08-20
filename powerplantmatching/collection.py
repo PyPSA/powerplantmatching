@@ -182,7 +182,7 @@ def matched_data(config=None,
 
     if subsume_uncommon_fueltypes:
         matched = set_uncommon_fueltypes_to_other(matched)
-    return matched[matched.lat.notnull()]
+    return matched[matched.lat.notnull()].reset_index(drop=True)
 
 
 def MATCHED_dataset(**kwargs):
