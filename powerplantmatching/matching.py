@@ -86,8 +86,8 @@ def compare_two_datasets(datasets, labels, use_saved_matches=False,
                         .format(*labels))
             return pd.read_csv(saving_path, index_col=0)
         except (ValueError, IOError):
-            logger.warning("Non-existing saved matches for dataset '{}',{} "
-                           "continuing by matching again".format(*labels))
+            logger.warning("Non-existing saved matches for dataset '{}', '{}'"
+                           " continuing by matching again".format(*labels))
     links = duke(datasets, labels=labels, **dukeargs)
     matches = best_matches(links)
     matches.to_csv(saving_path)

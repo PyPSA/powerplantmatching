@@ -28,8 +28,8 @@ from six import iteritems
 logger = logging.getLogger(__name__)
 
 
-def extend_by_non_matched(df, extend_by, label=None, fueltypes=None,
-                          countries=None, aggregate_added_data=True,
+def extend_by_non_matched(df, extend_by, label=None, query=None,
+                          aggregate_added_data=True,
                           config=None, **aggkwargs):
     """
     Returns the matched dataframe with additional entries of non-matched
@@ -63,15 +63,9 @@ def extend_by_non_matched(df, extend_by, label=None, fueltypes=None,
         included_ids = (df.projectID.dropna().map(lambda d: d.get(label))
                           .dropna().sum())
 
+    if query is not None:
+        extend_by.query(query, inplace=True)
     extend_by = extend_by.loc[~ extend_by.projectID.isin(included_ids)]
-
-    if fueltypes is not None:
-        extend_by = extend_by[extend_by.Fueltype.isin(
-                to_list_if_string(fueltypes))]
-    if countries is not None:
-        extend_by = extend_by[extend_by.Country.isin(
-                to_list_if_string(countries))]
-
     if aggregate_added_data:
         aggkwargs.update({'save_aggregation': False})
         extend_by = aggregate_units(extend_by, dataset_name=label,

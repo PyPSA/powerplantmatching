@@ -135,11 +135,9 @@ def OPSD(rawEU=False, rawDE=False,
                     Country=lambda df: (pd.Series(df.Country.apply(
                                         lambda c: cget(alpha_2=c).name),
                                         index=df.index).str.title()))
-            .loc[lambda df: df.Country.isin(config['target_countries'])]
-            .loc[lambda df: df.Fueltype.isin(config['target_fueltypes'])]
+            .pipe(config_filter, name='OPSD', config=config)
             .pipe(gather_set_info)
             .pipe(clean_technology)
-            .reset_index(drop=True)
             .pipe(scale_to_net_capacities,
                   (not data_config['OPSD']['net_capacity']))
             .pipe(correct_manually, 'OPSD', config=config)
@@ -224,7 +222,7 @@ def GEO(raw=False, config=None):
             .pipe(gather_technology_info, search_col=['FuelClassification1'],
                   config=config)
             .pipe(gather_set_info)
-            .loc[lambda df: df.Fueltype.isin(config['target_fueltypes'])]
+            .pipe(config_filter, name='GEO', config=config)
             .pipe(clean_powerplantname)
             .pipe(clean_technology, generalize_hydros=True)
             .pipe(scale_to_net_capacities,
@@ -287,12 +285,12 @@ def CARMA(raw=False, config=None):
                                     'BGAS': 'Bioenergy',
                                     'BSOL': 'Bioenergy',
                                     'OTH': 'Other'}))
-            .loc[lambda df: df.Fueltype.isin(config['target_fueltypes'])]
             .pipe(clean_powerplantname)
+            .drop_duplicates()
+            .pipe(config_filter, name='CARMA', config=config)
             .pipe(gather_technology_info, config=config)
             .pipe(gather_set_info)
             .pipe(clean_technology)
-            .drop_duplicates()
             .pipe(scale_to_net_capacities,
                   (not data_config['CARMA']['net_capacity']))
             .pipe(correct_manually, 'CARMA', config=config))
@@ -321,13 +319,11 @@ def IWPDCY(config=None):
 
     return (pd.read_csv(data_config['IWPDCY']['source_file'],
                         encoding='utf-8', index_col='id')
-            .loc[lambda df: df.Fueltype.isin(config['target_fueltypes'])]
-            .loc[lambda df: df.Country.isin(config['target_countries'])]
-            .dropna(subset=['Capacity'])
-            .pipe(gather_set_info)
-            .dropna(subset=['Capacity'])
             .assign(File='IWPDCY.csv',
                     projectID=lambda df: 'IWPDCY' + df.index.astype(str))
+            .dropna(subset=['Capacity'])
+            .pipe(config_filter, name='IWPDY', config=config)
+            .pipe(gather_set_info)
             .pipe(correct_manually, 'IWPDCY', config=config))
 
 
@@ -436,9 +432,10 @@ def GPD(raw=False, filter_other_dbs=True, config=None):
         other_dbs = []
     return (pd.read_csv(data_config['GPD']['source_file'],
                         encoding='utf-8')
-            [lambda df: (df.country_long.isin(config['target_countries']) &
-                         ~df.geolocation_source.isin(other_dbs))]
             .rename(columns=lambda x: x.title())
+            .assign(projectID=lambda df: 'GPD' + df.index.astype(str))
+            [lambda df: (df.Country_Long.isin(config['target_countries']) &
+                         ~df.Geolocation_Source.isin(other_dbs))]
             .assign(Country=lambda df: df['Country_Long'],
                     Retrofit=lambda df: df['Commissioning_Year'])
             .rename(columns={'Fuel1': 'Fueltype',
@@ -452,11 +449,10 @@ def GPD(raw=False, filter_other_dbs=True, config=None):
                                     'Biomass': 'Bioenergy',
                                     'Gas': 'Natural Gas',
                                     'Wave and Tidal': 'Other'}))
-            .loc[lambda df: df.Fueltype.isin(config['target_fueltypes'])]
+            .pipe(clean_powerplantname)
+            .pipe(config_filter, name='GPD', config=config)
             .pipe(gather_technology_info, config=config)
             .pipe(gather_set_info)
-            .pipe(clean_powerplantname)
-            .assign(projectID=lambda df: 'GPD' + df.index.astype(str))
             .pipe(correct_manually, 'GPD', config=config)
             )
 
@@ -523,7 +519,7 @@ def ESE(raw=False, config=None):
                              'Technology Type Category 2': 'Fueltype'})
             .assign(Set='Store',
                     File='energy_storage_exchange',
-                    projectID=data.index.values,
+                    projectID='ESE' + data.index.astype(str),
                     Capacity=data['Rated Power in kW']/1e3,
                     YearCommissioned=pd.DatetimeIndex(
                             data['Commissioning Date']).year,
@@ -535,9 +531,7 @@ def ESE(raw=False, config=None):
             .pipe(clean_technology, generalize_hydros=True)
             .replace(dict(Fueltype={u'Electro-chemical': 'Battery',
                                     u'Pumped Hydro Storage': 'Hydro'}))
-            .loc[lambda df: df.Fueltype.isin(config['target_fueltypes'])]
-            .reset_index(drop=True)
-            .assign(projectID=lambda df: 'ESE' + df.projectID.astype(str))
+            .pipe(config_filter, name='ESE', config=config)
             .pipe(correct_manually, 'ESE', config=config))
 
 
@@ -740,8 +734,8 @@ def ENTSOE(update=False, raw=False, entsoe_token=None, config=None):
         entsoe = pd.read_csv(data_config['ENTSOE']['source_file'],
                              index_col='id', encoding='utf-8')
 
-    return (entsoe[entsoe.Country.isin(config['target_countries'])]
-            .loc[lambda df: df.Fueltype.isin(config['target_fueltypes'])]
+    return (entsoe
+            .pipe(config_filter, name='ENTSOE', config=config)
             .pipe(scale_to_net_capacities,
                   (not data_config['ENTSOE']['net_capacity']))
             .pipe(correct_manually, 'ENTSOE', config=config))
@@ -913,11 +907,11 @@ def WEPP(raw=False, config=None):
         wepp.loc[wepp.Technology.str.len() > 4, 'Technology'].str.title()
     # Done!
     wepp.datasetID = 'WEPP'
-    return (wepp.loc[lambda df: df.Fueltype.isin(config['target_fueltypes'])]
-                .reset_index(drop=True)
-                .pipe(scale_to_net_capacities,
-                      (not data_config['WEPP']['net_capacity']))
-                .pipe(correct_manually, 'WEPP', config=config))
+    return (wepp
+            .pipe(config_filter, name='WEPP', config=config)
+            .pipe(scale_to_net_capacities,
+                  (not data_config['WEPP']['net_capacity']))
+            .pipe(correct_manually, 'WEPP', config=config))
 
 
 data_config['WEPP'] = {
@@ -1013,7 +1007,8 @@ def UBA(header=9, skipfooter=26, prune_wind=True, prune_solar=True,
         uba = uba.loc[lambda x: x.Fueltype != 'Wind']
     if prune_solar:
         uba = uba.loc[lambda x: x.Fueltype != 'Solar']
-    return (uba.loc[lambda df: df.Fueltype.isin(config['target_fueltypes'])]
+    return (uba
+            .pipe(config_filter, name='UBA', config=config)
             .pipe(scale_to_net_capacities,
                   (not data_config['UBA']['net_capacity']))
             .pipe(correct_manually, 'UBA', config=config))
@@ -1144,11 +1139,10 @@ def BNETZA(header=9, sheet_name='Gesamtkraftwerksliste BNetzA',
                           Set=bnetza.Set.fillna('Nein')
                           .str.title()
                           .replace({u'Ja': 'CHP', u'Nein': 'PP'}))
-            .loc[lambda df: df.Fueltype.isin(config['target_fueltypes'])]
+            .pipe(config_filter, name='BNETZA', config=config)
             .pipe(scale_to_net_capacities,
                   not data_config['BNETZA']['net_capacity'])
-            .pipe(correct_manually, 'BNETZA', config=config)
-            .reset_index(drop=True))
+            .pipe(correct_manually, 'BNETZA', config=config))
 
 
 data_config['BNETZA'] = {'read_function': BNETZA, 'net_capacity': True,
@@ -1240,10 +1234,9 @@ def OPSD_VRE(config=None):
          u'Onshore wind energy': 'Onshore',
          u'Offshore wind energy': 'Offshore'}
     df.Technology.replace(d, inplace=True)
-    return (df.reindex(columns=config['target_columns'])
-              .loc[lambda df: df.Fueltype.isin(config['target_fueltypes'])]
-              .reset_index(drop=True)
-              .drop('Name', axis=1))
+    return (df
+            .pipe(config_filter, config=config)
+            .drop('Name', axis=1))
 
 
 def IRENA_stats(config=None):
@@ -1297,7 +1290,7 @@ def IRENA_stats(config=None):
          u'Renewable municipal waste': 'Waste',
          u'Solar photovoltaic': 'Solar'}
     df.loc[:, 'Fueltype'] = df.Technology.map(d)
-    df = df.loc[lambda df: df.Fueltype.isin(config['target_fueltypes'])]
+    df = df.pipe(config_filter, config=config).dropna(axis=1)
     d = {u'Concentrated solar power': 'CSP',
          u'Solar photovoltaic': 'PV',
          u'Onshore wind energy': 'Onshore',

@@ -61,7 +61,7 @@ def clean_powerplantname(df):
                           'gkn', 'Gemeinschaftskernkraftwerk', 'kki', 'kkp',
                           'kle', 'wkw', 'rwe', 'bis', 'nordsee', 'ostsee',
                           'dampfturbinenanlage', 'ikw', 'kw', 'kohlekraftwerk',
-                          'raffineriekraftwerk'])]
+                          'raffineriekraftwerk', 'Kraftwerke'])]
     name = (name
             .replace(regex=True, to_replace=pattern, value=' ')
             .replace('\s+', ' ', regex=True)
@@ -316,7 +316,7 @@ def aggregate_units(df, dataset_name=None,
             df = df.assign(grouped=groups.values)
         except (ValueError, IOError):
             logger.warning("Non-existing saved aggregation groups for dataset"
-                           '{0}, continuing by aggregating again'
+                           " '{0}', continuing by aggregating again"
                            .format(dataset_name))
             if 'grouped' in df:
                 df.drop('grouped', axis=1, inplace=True)

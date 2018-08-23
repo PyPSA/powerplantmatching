@@ -18,7 +18,8 @@ Processed datasets of merged and/or adjusted data
 """
 from __future__ import print_function
 
-from .utils import set_uncommon_fueltypes_to_other, _data_out, parmap
+from .utils import (set_uncommon_fueltypes_to_other, _data_out, parmap,
+                    to_dict_if_string)
 from .data import data_config
 from .cleaning import aggregate_units
 from .matching import combine_multiple_datasets, reduce_matched_dataframe
@@ -30,7 +31,6 @@ from .config import get_config
 import pandas as pd
 import os
 from ast import literal_eval as liteval
-from multiprocessing import Pool
 import logging
 logger = logging.getLogger(__name__)
 
@@ -161,7 +161,10 @@ def matched_data(config=None,
 
     if isinstance(config['fully_included_sources'], list):
         for source in config['fully_included_sources']:
-            matched = extend_by_non_matched(matched, source, config=config,
+            source = to_dict_if_string(source)
+            name = list(source)[0]
+            extendby_kwargs.update({'query': source[name]})
+            matched = extend_by_non_matched(matched, name, config=config,
                                             **extendby_kwargs)
 
     # Drop matches between only low reliability-data, this is necessary since

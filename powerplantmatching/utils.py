@@ -106,12 +106,32 @@ def lookup(df, keys=None, by='Country, Fueltype', exclude=None, unit='MW'):
         return (lookup_single(df)/scaling).fillna(0.).round(3)
 
 
-def config_filter(df, config=None):
+def config_filter(df, name=None, config=None):
+    """
+    Convenience function to filter data source according to the config.yaml
+    file. Individual query filters are applied if argument 'name' is given.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Data to be filtered
+    name : str, default None
+        Name of the data source to identify query in the config.yaml file
+    config : dict, default None
+        Configuration overrides varying from the config.yaml file
+    """
     if config is None:
         config = get_config()
+    # individual filter from config.yaml
+    if name is not None:
+        queries = {k: v for source in config['matching_sources']
+                   for k, v in to_dict_if_string(source).items()}
+        if name in queries and queries[name] is not None:
+            df = df.query(queries[name])
     return (df[lambda df: df.Country.isin(config['target_countries']) &
             df.Fueltype.isin(config['target_fueltypes'])]
-            .reindex(columns=config['target_columns']))
+            .reindex(columns=config['target_columns'])
+            .reset_index(drop=True))
 
 
 def correct_manually(df, name, config=None):
@@ -199,6 +219,16 @@ def to_list_if_string(obj):
         return [obj]
     else:
         return obj
+
+
+def to_dict_if_string(s):
+    """
+    Convenience function to ensure dict-like output
+    """
+    if isinstance(s, str):
+        return {s: None}
+    else:
+        return s
 
 
 def select_by_projectID(df, projectID, dataset_name=None):
