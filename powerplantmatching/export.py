@@ -32,6 +32,15 @@ cget = pycountry.countries.get
 
 
 def to_pypsa_names(df):
+    """Rename the columns of the powerplant data according to the 
+    convention in PyPSA. 
+    
+    Arguments:
+        df {pandas.DataFrame} -- powerplant data
+    
+    Returns:
+        pandas.DataFrame -- Column renamed dataframe
+    """
     return (df.assign(Fueltype=df['Fueltype'].str.lower())
               .rename(columns={'Fueltype': 'carrier',
                                'Capacity': 'p_nom',
@@ -216,6 +225,16 @@ def to_TIMES(df=None, use_scaled_capacity=False, baseyear=2015):
     if plausible:
         df_exp.to_excel(_data_out('Export_Stock_TIMES.xlsx'))
     return df_exp
+
+
+def store_open_dataset():
+    from .collection import matched_data, reduce_matched_dataframe
+    m = (matched_data(reduced=False)
+         .reindex(columns=['CARMA', 'ENTSOE', 'GEO', 'GPD', 'OPSD'], level=1)
+         [lambda df: df.Name.notnull().any(1)]
+         .pipe(reduce_matched_dataframe))
+    m.to_csv(_data_out('powerplants.csv'))
+    return m
 
 
 def fueltype_to_abbrev():

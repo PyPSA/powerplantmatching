@@ -108,6 +108,7 @@ matching_analysis/*.png
 
 data/out/*
 !data/out/default
+data/out/default/matched_data*.csv
 data/out/default/*WEPP*
 data/out/default/*wepp*
 data/out/default/*IWPDCY*

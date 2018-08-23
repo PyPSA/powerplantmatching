@@ -24,8 +24,7 @@ from .data import data_config
 from .cleaning import aggregate_units
 from .matching import combine_multiple_datasets, reduce_matched_dataframe
 from .heuristics import (extend_by_non_matched, extend_by_VRE,
-                         remove_oversea_areas, manual_corrections,
-                         average_empty_commyears)
+                         remove_oversea_areas, average_empty_commyears)
 from .config import get_config
 
 import pandas as pd
@@ -126,6 +125,7 @@ def Collection(**kwargs):
 
 
 def matched_data(config=None,
+                 stored=True,
                  extend_by_vres=False,
                  extendby_kwargs={'use_saved_aggregation': True},
                  subsume_uncommon_fueltypes=False,
@@ -139,6 +139,11 @@ def matched_data(config=None,
 
     Parameters
     ----------
+    stored : Bollean, default True
+            Whether to use the stored matched_data.csv file in data/out/default
+            If False, the matched data is taken from collect() and
+            extended afterwards. To update the whole matching, please set
+            stored=False and update=True.
     config : Dict, default None
             Define a configuration varying from the setting in config.yaml.
             Relevant keywords are 'matching_sources', 'fully_included_sources'.
@@ -151,11 +156,23 @@ def matched_data(config=None,
     subsume_uncommon_fueltypes : Boolean, default False
             Whether to replace uncommon fueltype specification by 'Other'
     **collection_kwargs : kwargs
-            keywordarguments passed to powerplantmatching.collection.Collection
+            Arguments passed to powerplantmatching.collection.Collection.
+            Typical arguments are update, use_saved_aggregation,
+            use_saved_matches.
 
     """
     if config is None:
         config = get_config()
+
+    if collection_kwargs.get('reduced', True):
+        fn = _data_out('matched_data_red.csv')
+        header = 0
+    else:
+        fn = _data_out('matched_data.csv')
+        header = [0, 1]
+
+    if stored and os.path.exists(fn):
+        return pd.read_csv(fn, index_col=0, header=header, encoding='utf-8')
 
     matched = collect(config['matching_sources'], **collection_kwargs)
 
@@ -176,17 +193,21 @@ def matched_data(config=None,
         matched = matched[~matched.projectID[other].isna().all(1) |
                           matched.Country.GEO.isin(allowed_countries) |
                           matched.Country.CARMA.isin(allowed_countries)]
+        matched = matched[matched.lat.notnull().any(1)].reset_index(drop=True)
     else:
         matched = matched[matched.projectID.apply(lambda x: sorted(x.keys())
                           not in [['CARMA', 'GEO']]) |
                           matched.Country.isin(allowed_countries)]
+        matched = matched[matched.lat.notnull()].reset_index(drop=True)
+    matched.to_csv(fn, index_label='id', encoding='utf-8')
+
     if extend_by_vres:
         matched = extend_by_VRE(matched,
                                 base_year=config['opsd_vres_base_year'])
 
     if subsume_uncommon_fueltypes:
         matched = set_uncommon_fueltypes_to_other(matched)
-    return matched[matched.lat.notnull()].reset_index(drop=True)
+    return matched
 
 
 def MATCHED_dataset(**kwargs):

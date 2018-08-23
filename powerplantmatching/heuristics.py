@@ -350,26 +350,6 @@ def derive_vintage_cohorts_from_statistics(df, base_year=2015, config=None):
     return dfe[~np.isclose(dfe.Capacity, 0)]
 
 
-def manual_corrections(df):
-    """
-    Here, manual corrections are being processed which are not (yet) solved by
-    the data mending, matching or reducing algorithms.
-    """
-    # Czech+Bulgarian Lignite underrepresented, extend by missing WEPP records
-    df = extend_by_non_matched(df, 'WEPP', fueltypes='Lignite',
-                               countries=['Czech Republic', 'Bulgaria'],
-                               use_saved_aggregation=True)
-
-    # Italian Gas underrepresented, extend by missing WEPP records
-    df = extend_by_non_matched(df, 'WEPP', fueltypes='Natural Gas',
-                               countries='Italy',
-                               use_saved_aggregation=True)
-
-    # Polish plant Kozienice Block 11 not yet online in 2015 and 2016
-    df.loc[lambda x: (x.Name == 'Kozienice'), 'Capacity'] = 2820
-    return df
-
-
 def set_denmark_region_id(df):
     """
     Used to set the Region column to DKE/DKW (East/West) for electricity models

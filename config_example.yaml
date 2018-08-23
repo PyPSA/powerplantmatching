@@ -4,7 +4,8 @@ google_api_key:
 opsd_vres_base_year: 2016
 
 #matching config
-#add a pandas query statement after the source name to filter the sources individually, e.g. - Carma: Fueltype=='Natural Gas'
+# add a pandas query statement after the source name to filter the sources individually, e.g. - Carma: Fueltype=='Natural Gas'
+# see http://pandas.pydata.org/pandas-docs/stable/indexing.html#the-query-method for info about query syntax
 matching_sources:
     - CARMA
     - ENTSOE
