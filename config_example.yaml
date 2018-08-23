@@ -1,4 +1,4 @@
-# io confiig
+# io config
 entsoe_token: 
 google_api_key: 
 opsd_vres_base_year: 2016
@@ -16,8 +16,10 @@ matching_sources:
 
 fully_included_sources:
     - OPSD
-    - ESE
-    - ENTSOE
+    - ESE: Country not in ['Switzerland']
+    - ENTSOE: Country not in ['Spain', 'Switzerland']
+    - CARMA: Country == 'France' and Fueltype == 'Hydro'
+    # - IWPDCY: lat == lat and Country == 'Sweden'
 
 parallel_duke_processes: true
 process_limit: 2
@@ -101,12 +103,22 @@ target_technologies:
 
 # Allowed countries for matches of only CARMA and GEO
 CARMA_GEO_countries:
-    - Croatia
-    # - Czech Republic
-    # - Estonia
-    # - Italy
-    # - France
-
+    -  Austria
+    -  Belgium
+    -  Bulgaria
+    -  Croatia
+    -  Denmark
+    -  Estonia
+    -  France
+    -  Germany
+    -  Ireland
+    -  Italy
+    -  Luxembourg
+    -  Netherlands
+    -  Romania
+    -  Slovakia
+    -  Sweden
+    
 # heuristic config
 fuel_to_lifetime:
     Bioenergy: 20
