@@ -497,47 +497,48 @@ def country_totals_hbar(dfs, keys, exclude_fueltypes=['Solar', 'Wind'],
 
 
 def factor_comparison(dfs, keys, figsize=(12, 9)):
-    dfs = [set_uncommon_fueltypes_to_other(df) for df in dfs]
-    compare = lookup(dfs, keys=keys, exclude=['Solar', 'Wind']).fillna(0.)
-    compare = compare.append(
-            pd.concat([compare.groupby(level='Country').sum()],
-                      keys=['Total']).swaplevel()).sort_index()/1000
-    n_countries, n_fueltypes = compare.index.levshape
+    with sns.axes_style('whitegrid'):
+        dfs = [set_uncommon_fueltypes_to_other(df) for df in dfs]
+        compare = lookup(dfs, keys=keys, exclude=['Solar', 'Wind']).fillna(0.)
+        compare = compare.append(
+                pd.concat([compare.groupby(level='Country').sum()],
+                          keys=['Total']).swaplevel()).sort_index()/1000
+        n_countries, n_fueltypes = compare.index.levshape
+        c = [get_config()['fuel_to_color'][i] for i in compare.index.levels[1]]
+        rcParams["axes.prop_cycle"] = cycler(color=c)
 
-    c = [get_config()['fuel_to_color'][i] for i in compare.index.levels[1]]
-    rcParams["axes.prop_cycle"] = cycler(color=c)
+        # where both are zero,
+        compare[compare.sum(1) < 0.5] = np.nan
 
-    # where both are zero,
-    compare[compare.sum(1) < 0.5] = np.nan
+        fig, ax = plt.subplots(1, 1, figsize=figsize)
+        compare = (compare.unstack('Country').swaplevel(axis=1).sort_index(axis=1)
+                   .reindex(columns=keys, level=1))
+        compare.T.plot(ax=ax, markevery=(0, 2),
+                       style='o', markersize=5)
+        compare.T.plot(ax=ax, markevery=(1, 2),
+                       style='s', legend=None, markersize=4.5)
 
-    fig, ax = plt.subplots(1, 1, figsize=figsize)
-    compare = compare.unstack('Country').swaplevel(axis=1).sort_index(axis=1)
-    compare.T.plot(ax=ax, markevery=(0, 2),
-                   style='o', markersize=5)
-    compare.T.plot(ax=ax, markevery=(1, 2),
-                   style='s', legend=None, markersize=4.5)
+        lgd = ax.get_legend_handles_labels()
 
-    lgd = ax.get_legend_handles_labels()
+        for i, j in enumerate(compare.columns.levels[0]):
+            ax.plot(np.array([0, 1]) + (2*i), compare[j].T)
 
-    for i, j in enumerate(compare.columns.levels[0]):
-        ax.plot(np.array([0, 1]) + (2*i), compare[j].T)
+        indexhandles = [Line2D([0.4, 0.6], [0.4, 0.6], marker=m, linewidth=0.,
+                        markersize=msize, color='w', markeredgecolor='k',
+                        markeredgewidth=0.5)
+                        for m, msize in [['o', 5.], ['s', 4.5]]]
+        ax.add_artist(ax.legend(handles=indexhandles, labels=keys))
+        ax.legend(handles=lgd[0][:len(c)], labels=lgd[1][:len(c)],
+                  title=False, loc=2)
 
-    indexhandles = [Line2D([0.4, 0.6], [0.4, 0.6], marker=m, linewidth=0.,
-                    markersize=msize, color='w', markeredgecolor='k',
-                    markeredgewidth=0.5)
-                    for m, msize in [['o', 5.], ['s', 4.5]]]
-    ax.add_artist(ax.legend(handles=indexhandles, labels=keys))
-    ax.legend(handles=lgd[0][:len(c)], labels=lgd[1][:len(c)],
-              title=False, loc=2)
-
-    ax.set_xlim(-1, n_countries*2 + 1)
-    ax.xaxis.grid(False)
-    ax.set_xticks(np.linspace(0.5, n_countries*2 - 1.5, n_countries))
-    ax.set_xticklabels(compare.columns.levels[0].values, rotation=90)
-    ax.set_xlabel('')
-    ax.set_ylabel('Capacity [GW]')
-    fig.tight_layout(pad=0.5)
-    return fig, ax
+        ax.set_xlim(-1, n_countries*2 + 1)
+        ax.xaxis.grid(False)
+        ax.set_xticks(np.linspace(0.5, n_countries*2 - 1.5, n_countries))
+        ax.set_xticklabels(compare.columns.levels[0].values, rotation=90)
+        ax.set_xlabel('')
+        ax.set_ylabel('Capacity [GW]')
+        fig.tight_layout(pad=0.5)
+        return fig, ax
 
 
 def bar_decomissioning_curves(df=None, ylabel=None, title=None,

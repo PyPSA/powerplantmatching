@@ -53,7 +53,7 @@ as part of the
    ```
 4. Copy config_example.yaml to config.yaml.
 
-Optional but recommended:
+Optional but recommended:resulting 
 
 5. Download the [ESE dataset](https://goo.gl/gVMwKJ). For integrating the data into powerplantmatching, the path of the downloaded file has to be added to the config.yaml file with the keyword 'ese_path' (default is set to 'Downloads/projects.xls').
 6. Add your ENTSOE security token to the config.yaml file. The token can be obtained by following section 2 of the [RESTful API documentation](https://transparency.entsoe.eu/content/static_content/Static%20content/web%20api/Guide.html#_authentication_and_authorisation) of the ENTSOE-E Transparency platform.
@@ -66,8 +66,8 @@ Optional:
 ## Processed Data
 
 If you are only interested in the power plant data, we provide our
-current merged dataset as a
-[csv-file](../master/data/out/Matched_CARMA_ENTSOE_GEO_OPSD_WRI_reduced.csv). This
+current merged dataset for European power plants as a
+[csv-file](https://media.githubusercontent.com/media/FRESNA/powerplantmatching/master/data/out/default/powerplants.csv). This
 set combines the data of all the data sources listed in
 [Data-Sources](#Data-Sources) and provides the following information:
 
@@ -79,15 +79,19 @@ set combines the data of all the data sources listed in
 - **Geo-position**		- Latitude, Longitude
 - **Country**           - EU-27 + CH + NO (+ UK) minus Cyprus and Malta
 - **YearCommissioned**		- Commmisioning year of the powerplant
+- **RetroFit**        - Year of last retrofit 
 - **File**			- Source file of the data entry
 - **projectID**			- Immutable identifier of the power plant
 
 
 The following picture compares the total capacities per fuel type
-between the different data sources and our merged dataset.
+between the different data sources and the resulting dataset
 
 ![Total capacities per fuel type for the different data sources and the merged dataset.](https://user-images.githubusercontent.com/19226431/43489219-8a7506d6-951c-11e8-85dd-d772d1c76181.png)
 
+Comparing the aggregated capacities per country and fuel type with the capacity statistics provided by the ENTSOE:
+
+![Capacity statistics comparison](https://user-images.githubusercontent.com/19226431/44577090-77b0ba00-a790-11e8-9575-30a7868222fa.png)
 
 
 ## Data-Sources:
@@ -102,9 +106,9 @@ between the different data sources and our merged dataset.
 - BNETZA - [Bundesnetzagentur](https://www.bundesnetzagentur.de/EN/Areas/Energy/Companies/SecurityOfSupply/GeneratingCapacity/PowerPlantList/PubliPowerPlantList_node.html) open available data source for Germany's power plants
 
 
-The merged dataset is available in two versions: The [bigger dataset](../master/data/out/Matched_CARMA_ENTSOE_GEO_OPSD_WRI.csv)
+The merged dataset is available in two versions: The [bigger dataset](https://media.githubusercontent.com/media/FRESNA/powerplantmatching/master/data/out/default/powerplants_large.csv)
 links the entries of the matched power plants and lists all the related
-properties given by the different data-sources. The [smaller merged dataset](../master/data/out/Matched_CARMA_ENTSOE_GEO_OPSD_WRI_reduced.csv)
+properties given by the different data-sources. The [smaller, reduced dataset](https://media.githubusercontent.com/media/FRESNA/powerplantmatching/master/data/out/default/powerplants.csv)
 claims only the value of the most reliable data source being matched in the individual power plant data entry.
 The considered reliability scores are:
 
@@ -119,26 +123,37 @@ The considered reliability scores are:
 | IWPDCY           |                3 |
 | OPSD             |                5 |
 | UBA              |                5 |
-| WRI              |                3 |
+| GPD              |                3 |
 
+## Make your own configuration
 
-The toolset provides additional funcitons to easily manipulate your merged, e.g. you can
+You have the option to easily manipulate the resulting data. Through the   **config.yaml** file you can 
 
-- extend your data by non-matched power plant entries
+- determine the global set of **countries** and **fueltypes**
+
+- determine which data sources to combine and which data sources should completely be contained in the final dataset
+
+- individually filter data sources via a [pandas.DataFrame.query](http://pandas.pydata.org/pandas-docs/stable/indexing.html#the-query-method) statement set as an argument of data source name in your config.yaml (see [config_example.yaml](https://github.com/FRESNA/powerplantmatching/blob/master/config_example.yaml)).    
+
+The [config_example.yaml](https://github.com/FRESNA/powerplantmatching/blob/master/config_example.yaml) provides an adjusted configuration for an european dataset.  
+Further you can 
 
 - scale the power plant capacities in order to match country specific statistics about total power plant capacities
 
-- extend your data by renewable power plants given by the [OPSD](https://data.open-power-system-data.org/renewable_power_plants/2018-03-08/)
+- trace back which original data flew into the resulting data.   
 
+- visualize the data
 
-The database is available using the python command
+- export your powerplant data to a [PyPSA](https://github.com/PyPSA/PyPSA) or Times model 
+
+Once set up the package, the database is available through the python command
 ```python
 import powerplantmatching as pm
 pm.collection.matched_data()
 ```
+Note, that if you haven't compiled the matched_data.csv before, this will take its time (about 30 min for the standard data sources.)
 
-
-There is a (bit out of date) ![Documentation](https://github.com/FRESNA/powerplantmatching/files/1380529/PowerplantmatchingDoc.pdf) available, which (however) gives you some more extensive insight
+There is a (bit out of date) [Documentation](https://github.com/FRESNA/powerplantmatching/files/1380529/PowerplantmatchingDoc.pdf) available, which (however) gives you some more extensive insight
 on the coding level.
 
 
@@ -159,7 +174,7 @@ Whereas single databases as the CARMA or the GEO database provide non
 standardized and incomplete information, the datasets can complement
 each other and improve their reliability. The merged dataset combines
 five different databases (see below) by only keeping powerplants which
-appear in more than one source.
+appear in more than one source. 
 
 The matching process heavily relies on
 [DUKE](https://github.com/larsga/Duke), a java application specialized
@@ -199,35 +214,17 @@ and
 |  4 | Aceca             | Oil         | CHP              | Spain          |      629   | 39.941  | -3.8569 |    nan |
 |  5 | Aceca fenosa      | Natural Gas | CCGT             | Spain          |      400   | 39.9427 | -3.8548 |    nan |
 
-Apparently the entries 0, 3 and 5 of Data set 1 relate to the same
-power plants as the entries 0,1 and 2 of Data set 2.  Applying the
-matching algorithm to the two data sets, we obtain the following set:
+where Dataset 2 has the higher reliability score. Apparently entries 0, 3 and 5 of Dataset 1 relate to the same
+power plants as the entries 0,1 and 2 of Dataset 2. The toolset detects those similarities and combines them into the following set, but prioritising the values of Dataset 2:
 
-|    | Dataset 1   | Dataset 2   | Country        | Fueltype   | Classification   |   Capacity |     lat |      lon |   File |
+|    | Name     | Country        | Fueltype   | Classification   |   Capacity |     lat |      lon |   File |
 |---:|:------------|:------------|:---------------|:-----------|:-----------------|-----------:|--------:|---------:|-------:|
-|  0 | Aarberg     | Aarberg     | Switzerland    | Hydro      | nan              |       15.5 | 47.0411 |  7.27389 |    nan |
-|  1 | Aberthaw    | Aberthaw    | United Kingdom | Coal       | Thermal          |     1552.5 | 51.3874 | -3.40583 |    nan |
-|  2 | Abono       | Abono       | Spain          | Coal       | Thermal          |      921.7 | 43.5558 | -5.72299 |    nan |
-
-Note, that the names from the different sources are kept for ease of
-referencing, whereas the claims about the other plant parameters have
-been reduced an aggregate value using the rules described in
-[Processed data](#processed-data). The intermediary, unreduced dataset
-with all the claims is, of course, also available to provide a basis
-for your own reduction.
-
-![Power plant coverage](https://cloud.githubusercontent.com/assets/19226431/20011650/a654e858-a2ac-11e6-93a2-2ed0e938f642.jpg)
+|  0 | Aarberg    | Switzerland    | Hydro      | nan              |       15.5 | 47.0378 |  7.272 |    nan |
+|  1 | Aberthaw       | United Kingdom | Coal       | Thermal          |     1500 | 51.3873 | -3.4049 |    nan |
+|  2 | Abono             | Spain          | Coal       | Thermal          |      921.7 | 43.5528 | -5.7231 |    nan |
 
 
-## Vertical Cleaning
-
-In order to compare and combine information from multiple databases, uni-
-form standards must be guaranteed. That is, the datasets should be based on
-the same set of arguments having consistent formats. With the module cleaning.py you can
-easily handle data alignment, that is, after renaming the basic columns of
-an unprocessed dataset, one simply has to apply several provided functions.
-Furthermore, you can aggregate power plant units from the same power
-plant together.
+## Citing powerplantmatching
 
 
 ## Acknowledgements
@@ -235,11 +232,15 @@ plant together.
 The development of powerplantmatching was helped considerably by
 in-depth discussions and exchanges of ideas and code with
 
-- Fabian Gotzens from Forschungszentrum Juelich and RWTH Aachen University,
+- Tom Brown from Karlsruhe Institute for Technology
 - Chris Davis from University of Groningen and
 - Johannes Friedrich, Roman Hennig and Colin McCormick of the World Resources Institute
 
 ## Licence
+
+Copyright 2018-2020 Fabian Gotzens (FZ Jülich), Jonas Hörsch (KIT), Fabian Hofmann (FIAS)
+
+
 
 powerplantmatching is released as free software under the
 [GPLv3](http://www.gnu.org/licenses/gpl-3.0.en.html), see

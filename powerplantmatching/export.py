@@ -32,12 +32,12 @@ cget = pycountry.countries.get
 
 
 def to_pypsa_names(df):
-    """Rename the columns of the powerplant data according to the 
-    convention in PyPSA. 
-    
+    """Rename the columns of the powerplant data according to the
+    convention in PyPSA.
+
     Arguments:
         df {pandas.DataFrame} -- powerplant data
-    
+
     Returns:
         pandas.DataFrame -- Column renamed dataframe
     """
@@ -231,8 +231,9 @@ def store_open_dataset():
     from .collection import matched_data, reduce_matched_dataframe
     m = (matched_data(reduced=False)
          .reindex(columns=['CARMA', 'ENTSOE', 'GEO', 'GPD', 'OPSD'], level=1)
-         [lambda df: df.Name.notnull().any(1)]
-         .pipe(reduce_matched_dataframe))
+         [lambda df: df.Name.notnull().any(1)])
+    m.to_csv(_data_out('powerplants_large.csv'))
+    m = m.pipe(reduce_matched_dataframe)
     m.to_csv(_data_out('powerplants.csv'))
     return m
 

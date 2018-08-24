@@ -30,6 +30,7 @@ import logging
 import numpy as np
 import sys
 import multiprocessing
+from ast import literal_eval as liteval
 
 
 def _data(fn):
@@ -229,6 +230,19 @@ def to_dict_if_string(s):
         return {s: None}
     else:
         return s
+
+
+def projectID_to_dict(df):
+    """
+    Convenience function to convert string of dict to dict type
+    """
+    if df.columns.nlevels > 1:
+        return df.assign(projectID = (df.projectID.stack().dropna().apply(
+                                      lambda df: liteval(df)).unstack()))
+    else:
+        return df.assign(projectID =
+                         df.projectID.apply(lambda df: liteval(df)))
+
 
 
 def select_by_projectID(df, projectID, dataset_name=None):

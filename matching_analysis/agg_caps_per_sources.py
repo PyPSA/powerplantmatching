@@ -19,7 +19,7 @@ for name in dfs:
 name = 'Matched Data'
 m = pm.collection.matched_data()
 fig, ax = pm.plot.factor_comparison([m, s],
-                                    [name, 'stats'])
+                                    [name, 'ENTSOE SO&AF'])
 fig.savefig('factor_plot_{}.png'.format(name), dpi=300)
 
 

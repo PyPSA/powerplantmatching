@@ -19,7 +19,7 @@ Processed datasets of merged and/or adjusted data
 from __future__ import print_function
 
 from .utils import (set_uncommon_fueltypes_to_other, _data_out, parmap,
-                    to_dict_if_string)
+                    to_dict_if_string, projectID_to_dict)
 from .data import data_config
 from .cleaning import aggregate_units
 from .matching import combine_multiple_datasets, reduce_matched_dataframe
@@ -29,7 +29,6 @@ from .config import get_config
 
 import pandas as pd
 import os
-from ast import literal_eval as liteval
 import logging
 logger = logging.getLogger(__name__)
 
@@ -111,13 +110,10 @@ def collect(datasets, update=False, use_saved_aggregation=True,
     else:
         if reduced:
             df = pd.read_csv(outfn_reduced, index_col=0, encoding='utf-8')
-            df.projectID = (df.projectID.apply(lambda df: liteval(df)))
         else:
             df = pd.read_csv(outfn_matched, index_col=0, header=[0, 1],
                              encoding='utf-8', low_memory=False)
-            df.projectID = (df.projectID.stack().dropna().apply(
-                    lambda df: liteval(df)).unstack())
-        return df
+        return df.pipe(projectID_to_dict)
 
 
 def Collection(**kwargs):
@@ -172,7 +168,8 @@ def matched_data(config=None,
         header = [0, 1]
 
     if stored and os.path.exists(fn):
-        return pd.read_csv(fn, index_col=0, header=header, encoding='utf-8')
+        return (pd.read_csv(fn, index_col=0, header=header, encoding='utf-8')
+                .pipe(projectID_to_dict))
 
     matched = collect(config['matching_sources'], **collection_kwargs)
 
