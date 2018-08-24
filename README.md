@@ -217,8 +217,8 @@ and
 where Dataset 2 has the higher reliability score. Apparently entries 0, 3 and 5 of Dataset 1 relate to the same
 power plants as the entries 0,1 and 2 of Dataset 2. The toolset detects those similarities and combines them into the following set, but prioritising the values of Dataset 2:
 
-| Name     | Country        | Fueltype   | Classification   |   Capacity |     lat |      lon |   File |
-|---:|:------------|:------------|:---------------|:-----------|:-----------------|-----------:|--------:|---------:|-------:|
+|  | Name   | Country        | Fueltype   | Classification   |   Capacity |     lat |      lon |   File |
+|---:|:------------|:---------------|:-----------|:-----------------|-----------:|--------:|---------:|-------:|
 |  0 | Aarberg    | Switzerland    | Hydro      | nan              |       15.5 | 47.0378 |  7.272 |    nan |
 |  1 | Aberthaw       | United Kingdom | Coal       | Thermal          |     1500 | 51.3873 | -3.4049 |    nan |
 |  2 | Abono             | Spain          | Coal       | Thermal          |      921.7 | 43.5528 | -5.7231 |    nan |
