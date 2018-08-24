@@ -249,4 +249,4 @@ Copyright 2018-2020 Fabian Gotzens (FZ Jülich), Jonas Hörsch (KIT), Fabian Hof
 
 powerplantmatching is released as free software under the
 [GPLv3](http://www.gnu.org/licenses/gpl-3.0.en.html), see
-[LICENSE](LICENSE).
+[LICENSE](LICENSE) for further information.
