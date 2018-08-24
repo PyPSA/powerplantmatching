@@ -226,7 +226,7 @@ power plants as the entries 0,1 and 2 of Dataset 2. The toolset detects those si
 
 ## Citing powerplantmatching
 
-If you want to cite a powerplantmatching, the current release is stored on Zenodo with a release-specific DOI:
+If you want to cite powerplantmatching, the current release is stored on Zenodo with a release-specific DOI:
 
 
 [![DOI](https://zenodo.org/badge/65747815.svg)](https://zenodo.org/badge/latestdoi/65747815)
