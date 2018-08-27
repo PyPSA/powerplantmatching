@@ -32,6 +32,41 @@ as part of the
 - choose between gros/net capacity
 - provide an already merged data set of six different data-sources
 
+## Processed Data
+
+If you are only interested in the power plant data, we provide our
+current merged dataset for European power plants as a
+[csv-file](https://media.githubusercontent.com/media/FRESNA/powerplantmatching/master/data/out/default/powerplants.csv). This
+set combines the data of all the data sources listed in
+[Data-Sources](#Data-Sources) and provides the following information:
+
+- **Power plant name**      - claim of each database
+- **Fueltype**          - {Bioenergy, Geothermal, Hard Coal, Hydro, Lignite, Nuclear, Natural Gas, Oil, Solar, Wind, Other}
+- **Technology**		- {CCGT, OCGT, Steam Turbine, Combustion Engine, Run-Of-River, Pumped Storage, Reservoir}
+- **Set**			- {Power Plant (PP), Combined Heat and Power (CHP), Storages (Stores)}
+- **Capacity**			- \[MW\]
+- **Geo-position**		- Latitude, Longitude
+- **Country**           - EU-27 + CH + NO (+ UK) minus Cyprus and Malta
+- **YearCommissioned**		- Commmisioning year of the powerplant
+- **RetroFit**        - Year of last retrofit 
+- **File**			- Source file of the data entry
+- **projectID**			- Immutable identifier of the power plant
+
+
+The current release together with the open version (without ESE dataset) of the processed data is stored on Zenodo: 
+
+[![DOI](https://zenodo.org/badge/65747815.svg)](https://zenodo.org/badge/latestdoi/65747815)
+
+In order include all datasources, please install the package and recompile the full matched data.
+
+The following picture compares the total capacities per fuel type
+between the different data sources and the resulting dataset
+
+![Total capacities per fuel type for the different data sources and the merged dataset.](https://user-images.githubusercontent.com/19226431/43489219-8a7506d6-951c-11e8-85dd-d772d1c76181.png)
+
+Comparing the aggregated capacities per country and fuel type with the capacity statistics provided by the ENTSOE:
+
+![Capacity statistics comparison](https://user-images.githubusercontent.com/19226431/44577090-77b0ba00-a790-11e8-9575-30a7868222fa.png)
 
 
 ## Installation
@@ -54,8 +89,9 @@ as part of the
 4. Copy config_example.yaml to config.yaml.
 
 Optional but recommended:resulting 
+ 
 
-5. Download the [ESE dataset](https://goo.gl/gVMwKJ). For integrating the data into powerplantmatching, the path of the downloaded file has to be added to the config.yaml file with the keyword 'ese_path' (default is set to 'Downloads/projects.xls').
+5. Download the [ESE dataset](https://goo.gl/gVMwKJ) and store it under `/path/to/powerplantmatching/data/in/projects.xls`.
 6. Add your ENTSOE security token to the config.yaml file. The token can be obtained by following section 2 of the [RESTful API documentation](https://transparency.entsoe.eu/content/static_content/Static%20content/web%20api/Guide.html#_authentication_and_authorisation) of the ENTSOE-E Transparency platform.
 
 Optional: 
@@ -63,35 +99,39 @@ Optional:
 7. Add your Google API key to the config.yaml file to enable geoparsing. The key can be obtained by following the [instructions](https://developers.google.com/maps/documentation/geocoding/get-api-key). 
 
 
-## Processed Data
+Once set up the package, the full database is available through the python command
+```python
+import powerplantmatching as pm
+pm.collection.matched_data()
+```
+Note, that for the compilation this will take its time (about 30 min for the standard data sources.) 
 
-If you are only interested in the power plant data, we provide our
-current merged dataset for European power plants as a
-[csv-file](https://media.githubusercontent.com/media/FRESNA/powerplantmatching/master/data/out/default/powerplants.csv). This
-set combines the data of all the data sources listed in
-[Data-Sources](#Data-Sources) and provides the following information:
+## Make your own configuration
 
-- **Power plant name**      - claim of each database
-- **Fueltype**          - {Bioenergy, Geothermal, Hard Coal, Hydro, Lignite, Nuclear, Natural Gas, Oil, Solar, Wind, Other}
-- **Technology**		- {CCGT, OCGT, Steam Turbine, Combustion Engine, Run-Of-River, Pumped Storage, Reservoir}
-- **Set**			- {Power Plant (PP), Combined Heat and Power (CHP), Storages (Stores)}
-- **Capacity**			- \[MW\]
-- **Geo-position**		- Latitude, Longitude
-- **Country**           - EU-27 + CH + NO (+ UK) minus Cyprus and Malta
-- **YearCommissioned**		- Commmisioning year of the powerplant
-- **RetroFit**        - Year of last retrofit 
-- **File**			- Source file of the data entry
-- **projectID**			- Immutable identifier of the power plant
+You have the option to easily manipulate the resulting data. Through the   **config.yaml** file you can 
+
+- determine the global set of **countries** and **fueltypes**
+
+- determine which data sources to combine and which data sources should completely be contained in the final dataset
+
+- individually filter data sources via a [pandas.DataFrame.query](http://pandas.pydata.org/pandas-docs/stable/indexing.html#the-query-method) statement set as an argument of data source name in your config.yaml (see [config_example.yaml](https://github.com/FRESNA/powerplantmatching/blob/master/config_example.yaml)).    
+
+The [config_example.yaml](https://github.com/FRESNA/powerplantmatching/blob/master/config_example.yaml) provides an adjusted configuration for an european dataset.  
+Further you can 
+
+- scale the power plant capacities in order to match country specific statistics about total power plant capacities
+
+- trace back which original data flew into the resulting data.   
+
+- visualize the data
+
+- export your powerplant data to a [PyPSA](https://github.com/PyPSA/PyPSA) or [TIMES](https://iea-etsap.org/index.php/etsap-tools/model-generators/times) model 
 
 
-The following picture compares the total capacities per fuel type
-between the different data sources and the resulting dataset
+There is a (bit out of date) [Documentation](https://github.com/FRESNA/powerplantmatching/files/1380529/PowerplantmatchingDoc.pdf) available, which (however) gives you some more extensive insight
+on the coding level.
 
-![Total capacities per fuel type for the different data sources and the merged dataset.](https://user-images.githubusercontent.com/19226431/43489219-8a7506d6-951c-11e8-85dd-d772d1c76181.png)
 
-Comparing the aggregated capacities per country and fuel type with the capacity statistics provided by the ENTSOE:
-
-![Capacity statistics comparison](https://user-images.githubusercontent.com/19226431/44577090-77b0ba00-a790-11e8-9575-30a7868222fa.png)
 
 
 ## Data-Sources:
@@ -125,37 +165,6 @@ The considered reliability scores are:
 | UBA              |                5 |
 | GPD              |                3 |
 
-## Make your own configuration
-
-You have the option to easily manipulate the resulting data. Through the   **config.yaml** file you can 
-
-- determine the global set of **countries** and **fueltypes**
-
-- determine which data sources to combine and which data sources should completely be contained in the final dataset
-
-- individually filter data sources via a [pandas.DataFrame.query](http://pandas.pydata.org/pandas-docs/stable/indexing.html#the-query-method) statement set as an argument of data source name in your config.yaml (see [config_example.yaml](https://github.com/FRESNA/powerplantmatching/blob/master/config_example.yaml)).    
-
-The [config_example.yaml](https://github.com/FRESNA/powerplantmatching/blob/master/config_example.yaml) provides an adjusted configuration for an european dataset.  
-Further you can 
-
-- scale the power plant capacities in order to match country specific statistics about total power plant capacities
-
-- trace back which original data flew into the resulting data.   
-
-- visualize the data
-
-- export your powerplant data to a [PyPSA](https://github.com/PyPSA/PyPSA) or Times model 
-
-Once set up the package, the database is available through the python command
-```python
-import powerplantmatching as pm
-pm.collection.matched_data()
-```
-Note, that if you haven't compiled the matched_data.csv before, this will take its time (about 30 min for the standard data sources.)
-
-There is a (bit out of date) [Documentation](https://github.com/FRESNA/powerplantmatching/files/1380529/PowerplantmatchingDoc.pdf) available, which (however) gives you some more extensive insight
-on the coding level.
-
 
 
 
@@ -168,15 +177,12 @@ matching, respectively.
 
 ![Modular package structure](https://user-images.githubusercontent.com/19226431/31513014-2feef76e-af8d-11e7-9b4d-f1be929e2dba.png)
 
-## Combining Data From Different Sources - Horizontal Matching
+## How it works
 
-Whereas single databases as the CARMA or the GEO database provide non
-standardized and incomplete information, the datasets can complement
-each other and improve their reliability. The merged dataset combines
-five different databases (see below) by only keeping powerplants which
-appear in more than one source. 
+Whereas single databases as the CARMA, GEO or the OPSD database provide non standardized and incomplete information, the datasets can complement each other and improve their reliability. 
+In a first step, powerplantmatching converts all powerplant dataset into a standardized format with a defined set of columns and values. The second part consists of aggregating power plant blocks together into units. Since some of the datasources provide their powerplant records on unit level, without detailed information about lower-level blocks, comparing with other sources is only possible on unit level. In the third and name-giving step the tool combines (or matches)different, standardized and aggregated input sources keeping only powerplants units which appear in more than one source. The matched data afterwards is complemented by data entries of reliable sources which have not matched.  
 
-The matching process heavily relies on
+The aggregation and matching process heavily relies on
 [DUKE](https://github.com/larsga/Duke), a java application specialized
 for deduplicating and linking data. It provides many built-in
 comparators such as numerical, string or geoposition comparators.  The
