@@ -130,7 +130,7 @@ def config_filter(df, name=None, config=None):
         if name in queries and queries[name] is not None:
             df = df.query(queries[name])
     return (df[lambda df: df.Country.isin(config['target_countries']) &
-            df.Fueltype.isin(config['target_fueltypes'])]
+               df.Fueltype.isin(config['target_fueltypes'])]
             .reindex(columns=config['target_columns'])
             .reset_index(drop=True))
 
@@ -237,12 +237,10 @@ def projectID_to_dict(df):
     Convenience function to convert string of dict to dict type
     """
     if df.columns.nlevels > 1:
-        return df.assign(projectID = (df.projectID.stack().dropna().apply(
-                                      lambda df: liteval(df)).unstack()))
+        return df.assign(projectID=(df.projectID.stack().dropna().apply(
+                lambda df: liteval(df)).unstack()))
     else:
-        return df.assign(projectID =
-                         df.projectID.apply(lambda df: liteval(df)))
-
+        return df.assign(projectID=df.projectID.apply(lambda df: liteval(df)))
 
 
 def select_by_projectID(df, projectID, dataset_name=None):
@@ -276,7 +274,7 @@ def update_saved_matches_for_(name):
     from .collection import collect
     from .matching import compare_two_datasets
     df = collect(name, use_saved_aggregation=False)
-    dfs = [df for df in get_config()['matching_sources'] if df != name]
+    dfs = [ds for ds in get_config()['matching_sources'] if ds != name]
     for to_match in dfs:
         compare_two_datasets([collect(to_match), df], [to_match, name])
 
@@ -372,7 +370,6 @@ def breakdown_matches(df):
             .set_axis(stackedIDs.to_frame('projectID')
                       .set_index('projectID', append=True).index,
                       inplace=False))
-
 
 
 def parse_Geoposition(location, zipcode='', country='',
