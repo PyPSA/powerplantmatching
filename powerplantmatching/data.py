@@ -135,12 +135,13 @@ def OPSD(rawEU=False, rawDE=False,
                     Country=lambda df: (pd.Series(df.Country.apply(
                                         lambda c: cget(alpha_2=c).name),
                                         index=df.index).str.title()))
+            .pipe(correct_manually, 'OPSD', config=config)
             .pipe(config_filter, name='OPSD', config=config)
             .pipe(gather_set_info)
             .pipe(clean_technology)
             .pipe(scale_to_net_capacities,
                   (not data_config['OPSD']['net_capacity']))
-            .pipe(correct_manually, 'OPSD', config=config)
+
             )
 
 
