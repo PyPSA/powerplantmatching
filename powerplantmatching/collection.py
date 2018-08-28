@@ -190,12 +190,15 @@ def matched_data(config=None,
         matched = matched[~matched.projectID[other].isna().all(1) |
                           matched.Country.GEO.isin(allowed_countries) |
                           matched.Country.CARMA.isin(allowed_countries)]
-        matched = matched[matched.lat.notnull().any(1)].reset_index(drop=True)
+        if config['remove_missing_coords']:
+            matched = (matched[matched.lat.notnull().any(1)]
+                       .reset_index(drop=True))
     else:
         matched = matched[matched.projectID.apply(lambda x: sorted(x.keys())
                           not in [['CARMA', 'GEO']]) |
                           matched.Country.isin(allowed_countries)]
-        matched = matched[matched.lat.notnull()].reset_index(drop=True)
+        if config['remove_missing_coords']:
+            matched = matched[matched.lat.notnull()].reset_index(drop=True)
     matched.to_csv(fn, index_label='id', encoding='utf-8')
 
     if extend_by_vres:
@@ -332,11 +335,7 @@ def Carma_ENTSOE_ESE_GEO_GPD_IWPDCY_OPSD_WEPP_matched_reduced_VRE(
         base_year=2015, update_concat=False):
     if update_concat:
         logger.info('Read base reduced dataframe...')
-        df = (Carma_ENTSOE_ESE_GEO_GPD_IWPDCY_OPSD_WEPP_matched_reduced(
-                update=update,
-                use_saved_matches=use_saved_matches,
-                use_saved_aggregation=use_saved_aggregation)
-              .pipe(manual_corrections)
+        df = (matched_data()
               .pipe(average_empty_commyears)
               .pipe(extend_by_VRE, base_year=base_year, prune_beyond=True)
               .pipe(remove_oversea_areas))

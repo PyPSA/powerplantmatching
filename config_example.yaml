@@ -28,6 +28,7 @@ process_limit: 2
 
 #data config
 display_net_caps: true
+remove_missing_coords: false
 target_columns:
     - Name
     - Fueltype
