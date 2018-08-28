@@ -1290,7 +1290,7 @@ def IRENA_stats(config=None):
          u'Renewable municipal waste': 'Waste',
          u'Solar photovoltaic': 'Solar'}
     df.loc[:, 'Fueltype'] = df.Technology.map(d)
-    df = df.pipe(config_filter, config=config).dropna(axis=1)
+    df = df.loc[lambda df: df.Fueltype.isin(config['target_fueltypes'])]
     d = {u'Concentrated solar power': 'CSP',
          u'Solar photovoltaic': 'PV',
          u'Onshore wind energy': 'Onshore',
