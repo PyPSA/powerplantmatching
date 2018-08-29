@@ -55,7 +55,7 @@ set combines the data of all the data sources listed in
 
 The current release together with the open version (without ESE dataset) of the processed data is stored on Zenodo: 
 
-[![DOI](https://zenodo.org/badge/65747815.svg)](https://zenodo.org/badge/latestdoi/65747815)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1405595.svg)](https://doi.org/10.5281/zenodo.1405595)
 
 In order include all datasources, please install the package and recompile the full matched data.
 
@@ -235,7 +235,7 @@ power plants as the entries 0,1 and 2 of Dataset 2. The toolset detects those si
 If you want to cite powerplantmatching, the current release is stored on Zenodo with a release-specific DOI:
 
 
-[![DOI](https://zenodo.org/badge/65747815.svg)](https://zenodo.org/badge/latestdoi/65747815)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1405595.svg)](https://doi.org/10.5281/zenodo.1405595)
 
 
 ## Acknowledgements
