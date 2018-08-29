@@ -172,14 +172,14 @@ def matched_data(config=None,
         return (pd.read_csv(fn, index_col=0, header=header, encoding='utf-8')
                 .pipe(projectID_to_dict))
 
-    # config['matching_sources'] = [s.keys()[0] if isinstance(s, dict) else s
-    #                               for s in config['matching_sources']]
-    matched = collect(config['matching_sources'], **collection_kwargs)
+    matching_sources = [list(to_dict_if_string(a))[0] for a in
+                                  config['matching_sources']]
+    matched = collect(matching_sources, **collection_kwargs)
 
     if isinstance(config['fully_included_sources'], list):
         for source in config['fully_included_sources']:
             source = to_dict_if_string(source)
-            name = list(source)[0]
+            name, = list(source)
             extendby_kwargs.update({'query': source[name]})
             matched = extend_by_non_matched(matched, name, config=config,
                                             **extendby_kwargs)
@@ -189,7 +189,7 @@ def matched_data(config=None,
     # GEO and CARMA
     allowed_countries = config['CARMA_GEO_countries']
     if matched.columns.nlevels > 1:
-        other = list(set(config['matching_sources']) - set(['CARMA', 'GEO']))
+        other = matching_sources - set(['CARMA', 'GEO']))
         matched = (matched[~matched.projectID[other].isna().all(1) |
                            matched.Country.GEO.isin(allowed_countries) |
                            matched.Country.CARMA.isin(allowed_countries)]
