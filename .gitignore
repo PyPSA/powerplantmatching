@@ -90,7 +90,7 @@ ENV/
 .ropeproject
 config.yaml
 coal-types.xlsx
-duke_binaries_old
+build_release_archive.sh
 data/*WEPP*
 data/*wepp*
 data/in/*WEPP*
