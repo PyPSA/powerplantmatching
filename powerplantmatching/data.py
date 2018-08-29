@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-# Copyright 2015-2016 Fabian Hofmann (FIAS), Jonas Hoersch (FIAS)
+# Copyright 2016-2018 Fabian Hofmann (FIAS), Jonas Hoersch (KIT, IAI) and
+# Fabian Gotzens (FZJ, IEK-STE)
 
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
@@ -135,12 +136,13 @@ def OPSD(rawEU=False, rawDE=False,
                     Country=lambda df: (pd.Series(df.Country.apply(
                                         lambda c: cget(alpha_2=c).name),
                                         index=df.index).str.title()))
+            .pipe(correct_manually, 'OPSD', config=config)
             .pipe(config_filter, name='OPSD', config=config)
             .pipe(gather_set_info)
             .pipe(clean_technology)
             .pipe(scale_to_net_capacities,
                   (not data_config['OPSD']['net_capacity']))
-            .pipe(correct_manually, 'OPSD', config=config)
+
             )
 
 
@@ -1290,7 +1292,7 @@ def IRENA_stats(config=None):
          u'Renewable municipal waste': 'Waste',
          u'Solar photovoltaic': 'Solar'}
     df.loc[:, 'Fueltype'] = df.Technology.map(d)
-    df = df.pipe(config_filter, config=config).dropna(axis=1)
+    df = df.loc[lambda df: df.Fueltype.isin(config['target_fueltypes'])]
     d = {u'Concentrated solar power': 'CSP',
          u'Solar photovoltaic': 'PV',
          u'Onshore wind energy': 'Onshore',

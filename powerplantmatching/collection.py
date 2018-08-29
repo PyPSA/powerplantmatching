@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-# Copyright 2015-2016 Fabian Hofmann (FIAS), Jonas Hoersch (FIAS)
+# Copyright 2016-2018 Fabian Hofmann (FIAS), Jonas Hoersch (KIT, IAI) and
+# Fabian Gotzens (FZJ, IEK-STE)
 
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
@@ -171,6 +172,8 @@ def matched_data(config=None,
         return (pd.read_csv(fn, index_col=0, header=header, encoding='utf-8')
                 .pipe(projectID_to_dict))
 
+    # config['matching_sources'] = [s.keys()[0] if isinstance(s, dict) else s
+    #                               for s in config['matching_sources']]
     matched = collect(config['matching_sources'], **collection_kwargs)
 
     if isinstance(config['fully_included_sources'], list):
@@ -187,15 +190,20 @@ def matched_data(config=None,
     allowed_countries = config['CARMA_GEO_countries']
     if matched.columns.nlevels > 1:
         other = list(set(config['matching_sources']) - set(['CARMA', 'GEO']))
-        matched = matched[~matched.projectID[other].isna().all(1) |
-                          matched.Country.GEO.isin(allowed_countries) |
-                          matched.Country.CARMA.isin(allowed_countries)]
-        matched = matched[matched.lat.notnull().any(1)].reset_index(drop=True)
+        matched = (matched[~matched.projectID[other].isna().all(1) |
+                           matched.Country.GEO.isin(allowed_countries) |
+                           matched.Country.CARMA.isin(allowed_countries)]
+                   .reset_index(drop=True))
+        if config['remove_missing_coords']:
+            matched = (matched[matched.lat.notnull().any(1)]
+                       .reset_index(drop=True))
     else:
-        matched = matched[matched.projectID.apply(lambda x: sorted(x.keys())
-                          not in [['CARMA', 'GEO']]) |
-                          matched.Country.isin(allowed_countries)]
-        matched = matched[matched.lat.notnull()].reset_index(drop=True)
+        matched = (matched[matched.projectID.apply(lambda x: sorted(x.keys())
+                           not in [['CARMA', 'GEO']]) |
+                           matched.Country.isin(allowed_countries)]
+                   .reset_index(drop=True))
+        if config['remove_missing_coords']:
+            matched = matched[matched.lat.notnull()].reset_index(drop=True)
     matched.to_csv(fn, index_label='id', encoding='utf-8')
 
     if extend_by_vres:
@@ -332,11 +340,7 @@ def Carma_ENTSOE_ESE_GEO_GPD_IWPDCY_OPSD_WEPP_matched_reduced_VRE(
         base_year=2015, update_concat=False):
     if update_concat:
         logger.info('Read base reduced dataframe...')
-        df = (Carma_ENTSOE_ESE_GEO_GPD_IWPDCY_OPSD_WEPP_matched_reduced(
-                update=update,
-                use_saved_matches=use_saved_matches,
-                use_saved_aggregation=use_saved_aggregation)
-              .pipe(manual_corrections)
+        df = (matched_data()
               .pipe(average_empty_commyears)
               .pipe(extend_by_VRE, base_year=base_year, prune_beyond=True)
               .pipe(remove_oversea_areas))
