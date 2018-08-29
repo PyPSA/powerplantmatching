@@ -172,6 +172,8 @@ def matched_data(config=None,
         return (pd.read_csv(fn, index_col=0, header=header, encoding='utf-8')
                 .pipe(projectID_to_dict))
 
+    config['matching_sources'] = [s.keys()[0] if isinstance(s, dict) else s
+                                  for s in config['matching_sources']]
     matched = collect(config['matching_sources'], **collection_kwargs)
 
     if isinstance(config['fully_included_sources'], list):
