@@ -188,16 +188,18 @@ def matched_data(config=None,
     allowed_countries = config['CARMA_GEO_countries']
     if matched.columns.nlevels > 1:
         other = list(set(config['matching_sources']) - set(['CARMA', 'GEO']))
-        matched = matched[~matched.projectID[other].isna().all(1) |
-                          matched.Country.GEO.isin(allowed_countries) |
-                          matched.Country.CARMA.isin(allowed_countries)]
+        matched = (matched[~matched.projectID[other].isna().all(1) |
+                           matched.Country.GEO.isin(allowed_countries) |
+                           matched.Country.CARMA.isin(allowed_countries)]
+                   .reset_index(drop=True))
         if config['remove_missing_coords']:
             matched = (matched[matched.lat.notnull().any(1)]
                        .reset_index(drop=True))
     else:
-        matched = matched[matched.projectID.apply(lambda x: sorted(x.keys())
-                          not in [['CARMA', 'GEO']]) |
-                          matched.Country.isin(allowed_countries)]
+        matched = (matched[matched.projectID.apply(lambda x: sorted(x.keys())
+                           not in [['CARMA', 'GEO']]) |
+                           matched.Country.isin(allowed_countries)]
+                   .reset_index(drop=True))
         if config['remove_missing_coords']:
             matched = matched[matched.lat.notnull()].reset_index(drop=True)
     matched.to_csv(fn, index_label='id', encoding='utf-8')
