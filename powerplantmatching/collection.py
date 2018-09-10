@@ -189,7 +189,7 @@ def matched_data(config=None,
     # GEO and CARMA
     allowed_countries = config['CARMA_GEO_countries']
     if matched.columns.nlevels > 1:
-        other = matching_sources - set(['CARMA', 'GEO']))
+        other = matching_sources - set(['CARMA', 'GEO'])
         matched = (matched[~matched.projectID[other].isna().all(1) |
                            matched.Country.GEO.isin(allowed_countries) |
                            matched.Country.CARMA.isin(allowed_countries)]
