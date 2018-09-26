@@ -8,7 +8,7 @@ and merges the input data to create a new combining dataset, which includes all 
 The major advantage of this procedure is that the resulting dataset
 can be easily updated as soon as new input datasets are released.
 
-![Map of power plants in Europe](https://user-images.githubusercontent.com/19226431/43488643-ada49010-951a-11e8-844b-6625e5e9ac5e.png)
+![Map of power plants in Europe](https://user-images.githubusercontent.com/19226431/46086361-36a13080-c1a8-11e8-82ed-9f04167273e5.png)
 
 powerplantmatching was initially developed by the
 [Renewable Energy Group](https://fias.uni-frankfurt.de/physics/schramm/complex-renewable-energy-networks/)

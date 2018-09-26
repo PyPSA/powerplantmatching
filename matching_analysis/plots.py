@@ -157,11 +157,12 @@ fig.savefig('stats_matched_country_comparison.png', dpi=300)
 
 m = pm.collection.matched_data()
 m = m[~m.Fueltype.isin(excluded_fueltypes)]
-fig, ax = pm.plot.powerplant_map(m, scale=100)
+fig, ax = pm.plot.powerplant_map(m, scale=200)
 #ax.annotate('(a)', (-13, 65))
 fig.tight_layout(pad=0.2)
 fig.savefig('powerplantmap_without_wepp.png', dpi=300)
 
+# %%
 m = pm.collection.Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_matched_reduced()
 m = m[~m.Fueltype.isin(excluded_fueltypes)]
 fig, ax = pm.plot.powerplant_map(m, scale=100, alternative_color_style=True)

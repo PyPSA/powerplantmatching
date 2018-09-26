@@ -143,7 +143,7 @@ fuel_to_color:
     Hydro: royalblue
     Run-of-river: navy
     Ror: navy
-    Lignite: indianred
+    Lignite: orangered
     Nuclear: yellow
     Solar: gold
     Windoff: cornflowerblue

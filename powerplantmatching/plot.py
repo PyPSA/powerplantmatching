@@ -20,7 +20,6 @@ import pandas as pd
 import collections
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
-from mpl_toolkits.basemap import Basemap
 from matplotlib.patches import Circle, Ellipse
 from matplotlib.legend_handler import HandlerPatch
 from matplotlib import rcParams, cycler
@@ -41,6 +40,24 @@ from .utils import lookup, set_uncommon_fueltypes_to_other
 import logging
 logger = logging.getLogger(__name__)
 
+basemap_present = True
+try:
+    from mpl_toolkits.basemap import Basemap
+except:
+    basemap_present = False
+
+
+cartopy_present = True
+try:
+    import cartopy
+    import cartopy.crs as ccrs
+except:
+    cartopy_present = False
+
+if not basemap_present and not cartopy_present:
+    logger.warn('Neither mpl_toolkits.basemap module nor cartopy existent.')
+
+
 
 def Show_all_plots():
     comparison_single_matched_bar()
@@ -57,26 +74,27 @@ def fueltype_stats(df):
             labels=stats.index, autopct='%1.1f%%')
 
 
-def powerplant_map(df, scale=1e5,
-                   european_bounds=True, legendscale=1, **kwargs):
+def powerplant_map(df, scale=1e5, european_bounds=True,
+                   legendscale=1, **kwargs):
     # TODO: add reference circle in legend
     figsize = kwargs.get('figsize', (7, 5))
     with sns.axes_style('darkgrid'):
         df = set_uncommon_fueltypes_to_other(df)
         shown_fueltypes = df.Fueltype.unique()
         df = df[df.lat.notnull()]
-        fig, ax = plt.subplots(figsize=figsize)
+        sub_kw = {'projection': ccrs.PlateCarree()} if cartopy_present else {}
+        fig, ax = plt.subplots(figsize=figsize, subplot_kw=sub_kw)
 
         ax.scatter(df.lon, df.lat, s=df.Capacity/scale,
                    c=df.Fueltype.map(get_config()['fuel_to_color']),
-                   edgecolor='face')
+                   edgecolor='face', facecolor='face')
 
         ax.set_xlabel('')
         ax.set_ylabel('')
         if european_bounds:
             ax.set_xlim(-13, 34)
-            ax.set_ylim(35, 71.65648314)
-        draw_basemap(fillcontinents=False)
+            ax.set_ylim(35, 74)
+        draw_basemap(fillcontinents=False, ax=ax)
         ax.set_facecolor('white')
         fig.tight_layout(pad=0.5)
 
@@ -87,10 +105,12 @@ def powerplant_map(df, scale=1e5,
                                               facecolor=x)).tolist(), [])
         fig.legend(handles, legendcols.index,
                    handler_map=make_handler_map_to_scale_circles_as_in(ax),
-                   ncol=kwargs.get('ncol', 3),
+                   ncol=kwargs.get('ncol', len(handles)),
                    loc=kwargs.get('loc', "upper left"),
-                   fontsize=kwargs.get('fontsize', 11),
-                   frameon=False,)
+#                   frameon=True,
+                   facecolor='w', framealpha=0.5, mode='expand')
+        if cartopy_present:
+            ax.outline_patch.set_visible(False)
         return fig, ax
 
 
@@ -854,19 +874,37 @@ def make_legend_circles_for(sizes, scale=1.0, **kw):
     return [Circle((0, 0), radius=(s/scale)**0.5, **kw) for s in sizes]
 
 
-def draw_basemap(resolution='l', ax=None, country_linewidth=0.3,
+def draw_basemap(resolution=True, ax=None, country_linewidth=0.3,
                  coast_linewidth=0.4, zorder=None, fillcontinents=True,
                  **kwds):
-    if ax is None:
-        ax = plt.gca()
-    m = Basemap(*(list(ax.viewLim.min) + list(ax.viewLim.max)),
-                resolution=resolution, ax=ax, **kwds)
-    m.drawcoastlines(linewidth=coast_linewidth, zorder=zorder)
-    m.drawcountries(linewidth=country_linewidth, zorder=zorder)
-    if fillcontinents:
-        m.fillcontinents(color='lavender', lake_color='skyblue', alpha=0.25,
-                         zorder=0)
-    return m
+
+    if basemap_present:
+        resolution = 'l' if isinstance(resolution, bool) else resolution
+        if ax is None:
+            ax = plt.gca()
+        m = Basemap(*(list(ax.viewLim.min) + list(ax.viewLim.max)),
+                    resolution=resolution, ax=ax, **kwds)
+        m.drawcoastlines(linewidth=coast_linewidth, zorder=zorder)
+        m.drawcountries(linewidth=country_linewidth, zorder=zorder)
+        if fillcontinents:
+            m.fillcontinents(color='lavender', lake_color='skyblue',
+                             alpha=0.25, zorder=0)
+
+    if cartopy_present:
+        if ax is None:
+            ax = plt.gca(projection=ccrs.PlateCarree())
+        resolution = '50m' if isinstance(resolution, bool) else resolution
+        assert resolution in ['10m', '50m', '110m'], ('Resolution has to be '
+                             "one of '10m', '50m', '110m'")
+        ax.set_extent((list(ax.viewLim.min) + list(ax.viewLim.max)),
+                      crs=ccrs.PlateCarree())
+        ax.coastlines(linewidth=0.4, zorder=-1, resolution=resolution)
+        border = cartopy.feature.BORDERS.with_scale(resolution)
+        ax.add_feature(border, linewidth=0.3)
+        ax.outline_patch.set_visible(False)
+        if fillcontinents:
+            land = cartopy.feature.LAND.with_scale(resolution)
+            ax.add_feature(land, facecolor='lavender', alpha=0.25)
 
 
 orderdedfuels = ['Hydro',  # 'Solar', 'Wind',
