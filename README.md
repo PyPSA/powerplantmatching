@@ -21,7 +21,7 @@ as part of the
 [Stromnetze Research Initiative](http://forschung-stromnetze.info/projekte/grundlagen-und-konzepte-fuer-effiziente-dezentrale-stromnetze/).
 
 
-## `Warning (Nov 27 2018) - no more python2 support`
+### **Warning (Nov 27 2018) - no more python2 support**
 
 Future commits of powerplantmatching will no longer support python2. The code will probably still work in most of the cases, however please consider updating your conda environment (if installed via conda) or moving to python 3 if installed with pip only. 
 
