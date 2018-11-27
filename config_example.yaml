@@ -23,7 +23,7 @@ fully_included_sources:
     - CARMA: Country == 'France' and Fueltype == 'Hydro'
     # - IWPDCY: lat == lat and Country == 'Sweden'
 
-parallel_duke_processes: true
+parallel_duke_processes: false
 process_limit: 2
 
 #data config

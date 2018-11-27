@@ -3,14 +3,14 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - basemap
+  - cartopy
   - geopy
   - ipython
   - matplotlib
   - networkx
   - numpy
   - pandas
-  - python=2
+  - python=3
   - pyyaml
   - requests
   - scipy

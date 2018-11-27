@@ -75,7 +75,7 @@ def fueltype_stats(df):
 
 
 def powerplant_map(df, scale=1e5, european_bounds=True,
-                   legendscale=1, **kwargs):
+                   legendscale=1, resolution=True, **kwargs):
     # TODO: add reference circle in legend
     figsize = kwargs.get('figsize', (7, 5))
     with sns.axes_style('darkgrid'):
@@ -94,7 +94,7 @@ def powerplant_map(df, scale=1e5, european_bounds=True,
         if european_bounds:
             ax.set_xlim(-13, 34)
             ax.set_ylim(35, 74)
-        draw_basemap(fillcontinents=False, ax=ax)
+        draw_basemap(fillcontinents=False, ax=ax, resolution=resolution)
         ax.set_facecolor('white')
         fig.tight_layout(pad=0.5)
 

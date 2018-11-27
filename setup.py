@@ -22,7 +22,7 @@ setup(
     include_package_data=True,
     install_requires=['numpy','scipy','pandas>=0.23.0','networkx>=1.10',
                       'pycountry', 'xlrd', 'seaborn', 'pyyaml', 'requests',
-                      'matplotlib', 'basemap', 'geopy', 'xlrd'],
+                      'matplotlib', 'cartopy', 'geopy', 'xlrd'],
     classifiers=[
 #        'Development Status :: 3 - Alpha',
         'Environment :: Console',
