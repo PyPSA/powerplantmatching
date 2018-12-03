@@ -237,10 +237,36 @@ power plants as the entries 0,1 and 2 of Dataset 2. The toolset detects those si
 
 ## Citing powerplantmatching
 
-If you want to cite powerplantmatching, the current release is stored on Zenodo with a release-specific DOI:
+If you want to cite powerplantmatching, use the following paper
 
+
+- F. Gotzens, H. Heinrichs, J. Hörsch, and F. Hofmann, [Performing energy modelling exercises in a transparent way - The issue of data quality in power plant databases](https://www.sciencedirect.com/science/article/pii/S2211467X18301056?dgcid=author), Energy Strategy Reviews, vol. 23, pp. 1–12, Jan. 2019.
+
+with bibtex
+
+
+```
+@article{gotzens_performing_2019,
+	title = {Performing energy modelling exercises in a transparent way - {The} issue of data quality in power plant databases},
+	volume = {23},
+	issn = {2211467X},
+	url = {https://linkinghub.elsevier.com/retrieve/pii/S2211467X18301056},
+	doi = {10.1016/j.esr.2018.11.004},
+	language = {en},
+	urldate = {2018-12-03},
+	journal = {Energy Strategy Reviews},
+	author = {Gotzens, Fabian and Heinrichs, Heidi and Hörsch, Jonas and Hofmann, Fabian},
+	month = jan,
+	year = {2019},
+	pages = {1--12}
+}
+```
+
+
+and/or the current release stored on Zenodo with a release-specific DOI:
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1405595.svg)](https://doi.org/10.5281/zenodo.1405595)
+
 
 
 ## Acknowledgements

@@ -89,7 +89,7 @@ target_fueltypes:
 target_sets:
     - CHP
     - PP
-    - Stores
+    - Store
 target_technologies:
     - CCGT
     - OCGT
