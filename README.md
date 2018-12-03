@@ -265,7 +265,7 @@ with bibtex
 
 and/or the current release stored on Zenodo with a release-specific DOI:
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1405595.svg)](https://doi.org/10.5281/zenodo.1405595)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1889465.svg)](https://doi.org/10.5281/zenodo.1889465)
 
 
 
