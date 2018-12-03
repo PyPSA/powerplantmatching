@@ -21,7 +21,7 @@ from __future__ import absolute_import, print_function
 
 from .config import get_config
 from .duke import duke
-from .utils import _data_out
+from .utils import _data_out, get_obj_if_Acc, get_name
 
 import numpy as np
 import pandas as pd
@@ -42,6 +42,7 @@ def clean_powerplantname(df):
         dataframe to be cleaned
 
     """
+    df = get_obj_if_Acc(df)
     df = df[df.Name.notnull()]
     name = df.Name.replace(regex=True, value=' ',
                            to_replace=['-', '/', ',', '\(', '\)', '\[', '\]',
@@ -269,6 +270,8 @@ def aggregate_units(df, dataset_name=None,
         want to have aggregated powerplants without running the
         aggregation algorithm again
     """
+    df = get_obj_if_Acc(df)
+
     if config is None:
         config = get_config()
 
@@ -298,6 +301,8 @@ def aggregate_units(df, dataset_name=None,
                 'Efficiency': pd.Series.mean  # note this is weighted mean
                 })[config['target_columns']].to_dict()
 
+    dataset_name = get_name(df) if dataset_name is None else dataset_name
+
     if pre_clean_name:
         logger.info("Cleaning plant names in '{}'.".format(dataset_name))
         df = clean_powerplantname(df)
@@ -307,6 +312,7 @@ def aggregate_units(df, dataset_name=None,
 
     path_name = _data_out('aggregations/aggregation_groups_{}.csv'
                           .format(dataset_name), config=config)
+
 
     if use_saved_aggregation & save_aggregation:
         try:

@@ -66,6 +66,20 @@ logger.addHandler(fileHandler)
 text = str if sys.version_info >= (3, 0) else unicode
 
 
+class Accessor(object):
+    """
+    Helper class to define super class of PowerPlantAccessor
+    """
+    pass
+
+
+def get_obj_if_Acc(obj):
+    if isinstance(obj, Accessor):
+        return obj._obj
+    else:
+        return obj
+
+
 def lookup(df, keys=None, by='Country, Fueltype', exclude=None, unit='MW'):
     """
     Returns a lookup table of the dataframe df with rounded numbers.
@@ -85,6 +99,7 @@ def lookup(df, keys=None, by='Country, Fueltype', exclude=None, unit='MW'):
         list of fueltype to exclude from the analysis
     """
 
+    df = get_obj_if_Acc(df)
     if unit == 'GW':
         scaling = 1000.
     elif unit == 'MW':
@@ -101,6 +116,8 @@ def lookup(df, keys=None, by='Country, Fueltype', exclude=None, unit='MW'):
         return df.groupby(by).Capacity.sum()
 
     if isinstance(df, list):
+        if keys is None:
+            keys = [get_name(d) for d in df]
         dfs = pd.concat([lookup_single(a) for a in df], axis=1, keys=keys)
         dfs = dfs.fillna(0.)
         return (dfs/scaling).round(3)
@@ -122,6 +139,8 @@ def config_filter(df, name=None, config=None):
     config : dict, default None
         Configuration overrides varying from the config.yaml file
     """
+    df = get_obj_if_Acc(df)
+
     if config is None:
         config = get_config()
     # individual filter from config.yaml
@@ -138,8 +157,8 @@ def config_filter(df, name=None, config=None):
 
 def correct_manually(df, name, config=None):
     """
-    Update powerplant data by manual corrections with corresponding values
-    in powerplantmatching/data/in/manual_corrections.csv. Specify the name
+    Update powerplant data based on stored corrections in
+    powerplantmatching/data/in/manual_corrections.csv. Specify the name
     of the data by the second argument.
 
     Parameters
@@ -194,6 +213,8 @@ def set_uncommon_fueltypes_to_other(df, fillna_other=True, **kwargs):
         ['Bioenergy', 'Geothermal', 'Mixed fuel types', 'Electro-mechanical',
         'Hydrogen Storage']
     """
+    df = get_obj_if_Acc(df)
+
     default = ['Bioenergy', 'Geothermal', 'Mixed fuel types',
                'Electro-mechanical', 'Hydrogen Storage']
     fueltypes = kwargs.get('fueltypes', default)
@@ -213,11 +234,45 @@ def read_csv_if_string(data):
     return data
 
 
-def to_list_if_string(obj):
+def to_categorical_columns(df):
+    """
+    Helper function to set datatype of columns 'Fueltype', 'Country', 'Set',
+    'File', 'Technology' to categorical.
+    """
+    cols = ['Fueltype', 'Country', 'Set', 'File']
+    cats = {'Fueltype': get_config()['target_fueltypes'],
+            'Country': get_config()['target_countries'],
+            'Set': get_config()['target_sets']}
+    return df.assign(**{c: df[c].astype('category') for c in cols})\
+             .assign(**{c: lambda df: df[c].cat.set_categories(v)
+                     for c,v in cats.items()})
+
+
+def set_column_name(df, name):
+    """
+    Helper function to associate dataframe with a name. This is done with the
+    columns-axis name, as pd.DataFrame do not have a name attribute.
+    """
+    df.columns.name = name
+    return df
+
+
+def get_name(df):
+    """
+    Helper function to associate dataframe with a name. This is done with the
+    columns-axis name, as pd.DataFrame do not have a name attribute.
+    """
+    if df.columns.name is None:
+        return 'unnamed data'
+    else:
+        return df.columns.name
+
+
+def to_list_if_other(obj):
     """
     Convenience function to ensure list-like output
     """
-    if isinstance(obj, str):
+    if not isinstance(obj, list):
         return [obj]
     else:
         return obj
@@ -248,6 +303,8 @@ def select_by_projectID(df, projectID, dataset_name=None):
     """
     Convenience function to select data by its projectID
     """
+    df = get_obj_if_Acc(df)
+
     if isinstance(df.projectID.iloc[0], text):
         return df.query("projectID == @projectID")
     else:
@@ -340,6 +397,11 @@ def country_alpha_2(country):
         return ''
 
 
+def convert_country_to_alpha2(df):
+    df = get_obj_if_Acc(df)
+    return df.assign(Country = df.Country.apply(country_alpha_2))
+
+
 def breakdown_matches(df):
     """
     Function to inspect grouped and matched entries of a matched
@@ -351,6 +413,8 @@ def breakdown_matches(df):
         Matched data with not empty projectID-column. Keys of projectID must
         be specified in powerplantmatching.data.data_config
     """
+    df = get_obj_if_Acc(df)
+
     from .data import data_config
     assert('projectID' in df)
     sources = set(df.projectID.apply(dict.keys).apply(list).sum())
@@ -403,7 +467,7 @@ def parse_Geoposition(location, zipcode='', country='',
     if location is None or location == float:
         return np.nan
 
-    countries = [(c, country_alpha_2(c)) for c in to_list_if_string(country)]
+    countries = [(c, country_alpha_2(c)) for c in to_list_if_other(country)]
 
     for country, country_abbr in countries:
         if use_saved_locations:
@@ -454,6 +518,8 @@ def fill_geoposition(df, use_saved_locations=False):
         Whether to firstly compare with cached results in
         powerplantmatching/data/parsed_locations.csv
     """
+    df = get_obj_if_Acc(df)
+
     logger.info("Parse geopositions for missing lat/lon values")
 
     if use_saved_locations and get_config()['google_api_key'] is None:

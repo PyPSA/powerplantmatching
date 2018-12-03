@@ -21,7 +21,7 @@ Functions to modify and adjust power plant datasets
 from __future__ import absolute_import, print_function
 import pandas as pd
 import numpy as np
-from .utils import lookup, _data_in, to_list_if_string
+from .utils import lookup, _data_in, get_obj_if_Acc, to_list_if_other
 from .config import get_config
 from .cleaning import (aggregate_units, clean_technology)
 import logging
@@ -50,6 +50,7 @@ def extend_by_non_matched(df, extend_by, label=None, query=None,
         correspond to the ones of the dataset
     """
     from .data import data_config
+    df = get_obj_if_Acc(df)
 
     if config is None:
         config = get_config()
@@ -87,7 +88,7 @@ def extend_by_non_matched(df, extend_by, label=None, query=None,
                          ignore_index=True)
 
 
-def rescale_capacities_to_country_totals(df, fueltypes):
+def rescale_capacities_to_country_totals(df, fueltypes=None):
     """
     Returns a extra column 'Scaled Capacity' with an up or down scaled capacity
     in order to match the statistics of the ENTSOe country totals. For every
@@ -104,7 +105,10 @@ def rescale_capacities_to_country_totals(df, fueltypes):
         fueltype that should be scaled
     """
     from .data import Capacity_stats
+    df = get_obj_if_Acc(df)
     df = df.copy()
+    if fueltypes is None:
+        fueltypes = df.Fueltype.unique()
     if isinstance(fueltypes, str):
         fueltypes = [fueltypes]
     stats_df = lookup(df).loc[fueltypes]
@@ -124,7 +128,9 @@ def rescale_capacities_to_country_totals(df, fueltypes):
 
 
 def fill_missing_duration(df):
+    df = get_obj_if_Acc(df)
     mean_duration = df[df.Set == 'Store'].groupby('Fueltype').Duration.mean()
+    df = get_obj_if_Acc(df)
     for store in mean_duration.index:
         df.loc[(df['Set'] == 'Store') & (df['Fueltype'] == store),
                'Duration'] = mean_duration.at[store]
@@ -148,6 +154,7 @@ def extend_by_VRE(df, base_year, prune_beyond=True):
          Extended dataframe
     """
     from .data import IRENA_stats, OPSD_VRE
+    df = get_obj_if_Acc(df)
     df = df.copy()
     # Drop Solar (except CSP), Wind and Bioenergy which are to be replaced
     df = df[~(((df.Fueltype == 'Solar') & (df.Technology != 'CSP')) |
@@ -178,7 +185,7 @@ def extend_by_VRE(df, base_year, prune_beyond=True):
     vre.loc[:, 'File'] = 'IRENA_CapacityStatistics2017.csv'
     # Concatenate
     logger.info('Concatenate...')
-    cc = pd.concat([df, vre_DK, vre_CH_DE, vre], ignore_index=True)
+    cc = pd.concat([df, vre_DK, vre_CH_DE, vre], ignore_index=True, sort=False)
     cc = cc.loc[:, cols]
     if prune_beyond:
         cc = cc[(cc.YearCommissioned <= base_year) |
@@ -187,10 +194,11 @@ def extend_by_VRE(df, base_year, prune_beyond=True):
     return cc
 
 
-def average_empty_commyears(df):
+def fill_missing_commyears(df):
     """
     Fills the empty commissioning years with averages.
     """
+    df = get_obj_if_Acc(df)
     df = df.copy()
     # 1st try: Fill with both country- and fueltypespecific averages
     df.YearCommissioned.fillna(df.groupby(['Country', 'Fueltype'])
@@ -248,7 +256,7 @@ def aggregate_VRE_by_commyear(df, target_fueltypes=None, agg_geo_by=None):
     if target_fueltypes is None:
         target_fueltypes = ['Wind', 'Solar', 'Bioenergy']
     df = df[df.Fueltype.isin(target_fueltypes)]
-    df = average_empty_commyears(df)
+    df = fill_missing_commyears(df)
     df.Technology.fillna('-', inplace=True)
     df = (df.groupby(['Country', 'YearCommissioned', 'Fueltype', 'Technology'])
             .agg(f).reset_index().replace({'-': np.NaN}))
@@ -435,6 +443,7 @@ def gross_to_net_factors(reference='opsd', aggfunc='median',
 
 
 def scale_to_net_capacities(df, is_gross=True, catch_all=True):
+    df = get_obj_if_Acc(df)
     if is_gross:
         factors = gross_to_net_factors()
         for ftype, tech in factors.index.get_values():

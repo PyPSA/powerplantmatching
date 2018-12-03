@@ -21,7 +21,7 @@ Functions for linking and combining different datasets
 from __future__ import absolute_import, print_function
 
 from .config import get_config
-from .utils import read_csv_if_string, _data_out, parmap
+from .utils import read_csv_if_string, _data_out, parmap, get_obj_if_Acc
 from .duke import duke
 from .cleaning import clean_technology
 from .data import data_config
@@ -241,6 +241,7 @@ def reduce_matched_dataframe(df, show_orig_names=False, config=None):
         MultiIndex dataframe with the matched powerplants, as obtained from
         combined_dataframe() or match_multiple_datasets()
     """
+    df = get_obj_if_Acc(df)
 
     def concat_strings(s):
         if s.isnull().all():

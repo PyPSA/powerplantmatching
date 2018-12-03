@@ -23,10 +23,9 @@
 import pandas as pd
 import numpy as np
 import pycountry
-from .collection import \
-    Carma_ENTSOE_ESE_GEO_GPD_IWPDCY_OPSD_WEPP_matched_reduced_VRE
+from .collection import matched_data
 from .heuristics import set_denmark_region_id, set_known_retire_years
-from .utils import _data_out
+from .utils import _data_out, get_obj_if_Acc
 import logging
 logger = logging.getLogger(__name__)
 cget = pycountry.countries.get
@@ -42,6 +41,7 @@ def to_pypsa_names(df):
     Returns:
         pandas.DataFrame -- Column renamed dataframe
     """
+    df = get_obj_if_Acc(df)
     return (df.assign(Fueltype=df['Fueltype'].str.lower())
               .rename(columns={'Fueltype': 'carrier',
                                'Capacity': 'p_nom',
@@ -55,6 +55,7 @@ def to_pypsa_network(df, network, buslist=None):
     to allocate the plants (buslist).
 
     """
+    df = get_obj_if_Acc(df)
     from scipy.spatial import cKDTree as KDTree
     substation_lv_i = network.buses.index[network.buses['substation_lv']]
     substation_lv_i = substation_lv_i.intersection(
@@ -87,7 +88,7 @@ def to_TIMES(df=None, use_scaled_capacity=False, baseyear=2015):
     Transform a given dataset into the TIMES format and export as .xlsx.
     """
     if df is None:
-        df = Carma_ENTSOE_ESE_GEO_GPD_IWPDCY_OPSD_WEPP_matched_reduced_VRE()
+        df = matched_data()
         if df is None:
             raise RuntimeError("The data to be exported does not yet exist.")
     df = df.loc[(df.YearCommissioned.isnull()) |

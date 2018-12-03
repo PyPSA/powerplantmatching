@@ -38,7 +38,7 @@ from .cleaning import (gather_fueltype_info, gather_set_info,
                        gather_technology_info, clean_powerplantname,
                        clean_technology)
 from .utils import (fill_geoposition, _data, _data_in, _data_out,
-                    correct_manually, config_filter)
+                    correct_manually, config_filter, set_column_name)
 from .heuristics import scale_to_net_capacities
 from six import iteritems, string_types
 
@@ -136,6 +136,7 @@ def OPSD(rawEU=False, rawDE=False,
                     Country=lambda df: (pd.Series(df.Country.apply(
                                         lambda c: cget(alpha_2=c).name),
                                         index=df.index).str.title()))
+            .pipe(set_column_name, 'OPSD')
             .pipe(correct_manually, 'OPSD', config=config)
             .pipe(config_filter, name='OPSD', config=config)
             .pipe(gather_set_info)
@@ -224,6 +225,7 @@ def GEO(raw=False, config=None):
             .pipe(gather_technology_info, search_col=['FuelClassification1'],
                   config=config)
             .pipe(gather_set_info)
+            .pipe(set_column_name, 'GEO')
             .pipe(config_filter, name='GEO', config=config)
             .pipe(clean_powerplantname)
             .pipe(clean_technology, generalize_hydros=True)
@@ -289,6 +291,7 @@ def CARMA(raw=False, config=None):
                                     'OTH': 'Other'}))
             .pipe(clean_powerplantname)
             .drop_duplicates()
+            .pipe(set_column_name, 'CARMA')
             .pipe(config_filter, name='CARMA', config=config)
             .pipe(gather_technology_info, config=config)
             .pipe(gather_set_info)
@@ -324,6 +327,7 @@ def IWPDCY(config=None):
             .assign(File='IWPDCY.csv',
                     projectID=lambda df: 'IWPDCY' + df.index.astype(str))
             .dropna(subset=['Capacity'])
+            .pipe(set_column_name, 'IWPDCY')
             .pipe(config_filter, name='IWPDY', config=config)
             .pipe(gather_set_info)
             .pipe(correct_manually, 'IWPDCY', config=config))
@@ -391,6 +395,7 @@ def Capacity_stats(raw=False, level=2, config=None, **selectors):
                           'Other or unspecified energy sources': 'Other',
                           'Tide, wave, and ocean': 'Other'}))
                   .loc[lambda df: df.Fueltype.isin(config['target_fueltypes'])]
+                  .pipe(set_column_name, selectors['source'].title())
                   )
     entsoedata.columns = entsoedata.columns.str.title()
     return entsoedata
@@ -452,6 +457,7 @@ def GPD(raw=False, filter_other_dbs=True, config=None):
                                     'Gas': 'Natural Gas',
                                     'Wave and Tidal': 'Other'}))
             .pipe(clean_powerplantname)
+            .pipe(set_column_name, 'GPD')
             .pipe(config_filter, name='GPD', config=config)
             .pipe(gather_technology_info, config=config)
             .pipe(gather_set_info)
@@ -464,11 +470,6 @@ data_config['GPD'] = {'read_function': GPD,
                       'reliability_score':  3,
                       'source_file': _data_in('global_power_'
                                               'plant_database.csv')}
-
-
-def WRI(**kwargs):
-    logger.warning("'WRI' deprecated soon, please use GPD instead")
-    return GPD(**kwargs)
 
 
 def ESE(raw=False, config=None):
@@ -533,6 +534,7 @@ def ESE(raw=False, config=None):
             .pipe(clean_technology, generalize_hydros=True)
             .replace(dict(Fueltype={u'Electro-chemical': 'Battery',
                                     u'Pumped Hydro Storage': 'Hydro'}))
+            .pipe(set_column_name, 'ESE')
             .pipe(config_filter, name='ESE', config=config)
             .pipe(correct_manually, 'ESE', config=config))
 
@@ -722,6 +724,7 @@ def ENTSOE(update=False, raw=False, entsoe_token=None, config=None):
                         Capacity=lambda df: pd.to_numeric(df.Capacity))
                 .pipe(clean_powerplantname)
                 .pipe(fill_geoposition, use_saved_locations=True)
+                .pipe(set_column_name, 'ENTSOE')
                 .pipe(config_filter, config=config)
                 .replace({'Capacity': {0.: np.nan}})
                 .dropna(subset=['Capacity'])
@@ -737,6 +740,7 @@ def ENTSOE(update=False, raw=False, entsoe_token=None, config=None):
                              index_col='id', encoding='utf-8')
 
     return (entsoe
+            .pipe(set_column_name, 'ENTSOE')
             .pipe(config_filter, name='ENTSOE', config=config)
             .pipe(scale_to_net_capacities,
                   (not data_config['ENTSOE']['net_capacity']))
@@ -910,6 +914,7 @@ def WEPP(raw=False, config=None):
     # Done!
     wepp.datasetID = 'WEPP'
     return (wepp
+            .pipe(set_column_name, 'WEPP')
             .pipe(config_filter, name='WEPP', config=config)
             .pipe(scale_to_net_capacities,
                   (not data_config['WEPP']['net_capacity']))
@@ -1010,6 +1015,7 @@ def UBA(header=9, skipfooter=26, prune_wind=True, prune_solar=True,
     if prune_solar:
         uba = uba.loc[lambda x: x.Fueltype != 'Solar']
     return (uba
+            .pipe(set_column_name, 'UBA')
             .pipe(config_filter, name='UBA', config=config)
             .pipe(scale_to_net_capacities,
                   (not data_config['UBA']['net_capacity']))
@@ -1141,6 +1147,7 @@ def BNETZA(header=9, sheet_name='Gesamtkraftwerksliste BNetzA',
                           Set=bnetza.Set.fillna('Nein')
                           .str.title()
                           .replace({u'Ja': 'CHP', u'Nein': 'PP'}))
+            .pipe(set_column_name, 'BNETZA')
             .pipe(config_filter, name='BNETZA', config=config)
             .pipe(scale_to_net_capacities,
                   not data_config['BNETZA']['net_capacity'])
@@ -1237,6 +1244,7 @@ def OPSD_VRE(config=None):
          u'Offshore wind energy': 'Offshore'}
     df.Technology.replace(d, inplace=True)
     return (df
+            .pipe(set_column_name, 'OPSD_VRE')
             .pipe(config_filter, config=config)
             .drop('Name', axis=1))
 
@@ -1299,4 +1307,4 @@ def IRENA_stats(config=None):
          u'Offshore wind energy': 'Offshore'}
     df.Technology.replace(d, inplace=True)
     df.loc[:, 'Set'] = 'PP'
-    return df.reset_index(drop=True)
+    return df.reset_index(drop=True).pipe(set_column_name, 'IRENA Statistics')
