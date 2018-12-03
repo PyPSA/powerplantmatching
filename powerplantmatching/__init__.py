@@ -33,6 +33,22 @@ import matplotlib.pyplot as plt
 
 @pd.api.extensions.register_dataframe_accessor("powerplant")
 class PowerPlantAccessor(utils.Accessor):
+    """
+    Accessor object for DataFrames created with powerplantmatching.
+    This simplifies the access to common functions applicable to dataframes
+    with powerplant data. Note even though this is a general DataFrame
+    accessor, the functions will only work for powerplantmatching related
+    DataFrames.
+
+
+    Examples
+    --------
+
+    import powerplantmatching as pm
+    entsoe = pm.data.ENTSOE()
+    entsoe.powerplant.plot_aggregated()
+
+    """
     def __init__(self, pandas_obj):
         self._obj = pandas_obj
 
