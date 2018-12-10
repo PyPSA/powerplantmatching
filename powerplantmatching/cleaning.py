@@ -21,7 +21,7 @@ from __future__ import absolute_import, print_function
 
 from .config import get_config
 from .duke import duke
-from .utils import _data_out, get_obj_if_Acc, get_name
+from .utils import _data_out, get_obj_if_Acc, get_name, set_column_name
 
 import numpy as np
 import pandas as pd
@@ -339,5 +339,6 @@ def aggregate_units(df, dataset_name=None,
                   for col in weighted_cols})
           .reset_index(drop=True)
           .pipe(clean_powerplantname)
-          .reindex(columns=config['target_columns']))
+          .reindex(columns=config['target_columns'])
+          .pipe(set_column_name, dataset_name))
     return df

@@ -95,15 +95,19 @@ class PowerPlantAccessor(utils.Accessor):
     def get_name(self):
         return self._obj.columns.name
 
-    def match_with(self, df, labels, use_saved_matches=False,
-                   config=None, **dukeargs):
-        from .matching import combine_multiple_datasets
+    def match_with(self, df, labels=None, use_saved_matches=False,
+                   config=None, reduced=True, **dukeargs):
+        from .matching import combine_multiple_datasets, \
+                              reduce_matched_dataframe
         from .utils import to_list_if_other
 
-        datasets = [self._obj] + to_list_if_other(df)
-        return combine_multiple_datasets(
-                datasets, labels, use_saved_matches=use_saved_matches,
+        dfs = [self._obj] + to_list_if_other(df)
+        res = combine_multiple_datasets(
+                dfs, labels, use_saved_matches=use_saved_matches,
                 config=config, **dukeargs)
+        if reduced:
+            return res.pipe(reduce_matched_dataframe, config=config)
+        return res
     pass
 
 

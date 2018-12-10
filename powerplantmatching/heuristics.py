@@ -21,7 +21,7 @@ Functions to modify and adjust power plant datasets
 from __future__ import absolute_import, print_function
 import pandas as pd
 import numpy as np
-from .utils import lookup, _data_in, get_obj_if_Acc, to_list_if_other
+from .utils import lookup, _data_in, get_obj_if_Acc, to_list_if_other, get_name
 from .config import get_config
 from .cleaning import (aggregate_units, clean_technology)
 import logging
@@ -58,6 +58,7 @@ def extend_by_non_matched(df, extend_by, label=None, query=None,
     if isinstance(extend_by, str):
         label = extend_by
         extend_by = data_config[label]['read_function']()
+    label = get_name(extend_by) if label is None else label
 
     if df.columns.nlevels > 1:
         included_ids = df['projectID', label].dropna().sum()

@@ -21,7 +21,8 @@ Functions for linking and combining different datasets
 from __future__ import absolute_import, print_function
 
 from .config import get_config
-from .utils import read_csv_if_string, _data_out, parmap, get_obj_if_Acc
+from .utils import read_csv_if_string, _data_out, parmap, \
+                    get_obj_if_Acc, get_name
 from .duke import duke
 from .cleaning import clean_technology
 from .data import data_config
@@ -161,6 +162,8 @@ def link_multiple_datasets(datasets, labels, use_saved_matches=False,
         config = get_config()
 
     dfs = list(map(read_csv_if_string, datasets))
+    labels = [get_name(df) for df in dfs]
+
     combinations = list(itertools.combinations(range(len(labels)), 2))
 
     def comp_dfs(dfs_lbs):
@@ -175,7 +178,7 @@ def link_multiple_datasets(datasets, labels, use_saved_matches=False,
     return cross_matches(all_matches, labels=labels)
 
 
-def combine_multiple_datasets(datasets, labels, use_saved_matches=False,
+def combine_multiple_datasets(datasets, labels=None, use_saved_matches=False,
                               config=None, **dukeargs):
     """
     Duke-based horizontal match of multiple databases. Returns the

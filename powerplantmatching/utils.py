@@ -118,7 +118,8 @@ def lookup(df, keys=None, by='Country, Fueltype', exclude=None, unit='MW'):
     if isinstance(df, list):
         if keys is None:
             keys = [get_name(d) for d in df]
-        dfs = pd.concat([lookup_single(a) for a in df], axis=1, keys=keys)
+        dfs = pd.concat([lookup_single(a) for a in df], axis=1,
+                         keys=keys, sort=False)
         dfs = dfs.fillna(0.)
         return (dfs/scaling).round(3)
     else:
@@ -420,7 +421,7 @@ def breakdown_matches(df):
     sources = set(df.projectID.apply(dict.keys).apply(list).sum())
     sources = pd.concat(
             [data_config[s]['read_function']().set_index('projectID')
-             for s in sources])
+             for s in sources], sort=False)
     if df.index.nlevels > 1:
         stackedIDs = (df['projectID'].stack()
                       .apply(pd.Series).stack()
