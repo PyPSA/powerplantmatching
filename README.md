@@ -5,8 +5,7 @@ plant databases.
 This package provides ready-to-use power plant data for the European power system.
 Starting from openly available power plant datasets, the package cleans, standardizes
 and merges the input data to create a new combining dataset, which includes all the important information.
-The major advantage of this procedure is that the resulting dataset
-can be easily updated as soon as new input datasets are released.
+The package allows to easily update the combined data as soon as new input datasets are released.
 
 ![Map of power plants in Europe](https://user-images.githubusercontent.com/19226431/46086361-36a13080-c1a8-11e8-82ed-9f04167273e5.png)
 
@@ -60,7 +59,7 @@ set combines the data of all the data sources listed in
 
 The current release together with the open version (without ESE dataset) of the processed data is stored on Zenodo: 
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1405595.svg)](https://doi.org/10.5281/zenodo.1405595)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1889465.svg)](https://doi.org/10.5281/zenodo.1889465)
 
 In order include all datasources, please install the package and recompile the full matched data.
 
@@ -172,6 +171,9 @@ The considered reliability scores are:
 
 
 
+## Getting Started
+
+A small presentation of the tool is given in the [jupyter notebook]() 
 
 ## Module Structure
 
