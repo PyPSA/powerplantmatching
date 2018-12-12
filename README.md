@@ -173,7 +173,7 @@ The considered reliability scores are:
 
 ## Getting Started
 
-A small presentation of the tool is given in the [jupyter notebook]() 
+A small presentation of the tool is given in the [jupyter notebook](https://github.com/FRESNA/powerplantmatching/blob/master/Example%20of%20Use.ipynb) 
 
 ## Module Structure
 
