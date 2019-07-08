@@ -19,6 +19,7 @@ Processed datasets of merged and/or adjusted data
 """
 from __future__ import print_function
 
+from . import data
 from .utils import (set_uncommon_fueltypes_to_other, _data_out, parmap,
                     to_dict_if_string, projectID_to_dict)
 from .data import data_config
@@ -67,8 +68,8 @@ def collect(datasets, update=False, use_saved_aggregation=True,
         conf = data_config[name].copy()
         conf.update(custom_config.get(name, {}))
 
-        df = conf['read_function'](config=config,
-                                   **conf.get('read_kwargs', {}))
+        get_df = getattr(data, name)
+        df = get_df(config=config, **conf.get('read_kwargs', {}))
         if not conf.get('aggregated_units', False):
             return aggregate_units(df,
                                    use_saved_aggregation=use_saved_aggregation,

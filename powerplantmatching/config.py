@@ -33,7 +33,7 @@ def get_config(filename=None, **overrides):
             "Copy config_example.yaml to config.yaml and fill in details, "
             "as necessary.".format(filename))
     with open(filename) as f:
-        config = yaml.load(f)
+        config = yaml.load(f, Loader=yaml.CFullLoader)
         config.update(overrides)
 
         sha1digest = hashlib.sha1(pickle.dumps(overrides)).digest()

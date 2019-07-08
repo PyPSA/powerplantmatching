@@ -21,9 +21,9 @@ Functions to modify and adjust power plant datasets
 from __future__ import absolute_import, print_function
 import pandas as pd
 import numpy as np
-from .utils import lookup, _data_in, get_obj_if_Acc, to_list_if_other, get_name
+from .utils import lookup, _data, get_obj_if_Acc, get_name
 from .config import get_config
-from .cleaning import (aggregate_units, clean_technology)
+from .cleaning import aggregate_units, clean_technology
 import logging
 from six import iteritems
 logger = logging.getLogger(__name__)
@@ -49,7 +49,7 @@ def extend_by_non_matched(df, extend_by, label=None, query=None,
         string is used if the columns of the additional database do not
         correspond to the ones of the dataset
     """
-    from .data import data_config
+    from . import data
     df = get_obj_if_Acc(df)
 
     if config is None:
@@ -57,7 +57,7 @@ def extend_by_non_matched(df, extend_by, label=None, query=None,
 
     if isinstance(extend_by, str):
         label = extend_by
-        extend_by = data_config[label]['read_function']()
+        extend_by = getattr(data, extend_by)()
     label = get_name(extend_by) if label is None else label
 
     if df.columns.nlevels > 1:
@@ -461,7 +461,7 @@ def scale_to_net_capacities(df, is_gross=True, catch_all=True):
 
 
 def PLZ_to_LatLon_map():
-    return pd.read_csv(_data_in('PLZ_Coords_map.csv'), index_col='PLZ')
+    return pd.read_csv(_data('PLZ_Coords_map.csv'), index_col='PLZ')
 
 
 def set_known_retire_years(df):

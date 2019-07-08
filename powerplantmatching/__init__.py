@@ -32,7 +32,7 @@ import matplotlib.pyplot as plt
 
 
 @pd.api.extensions.register_dataframe_accessor("powerplant")
-class PowerPlantAccessor(utils.Accessor):
+class PowerPlantAccessor():
     """
     Accessor object for DataFrames created with powerplantmatching.
     This simplifies the access to common functions applicable to dataframes
@@ -55,7 +55,8 @@ class PowerPlantAccessor(utils.Accessor):
     from .plot import powerplant_map as plot_map
     from .utils import (lookup, set_uncommon_fueltypes_to_other,
                         select_by_projectID, breakdown_matches,
-                        fill_geoposition, convert_country_to_alpha2)
+                        fill_geoposition, convert_country_to_alpha2,
+                        convert_alpha2_to_country)
     from .export import to_pypsa_names
     from .heuristics import (
             extend_by_non_matched, scale_to_net_capacities,
