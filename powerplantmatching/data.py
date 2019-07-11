@@ -24,26 +24,23 @@ import numpy as np
 import pandas as pd
 import requests
 import xml.etree.ElementTree as ET
-import re, os
+import re
 import pycountry
 import logging
 import entsoe as entsoe_api
-from six.moves import reduce
 
 from .config import get_config
 from .cleaning import (gather_fueltype_info, gather_set_info,
                        gather_technology_info, clean_powerplantname,
                        clean_technology)
 from .utils import (parse_if_not_stored,
-                    fill_geoposition, _data, _data_in,
+                    fill_geoposition, _package_data, _data_in,
                     correct_manually, config_filter, set_column_name)
 from .heuristics import scale_to_net_capacities
-from six import iteritems
 
 logger = logging.getLogger(__name__)
 cget = pycountry.countries.get
 net_caps = get_config()['display_net_caps']
-data_config = {}
 
 
 def OPSD(rawEU=False, rawDE=False, update=False,
@@ -84,10 +81,10 @@ def OPSD(rawEU=False, rawDE=False, update=False,
                                       'Lon': 'lon',
                                       'Energy_Source': 'Fueltype',
                                       'Commissioned': 'YearCommissioned',
-                                      'Eic_Code': 'projectID'})
+                                      'Eic_Code': 'eic_code'})
                      .eval('Retrofit = YearCommissioned')
-                     .assign(projectID = lambda s: s.projectID.fillna(
-                             'OEU' + pd.Series(s.index.astype(str), s.index)))
+                     .assign(projectID = lambda s: 'OEU' +
+                             pd.Series(s.index.astype(str), s.index))
                      .reindex(columns=config['target_columns']))
 
     opsd_DE = (opsd_DE.rename(columns=str.title)
@@ -98,13 +95,14 @@ def OPSD(rawEU=False, rawDE=False, update=False,
                                        'Country_Code': 'Country',
                                        'Capacity_Net_Bnetza': 'Capacity',
                                        'Commissioned': 'YearCommissioned',
-                                       'Eic_Code_Plant': 'projectID'})
-                      .assign(Name = lambda d: d.Name_Bnetza.fillna(d.Name_Uba),
-                              Fueltype = lambda d:
+                                       'Eic_Code_Plant': 'eic_code',
+                                       'Id': 'projectID'})
+                      .assign(
+                      Name = lambda d: d.Name_Bnetza.fillna(d.Name_Uba),
+                      Fueltype = lambda d:
                                   d.Fueltype.fillna(d.Energy_Source_Level_1),
-                              Retrofit = lambda d:
-                                  d.Retrofit.fillna(d.YearCommissioned),
-                              projectID = lambda s: s.projectID.fillna(s.Id)))
+                      Retrofit = lambda d:
+                                  d.Retrofit.fillna(d.YearCommissioned)))
     if statusDE is not None:
         opsd_DE = opsd_DE.loc[opsd_DE.Status.isin(statusDE)]
     opsd_DE = opsd_DE.reindex(columns=config['target_columns'])
@@ -163,8 +161,9 @@ def GEO(raw=False, config=None):
                    'Longitude_Start': 'lon',
                    'Latitude_Start': 'lat'}
 
-    geo = pd.read_csv(_data_in(config['GEO']['fn']), low_memory=False,
-                      usecols=list(rename_cols.keys()))
+#    geo = pd.read_csv(_data_in(config['GEO']['fn']), low_memory=False,
+#                      usecols=list(rename_cols.keys()))
+    geo = parse_if_not_stored('GEO')
     if raw:
         return geo
 
@@ -173,8 +172,9 @@ def GEO(raw=False, config=None):
               .assign(Retrofit=lambda s: s.Retrofit.astype(float),
                       projectID=lambda s: 'GEO' + s.projectID.astype(str))
               .assign(YearCommissioned=(lambda s: s.YearCommissioned
-                                        .str.replace("[a-zA-Z]", '')
-                                        .apply(pd.to_datetime, errors='coerce')
+                                        .str[:4]
+                                        .apply(pd.to_numeric, errors='coerce')
+                                        .where(lambda x: x > 1900)
                                         .fillna(s.Retrofit)))
               .assign(Retrofit=lambda s: s.Retrofit.fillna(s.YearCommissioned))
               .query("Country in @countries")
@@ -210,9 +210,10 @@ def CARMA(raw=False, config=None):
     config = get_config() if config is None else config
 
 #    carmadata = pd.read_csv(_datconfig['CARMA']['fn'], low_memory=False)
-    if raw: return carmadata
+    carma = parse_if_not_stored('CARMA', config=config)
+    if raw: return carma
 
-    return (carmadata
+    return (carma
             .rename(columns={'Geoposition': 'Geoposition',
                              'cap': 'Capacity',
                              'city': 'location',
@@ -245,9 +246,35 @@ def CARMA(raw=False, config=None):
             .pipe(gather_technology_info, config=config)
             .pipe(gather_set_info)
             .pipe(clean_technology)
-            .pipe(scale_to_net_capacities,
-                  (not data_config['CARMA']['net_capacity']))
-            .pipe(correct_manually, 'CARMA', config=config))
+            .pipe(scale_to_net_capacities, not config['CARMA']['net_capacity'])
+#            .pipe(correct_manually, 'CARMA', config=config)
+            )
+
+def JRC(raw=False, config=None, update=False):
+    """
+    Importer for the JRC Hydro-power plants database retrieves from
+    https://github.com/energy-modelling-toolkit/hydro-power-database.
+    """
+    config = get_config() if config is None else config
+
+    df = parse_if_not_stored('JRC', update, config, error_bad_lines=False)
+    if raw:
+        return df
+    return (df.rename(columns={'id': 'projectID',
+                              'name': 'Name',
+                              'installed_capacity_MW': 'Capacity',
+                              'country_code': 'Country',
+                              'type': 'Technology',
+                              'dam_height_m': 'DamHeight_m',
+                              'volume_Mm3': 'Volume_Mm3'})
+            .eval('Duration = storage_capacity_MWh / Capacity')
+            .replace({'HDAM': 'Reservoir',
+                      'HPHS': 'Pumped Storage',
+                      'HROR': 'Run-Of-River'})
+            .drop(columns = ['pypsa_id', 'GEO', 'storage_capacity_MWh'])
+            .assign(Set='Store', Fueltype='Hydro')
+            .powerplant.convert_alpha2_to_country()
+            .pipe(config_filter))
 
 
 def IWPDCY(config=None):
@@ -264,7 +291,7 @@ def IWPDCY(config=None):
     """
     config = get_config() if config is None else config
 
-    return (pd.read_csv(data_config['IWPDCY']['source_file'],
+    return (pd.read_csv(config['IWPDCY']['fn'],
                         encoding='utf-8', index_col='id')
             .assign(File='IWPDCY.csv',
                     projectID=lambda df: 'IWPDCY' + df.index.astype(str))
@@ -422,8 +449,8 @@ def ESE(raw=False, update=False, config=None):
                              'Technology Broad Category': 'Fueltype'})
             .assign(Set='Store',
                     projectID='ESE' + df.index.astype(str),
-                    YearCommissioned=lambda df: df['Commissioned']
-                                .apply(pd.to_datetime, errors='coerce'),
+                    YearCommissioned=lambda df: df['Commissioned'].str[-4:]
+                                .apply(pd.to_numeric, errors='coerce'),
                     Capacity = df['Rated Power'] /1e3)
             .query("Status == 'Operational' & Country in @target_countries")
             .pipe(clean_powerplantname)
@@ -468,11 +495,9 @@ def ENTSOE(update=False, raw=False, entsoe_token=None, config=None):
     """
     config = get_config() if config is None else config
 
-    def parse_entsoe(url):
-        if config['entsoe_token'] is not np.nan:
-            entsoe_token = config['entsoe_token']
+    def parse_entsoe():
         assert entsoe_token is not None, "entsoe_token is missing"
-
+        url = 'https://transparency.entsoe.eu/api'
         # retrieved from pd.read_html('https://transparency.entsoe.eu/content/stat
         # ic_content/Static%20content/web%20api/Guide.html#_request_methods')[-1]
         domains = list(entsoe_api.mappings.BIDDING_ZONES.values())
@@ -504,11 +529,19 @@ def ENTSOE(update=False, raw=False, entsoe_token=None, config=None):
             entsoe = entsoe.append(df_domain, ignore_index=True)
         return entsoe
 
-    df = parse_if_not_stored('ENTSOE', update, config, parse_entsoe)
+    if config['entsoe_token'] is not None:
+        entsoe_token = config['entsoe_token']
+        df = parse_if_not_stored('ENTSOE', update, config, parse_entsoe)
+    else:
+        if update:
+            logger.info('No entsoe_token in config.yaml given, '
+                        'falling back to stored version.')
+        df = parse_if_not_stored('ENTSOE', update, config)
+
     if raw: return df
 
     fuelmap = entsoe_api.mappings.PSRTYPE_MAPPINGS
-    country_map_entsoe = pd.read_csv(_data('entsoe_country_codes.csv'),
+    country_map_entsoe = pd.read_csv(_package_data('entsoe_country_codes.csv'),
                                      index_col=0).rename(index=str).Country
     countries = config['target_countries']
 
@@ -519,7 +552,8 @@ def ENTSOE(update=False, raw=False, entsoe_token=None, config=None):
             .reindex(columns=config['target_columns'])
             .replace({'Fueltype': fuelmap})
             .drop_duplicates('projectID')
-            .assign(Country=lambda df: df.projectID.str[:2]
+            .assign(eic_code = lambda df: df.projectID,
+                    Country=lambda df: df.projectID.str[:2]
                                          .map(country_map_entsoe),
                     Name=lambda df: df.Name.str.title(),
                     Fueltype=lambda df: df.Fueltype.replace(
@@ -549,6 +583,32 @@ def ENTSOE(update=False, raw=False, entsoe_token=None, config=None):
             )
 
 
+#def OSM():
+#    """
+#    Parser and Importer for Open Street Map power plant data.
+#    """
+#    import requests
+#    overpass_url = "http://overpass-api.de/api/interpreter"
+#    overpass_query = """
+#    [out:json][timeout:210];
+#    area["name"="Luxembourg"]->.boundaryarea;
+#    (
+#    // query part for: “power=plant”
+#    node["power"="plant"](area.boundaryarea);
+#    way["power"="plant"](area.boundaryarea);
+#    relation["power"="plant"](area.boundaryarea);
+#    node["power"="generator"](area.boundaryarea);
+#    way["power"="generator"](area.boundaryarea);
+#    relation["power"="generator"](area.boundaryarea);
+#    );
+#    out body;
+#    """
+#    response = requests.get(overpass_url,
+#                            params={'data': overpass_query})
+#    data = response.json()
+#    df = pd.DataFrame(data['elements'])
+#    df = pd.concat([df.drop(columns='tags'), df.tags.apply(pd.Series)], axis=1)
+#
 
 def WEPP(raw=False, config=None):
     """
@@ -874,8 +934,8 @@ def BNETZA(header=9, sheet_name='Gesamtkraftwerksliste BNetzA',
                                      bnetza.Name.fillna(''))
                               .fillna(bnetza.Ort).str.strip(),
               YearCommissioned=
-                  bnetza.YearCommissioned
-                        .apply(pd.to_datetime, errors='coerce'),
+                  bnetza.YearCommissioned.str[:4]
+                        .apply(pd.to_numeric, errors='coerce'),
               Blockname=bnetza.Blockname.replace(
                       {'.*(GT|gasturbine).*': 'OCGT',
                        '.*(DT|HKW|(?i)dampfturbine|(?i)heizkraftwerk).*':
@@ -931,7 +991,8 @@ def BNETZA(header=9, sheet_name='Gesamtkraftwerksliste BNetzA',
                               .replace({'Ja': 'CHP', 'Nein': 'PP'}))
             .pipe(set_column_name, 'BNETZA')
 #            .pipe(config_filter, name='BNETZA', config=config)
-            .pipe(correct_manually, 'BNETZA', config=config))
+#            .pipe(correct_manually, 'BNETZA', config=config)
+            )
 
 
 def OPSD_VRE(config=None, raw=False):
@@ -985,7 +1046,7 @@ def IRENA_stats(config=None):
     # "Unpivot"
     df = pd.melt(df, id_vars=['Indicator', 'Technology', 'Country'],
                  var_name='Year',
-                 value_vars=[text(i) for i in range(2000, 2017, 1)],
+                 value_vars=[str(i) for i in range(2000, 2017, 1)],
                  value_name='Capacity')
     # Drop empty
     df.dropna(axis=0, subset=['Capacity'], inplace=True)

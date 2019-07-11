@@ -17,12 +17,13 @@
 from __future__ import absolute_import, print_function
 import logging
 import os
-from os.path import dirname
+from os.path import dirname, join
 import subprocess as sub
 import shutil
 import tempfile
 import pandas as pd
 import numpy as np
+from .config import _package_data
 logger = logging.getLogger(__name__)
 
 
@@ -69,20 +70,20 @@ def duke(datasets, labels=['one', 'two'], singlematch=False,
     dedup = isinstance(datasets, pd.DataFrame)
     if dedup:
         # Deduplication mode
-        config = "Deleteduplicates.xml"
+        duke_config = "Deleteduplicates.xml"
         datasets = [datasets]
     else:
-        config = "Comparison.xml"
+        duke_config = "Comparison.xml"
 
-    duke_bin_dir = os.path.join(dirname(os.path.realpath(__file__)), '..',
-                                'duke_binaries')
+    duke_bin_dir = _package_data('duke_binaries')
+
     os.environ['CLASSPATH'] = \
         os.pathsep.join([os.path.join(duke_bin_dir, r)
                         for r in os.listdir(duke_bin_dir)])
     tmpdir = tempfile.mkdtemp()
 
     try:
-        shutil.copyfile(os.path.join(dirname(__file__), "..", "data", config),
+        shutil.copyfile(os.path.join(_package_data(duke_config)),
                         os.path.join(tmpdir, "config.xml"))
 
         logger.debug("Comparing files: %s", ", ".join(labels))

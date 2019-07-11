@@ -20,8 +20,7 @@ Utility functions for checking data completness and supporting other functions
 
 from __future__ import print_function, absolute_import
 
-from .config import get_config
-from os.path import dirname
+from .config import get_config, _data_in, _data_out, _package_data
 import os
 import time
 import pandas as pd
@@ -29,37 +28,18 @@ import six
 import pycountry as pyc
 import logging
 import numpy as np
-import sys
 import multiprocessing
 from ast import literal_eval as liteval
 
-
-def _data(fn):
-    return os.path.join(dirname(__file__), '..', 'data', fn)
-
-
-def _data_in(fn):
-    return os.path.join(dirname(__file__), '..', 'data', 'in', fn)
-
-
-def _data_out(fn, config=None):
-    if config is None:
-        return os.path.join(dirname(__file__), '..', 'data', 'out',
-                            'default', fn)
-    else:
-        return os.path.join(dirname(__file__), '..', 'data', 'out',
-                            config['hash'], fn)
-
-
-# Logging: General Settings
+## Logging: General Settings
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
-# Logging: File
-logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] "
-                                 "[%(levelname)-5.5s]  %(message)s")
-fileHandler = logging.FileHandler(_data_out('../PPM.log'))
-fileHandler.setFormatter(logFormatter)
-logger.addHandler(fileHandler)
+#logging.basicConfig(level=logging.INFO)
+## Logging: File
+#logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] "
+#                                 "[%(levelname)-5.5s]  %(message)s")
+#fileHandler = logging.FileHandler(_data_out('../PPM.log'))
+#fileHandler.setFormatter(logFormatter)
+#logger.addHandler(fileHandler)
 # Logging: Console
 # consoleHandler = logging.StreamHandler()
 # logger.addHandler(consoleHandler)
@@ -138,7 +118,7 @@ def parse_if_not_stored(name, update=False, config=None,
             logger.info(f'Retrieving data from {df_config["url"]}')
             data = pd.read_csv(df_config['url'], **kwargs)
         else:
-            data = parse_func(df_config['url'])
+            data = parse_func()
         data.to_csv(path)
     else:
         data = pd.read_csv(path, **kwargs)
@@ -192,7 +172,7 @@ def correct_manually(df, name, config=None):
     if config is None:
         config = get_config()
 
-    corrections = pd.read_csv(_data('manual_corrections.csv'),
+    corrections = pd.read_csv(_package_data('manual_corrections.csv'),
                                encoding='utf-8',
                                parse_dates=['last_update'])
 
@@ -328,7 +308,7 @@ def select_by_projectID(df, projectID, dataset_name=None):
     """
     df = get_obj_if_Acc(df)
 
-    if isinstance(df.projectID.iloc[0], text):
+    if isinstance(df.projectID.iloc[0], str):
         return df.query("projectID == @projectID")
     else:
         return df[df['projectID'].apply(lambda x:
@@ -411,7 +391,7 @@ def parmap(f, arg_list, config=None):
 
 
 
-country_map = pd.read_csv(_data('country_codes.csv'))\
+country_map = pd.read_csv(_package_data('country_codes.csv'))\
                 .replace({'name':{'Czechia': 'Czech Republic'}})
 
 def country_alpha2(country):
@@ -452,16 +432,24 @@ def breakdown_matches(df):
     """
     df = get_obj_if_Acc(df)
 
-    from .data import data_config
+    from . import data
     assert('projectID' in df)
-    sources = set(df.projectID.apply(dict.keys).apply(list).sum())
+    if isinstance(df.projectID.iloc[0], list):
+        sources = [df.powerplant.get_name()]
+        single_source_b = True
+    else :
+        sources = set(df.projectID.apply(dict.keys).apply(list).sum())
+        single_source_b = False
     sources = pd.concat(
-            [data_config[s]['read_function']().set_index('projectID')
+            [getattr(data, s)().set_index('projectID')
              for s in sources], sort=False)
     if df.index.nlevels > 1:
         stackedIDs = (df['projectID'].stack()
                       .apply(pd.Series).stack()
                       .dropna())
+    elif single_source_b:
+        stackedIDs = (df['projectID']
+                      .apply(pd.Series).stack())
     else:
         stackedIDs = (df['projectID']
                       .apply(pd.Series).stack()
@@ -470,7 +458,7 @@ def breakdown_matches(df):
     return (sources
             .reindex(stackedIDs)
             .set_axis(stackedIDs.to_frame('projectID')
-                      .set_index('projectID', append=True).index,
+                      .set_index('projectID', append=True).droplevel(-2).index,
                       inplace=False))
 
 
@@ -540,7 +528,7 @@ def fill_geoposition(df, use_saved_locations=False, saved_only=False):
                        'want to enable it.')
 
     if use_saved_locations:
-        locs = pd.read_csv(_data('parsed_locations.csv'), index_col=[0, 1])
+        locs = pd.read_csv(_package_data('parsed_locations.csv'), index_col=[0, 1])
         df = df.where(df[['lat', 'lon']].notnull().all(1),
                  df.drop(columns=['lat', 'lon'])
                    .join(locs, on=['Name', 'Country']))
@@ -553,7 +541,7 @@ def fill_geoposition(df, use_saved_locations=False, saved_only=False):
                 axis=1)
     geodata.drop_duplicates(subset=['Name', 'Country'])\
            .set_index(['Name', 'Country'])\
-           .to_csv(_data('parsed_locations.csv'), mode='a', header=False)
+           .to_csv(_package_data('parsed_locations.csv'), mode='a', header=False)
 
     df.loc[missing, ['lat', 'lon']] = geodata
 

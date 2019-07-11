@@ -240,7 +240,6 @@ keys = ['WEPP', 'OPSD', 'Matched w/ WEPP', 'Matched w/o WEPP']
 dfs = [wepp, opsd, df_w_wepp, df_wo_wepp]
 dfs = [d[lambda df: (~df.Fueltype.isin(excluded_fueltypes))] for d in dfs]
 # Plot
-reload(pm.plot)
 fig, ax = pm.plot.area_yearcommissioned(dfs, keys)
 # fig.tight_layout()
 fig.savefig('capacity_additions_century.png', dpi=200)

@@ -27,9 +27,10 @@ from __future__ import absolute_import
 from .utils import _data_out
 from . import (config, cleaning, data, heuristics, export, matching, utils,
                collection, plot)
+from .collection import matched_data as powerplants
 import pandas as pd
 import matplotlib.pyplot as plt
-
+import os
 
 @pd.api.extensions.register_dataframe_accessor("powerplant")
 class PowerPlantAccessor():

@@ -118,3 +118,5 @@ data/out/default/matches/*.csv
 data/out/default/Export_Stock_TIMES*.xlsx
 data/out/default/Matched_BNETZA_UBA.csv
 data/out/default/Matched_BNETZA_UBA_reduced.csv
+Pipfile
+Pipfile.lock

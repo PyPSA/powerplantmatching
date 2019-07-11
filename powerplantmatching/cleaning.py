@@ -23,6 +23,7 @@ from .config import get_config
 from .duke import duke
 from .utils import _data_out, get_obj_if_Acc, get_name, set_column_name
 
+import os
 import numpy as np
 import pandas as pd
 import networkx as nx
@@ -297,7 +298,10 @@ def aggregate_units(df, dataset_name=None,
                 'YearCommissioned': pd.Series.min,
                 'Retrofit': pd.Series.max,
                 'projectID': pd.Series.tolist,
+                'eic_code': lambda s: s.dropna().tolist(),
                 'Duration': pd.Series.sum,  # note this is weighted sum
+                'Volume_Mm3':pd.Series.sum,
+                'DamHeight_m': pd.Series.sum,
                 'Efficiency': pd.Series.mean  # note this is weighted mean
                 })[config['target_columns']].to_dict()
 
@@ -315,14 +319,14 @@ def aggregate_units(df, dataset_name=None,
 
 
     if use_saved_aggregation & save_aggregation:
-        try:
+        if os.path.exists(path_name):
             logger.info("Reading saved aggregation groups for dataset '{}'."
                         .format(dataset_name))
             groups = (pd.read_csv(path_name, header=None, index_col=0)
                         .reindex(index=df.index))
             df = df.assign(grouped=groups.values)
-        except (ValueError, IOError):
-            logger.warning("Non-existing saved aggregation groups for dataset"
+        else:
+            logger.info("Non-existing saved aggregation groups for dataset"
                            " '{0}', continuing by aggregating again"
                            .format(dataset_name))
             if 'grouped' in df:
@@ -332,8 +336,10 @@ def aggregate_units(df, dataset_name=None,
         duplicates = duke(df)
         df = cliques(df, duplicates)
         if save_aggregation:
-            df.grouped.to_csv(path_name)
+            df.grouped.to_csv(path_name, header=False)
+
     df = df.groupby('grouped').agg(props_for_groups)
+
     df = (df
           .assign(**{col: df[col].div(df['Capacity'])
                   for col in weighted_cols})

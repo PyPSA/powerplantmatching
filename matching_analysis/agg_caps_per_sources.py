@@ -12,14 +12,13 @@ dfs = pm.config.get_config()['matching_sources']
 s = pm.data.Capacity_stats()
 
 for name in dfs:
-    df = pm.data.data_config[name]['read_function']().dropna(subset=["lat"])
+    df = getattr(pm.data, name)().dropna(subset=["lat"])
     fig, ax = pm.plot.factor_comparison([df, s], [name, 'stats'])
     fig.savefig('factor_plot_{}.png'.format(name), dpi=300)
 
 name = 'Matched Data'
-m = pm.collection.matched_data()
-fig, ax = pm.plot.factor_comparison([m, s],
-                                    [name, 'ENTSOE SO&AF'])
+m = pm.powerplants()
+fig, ax = pm.plot.factor_comparison([m, s], [name, 'ENTSOE SO\&AF'])
 fig.savefig('factor_plot_{}.png'.format(name), dpi=300)
 
 

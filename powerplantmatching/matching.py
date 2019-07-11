@@ -25,8 +25,8 @@ from .utils import read_csv_if_string, _data_out, parmap, \
                     get_obj_if_Acc, get_name
 from .duke import duke
 from .cleaning import clean_technology
-from .data import data_config
 
+import os
 import pandas as pd
 import numpy as np
 import itertools
@@ -83,11 +83,11 @@ def compare_two_datasets(datasets, labels, use_saved_matches=False,
     saving_path = _data_out('matches/matches_{}_{}.csv'
                             .format(*np.sort(labels)), config=config)
     if use_saved_matches:
-        try:
+        if os.path.exists(saving_path):
             logger.info('Reading saved matches for datasets {} and {}'
                         .format(*labels))
             return pd.read_csv(saving_path, index_col=0)
-        except (ValueError, IOError):
+        else:
             logger.warning("Non-existing saved matches for dataset '{}', '{}'"
                            " continuing by matching again".format(*labels))
     links = duke(datasets, labels=labels, **dukeargs)
@@ -257,7 +257,8 @@ def reduce_matched_dataframe(df, show_orig_names=False, config=None):
 
     # define which databases are present and get their reliability_score
     sources = df.columns.levels[1]
-    rel_scores = (pd.DataFrame(data_config).loc['reliability_score', sources]
+    rel_scores = (pd.Series({
+            source: config[source]['reliability_score'] for source in sources})
                     .sort_values(ascending=False))
 
     def prioritise_reliability(df, how='mean'):
@@ -283,7 +284,7 @@ def reduce_matched_dataframe(df, show_orig_names=False, config=None):
 
         return df.apply(lambda ds: ds.dropna().iloc[0], axis=1)
 
-    sdf = pd.DataFrame.from_dict({
+    sdf = pd.DataFrame({
         'Name': prioritise_reliability(df['Name']),
         'Fueltype': (prioritise_reliability(df['Fueltype']
                                             .replace({'Other': np.nan}))
@@ -293,12 +294,15 @@ def reduce_matched_dataframe(df, show_orig_names=False, config=None):
         'Set': prioritise_reliability(df['Set']),
         'Capacity': prioritise_reliability(df['Capacity'], how='median'),
         'Duration': prioritise_reliability(df['Duration']),
+        'DamHeight_m': prioritise_reliability(df['DamHeight_m']),
+        'Volume_Mm3': prioritise_reliability(df['Volume_Mm3']),
         'YearCommissioned': df['YearCommissioned'].min(axis=1),
         'Retrofit': df['Retrofit'].max(axis=1),
         'lat': prioritise_reliability(df['lat']),
         'lon': prioritise_reliability(df['lon']),
-        'File': df['File'].apply(concat_strings, axis=1),
-        'projectID': df['projectID'].apply(lambda x: dict(x.dropna()), axis=1)
+#        'File': df['File'].apply(concat_strings, axis=1),
+        'projectID': df['projectID'].apply(lambda x: dict(x.dropna()), axis=1),
+        'eic_code': df['eic_code'].apply(lambda x: dict(x.dropna()), axis=1)
     }).reindex(config['target_columns'], axis=1)
 
     if show_orig_names:

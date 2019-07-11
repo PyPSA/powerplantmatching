@@ -18,12 +18,12 @@
 Functions to modify and adjust power plant datasets
 """
 
-from __future__ import absolute_import, print_function
+from .utils import lookup, get_obj_if_Acc, get_name
+from .config import get_config, _package_data
+from .cleaning import aggregate_units, clean_technology
+
 import pandas as pd
 import numpy as np
-from .utils import lookup, _data, get_obj_if_Acc, get_name
-from .config import get_config
-from .cleaning import aggregate_units, clean_technology
 import logging
 from six import iteritems
 logger = logging.getLogger(__name__)
@@ -461,7 +461,7 @@ def scale_to_net_capacities(df, is_gross=True, catch_all=True):
 
 
 def PLZ_to_LatLon_map():
-    return pd.read_csv(_data('PLZ_Coords_map.csv'), index_col='PLZ')
+    return pd.read_csv(_package_data('PLZ_Coords_map.csv'), index_col='PLZ')
 
 
 def set_known_retire_years(df):
