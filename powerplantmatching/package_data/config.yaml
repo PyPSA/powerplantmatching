@@ -1,0 +1,235 @@
+# io config
+entsoe_token: 
+google_api_key: 
+opsd_vres_base_year: 2016
+
+
+#matching config
+matching_sources:
+    - CARMA
+    - ENTSOE
+    - GEO
+    - GPD
+    - JRC
+    - OPSD
+    # - ESE
+    # - IWPDCY
+    # - WEPP
+
+fully_included_sources:
+    - OPSD: Country not in ['Switzerland']
+    - JRC: Country not in ['Switzerland']
+    - ENTSOE: Country not in ['Spain', 'Switzerland', 'United Kingdom']
+    - CARMA: Country == 'France' and Fueltype == 'Hydro'
+    - GEO: Country == 'Czech Republic' and Fueltype == 'Lignite'
+    # - ESE: Country not in ['Switzerland']
+    # - IWPDCY: lat == lat and Country == 'Sweden'
+
+parallel_duke_processes: false
+process_limit: 2
+remove_missing_coords: true
+
+#data config
+BNETZA:
+  reliability_score: 3
+  fn: Kraftwerksliste_2017_2.xlsx
+  url: https://www.bundesnetzagentur.de/SharedDocs/Downloads/DE/Sachgebiete/Energie/Unternehmen_Institutionen/Versorgungssicherheit/Erzeugungskapazitaeten/Kraftwerksliste/Kraftwerksliste_2019_1.xlsx;jsessionid=17E419F28D025C7DD9FC6E2BEB3D088F?__blob=publicationFile&v=2
+CARMA:
+  net_capacity: false
+  reliability_score: 1
+  url: https://vfs.fias.science/f/e1d9d9d587/?raw=1
+  fn: Full_CARMA_2009_Dataset_1.csv
+ENTSOE:
+  reliability_score: 4
+  url: https://vfs.fias.science/f/ebbdf6ba8c/?raw=1
+  fn: entsoe_powerplants.csv
+ESE:
+  reliability_score: 6
+  fn: projects.csv
+  url: http://energystorageexchange.org/data/projects.csv?q=all #not openly available
+JRC:
+  reliability_score: 6
+  fn: jrc-hydro-power-plant-database.csv
+  url: https://zenodo.org/record/2669146/files/energy-modelling-toolkit/hydro-power-database-3.zip?download=1
+GEO:
+  net_capacity: false
+  reliability_score: 3
+  url: https://vfs.fias.science/f/b4607c76b4/?raw=1
+  fn: global_energy_observatory_power_plants.csv
+GPD:
+  reliability_score: 3
+  fn: global_power_plant_database.csv
+  #if outdated, look at http://datasets.wri.org/dataset/globalpowerplantdatabase
+  url: http://datasets.wri.org/dataset/540dcf46-f287-47ac-985d-269b04bea4c6/resource/c240ed2e-1190-4d7e-b1da-c66b72e08858/download/globalpowerplantdatabasev120
+IWPDCY:
+  aggregated_units: true
+  reliability_score: 3
+  fn: IWPDCY.csv
+OPSD_DE:
+  reliability_score: 5
+  fn: conventional_power_plants_DE.csv
+  url: https://data.open-power-system-data.org/conventional_power_plants/2018-12-20/conventional_power_plants_DE.csv
+OPSD_EU:
+  reliability_score: 5
+  fn: conventional_power_plants_EU.csv
+  url: https://data.open-power-system-data.org/conventional_power_plants/2018-12-20/conventional_power_plants_EU.csv
+OPSD_VRE:
+  url: https://data.open-power-system-data.org/renewable_power_plants/2019-04-05/renewable_power_plants_EU.csv
+  fn: renewable_power_plants_EU.csv
+OPSD:
+  reliability_score: 5
+Capacity_stats:
+  url: https://data.open-power-system-data.org/national_generation_capacity/2019-02-22/national_generation_capacity_stacked.csv
+  fn: national_generation_capacity_stacked.csv
+UBA:
+  net_capacity: false
+  reliability_score: 5
+  fn: kraftwerke-de-ab-100-mw.xls
+  url: https://www.umweltbundesamt.de/sites/default/files/medien/372/dokumente/kraftwerke_de_ab_100_mw.xls
+WEPP:
+  net_capacity: false
+  reliability_score: 4
+  fn: platts_wepp.csv
+
+display_net_caps: true
+target_columns:
+    - Name
+    - Fueltype
+    - Technology
+    - Set
+    - Country
+    - Capacity
+    - Efficiency
+    - Duration
+    - Volume_Mm3
+    - DamHeight_m
+    - YearCommissioned
+    - Retrofit
+    - lat
+    - lon
+    # - File
+    - projectID
+    - eic_code
+target_countries:
+    - Austria
+    - Belgium
+    - Bulgaria
+    - Croatia
+    - Czech Republic
+    - Denmark
+    - Estonia
+    - Finland
+    - France
+    - Germany
+    - Greece
+    - Hungary
+    - Ireland
+    - Italy
+    - Latvia
+    - Lithuania
+    - Luxembourg
+    - Macedonia, Republic of
+    - Netherlands
+    - Norway
+    - Poland
+    - Portugal
+    - Romania
+    - Slovakia
+    - Slovenia
+    - Spain
+    - Sweden
+    - Switzerland
+    - United Kingdom
+target_fueltypes:
+    - Bioenergy
+    - Geothermal
+    - Hard Coal
+    - Hydro
+    - Lignite
+    - Natural Gas
+    - Nuclear
+    - Oil
+    - Other
+    - Solar
+    - Waste
+    - Wind
+target_sets:
+    - CHP
+    - PP
+    - Store
+target_technologies:
+    - CCGT
+    - OCGT
+    - Steam Turbine
+    - Combustion Engine
+    - Run-Of-River
+    - Pumped Storage
+    - Reservoir
+    - Marine
+    - Onshore
+    - Offshore
+    - PV
+    - CSP
+
+# Allowed countries for matches of only CARMA and GEO
+CARMA_GEO_countries:
+    -  Austria
+    -  Belgium
+    -  Bulgaria
+    -  Czech Republic
+    -  Croatia
+    -  Denmark
+    -  Estonia
+    -  France
+    -  Germany
+    -  Ireland
+    -  Italy
+    -  Luxembourg
+    -  Netherlands
+    -  Romania
+    -  Slovakia
+    -  Sweden
+
+# heuristic config
+fuel_to_lifetime:
+    Bioenergy: 20
+    Geothermal: 15
+    Hard Coal: 45
+    Hydro: 100
+    Lignite: 45
+    Natural Gas: 40
+    Nuclear: 50
+    Oil: 40
+    Other: 5
+    Solar: 25
+    Waste: 25
+    Wind: 25
+
+# plotting config
+fuel_to_color:
+    OCGT: darkorange
+    Hydro: seagreen
+    Pumped hydro: limegreen
+    Run-of-river: navy
+    Ror: navy
+    Lignite: saddlebrown
+    Nuclear: yellow
+    Solar: gold
+    Windoff: cornflowerblue
+    Windon: darkblue
+    Offshore: cornflowerblue
+    Onshore: darkblue
+    Wind: steelblue
+    Bioenergy: g
+    Natural Gas: red
+    CCGT: red
+    Coal: k
+    Hard Coal: dimgray
+    Oil: darkgreen
+    Other: silver
+    Waste: grey
+    Geothermal: orange
+    Battery: purple
+    Hydrogen Storage: teal
+    Electro-mechanical: teal
+    Total: gold

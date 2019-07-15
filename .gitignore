@@ -23,6 +23,8 @@ var/
 *.egg-info/
 .installed.cfg
 *.egg
+Pipfile
+Pipfile.lock
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -88,36 +90,7 @@ ENV/
 
 # Rope project settings
 .ropeproject
-config.yaml
-coal-types.xlsx
-build_release_archive.sh
-data/*WEPP*
-data/*wepp*
-data/in/*WEPP*
-data/in/*wepp*
-data/in/*IWPDCY*
-data/in/projects.xls
-data/in/energy_storage_exchange.csv
-data/in/*ESE*
-data/in/hydro_aggregation.csv
-data/in/renewable_power_plants.sqlite
-data/in/kraftwerke-de-ab-100-mw.xls
-data/in/Kraftwerksliste_2017_2.xlsx
-german_postcode_map.py
 matching_analysis/*.png
 
-data/out/*
-!data/out/default
-data/out/default/matched_data*.csv
-data/out/default/*WEPP*
-data/out/default/*wepp*
-data/out/default/*IWPDCY*
-data/out/default/*ESE*
-data/out/default/aggregations/*.csv
-data/out/default/matches/*.csv
-data/out/default/Export_Stock_TIMES*.xlsx
-data/out/default/Matched_BNETZA_UBA.csv
-data/out/default/Matched_BNETZA_UBA_reduced.csv
-Pipfile
-Pipfile.lock
 Changelog.md
+matching_analysis/german_postcode_map.py
