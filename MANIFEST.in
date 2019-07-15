@@ -1,0 +1,4 @@
+include powerplantmatching/package_data/*
+include powerplantmatching/package_data/duke_binaries/*
+include README.md LICENSE
+include requirements.yaml
