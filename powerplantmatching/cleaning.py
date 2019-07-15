@@ -19,9 +19,9 @@ Functions for vertically cleaning a dataset.
 """
 from __future__ import absolute_import, print_function
 
-from .config import get_config
+from . import get_config, _data_out
 from .duke import duke
-from .utils import _data_out, get_obj_if_Acc, get_name, set_column_name
+from .utils import get_obj_if_Acc, get_name, set_column_name
 
 import os
 import numpy as np
@@ -248,6 +248,7 @@ def cliques(df, dataduplicates):
 def aggregate_units(df, dataset_name=None,
                     pre_clean_name=True,
                     save_aggregation=True,
+                    country_wise=True,
                     use_saved_aggregation=False,
                     config=None):
     """
@@ -333,7 +334,11 @@ def aggregate_units(df, dataset_name=None,
                 df.drop('grouped', axis=1, inplace=True)
 
     if 'grouped' not in df:
-        duplicates = duke(df)
+        if country_wise:
+            duplicates = pd.concat([duke(df.query('Country == @c'))
+                                    for c in df.Country.unique()])
+        else:
+            duplicates = duke(df)
         df = cliques(df, duplicates)
         if save_aggregation:
             df.grouped.to_csv(path_name, header=False)

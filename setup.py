@@ -12,7 +12,9 @@ from codecs import open
 setup(
     name='powerplantmatching',
     version='0.4.0',
-    author='Fabian Hofmann (FIAS), Jonas Hoersch (KIT), Fabian Gotzens (FZ Jülich)',
+    author='Fabian Hofmann (FIAS), '
+           'Jonas Hoersch (KIT), '
+           'Fabian Gotzens (FZ Jülich)',
     author_email='hofmann@fias.uni-frankfurt.de',
     description='Toolset for generating and managing Power Plant Data',
 #    long_description=long_description,

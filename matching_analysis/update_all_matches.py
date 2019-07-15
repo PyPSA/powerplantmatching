@@ -12,9 +12,3 @@ import powerplantmatching as pm
 pm.collection.matched_data(
         update=True, use_saved_aggregation=True, use_saved_matches=False)
 
-#pm.collection.Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WRI_matched_reduced(update=True)
-#pm.collection.Carma_ENTSOE_ESE_GEO_OPSD_WRI_matched_reduced(update = True,
-#                                                            use_saved_aggregation = True)
-#pm.collection.Carma_ENTSOE_GEO_OPSD_WRI_matched_reduced(update = True,
-#                                                        use_saved_aggregation = True)
-#

@@ -20,10 +20,10 @@
 # or the VEDA-TIMES modelling framework:
 #   http://iea-etsap.org/index.php/etsap-tools/data-handling-shells/veda
 
+from . import _data_out
 from .collection import matched_data
 from .heuristics import set_denmark_region_id, set_known_retire_years
-from .utils import _data_out, get_obj_if_Acc
-
+from .utils import get_obj_if_Acc
 import pandas as pd
 import numpy as np
 import pycountry

@@ -17,13 +17,12 @@
 from __future__ import absolute_import, print_function
 import logging
 import os
-from os.path import dirname, join
 import subprocess as sub
 import shutil
 import tempfile
 import pandas as pd
 import numpy as np
-from .config import _package_data
+from . import _package_data
 logger = logging.getLogger(__name__)
 
 
@@ -34,13 +33,11 @@ def add_geoposition_for_duke(df):
 
     """
     if not df.loc[:, ['lat', 'lon']].isnull().all().all():
-        df.loc[df.lat.notnull(), 'Geoposition'] = (
-                df[df.lat.notnull()].lat.apply(str)
-                .str.cat(df[df.lat.notnull()].lon.apply(str), sep=','))
-        return df
+        return df.assign(Geoposition = df[['lat', 'lon']].astype(str)
+                         .apply(lambda s: ','.join(s), axis=1)
+                         .replace('nan,nan', np.nan))
     else:
-        df.loc[:, 'Geoposition'] = np.NaN
-        return df
+        return df.assign(Geoposition=np.nan)
 
 
 def duke(datasets, labels=['one', 'two'], singlematch=False,
@@ -95,7 +92,7 @@ def duke(datasets, labels=['one', 'two'], singlematch=False,
                 shift_by = (datasets[0].index.max()+1)
                 df.index += shift_by
             df.to_csv(os.path.join(tmpdir, "file{}.csv".format(n+1)),
-                      index_label='id', encoding='utf-8')
+                      index_label='id')
             if n == 1:
                 df.index -= shift_by
 
@@ -125,11 +122,10 @@ def duke(datasets, labels=['one', 'two'], singlematch=False,
             return pd.read_csv(os.path.join(tmpdir, 'linkfile.txt'),
                                encoding='utf-8', usecols=[1, 2], names=labels)
         else:
-            df = pd.read_csv(os.path.join(tmpdir, 'linkfile.txt'),
-                             encoding='utf-8', usecols=[1, 2, 3],
-                             names=labels + ['scores'])
-            df.iloc[:, 1] -= shift_by
-            return df
+            res = pd.read_csv(os.path.join(tmpdir, 'linkfile.txt'),
+                             usecols=[1, 2, 3], names=labels + ['scores'])
+            res.iloc[:, 1] -= shift_by
+            return res
 
     finally:
         if keepfiles:

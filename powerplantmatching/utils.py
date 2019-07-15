@@ -20,29 +20,16 @@ Utility functions for checking data completness and supporting other functions
 
 from __future__ import print_function, absolute_import
 
-from .config import get_config, _data_in, _data_out, _package_data
+from . import get_config, _data_in, _package_data, _data_out, logger
 import os
 import time
 import pandas as pd
 import six
 import pycountry as pyc
-import logging
 import numpy as np
 import multiprocessing
 from ast import literal_eval as liteval
 
-## Logging: General Settings
-logger = logging.getLogger(__name__)
-#logging.basicConfig(level=logging.INFO)
-## Logging: File
-#logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] "
-#                                 "[%(levelname)-5.5s]  %(message)s")
-#fileHandler = logging.FileHandler(_data_out('../PPM.log'))
-#fileHandler.setFormatter(logFormatter)
-#logger.addHandler(fileHandler)
-# Logging: Console
-# consoleHandler = logging.StreamHandler()
-# logger.addHandler(consoleHandler)
 
 
 #class Accessor(object):
@@ -150,7 +137,8 @@ def config_filter(df, name=None, config=None):
         if name in queries and queries[name] is not None:
             df = df.query(queries[name])
     countries = config['target_countries']
-    return (df.query("Country in @countries")
+    fueltypes = config['target_fueltypes']
+    return (df.query("Country in @countries and Fueltype in @fueltypes")
             .reindex(columns=config['target_columns'])
             .reset_index(drop=True))
 
@@ -198,7 +186,8 @@ def correct_manually(df, name, config=None):
     return df.reset_index().reindex(columns=config['target_columns'])
 
 
-def set_uncommon_fueltypes_to_other(df, fillna_other=True, **kwargs):
+def set_uncommon_fueltypes_to_other(df, fillna_other=True, config=None,
+                                    **kwargs):
     """
     Replace uncommon fueltype specifications as by 'Other'. This helps to
     compare datasources with Capacity statistics given by
@@ -216,6 +205,7 @@ def set_uncommon_fueltypes_to_other(df, fillna_other=True, **kwargs):
         ['Bioenergy', 'Geothermal', 'Mixed fuel types', 'Electro-mechanical',
         'Hydrogen Storage']
     """
+    config = get_config() if config is None else config
     df = get_obj_if_Acc(df)
 
     default = ['Bioenergy', 'Geothermal', 'Mixed fuel types',

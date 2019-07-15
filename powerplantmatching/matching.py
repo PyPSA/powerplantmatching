@@ -20,16 +20,15 @@ Functions for linking and combining different datasets
 
 from __future__ import absolute_import, print_function
 
-from .config import get_config
-from .utils import read_csv_if_string, _data_out, parmap, \
-                    get_obj_if_Acc, get_name
+from . import get_config, _data_out
+from .utils import read_csv_if_string, parmap, get_obj_if_Acc, get_name
 from .duke import duke
 from .cleaning import clean_technology
 
-import os
+import os.path
 import pandas as pd
 import numpy as np
-import itertools
+from itertools import combinations
 import logging
 logger = logging.getLogger(__name__)
 
@@ -50,8 +49,8 @@ def best_matches(links):
             .apply(lambda x: x.loc[x.scores.idxmax(), labels]))
 
 
-def compare_two_datasets(datasets, labels, use_saved_matches=False,
-                         config=None, **dukeargs):
+def compare_two_datasets(dfs, labels, use_saved_matches=False,
+                         country_wise=True, config=None, **dukeargs):
     """
     Duke-based horizontal match of two databases. Returns the matched
     dataframe including only the matched entries in a multi-indexed
@@ -67,7 +66,7 @@ def compare_two_datasets(datasets, labels, use_saved_matches=False,
 
     Parameters
     ----------
-    datasets : list of pandas.Dataframe or strings
+    dfs : list of pandas.Dataframe or strings
         dataframes or csv-files to use for the matching
     labels : list of strings
         Names of the databases for the resulting dataframe
@@ -77,20 +76,35 @@ def compare_two_datasets(datasets, labels, use_saved_matches=False,
     if config is None:
         config = get_config()
 
-    datasets = list(map(read_csv_if_string, datasets))
+    dfs = list(map(read_csv_if_string, dfs))
     if not ('singlematch' in dukeargs):
         dukeargs['singlematch'] = True
     saving_path = _data_out('matches/matches_{}_{}.csv'
                             .format(*np.sort(labels)), config=config)
     if use_saved_matches:
         if os.path.exists(saving_path):
-            logger.info('Reading saved matches for datasets {} and {}'
+            logger.info('Reading saved matches for dfs {} and {}'
                         .format(*labels))
             return pd.read_csv(saving_path, index_col=0)
         else:
             logger.warning("Non-existing saved matches for dataset '{}', '{}'"
                            " continuing by matching again".format(*labels))
-    links = duke(datasets, labels=labels, **dukeargs)
+
+    def country_link(dfs, country):
+        #country_selector for both dataframes
+        sel_country_b = [df['Country'] == country for df in dfs]
+        #only append if country appears in both dataframse
+        if all(sel.any() for sel in sel_country_b):
+            return duke([df[sel] for df, sel in zip(dfs, sel_country_b)],
+                         labels, **dukeargs)
+        else:
+            return pd.DataFrame()
+
+    if country_wise:
+        countries = config['target_countries']
+        links = pd.concat([country_link(dfs, c) for c in countries])
+    else:
+        links = duke(dfs, labels=labels, **dukeargs)
     matches = best_matches(links)
     matches.to_csv(saving_path)
     return matches
@@ -164,7 +178,7 @@ def link_multiple_datasets(datasets, labels, use_saved_matches=False,
     dfs = list(map(read_csv_if_string, datasets))
     labels = [get_name(df) for df in dfs]
 
-    combinations = list(itertools.combinations(range(len(labels)), 2))
+    combs = list(combinations(range(len(labels)), 2))
 
     def comp_dfs(dfs_lbs):
         logger.info('Comparing {0} with {1}'.format(*dfs_lbs[2:]))
@@ -172,7 +186,7 @@ def link_multiple_datasets(datasets, labels, use_saved_matches=False,
                                     use_saved_matches=use_saved_matches,
                                     config=config, **dukeargs)
 
-    mapargs = [[dfs[c], dfs[d], labels[c], labels[d]] for c, d in combinations]
+    mapargs = [[dfs[c], dfs[d], labels[c], labels[d]] for c, d in combs]
     all_matches = parmap(comp_dfs, mapargs)
 
     return cross_matches(all_matches, labels=labels)

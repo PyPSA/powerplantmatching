@@ -27,7 +27,7 @@ from matplotlib.lines import Line2D
 from matplotlib.offsetbox import AnchoredText
 import seaborn as sns
 
-from .config import get_config
+from . import get_config
 from .utils import lookup, set_uncommon_fueltypes_to_other, get_obj_if_Acc, \
                     to_list_if_other
 

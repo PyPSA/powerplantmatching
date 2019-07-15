@@ -29,13 +29,12 @@ import pycountry
 import logging
 import entsoe as entsoe_api
 
-from .config import get_config
+from . import get_config, _package_data, _data_in
 from .cleaning import (gather_fueltype_info, gather_set_info,
                        gather_technology_info, clean_powerplantname,
                        clean_technology)
-from .utils import (parse_if_not_stored,
-                    fill_geoposition, _package_data, _data_in,
-                    correct_manually, config_filter, set_column_name)
+from .utils import (parse_if_not_stored, fill_geoposition, correct_manually,
+                    config_filter, set_column_name)
 from .heuristics import scale_to_net_capacities
 
 logger = logging.getLogger(__name__)
@@ -163,7 +162,7 @@ def GEO(raw=False, config=None):
 
 #    geo = pd.read_csv(_data_in(config['GEO']['fn']), low_memory=False,
 #                      usecols=list(rename_cols.keys()))
-    geo = parse_if_not_stored('GEO')
+    geo = parse_if_not_stored('GEO', config=config, low_memory=False)
     if raw:
         return geo
 
@@ -191,6 +190,7 @@ def GEO(raw=False, config=None):
              .pipe(clean_technology, generalize_hydros=True)
              .pipe(scale_to_net_capacities,
                    (not config['GEO']['net_capacity']))
+             .pipe(config_filter, name='GEO', config=config)
 #             .pipe(correct_manually, 'GEO', config=config)
              )
 
@@ -210,7 +210,7 @@ def CARMA(raw=False, config=None):
     config = get_config() if config is None else config
 
 #    carmadata = pd.read_csv(_datconfig['CARMA']['fn'], low_memory=False)
-    carma = parse_if_not_stored('CARMA', config=config)
+    carma = parse_if_not_stored('CARMA', config=config, low_memory=False)
     if raw: return carma
 
     return (carma
@@ -255,9 +255,29 @@ def JRC(raw=False, config=None, update=False):
     Importer for the JRC Hydro-power plants database retrieves from
     https://github.com/energy-modelling-toolkit/hydro-power-database.
     """
-    config = get_config() if config is None else config
 
-    df = parse_if_not_stored('JRC', update, config, error_bad_lines=False)
+    config = get_config() if config is None else config
+    url = config['JRC']['url']
+    def parse_func():
+        import requests
+        from zipfile import ZipFile
+        from io import BytesIO
+        parse = requests.get(url)
+        if parse.ok:
+            content = parse.content
+        else:
+            IOError(f'URL {url} seems to be outdated, please doulble the '
+                          'address at http://datasets.wri.org/dataset/'
+                          'globalpowerplantdatabase update the and update the '
+                          'url in your custom config file '
+                          '{config["custom_config"]}')
+        return pd.read_csv(ZipFile(BytesIO(content))
+                           .open('energy-modelling-toolkit-hydro-power-'
+                                 'database-e857dd4/data/'
+                                 'jrc-hydro-power-plant-database.csv'))
+
+
+    df = parse_if_not_stored('JRC', update, config, parse_func=parse_func)
     if raw:
         return df
     return (df.rename(columns={'id': 'projectID',
@@ -329,8 +349,7 @@ def Capacity_stats(raw=False, level=2, config=None, update=False,
     if raw: return df
 
     countries = config['target_countries']
-    df = (df.set_index('ID')
-          .query('source == @source & year == @year')
+    df = (df.query('source == @source & year == @year')
           .rename(columns={'technology': 'Fueltype'}).rename(columns=str.title)
           .powerplant.convert_alpha2_to_country()
 #          .query('Country in @countries')
@@ -364,16 +383,31 @@ def GPD(raw=False, filter_other_dbs=True, update=False, config=None):
         defaults to powerplantmatching.config.get_config()
 
     """
-    import requests
-    from zipfile import ZipFile
-    from io import BytesIO
 
-    parse_func = lambda url: pd.read_csv(ZipFile(BytesIO(requests.get(url)
-                            .content)).open('global_power_plant_database.csv'))
-    df = parse_if_not_stored('GPD', update, config, parse_func)
-    if raw: return df
 
     config = get_config() if config is None else config
+
+    #if outdated have a look at
+    #http://datasets.wri.org/dataset/globalpowerplantdatabase
+    url = config['GPD']['url']
+    def parse_func():
+        import requests
+        from zipfile import ZipFile
+        from io import BytesIO
+        parse = requests.get(url)
+        if parse.ok:
+            content = parse.content
+        else:
+            IOError(f'URL {url} seems to be outdated, please doulble the '
+                          'address at http://datasets.wri.org/dataset/'
+                          'globalpowerplantdatabase update the and update the '
+                          'url in your custom config file '
+                          '{config["custom_config"]}')
+        return pd.read_csv(ZipFile(BytesIO(content))
+                           .open('global_power_plant_database.csv'))
+
+    df = parse_if_not_stored('GPD', update, config, parse_func, index_col=0)
+    if raw: return df
 
     other_dbs = []
     if filter_other_dbs:
@@ -385,7 +419,7 @@ def GPD(raw=False, filter_other_dbs=True, update=False, config=None):
             .drop(columns='Country')
             .rename(columns={'Gppd_Idnr': 'projectID',
                              'Country_Long': 'Country',
-                             'Fuel1': 'Fueltype',
+                             'Primary_Fuel': 'Fueltype',
                              'Latitude': 'lat',
                              'Longitude': 'lon',
                              'Capacity_Mw': 'Capacity',
@@ -398,8 +432,8 @@ def GPD(raw=False, filter_other_dbs=True, update=False, config=None):
             .pipe(clean_powerplantname)
             .pipe(set_column_name, 'GPD')
             .pipe(config_filter, name='GPD', config=config)
-            .pipe(gather_technology_info, config=config)
-            .pipe(gather_set_info)
+#            .pipe(gather_technology_info, config=config)
+#            .pipe(gather_set_info)
 #            .pipe(correct_manually, 'GPD', config=config)
             )
 
@@ -578,7 +612,7 @@ def ENTSOE(update=False, raw=False, entsoe_token=None, config=None):
             .pipe(gather_set_info)
             .pipe(clean_technology)
             .pipe(set_column_name, 'ENTSOE')
-#            .pipe(config_filter, name='ENTSOE', config=config)
+            .pipe(config_filter, name='ENTSOE', config=config)
 #            .pipe(correct_manually, 'ENTSOE', config=config)
             )
 

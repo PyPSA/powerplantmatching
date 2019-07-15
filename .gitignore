@@ -120,3 +120,4 @@ data/out/default/Matched_BNETZA_UBA.csv
 data/out/default/Matched_BNETZA_UBA_reduced.csv
 Pipfile
 Pipfile.lock
+Changelog.md

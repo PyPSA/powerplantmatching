@@ -19,13 +19,12 @@ Processed datasets of merged and/or adjusted data
 """
 from __future__ import print_function
 
-from . import data
-from .utils import (set_uncommon_fueltypes_to_other, _data_out, parmap,
+from . import data, _data_out, get_config
+from .utils import (set_uncommon_fueltypes_to_other, parmap,
                     to_dict_if_string, projectID_to_dict)
 from .cleaning import aggregate_units
 from .matching import combine_multiple_datasets, reduce_matched_dataframe
 from .heuristics import (extend_by_non_matched, extend_by_VRE)
-from .config import get_config
 
 import pandas as pd
 import os
@@ -167,7 +166,7 @@ def matched_data(config=None,
         header = [0, 1]
 
     if stored and os.path.exists(fn):
-        return (pd.read_csv(fn, index_col=0, header=header, encoding='utf-8')
+        return (pd.read_csv(fn, index_col=0, header=header)
                 .pipe(projectID_to_dict))
 
     matching_sources = [list(to_dict_if_string(a))[0] for a in
