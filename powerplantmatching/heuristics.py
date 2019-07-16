@@ -18,9 +18,8 @@
 Functions to modify and adjust power plant datasets
 """
 
-from .utils import lookup, get_obj_if_Acc, get_name
-from . import get_config, _package_data
-from .cleaning import aggregate_units, clean_technology
+from .core import get_config, _package_data, get_obj_if_Acc
+from .utils import lookup, get_name
 
 import pandas as pd
 import numpy as np
@@ -50,6 +49,7 @@ def extend_by_non_matched(df, extend_by, label=None, query=None,
         correspond to the ones of the dataset
     """
     from . import data
+    from .cleaning import aggregate_units
     df = get_obj_if_Acc(df)
 
     if config is None:
@@ -413,6 +413,7 @@ def gross_to_net_factors(reference='opsd', aggfunc='median',
                          return_entire_data=False):
     """
     """
+    from .cleaning import clean_technology
     if reference == 'opsd':
         from .data import OPSD
         reference = OPSD(rawDE=True)

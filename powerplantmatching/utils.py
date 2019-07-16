@@ -20,7 +20,7 @@ Utility functions for checking data completness and supporting other functions
 
 from __future__ import print_function, absolute_import
 
-from . import get_config, _data_in, _package_data, _data_out, logger
+from .core import get_config, _data_in, _package_data, logger, get_obj_if_Acc
 import os
 import time
 import pandas as pd
@@ -29,22 +29,6 @@ import pycountry as pyc
 import numpy as np
 import multiprocessing
 from ast import literal_eval as liteval
-
-
-
-#class Accessor(object):
-#    """
-#    Helper class to define super class of PowerPlantAccessor
-#    """
-#    pass
-
-
-def get_obj_if_Acc(obj):
-    from . import PowerPlantAccessor
-    if isinstance(obj, PowerPlantAccessor):
-        return obj._obj
-    else:
-        return obj
 
 
 def lookup(df, keys=None, by='Country, Fueltype', exclude=None, unit='MW'):

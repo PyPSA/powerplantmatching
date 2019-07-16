@@ -20,8 +20,8 @@ Functions for linking and combining different datasets
 
 from __future__ import absolute_import, print_function
 
-from . import get_config, _data_out
-from .utils import read_csv_if_string, parmap, get_obj_if_Acc, get_name
+from .core import get_config, _data_out, get_obj_if_Acc
+from .utils import read_csv_if_string, parmap, get_name
 from .duke import duke
 from .cleaning import clean_technology
 

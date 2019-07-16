@@ -19,9 +19,9 @@ Functions for vertically cleaning a dataset.
 """
 from __future__ import absolute_import, print_function
 
-from . import get_config, _data_out
+from .core import get_config, _data_out, get_obj_if_Acc
+from .utils import get_name, set_column_name
 from .duke import duke
-from .utils import get_obj_if_Acc, get_name, set_column_name
 
 import os
 import numpy as np

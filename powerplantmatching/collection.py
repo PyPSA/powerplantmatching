@@ -19,12 +19,12 @@ Processed datasets of merged and/or adjusted data
 """
 from __future__ import print_function
 
-from . import data, _data_out, get_config
+from .core import _data_out, get_config
 from .utils import (set_uncommon_fueltypes_to_other, parmap,
                     to_dict_if_string, projectID_to_dict)
+from .heuristics import (extend_by_non_matched, extend_by_VRE)
 from .cleaning import aggregate_units
 from .matching import combine_multiple_datasets, reduce_matched_dataframe
-from .heuristics import (extend_by_non_matched, extend_by_VRE)
 
 import pandas as pd
 import os
@@ -58,6 +58,7 @@ def collect(datasets, update=False, use_saved_aggregation=True,
     **dukeargs : keyword-args for duke
     """
 
+    from . import data
     if config is None:
         config = get_config()
 

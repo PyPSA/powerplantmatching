@@ -29,13 +29,13 @@ import pycountry
 import logging
 import entsoe as entsoe_api
 
-from . import get_config, _package_data, _data_in
-from .cleaning import (gather_fueltype_info, gather_set_info,
-                       gather_technology_info, clean_powerplantname,
-                       clean_technology)
+from .core import get_config, _package_data, _data_in
 from .utils import (parse_if_not_stored, fill_geoposition, correct_manually,
                     config_filter, set_column_name)
 from .heuristics import scale_to_net_capacities
+from .cleaning import (gather_fueltype_info, gather_set_info,
+                       gather_technology_info, clean_powerplantname,
+                       clean_technology)
 
 logger = logging.getLogger(__name__)
 cget = pycountry.countries.get
@@ -1047,17 +1047,20 @@ def OPSD_VRE(config=None, raw=False):
     """
     config = get_config() if config is None else config
 
-    df = parse_if_not_stored('OSPD_VRE')
+    df = parse_if_not_stored('OPSD_VRE', index_col=0, low_memory=False)
     if raw: return df
 
     return df.rename(columns={'energy_source_level_2': 'Fueltype',
                               'data_source': 'file',
                               'country': 'Country',
                               'electrical_capacity': 'Capacity',
-                              'municipality': 'Name'})
-    return (df.pipe(set_column_name, 'OPSD_VRE')
-              .pipe(config_filter, config=config)
-              .drop('Name', axis=1))
+                              'municipality': 'Name'})\
+            .assign(YearCommissioned=lambda df:
+                    df.commissioning_date.str[:4].astype(float))\
+            .powerplant.convert_alpha2_to_country()\
+            .pipe(set_column_name, 'OPSD_VRE')\
+            .pipe(config_filter, config=config)\
+            .drop('Name', axis=1)
 
 
 def IRENA_stats(config=None):
