@@ -37,6 +37,7 @@ from . import data
 #from . import cleaning
 #from . import matching
 #from . import collection
+from . import plot
 from .core import get_config
 from .collection import matched_data as powerplants
 from .accessor import PowerPlantAccessor

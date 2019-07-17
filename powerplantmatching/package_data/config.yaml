@@ -109,7 +109,7 @@ target_columns:
     - lon
     # - File
     - projectID
-    - eic_code
+    # - eic_code
 target_countries:
     - Austria
     - Belgium

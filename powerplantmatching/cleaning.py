@@ -244,7 +244,6 @@ def cliques(df, dataduplicates):
 
     return df.assign(grouped=grouped)
 
-
 def aggregate_units(df, dataset_name=None,
                     pre_clean_name=True,
                     save_aggregation=True,
@@ -277,33 +276,37 @@ def aggregate_units(df, dataset_name=None,
     if config is None:
         config = get_config()
 
-    def most_frequent(ds):
-        return ds.value_counts(dropna=False).index[0]
-
     weighted_cols = [col for col in ['Efficiency', 'Duration']
                      if col in config['target_columns']]
     df = (df.assign(**{col: df[col] * df.Capacity for col in weighted_cols})
             .assign(lat=df.lat.astype(float),
-                    lon=df.lon.astype(float)))
+                    lon=df.lon.astype(float))
+            .assign(**{col: df[col].astype(str) for col in
+                       ['Name', 'Country', 'Fueltype',
+                        'Technology', 'Set', 'File']
+                       if col in config['target_columns']}))
+
+    def mode(x):
+        return x.mode(dropna=False).at[0]
 
     props_for_groups = pd.Series({
-                'Name': most_frequent,
-                'Country': most_frequent,
-                'Fueltype': most_frequent,
-                'Technology': most_frequent,
-                'Set': most_frequent,
-                'File': most_frequent,
-                'Capacity': pd.Series.sum,
-                'lat': pd.Series.mean,
-                'lon': pd.Series.mean,
-                'YearCommissioned': pd.Series.min,
-                'Retrofit': pd.Series.max,
-                'projectID': pd.Series.tolist,
-                'eic_code': lambda s: s.dropna().tolist(),
-                'Duration': pd.Series.sum,  # note this is weighted sum
-                'Volume_Mm3':pd.Series.sum,
-                'DamHeight_m': pd.Series.sum,
-                'Efficiency': pd.Series.mean  # note this is weighted mean
+                'Name': mode,
+                'Country': mode,
+                'Fueltype': mode,
+                'Technology': mode,
+                'Set': mode,
+                'File': mode,
+                'Capacity': 'sum',
+                'lat': 'mean',
+                'lon': 'mean',
+                'YearCommissioned': 'min',
+                'Retrofit': 'max',
+                'projectID': list,
+                'eic_code': set,
+                'Duration': 'sum',  # note this is weighted sum
+                'Volume_Mm3': 'sum',
+                'DamHeight_m': 'sum',
+                'Efficiency': 'mean'  # note this is weighted mean
                 })[config['target_columns']].to_dict()
 
     dataset_name = get_name(df) if dataset_name is None else dataset_name
@@ -344,6 +347,10 @@ def aggregate_units(df, dataset_name=None,
             df.grouped.to_csv(path_name, header=False)
 
     df = df.groupby('grouped').agg(props_for_groups)
+    df = df.replace('nan', np.nan)
+
+    if 'eic_code' in df:
+        df = df.assign(eic_code = df['eic_code'].apply(list))
 
     df = (df
           .assign(**{col: df[col].div(df['Capacity'])

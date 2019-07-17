@@ -121,6 +121,7 @@ def Collection(**kwargs):
 
 def matched_data(config=None,
                  stored=True,
+                 update=False,
                  extend_by_vres=False,
                  extendby_kwargs={'use_saved_aggregation': True},
                  subsume_uncommon_fueltypes=False,
@@ -134,11 +135,14 @@ def matched_data(config=None,
 
     Parameters
     ----------
-    stored : Bollean, default True
+    stored : Boolean, default True
             Whether to use the stored matched_data.csv file in data/out/default
             If False, the matched data is taken from collect() and
             extended afterwards. To update the whole matching, please set
             stored=False and update=True.
+    update : Boolean, default False
+            Whether to rerun the matching process. Overrides stored to False
+            if True.
     config : Dict, default None
             Define a configuration varying from the setting in config.yaml.
             Relevant keywords are 'matching_sources', 'fully_included_sources'.
@@ -159,6 +163,10 @@ def matched_data(config=None,
     if config is None:
         config = get_config()
 
+    if update:
+        stored = False
+    collection_kwargs.setdefault('update', update)
+
     if collection_kwargs.get('reduced', True):
         fn = _data_out('matched_data_red.csv')
         header = 0
@@ -167,8 +175,12 @@ def matched_data(config=None,
         header = [0, 1]
 
     if stored and os.path.exists(fn):
-        return (pd.read_csv(fn, index_col=0, header=header)
+        df = (pd.read_csv(fn, index_col=0, header=header)
                 .pipe(projectID_to_dict))
+        if extend_by_vres:
+                return df.pipe(extend_by_VRE, config=config,
+                               base_year=config['opsd_vres_base_year'])
+        return df
 
     matching_sources = [list(to_dict_if_string(a))[0] for a in
                                   config['matching_sources']]
@@ -187,7 +199,7 @@ def matched_data(config=None,
     # GEO and CARMA
     allowed_countries = config['CARMA_GEO_countries']
     if matched.columns.nlevels > 1:
-        other = matching_sources - set(['CARMA', 'GEO'])
+        other = set(matching_sources) - set(['CARMA', 'GEO'])
         matched = (matched[~matched.projectID[other].isna().all(1) |
                            matched.Country.GEO.isin(allowed_countries) |
                            matched.Country.CARMA.isin(allowed_countries)]
@@ -205,7 +217,7 @@ def matched_data(config=None,
     matched.to_csv(fn, index_label='id', encoding='utf-8')
 
     if extend_by_vres:
-        matched = extend_by_VRE(matched,
+        matched = extend_by_VRE(matched, config=config,
                                 base_year=config['opsd_vres_base_year'])
 
     if subsume_uncommon_fueltypes:

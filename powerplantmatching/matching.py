@@ -260,70 +260,32 @@ def reduce_matched_dataframe(df, show_orig_names=False, config=None):
     """
     df = get_obj_if_Acc(df)
 
-    def concat_strings(s):
-        if s.isnull().all():
-            return np.nan
-        else:
-            return s[s.notnull()].str.cat(sep=', ')
-
     if config is None:
         config = get_config()
 
+
     # define which databases are present and get their reliability_score
     sources = df.columns.levels[1]
-    rel_scores = (pd.Series({
-            source: config[source]['reliability_score'] for source in sources})
-                    .sort_values(ascending=False))
+    rel_scores = pd.Series({s: config[s]['reliability_score'] for s in sources})\
+                   .sort_values(ascending=False)
+    cols = config['target_columns']
+    props_for_groups = {col : 'first'
+                        for col in cols}
+    props_for_groups.update({'YearCommisisoned': 'min',
+                     'Retrofit': 'max',
+                     'projectID': lambda x: dict(x.droplevel(0).dropna()),
+                     'eic_code': 'unique'})
+    props_for_groups = pd.Series(props_for_groups)[cols].to_dict()
 
-    def prioritise_reliability(df, how='mean'):
-        """
-        Take the first most reliable value if dtype==str,
-        else take mean of most reliable values
-        """
+    #set low priority on Fueltype 'Other'
+    #turn it since aggregating only possible for axis=0
+    sdf = df.replace({'Fueltype' : {'Other': np.nan}})\
+            .stack(1).reindex(rel_scores.index, level=1)\
+            .groupby(level=0)\
+            .agg(props_for_groups)\
+            .replace({'Fueltype' : {np.nan: 'Other'}})
 
-        # Arrange columns in descending order of reliability
-        df = df.loc[df.notnull().any(axis=1)]
-
-        if df.empty:
-            logger.warn('Empty dataframe passed to `prioritise_reliability`.')
-            return pd.Series()
-
-        df = df.reindex(columns=rel_scores.index)
-
-        # Aggregate data with same reliability scores for numeric columns
-        # (but DO maintain order)
-        if not ((df.dtypes == object) | (df.dtypes == str)).any():
-            # all numeric
-            df = df.groupby(rel_scores, axis=1, sort=False).agg(how)
-
-        return df.apply(lambda ds: ds.dropna().iloc[0], axis=1)
-
-    sdf = pd.DataFrame({
-        'Name': prioritise_reliability(df['Name']),
-        'Fueltype': (prioritise_reliability(df['Fueltype']
-                                            .replace({'Other': np.nan}))
-                     .reindex(df.index, fill_value='Other')),
-        'Technology': prioritise_reliability(df['Technology']),
-        'Country': prioritise_reliability(df['Country']),
-        'Set': prioritise_reliability(df['Set']),
-        'Capacity': prioritise_reliability(df['Capacity'], how='median'),
-        'Duration': prioritise_reliability(df['Duration']),
-        'DamHeight_m': prioritise_reliability(df['DamHeight_m']),
-        'Volume_Mm3': prioritise_reliability(df['Volume_Mm3']),
-        'YearCommissioned': df['YearCommissioned'].min(axis=1),
-        'Retrofit': df['Retrofit'].max(axis=1),
-        'lat': prioritise_reliability(df['lat']),
-        'lon': prioritise_reliability(df['lon']),
-#        'File': df['File'].apply(concat_strings, axis=1),
-        'projectID': df['projectID'].apply(lambda x: dict(x.dropna()), axis=1),
-        'eic_code': df['eic_code'].apply(lambda x: dict(x.dropna()), axis=1)
-    }).reindex(config['target_columns'], axis=1)
 
     if show_orig_names:
         sdf = sdf.assign(**dict(df.Name))
-    sdf = clean_technology(sdf, generalize_hydros=False)
-    sdf.reset_index(drop=True)
-    if show_orig_names:
-        return sdf
-    else:
-        return sdf.reindex(columns=config['target_columns'])
+    return sdf.pipe(clean_technology).reset_index(drop=True)

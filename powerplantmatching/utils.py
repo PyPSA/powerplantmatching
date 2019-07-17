@@ -271,9 +271,9 @@ def projectID_to_dict(df):
     """
     if df.columns.nlevels > 1:
         return df.assign(projectID=(df.projectID.stack().dropna().apply(
-                lambda df: liteval(df)).unstack()))
+                lambda ds: liteval(ds)).unstack()))
     else:
-        return df.assign(projectID=df.projectID.apply(lambda df: liteval(df)))
+        return df.assign(projectID=df.projectID.apply(lambda x: liteval(x)))
 
 
 def select_by_projectID(df, projectID, dataset_name=None):
