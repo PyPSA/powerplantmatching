@@ -30,7 +30,7 @@ process_limit: 2
 remove_missing_coords: true
 
 #already build data
-matched_data_url: https://raw.githubusercontent.com/FRESNA/powerplantmatching/master/matched_data.csv
+matched_data_url: https://raw.githubusercontent.com/FRESNA/powerplantmatching/master/matched_data_red.csv
 
 #data config
 BNETZA:
