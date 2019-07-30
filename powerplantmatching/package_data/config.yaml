@@ -29,6 +29,9 @@ parallel_duke_processes: false
 process_limit: 2
 remove_missing_coords: true
 
+#already build data
+matched_data_url: https://raw.githubusercontent.com/FRESNA/powerplantmatching/master/matched_data.csv
+
 #data config
 BNETZA:
   reliability_score: 3

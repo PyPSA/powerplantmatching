@@ -312,7 +312,6 @@ def aggregate_units(df, dataset_name=None,
     dataset_name = get_name(df) if dataset_name is None else dataset_name
 
     if pre_clean_name:
-        logger.info("Cleaning plant names in '{}'.".format(dataset_name))
         df = clean_powerplantname(df)
 
     logger.info("Aggregating blocks to entire units in '{}'."

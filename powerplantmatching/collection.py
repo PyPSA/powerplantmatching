@@ -21,7 +21,7 @@ from __future__ import print_function
 
 from .core import _data_out, get_config
 from .utils import (set_uncommon_fueltypes_to_other, parmap,
-                    to_dict_if_string, projectID_to_dict)
+                    to_dict_if_string, projectID_to_dict, set_column_name)
 from .heuristics import (extend_by_non_matched, extend_by_VRE)
 from .cleaning import aggregate_units
 from .matching import combine_multiple_datasets, reduce_matched_dataframe
@@ -122,6 +122,7 @@ def Collection(**kwargs):
 def matched_data(config=None,
                  stored=True,
                  update=False,
+                 update_all=False,
                  extend_by_vres=False,
                  extendby_kwargs={'use_saved_aggregation': True},
                  subsume_uncommon_fueltypes=False,
@@ -143,6 +144,9 @@ def matched_data(config=None,
     update : Boolean, default False
             Whether to rerun the matching process. Overrides stored to False
             if True.
+    update_all : Boolean, default False
+            Whether to rerun the matching process and aggregation process.
+            Overrides stored to False if True.
     config : Dict, default None
             Define a configuration varying from the setting in config.yaml.
             Relevant keywords are 'matching_sources', 'fully_included_sources'.
@@ -163,8 +167,13 @@ def matched_data(config=None,
     if config is None:
         config = get_config()
 
+    if update_all:
+        collection_kwargs['use_saved_aggregation'] = False
+        collection_kwargs['use_saved_matches'] = False
+        update = True
     if update:
         stored = False
+
     collection_kwargs.setdefault('update', update)
 
     if collection_kwargs.get('reduced', True):
@@ -176,7 +185,8 @@ def matched_data(config=None,
 
     if stored and os.path.exists(fn):
         df = (pd.read_csv(fn, index_col=0, header=header)
-                .pipe(projectID_to_dict))
+                .pipe(projectID_to_dict)
+                .pipe(set_column_name, 'Matched Data'))
         if extend_by_vres:
                 return df.pipe(extend_by_VRE, config=config,
                                base_year=config['opsd_vres_base_year'])
@@ -222,6 +232,6 @@ def matched_data(config=None,
 
     if subsume_uncommon_fueltypes:
         matched = set_uncommon_fueltypes_to_other(matched)
-    return matched
+    return matched.pipe(set_column_name, 'Matched Data')
 
 
