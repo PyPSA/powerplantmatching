@@ -89,6 +89,12 @@ The dataset combines the data of all the data sources listed in
 
 
 
+### Where is the data stored?
+
+All data files of the package will be stored in the folder given by `pm.core.package_config['data_dir']`
+
+
+
 ## Make your own configuration
 
 
@@ -139,9 +145,17 @@ Optionally you can:
 - BNETZA - [Bundesnetzagentur](https://www.bundesnetzagentur.de/EN/Areas/Energy/Companies/SecurityOfSupply/GeneratingCapacity/PowerPlantList/PubliPowerPlantList_node.html) open available data source for Germany's power plants
 
 
-The merged dataset is available in two versions: The [bigger dataset](https://media.githubusercontent.com/media/FRESNA/powerplantmatching/master/data/out/default/powerplants_large.csv)
+The merged dataset is available in two versions: The bigger dataset, obtained by 
+
+```python
+pm.powerplants(reduced=False)
+```
+
 links the entries of the matched power plants and lists all the related
-properties given by the different data-sources. The [smaller, reduced dataset](https://media.githubusercontent.com/media/FRESNA/powerplantmatching/master/data/out/default/powerplants.csv)
+properties given by the different data-sources. The smaller, reduced dataset, given by
+```python
+pm.powerplants()
+```
 claims only the value of the most reliable data source being matched in the individual power plant data entry.
 The considered reliability scores are:
 
