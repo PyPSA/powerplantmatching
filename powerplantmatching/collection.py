@@ -21,7 +21,8 @@ from __future__ import print_function
 
 from .core import _data_out, get_config
 from .utils import (set_uncommon_fueltypes_to_other, parmap,
-                    to_dict_if_string, projectID_to_dict, set_column_name)
+                    to_dict_if_string, projectID_to_dict, set_column_name,
+                    parse_if_not_stored)
 from .heuristics import (extend_by_non_matched, extend_by_VRE)
 from .cleaning import aggregate_units
 from .matching import combine_multiple_datasets, reduce_matched_dataframe
@@ -123,6 +124,7 @@ def matched_data(config=None,
                  stored=True,
                  update=False,
                  update_all=False,
+                 from_url=False,
                  extend_by_vres=False,
                  extendby_kwargs={'use_saved_aggregation': True},
                  subsume_uncommon_fueltypes=False,
@@ -147,6 +149,9 @@ def matched_data(config=None,
     update_all : Boolean, default False
             Whether to rerun the matching process and aggregation process.
             Overrides stored to False if True.
+    from_url: Boolean, default False
+            Whether to parse and store the already build data from the repo
+            website.
     config : Dict, default None
             Define a configuration varying from the setting in config.yaml.
             Relevant keywords are 'matching_sources', 'fully_included_sources'.
@@ -182,6 +187,17 @@ def matched_data(config=None,
     else:
         fn = _data_out('matched_data.csv')
         header = [0, 1]
+
+    if from_url:
+        fn = _data_out('matched_data_red.csv')
+        url = config['matched_data_url']
+        logger.info(f'Retrieving data from {url}')
+        df = (pd.read_csv(url, index_col=0)
+                .pipe(projectID_to_dict)
+                .pipe(set_column_name, 'Matched Data'))
+        logger.info(f'Store data at {fn}')
+        df.to_csv(fn)
+        return df
 
     if stored and os.path.exists(fn):
         df = (pd.read_csv(fn, index_col=0, header=header)
