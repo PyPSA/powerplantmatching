@@ -15,7 +15,7 @@ setup(
     author='Fabian Hofmann (FIAS), Jonas Hoersch (KIT), Fabian Gotzens (FZ Jülich)',
     author_email='hofmann@fias.uni-frankfurt.de',
     description='Toolset for generating and managing Power Plant Data',
-#    long_description=long_description,
+    long_description=long_description,
     url='https://github.com/FRESNA/powerplantmatching',
     license='GPLv3',
 #    packages=find_packages(include='matching_analysis'),

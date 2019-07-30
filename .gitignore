@@ -91,6 +91,8 @@ ENV/
 # Rope project settings
 .ropeproject
 matching_analysis/*.png
+!matching_analysis/factor_plot_Matched Data.png
+
 
 Changelog.md
 matching_analysis/german_postcode_map.py

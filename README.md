@@ -1,4 +1,8 @@
 # powerplantmatching
+
+
+ ![https://pypi.org/project/powerplantmatching/](https://img.shields.io/pypi/v/powerplantmatching.svg) ![https://anaconda.org/conda-forge/powerplantmatching](https://img.shields.io/conda/vn/conda-forge/powerplantmatching.svg) ![](https://img.shields.io/pypi/pyversions/powerplantmatching) ![LICENSE](https://img.shields.io/pypi/l/powerplantmatching.svg) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1889465.svg)](https://doi.org/10.5281/zenodo.1889465)
+
 A toolset for cleaning, standardizing and combining multiple power
 plant databases.
 
@@ -20,12 +24,6 @@ as part of the
 [Stromnetze Research Initiative](http://forschung-stromnetze.info/projekte/grundlagen-und-konzepte-fuer-effiziente-dezentrale-stromnetze/).
 
 
-### **Warning (Nov 27 2018) - no more python2 support**
-
-Future commits of powerplantmatching will no longer support python2. The code will probably still work in most of the cases, however please consider updating your conda environment (if installed via conda) or moving to python 3 if installed with pip only. 
-
-
-
 ### What it can do
 
 - clean and standardize power plant data sets
@@ -40,7 +38,7 @@ Future commits of powerplantmatching will no longer support python2. The code wi
 
 If you are only interested in the power plant data, we provide our
 current merged dataset for European power plants as a
-[csv-file](https://media.githubusercontent.com/media/FRESNA/powerplantmatching/master/data/out/default/powerplants.csv). This
+[csv-file](https://raw.githubusercontent.com/FRESNA/powerplantmatching/master/matched_data_red.csv). This
 set combines the data of all the data sources listed in
 [Data-Sources](#Data-Sources) and provides the following information:
 
@@ -49,22 +47,40 @@ set combines the data of all the data sources listed in
 - **Technology**		- {CCGT, OCGT, Steam Turbine, Combustion Engine, Run-Of-River, Pumped Storage, Reservoir}
 - **Set**			- {Power Plant (PP), Combined Heat and Power (CHP), Storages (Stores)}
 - **Capacity**			- \[MW\]
+- **Duration** 	- Maximum state of charge capacity in terms of hours at full output capacity  
+- **Dam Information** -  Dam volume [Mm^3] and Dam Height [m]
 - **Geo-position**		- Latitude, Longitude
 - **Country**           - EU-27 + CH + NO (+ UK) minus Cyprus and Malta
 - **YearCommissioned**		- Commmisioning year of the powerplant
 - **RetroFit**        - Year of last retrofit 
-- **File**			- Source file of the data entry
 - **projectID**			- Immutable identifier of the power plant
 
+## Installation
 
-The current release together with the open version (without ESE dataset) of the processed data is stored on Zenodo: 
+ Using pip
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1889465.svg)](https://doi.org/10.5281/zenodo.1889465)
+```bash
+pip install powerplantmatching
+```
 
-In order include all datasources, please install the package and recompile the full matched data.
+or using conda 
 
-The following picture compares the total capacities per fuel type
-between the different data sources and the resulting dataset
+```bash 
+conda install -c conda-forge powerplantmatching
+```
+
+
+4. Copy config_example.yaml to config.yaml.
+
+Optional but recommended:resulting 
+ 
+
+6. Add your ENTSOE security token to the config.yaml file. The token can be obtained by following section 2 of the [RESTful API documentation](https://transparency.entsoe.eu/content/static_content/Static%20content/web%20api/Guide.html#_authentication_and_authorisation) of the ENTSOE-E Transparency platform.
+
+Optional: 
+
+7. Add your Google API key to the config.yaml file to enable geoparsing. The key can be obtained by following the [instructions](https://developers.google.com/maps/documentation/geocoding/get-api-key). 
+
 
 ![Total capacities per fuel type for the different data sources and the merged dataset.](https://user-images.githubusercontent.com/19226431/43489219-8a7506d6-951c-11e8-85dd-d772d1c76181.png)
 
@@ -73,34 +89,6 @@ Comparing the aggregated capacities per country and fuel type with the capacity 
 ![Capacity statistics comparison](https://user-images.githubusercontent.com/19226431/44577090-77b0ba00-a790-11e8-9575-30a7868222fa.png)
 
 
-## Installation
-
-1. Make sure that [git lfs](https://git-lfs.github.com/) is installed, in case of doubt just run `git lfs install`
-2. Copy or clone the repository to a directory of your choosing /path/to/powerplantmatching
-   ```shell
-   cd /path/to
-   git clone https://github.com/FRESNA/powerplantmatching.git
-   ```
-3. If you use conda (if not skip this step), install the requirements from requirements.yaml into a new environment powerplantmatching and activate it.
-   ```shell
-   conda env create -f powerplantmatching/requirements.yaml
-   source activate powerplantmatching
-   ```
-3. Install the package using `pip`
-   ```shell
-   pip install -e ./powerplantmatching'
-   ```
-4. Copy config_example.yaml to config.yaml.
-
-Optional but recommended:resulting 
- 
-
-5. Download the [ESE dataset](https://goo.gl/gVMwKJ) and store it under `/path/to/powerplantmatching/data/in/projects.xls`.
-6. Add your ENTSOE security token to the config.yaml file. The token can be obtained by following section 2 of the [RESTful API documentation](https://transparency.entsoe.eu/content/static_content/Static%20content/web%20api/Guide.html#_authentication_and_authorisation) of the ENTSOE-E Transparency platform.
-
-Optional: 
-
-7. Add your Google API key to the config.yaml file to enable geoparsing. The key can be obtained by following the [instructions](https://developers.google.com/maps/documentation/geocoding/get-api-key). 
 
 
 Once set up the package, the full database is available through the python command
