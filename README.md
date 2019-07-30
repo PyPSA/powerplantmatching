@@ -33,27 +33,10 @@ as part of the
 - provide cleaned data from different sources
 - choose between gros/net capacity
 - provide an already merged data set of six different data-sources
+- scale the power plant capacities in order to match country specific statistics about total power plant capacities
+- visualize the data
+- export your powerplant data to a [PyPSA](https://github.com/PyPSA/PyPSA) or [TIMES](https://iea-etsap.org/index.php/etsap-tools/model-generators/times) model 
 
-## Processed Data
-
-If you are only interested in the power plant data, we provide our
-current merged dataset for European power plants as a
-[csv-file](https://raw.githubusercontent.com/FRESNA/powerplantmatching/master/matched_data_red.csv). This
-set combines the data of all the data sources listed in
-[Data-Sources](#Data-Sources) and provides the following information:
-
-- **Power plant name**      - claim of each database
-- **Fueltype**          - {Bioenergy, Geothermal, Hard Coal, Hydro, Lignite, Nuclear, Natural Gas, Oil, Solar, Wind, Other}
-- **Technology**		- {CCGT, OCGT, Steam Turbine, Combustion Engine, Run-Of-River, Pumped Storage, Reservoir}
-- **Set**			- {Power Plant (PP), Combined Heat and Power (CHP), Storages (Stores)}
-- **Capacity**			- \[MW\]
-- **Duration** 	- Maximum state of charge capacity in terms of hours at full output capacity  
-- **Dam Information** -  Dam volume [Mm^3] and Dam Height [m]
-- **Geo-position**		- Latitude, Longitude
-- **Country**           - EU-27 + CH + NO (+ UK) minus Cyprus and Malta
-- **YearCommissioned**		- Commmisioning year of the powerplant
-- **RetroFit**        - Year of last retrofit 
-- **projectID**			- Immutable identifier of the power plant
 
 ## Installation
 
@@ -70,58 +53,76 @@ conda install -c conda-forge powerplantmatching
 ```
 
 
-4. Copy config_example.yaml to config.yaml.
+## Get the Data
 
-Optional but recommended:resulting 
- 
-
-6. Add your ENTSOE security token to the config.yaml file. The token can be obtained by following section 2 of the [RESTful API documentation](https://transparency.entsoe.eu/content/static_content/Static%20content/web%20api/Guide.html#_authentication_and_authorisation) of the ENTSOE-E Transparency platform.
-
-Optional: 
-
-7. Add your Google API key to the config.yaml file to enable geoparsing. The key can be obtained by following the [instructions](https://developers.google.com/maps/documentation/geocoding/get-api-key). 
-
-
-![Total capacities per fuel type for the different data sources and the merged dataset.](https://user-images.githubusercontent.com/19226431/43489219-8a7506d6-951c-11e8-85dd-d772d1c76181.png)
-
-Comparing the aggregated capacities per country and fuel type with the capacity statistics provided by the ENTSOE:
-
-![Capacity statistics comparison](https://user-images.githubusercontent.com/19226431/44577090-77b0ba00-a790-11e8-9575-30a7868222fa.png)
-
-
-
-
-Once set up the package, the full database is available through the python command
+In order to directly load  the already build data into a pandas dataframe just call 
 ```python
 import powerplantmatching as pm
-pm.collection.matched_data()
+pm.powerplants(from_url=True)
 ```
-Note, that for the compilation this will take its time (about 30 min for the standard data sources.) 
+
+which will parse and store the [actual dataset of powerplants of this repository](https://raw.githubusercontent.com/FRESNA/powerplantmatching/master/matched_data_red.csv
+). Setting `from_url=False` (default) will load all the necessary data files and combine them. Note that this might take some minutes.   
+
+
+The resulting dataset compared with the capacity statistics provided by the [ENTSOE SO&AF](https://data.open-power-system-data.org/national_generation_capacity/2019-02-22):
+
+![Capacity statistics comparison](https://raw.githubusercontent.com/FRESNA/powerplantmatching/v0.4.1/matching_analysis/factor_plot_Matched%20Data.png)
+
+
+
+The dataset combines the data of all the data sources listed in
+[Data-Sources](#Data-Sources) and provides the following information:
+
+- **Power plant name**      - claim of each database
+- **Fueltype**          - {Bioenergy, Geothermal, Hard Coal, Hydro, Lignite, Nuclear, Natural Gas, Oil, Solar, Wind, Other}
+- **Technology**		- {CCGT, OCGT, Steam Turbine, Combustion Engine, Run-Of-River, Pumped Storage, Reservoir}
+- **Set**			- {Power Plant (PP), Combined Heat and Power (CHP), Storages (Stores)}
+- **Capacity**			- \[MW\]
+- **Duration** 	- Maximum state of charge capacity in terms of hours at full output capacity  
+- **Dam Information** -  Dam volume [Mm^3] and Dam Height [m]
+- **Geo-position**		- Latitude, Longitude
+- **Country**           - EU-27 + CH + NO (+ UK) minus Cyprus and Malta
+- **YearCommissioned**		- Commmisioning year of the powerplant
+- **RetroFit**        - Year of last retrofit 
+- **projectID**			- Immutable identifier of the power plant
+
+
 
 ## Make your own configuration
 
-You have the option to easily manipulate the resulting data. Through the   **config.yaml** file you can 
+
+You have the option to easily manipulate the resulting data modifying the global configuration. Just save the [config.yaml file](https://github.com/FRESNA/powerplantmatching/blob/v0.4.1/powerplantmatching/package_data/config.yaml) as **~/.powerplantmatching_config.yaml**  manually or for linux users 
+
+```bash
+wget -O ~/.powerplantmatching_config.yaml https://raw.githubusercontent.com/FRESNA/powerplantmatching/v0.4.1/powerplantmatching/package_data/config.yaml
+```
+
+and change the **.powerplantmaching_config.yaml** file according to your wishes. Thereby you can
+
+
+<!-- 2. Modify the configuration in your python session. When import powerplantmachting you can load and modify the configuration that the package should use, e.g.
+
+	```python
+	import powerplantmatching as pm
+	config = pm.
+	``` -->
+
 
 - determine the global set of **countries** and **fueltypes**
 
 - determine which data sources to combine and which data sources should completely be contained in the final dataset
 
-- individually filter data sources via a [pandas.DataFrame.query](http://pandas.pydata.org/pandas-docs/stable/indexing.html#the-query-method) statement set as an argument of data source name in your config.yaml (see [config_example.yaml](https://github.com/FRESNA/powerplantmatching/blob/master/config_example.yaml)).    
-
-The [config_example.yaml](https://github.com/FRESNA/powerplantmatching/blob/master/config_example.yaml) provides an adjusted configuration for an european dataset.  
-Further you can 
-
-- scale the power plant capacities in order to match country specific statistics about total power plant capacities
-
-- trace back which original data flew into the resulting data.   
-
-- visualize the data
-
-- export your powerplant data to a [PyPSA](https://github.com/PyPSA/PyPSA) or [TIMES](https://iea-etsap.org/index.php/etsap-tools/model-generators/times) model 
+- individually filter data sources via [pandas.DataFrame.query](http://pandas.pydata.org/pandas-docs/stable/indexing.html#the-query-method) statements set as an argument of data source name. See the default  [config.yaml file](https://github.com/FRESNA/powerplantmatching/blob/v0.4.1/powerplantmatching/package_data/config.yaml) as an example
 
 
-There is a (bit out of date) [Documentation](https://github.com/FRESNA/powerplantmatching/files/1380529/PowerplantmatchingDoc.pdf) available, which (however) gives you some more extensive insight
-on the coding level.
+Optionally you can:
+ 
+
+- add your ENTSOE security token to the **.powerplantmaching_config.yaml** file. To enable updating the ENTSOE data by yourself. The token can be obtained by following section 2 of the [RESTful API documentation](https://transparency.entsoe.eu/content/static_content/Static%20content/web%20api/Guide.html#_authentication_and_authorisation) of the ENTSOE-E Transparency platform.
+
+- add your Google API key to the config.yaml file to enable geoparsing. The key can be obtained by following the [instructions](https://developers.google.com/maps/documentation/geocoding/get-api-key). 
+
 
 
 
@@ -132,8 +133,8 @@ on the coding level.
 - GEO - [Global Energy Observatory](http://globalenergyobservatory.org/), the data is not directly available on the website, but can be obtained from an [sqlite scraper](https://morph.io/coroa/global_energy_observatory_power_plants)
 - GPD - [Global Power Plant Database](http://datasets.wri.org/dataset/globalpowerplantdatabase) provide their data under a free license
 - CARMA - [Carbon Monitoring for Action](http://carma.org/plant)
-- ESE - [Energy Storage Exchange](http://www.energystorageexchange.org/) provide a database for storage units. Especially the hydro storage data is of big use for a combining power plant database. Since the data is not free, it is optional and can be [downloaded separately](http://www.energystorageexchange.org/projects/advanced_search?utf8=%E2%9C%93&name_eq=&country_sort_eq%5B%5D=Austria&country_sort_eq%5B%5D=Belgium&country_sort_eq%5B%5D=Bulgaria&country_sort_eq%5B%5D=Croatia&country_sort_eq%5B%5D=Czeck+Republic&country_sort_eq%5B%5D=Denmark&country_sort_eq%5B%5D=Estonia&country_sort_eq%5B%5D=Finland&country_sort_eq%5B%5D=France&country_sort_eq%5B%5D=Germany&country_sort_eq%5B%5D=Greece&country_sort_eq%5B%5D=Hungary&country_sort_eq%5B%5D=Ireland&country_sort_eq%5B%5D=Italy&country_sort_eq%5B%5D=Latvia&country_sort_eq%5B%5D=Lithuania&country_sort_eq%5B%5D=Luxembourg&country_sort_eq%5B%5D=Netherlands&country_sort_eq%5B%5D=Norway&country_sort_eq%5B%5D=Poland&country_sort_eq%5B%5D=Portugal&country_sort_eq%5B%5D=Romainia&country_sort_eq%5B%5D=Slovakia&country_sort_eq%5B%5D=Slovenia&country_sort_eq%5B%5D=Spain&country_sort_eq%5B%5D=Sweden&country_sort_eq%5B%5D=Switzerland&country_sort_eq%5B%5D=United+Kingdom&size_kw_ll=&size_kw_ul=&kW=&size_kwh_ll=&size_kwh_ul=&kWh=&%5Bannouncement_on_ll%281i%29%5D=&%5Bannouncement_on_ll%282i%29%5D=&%5Bannouncement_on_ll%283i%29%5D=1&%5Bannouncement_on_ul%281i%29%5D=&%5Bannouncement_on_ul%282i%29%5D=&%5Bannouncement_on_ul%283i%29%5D=1&%5Bconstruction_on_ll%281i%29%5D=&%5Bconstruction_on_ll%282i%29%5D=&%5Bconstruction_on_ll%283i%29%5D=1&%5Bconstruction_on_ul%281i%29%5D=&%5Bconstruction_on_ul%282i%29%5D=&%5Bconstruction_on_ul%283i%29%5D=1&%5Bcommissioning_on_ll%281i%29%5D=&%5Bcommissioning_on_ll%282i%29%5D=&%5Bcommissioning_on_ll%283i%29%5D=1&%5Bcommissioning_on_ul%281i%29%5D=&%5Bcommissioning_on_ul%282i%29%5D=&%5Bcommissioning_on_ul%283i%29%5D=1&%5Bdecommissioning_on_ll%281i%29%5D=&%5Bdecommissioning_on_ll%282i%29%5D=&%5Bdecommissioning_on_ll%283i%29%5D=1&%5Bdecommissioning_on_ul%281i%29%5D=&%5Bdecommissioning_on_ul%282i%29%5D=&%5Bdecommissioning_on_ul%283i%29%5D=1&owner_in=&vendor_company=&electronics_provider=&utility=&om_contractor=&developer=&order_by=&sort_order=&search_page=&search_search=search).
 - ENTSOe - [European Network of Transmission System Operators for Electricity](http://entsoe.eu/), annually provides statistics about aggregated power plant capacities. Their data can be used as a validation reference. We further use their [annual energy generation report from 2010](https://www.entsoe.eu/db-query/miscellaneous/net-generating-capacity) as an input for the hydro power plant classification. The [power plant dataset](https://transparency.entsoe.eu/generation/r2/installedCapacityPerProductionUnit/show) on the ENTSO-E transparency website is downloaded using the [ENTSO-E Transparency API](https://transparency.entsoe.eu/content/static_content/Static%20content/web%20api/Guide.html).
+- JRC - [Joint Research Centre Hydro-power plants database](https://github.com/energy-modelling-toolkit/hydro-power-database)
 - IRENA - [International Renewable Energy Agency](http://resourceirena.irena.org/gateway/dashboard/) open available statistics on power plant capacities.
 - BNETZA - [Bundesnetzagentur](https://www.bundesnetzagentur.de/EN/Areas/Energy/Companies/SecurityOfSupply/GeneratingCapacity/PowerPlantList/PubliPowerPlantList_node.html) open available data source for Germany's power plants
 
@@ -147,15 +148,19 @@ The considered reliability scores are:
 
 | Dataset          | Reliabilty score |
 | :--------------- | :--------------- |
-| BNETZA           |                5 |
-| CARMA            |                1 |
-| ENTSOE           |                4 |
-| ESE              |                4 |
-| GEO              |                3 |
-| IWPDCY           |                3 |
-| OPSD             |                5 |
-| UBA              |                5 |
-| GPD              |                3 |
+| JRC     |                   6 |
+| ESE     |                   6 |
+| UBA     |                   5 |
+| OPSD    |                   5 |
+| OPSD_EU |                   5 |
+| OPSD_DE |                   5 |
+| WEPP    |                   4 |
+| ENTSOE  |                   4 |
+| IWPDCY  |                   3 |
+| GPD     |                   3 |
+| GEO     |                   3 |
+| BNETZA  |                   3 |
+| CARMA   |                   1 |
 
 
 
@@ -163,14 +168,14 @@ The considered reliability scores are:
 
 A small presentation of the tool is given in the [jupyter notebook](https://github.com/FRESNA/powerplantmatching/blob/master/Example%20of%20Use.ipynb) 
 
-## Module Structure
+<!-- ## Module Structure
 
 The package consists of ten modules. For creating a new dataset you
 can make most use of the modules data, clean and match, which provide
 you with function for data supply, vertical cleaning and horizontal
 matching, respectively.
 
-![Modular package structure](https://user-images.githubusercontent.com/19226431/31513014-2feef76e-af8d-11e7-9b4d-f1be929e2dba.png)
+![Modular package structure](https://user-images.githubusercontent.com/19226431/31513014-2feef76e-af8d-11e7-9b4d-f1be929e2dba.png) -->
 
 ## How it works
 
