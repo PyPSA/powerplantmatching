@@ -46,11 +46,19 @@ as part of the
 pip install powerplantmatching
 ```
 
-or using conda 
+or conda (as long as the package is not yet in the conda-forge channel)
+
+```bash
+pip install powerplantmatching entsoe-py --no-deps
+conda install pandas networkx pycountry xlrd seaborn pyyaml requests matplotlib geopy beautifulsoup4 cartopy 
+
+```
+
+<!-- or using conda 
 
 ```bash 
 conda install -c conda-forge powerplantmatching
-```
+``` -->
 
 
 ## Get the Data
@@ -67,7 +75,7 @@ which will parse and store the [actual dataset of powerplants of this repository
 
 The resulting dataset compared with the capacity statistics provided by the [ENTSOE SO&AF](https://data.open-power-system-data.org/national_generation_capacity/2019-02-22):
 
-![Capacity statistics comparison](https://raw.githubusercontent.com/FRESNA/powerplantmatching/v0.4.1/matching_analysis/factor_plot_Matched%20Data.png)
+![Capacity statistics comparison](https://raw.githubusercontent.com/FRESNA/powerplantmatching/master/matching_analysis/factor_plot_Matched%20Data.png)
 
 
 
@@ -98,10 +106,10 @@ All data files of the package will be stored in the folder given by `pm.core.pac
 ## Make your own configuration
 
 
-You have the option to easily manipulate the resulting data modifying the global configuration. Just save the [config.yaml file](https://github.com/FRESNA/powerplantmatching/blob/v0.4.1/powerplantmatching/package_data/config.yaml) as **~/.powerplantmatching_config.yaml**  manually or for linux users 
+You have the option to easily manipulate the resulting data modifying the global configuration. Just save the [config.yaml file](https://github.com/FRESNA/powerplantmatching/blob/master/powerplantmatching/package_data/config.yaml) as **~/.powerplantmatching_config.yaml**  manually or for linux users 
 
 ```bash
-wget -O ~/.powerplantmatching_config.yaml https://raw.githubusercontent.com/FRESNA/powerplantmatching/v0.4.1/powerplantmatching/package_data/config.yaml
+wget -O ~/.powerplantmatching_config.yaml https://raw.githubusercontent.com/FRESNA/powerplantmatching/master/powerplantmatching/package_data/config.yaml
 ```
 
 and change the **.powerplantmaching_config.yaml** file according to your wishes. Thereby you can
@@ -119,7 +127,7 @@ and change the **.powerplantmaching_config.yaml** file according to your wishes.
 
 - determine which data sources to combine and which data sources should completely be contained in the final dataset
 
-- individually filter data sources via [pandas.DataFrame.query](http://pandas.pydata.org/pandas-docs/stable/indexing.html#the-query-method) statements set as an argument of data source name. See the default  [config.yaml file](https://github.com/FRESNA/powerplantmatching/blob/v0.4.1/powerplantmatching/package_data/config.yaml) as an example
+- individually filter data sources via [pandas.DataFrame.query](http://pandas.pydata.org/pandas-docs/stable/indexing.html#the-query-method) statements set as an argument of data source name. See the default  [config.yaml file](https://github.com/FRESNA/powerplantmatching/blob/master/powerplantmatching/package_data/config.yaml) as an example
 
 
 Optionally you can:
