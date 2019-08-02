@@ -19,10 +19,11 @@ Functions for vertically cleaning a dataset.
 """
 from __future__ import absolute_import, print_function
 
-from .config import get_config
+from .core import get_config, _data_out, get_obj_if_Acc
+from .utils import get_name, set_column_name
 from .duke import duke
-from .utils import _data_out, get_obj_if_Acc, get_name, set_column_name
 
+import os
 import numpy as np
 import pandas as pd
 import networkx as nx
@@ -243,10 +244,10 @@ def cliques(df, dataduplicates):
 
     return df.assign(grouped=grouped)
 
-
 def aggregate_units(df, dataset_name=None,
                     pre_clean_name=True,
                     save_aggregation=True,
+                    country_wise=True,
                     use_saved_aggregation=False,
                     config=None):
     """
@@ -275,36 +276,42 @@ def aggregate_units(df, dataset_name=None,
     if config is None:
         config = get_config()
 
-    def most_frequent(ds):
-        return ds.value_counts(dropna=False).index[0]
-
     weighted_cols = [col for col in ['Efficiency', 'Duration']
                      if col in config['target_columns']]
     df = (df.assign(**{col: df[col] * df.Capacity for col in weighted_cols})
             .assign(lat=df.lat.astype(float),
-                    lon=df.lon.astype(float)))
+                    lon=df.lon.astype(float))
+            .assign(**{col: df[col].astype(str) for col in
+                       ['Name', 'Country', 'Fueltype',
+                        'Technology', 'Set', 'File']
+                       if col in config['target_columns']}))
+
+    def mode(x):
+        return x.mode(dropna=False).at[0]
 
     props_for_groups = pd.Series({
-                'Name': most_frequent,
-                'Country': most_frequent,
-                'Fueltype': most_frequent,
-                'Technology': most_frequent,
-                'Set': most_frequent,
-                'File': most_frequent,
-                'Capacity': pd.Series.sum,
-                'lat': pd.Series.mean,
-                'lon': pd.Series.mean,
-                'YearCommissioned': pd.Series.min,
-                'Retrofit': pd.Series.max,
-                'projectID': pd.Series.tolist,
-                'Duration': pd.Series.sum,  # note this is weighted sum
-                'Efficiency': pd.Series.mean  # note this is weighted mean
+                'Name': mode,
+                'Country': mode,
+                'Fueltype': mode,
+                'Technology': mode,
+                'Set': mode,
+                'File': mode,
+                'Capacity': 'sum',
+                'lat': 'mean',
+                'lon': 'mean',
+                'YearCommissioned': 'min',
+                'Retrofit': 'max',
+                'projectID': list,
+                'eic_code': set,
+                'Duration': 'sum',  # note this is weighted sum
+                'Volume_Mm3': 'sum',
+                'DamHeight_m': 'sum',
+                'Efficiency': 'mean'  # note this is weighted mean
                 })[config['target_columns']].to_dict()
 
     dataset_name = get_name(df) if dataset_name is None else dataset_name
 
     if pre_clean_name:
-        logger.info("Cleaning plant names in '{}'.".format(dataset_name))
         df = clean_powerplantname(df)
 
     logger.info("Aggregating blocks to entire units in '{}'."
@@ -315,25 +322,35 @@ def aggregate_units(df, dataset_name=None,
 
 
     if use_saved_aggregation & save_aggregation:
-        try:
+        if os.path.exists(path_name):
             logger.info("Reading saved aggregation groups for dataset '{}'."
                         .format(dataset_name))
             groups = (pd.read_csv(path_name, header=None, index_col=0)
                         .reindex(index=df.index))
             df = df.assign(grouped=groups.values)
-        except (ValueError, IOError):
-            logger.warning("Non-existing saved aggregation groups for dataset"
+        else:
+            logger.info("Non-existing saved aggregation groups for dataset"
                            " '{0}', continuing by aggregating again"
                            .format(dataset_name))
             if 'grouped' in df:
                 df.drop('grouped', axis=1, inplace=True)
 
     if 'grouped' not in df:
-        duplicates = duke(df)
+        if country_wise:
+            duplicates = pd.concat([duke(df.query('Country == @c'))
+                                    for c in df.Country.unique()])
+        else:
+            duplicates = duke(df)
         df = cliques(df, duplicates)
         if save_aggregation:
-            df.grouped.to_csv(path_name)
+            df.grouped.to_csv(path_name, header=False)
+
     df = df.groupby('grouped').agg(props_for_groups)
+    df = df.replace('nan', np.nan)
+
+    if 'eic_code' in df:
+        df = df.assign(eic_code = df['eic_code'].apply(list))
+
     df = (df
           .assign(**{col: df[col].div(df['Capacity'])
                   for col in weighted_cols})

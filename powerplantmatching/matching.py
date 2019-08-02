@@ -20,16 +20,15 @@ Functions for linking and combining different datasets
 
 from __future__ import absolute_import, print_function
 
-from .config import get_config
-from .utils import read_csv_if_string, _data_out, parmap, \
-                    get_obj_if_Acc, get_name
+from .core import get_config, _data_out, get_obj_if_Acc
+from .utils import read_csv_if_string, parmap, get_name
 from .duke import duke
 from .cleaning import clean_technology
-from .data import data_config
 
+import os.path
 import pandas as pd
 import numpy as np
-import itertools
+from itertools import combinations
 import logging
 logger = logging.getLogger(__name__)
 
@@ -50,8 +49,8 @@ def best_matches(links):
             .apply(lambda x: x.loc[x.scores.idxmax(), labels]))
 
 
-def compare_two_datasets(datasets, labels, use_saved_matches=False,
-                         config=None, **dukeargs):
+def compare_two_datasets(dfs, labels, use_saved_matches=False,
+                         country_wise=True, config=None, **dukeargs):
     """
     Duke-based horizontal match of two databases. Returns the matched
     dataframe including only the matched entries in a multi-indexed
@@ -67,7 +66,7 @@ def compare_two_datasets(datasets, labels, use_saved_matches=False,
 
     Parameters
     ----------
-    datasets : list of pandas.Dataframe or strings
+    dfs : list of pandas.Dataframe or strings
         dataframes or csv-files to use for the matching
     labels : list of strings
         Names of the databases for the resulting dataframe
@@ -77,20 +76,35 @@ def compare_two_datasets(datasets, labels, use_saved_matches=False,
     if config is None:
         config = get_config()
 
-    datasets = list(map(read_csv_if_string, datasets))
+    dfs = list(map(read_csv_if_string, dfs))
     if not ('singlematch' in dukeargs):
         dukeargs['singlematch'] = True
     saving_path = _data_out('matches/matches_{}_{}.csv'
                             .format(*np.sort(labels)), config=config)
     if use_saved_matches:
-        try:
-            logger.info('Reading saved matches for datasets {} and {}'
+        if os.path.exists(saving_path):
+            logger.info('Reading saved matches for dfs {} and {}'
                         .format(*labels))
             return pd.read_csv(saving_path, index_col=0)
-        except (ValueError, IOError):
+        else:
             logger.warning("Non-existing saved matches for dataset '{}', '{}'"
                            " continuing by matching again".format(*labels))
-    links = duke(datasets, labels=labels, **dukeargs)
+
+    def country_link(dfs, country):
+        #country_selector for both dataframes
+        sel_country_b = [df['Country'] == country for df in dfs]
+        #only append if country appears in both dataframse
+        if all(sel.any() for sel in sel_country_b):
+            return duke([df[sel] for df, sel in zip(dfs, sel_country_b)],
+                         labels, **dukeargs)
+        else:
+            return pd.DataFrame()
+
+    if country_wise:
+        countries = config['target_countries']
+        links = pd.concat([country_link(dfs, c) for c in countries])
+    else:
+        links = duke(dfs, labels=labels, **dukeargs)
     matches = best_matches(links)
     matches.to_csv(saving_path)
     return matches
@@ -164,7 +178,7 @@ def link_multiple_datasets(datasets, labels, use_saved_matches=False,
     dfs = list(map(read_csv_if_string, datasets))
     labels = [get_name(df) for df in dfs]
 
-    combinations = list(itertools.combinations(range(len(labels)), 2))
+    combs = list(combinations(range(len(labels)), 2))
 
     def comp_dfs(dfs_lbs):
         logger.info('Comparing {0} with {1}'.format(*dfs_lbs[2:]))
@@ -172,7 +186,7 @@ def link_multiple_datasets(datasets, labels, use_saved_matches=False,
                                     use_saved_matches=use_saved_matches,
                                     config=config, **dukeargs)
 
-    mapargs = [[dfs[c], dfs[d], labels[c], labels[d]] for c, d in combinations]
+    mapargs = [[dfs[c], dfs[d], labels[c], labels[d]] for c, d in combs]
     all_matches = parmap(comp_dfs, mapargs)
 
     return cross_matches(all_matches, labels=labels)
@@ -246,66 +260,32 @@ def reduce_matched_dataframe(df, show_orig_names=False, config=None):
     """
     df = get_obj_if_Acc(df)
 
-    def concat_strings(s):
-        if s.isnull().all():
-            return np.nan
-        else:
-            return s[s.notnull()].str.cat(sep=', ')
-
     if config is None:
         config = get_config()
 
+
     # define which databases are present and get their reliability_score
     sources = df.columns.levels[1]
-    rel_scores = (pd.DataFrame(data_config).loc['reliability_score', sources]
-                    .sort_values(ascending=False))
+    rel_scores = pd.Series({s: config[s]['reliability_score'] for s in sources})\
+                   .sort_values(ascending=False)
+    cols = config['target_columns']
+    props_for_groups = {col : 'first'
+                        for col in cols}
+    props_for_groups.update({'YearCommisisoned': 'min',
+                     'Retrofit': 'max',
+                     'projectID': lambda x: dict(x.droplevel(0).dropna()),
+                     'eic_code': 'unique'})
+    props_for_groups = pd.Series(props_for_groups)[cols].to_dict()
 
-    def prioritise_reliability(df, how='mean'):
-        """
-        Take the first most reliable value if dtype==str,
-        else take mean of most reliable values
-        """
+    #set low priority on Fueltype 'Other'
+    #turn it since aggregating only possible for axis=0
+    sdf = df.replace({'Fueltype' : {'Other': np.nan}})\
+            .stack(1).reindex(rel_scores.index, level=1)\
+            .groupby(level=0)\
+            .agg(props_for_groups)\
+            .replace({'Fueltype' : {np.nan: 'Other'}})
 
-        # Arrange columns in descending order of reliability
-        df = df.loc[df.notnull().any(axis=1)]
-
-        if df.empty:
-            logger.warn('Empty dataframe passed to `prioritise_reliability`.')
-            return pd.Series()
-
-        df = df.reindex(columns=rel_scores.index)
-
-        # Aggregate data with same reliability scores for numeric columns
-        # (but DO maintain order)
-        if not ((df.dtypes == object) | (df.dtypes == str)).any():
-            # all numeric
-            df = df.groupby(rel_scores, axis=1, sort=False).agg(how)
-
-        return df.apply(lambda ds: ds.dropna().iloc[0], axis=1)
-
-    sdf = pd.DataFrame.from_dict({
-        'Name': prioritise_reliability(df['Name']),
-        'Fueltype': (prioritise_reliability(df['Fueltype']
-                                            .replace({'Other': np.nan}))
-                     .reindex(df.index, fill_value='Other')),
-        'Technology': prioritise_reliability(df['Technology']),
-        'Country': prioritise_reliability(df['Country']),
-        'Set': prioritise_reliability(df['Set']),
-        'Capacity': prioritise_reliability(df['Capacity'], how='median'),
-        'Duration': prioritise_reliability(df['Duration']),
-        'YearCommissioned': df['YearCommissioned'].min(axis=1),
-        'Retrofit': df['Retrofit'].max(axis=1),
-        'lat': prioritise_reliability(df['lat']),
-        'lon': prioritise_reliability(df['lon']),
-        'File': df['File'].apply(concat_strings, axis=1),
-        'projectID': df['projectID'].apply(lambda x: dict(x.dropna()), axis=1)
-    }).reindex(config['target_columns'], axis=1)
 
     if show_orig_names:
         sdf = sdf.assign(**dict(df.Name))
-    sdf = clean_technology(sdf, generalize_hydros=False)
-    sdf.reset_index(drop=True)
-    if show_orig_names:
-        return sdf
-    else:
-        return sdf.reindex(columns=config['target_columns'])
+    return sdf.pipe(clean_technology).reset_index(drop=True)

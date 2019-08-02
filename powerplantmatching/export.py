@@ -20,12 +20,12 @@
 # or the VEDA-TIMES modelling framework:
 #   http://iea-etsap.org/index.php/etsap-tools/data-handling-shells/veda
 
+from .core import _data_out, get_obj_if_Acc
+from .heuristics import set_denmark_region_id, set_known_retire_years
+
 import pandas as pd
 import numpy as np
 import pycountry
-from .collection import matched_data
-from .heuristics import set_denmark_region_id, set_known_retire_years
-from .utils import _data_out, get_obj_if_Acc
 import logging
 logger = logging.getLogger(__name__)
 cget = pycountry.countries.get
@@ -88,6 +88,7 @@ def to_TIMES(df=None, use_scaled_capacity=False, baseyear=2015):
     Transform a given dataset into the TIMES format and export as .xlsx.
     """
     if df is None:
+        from .collection import matched_data
         df = matched_data()
         if df is None:
             raise RuntimeError("The data to be exported does not yet exist.")

@@ -18,12 +18,11 @@
 Functions to modify and adjust power plant datasets
 """
 
-from __future__ import absolute_import, print_function
+from .core import get_config, _package_data, get_obj_if_Acc
+from .utils import lookup, get_name
+
 import pandas as pd
 import numpy as np
-from .utils import lookup, _data_in, get_obj_if_Acc, to_list_if_other, get_name
-from .config import get_config
-from .cleaning import (aggregate_units, clean_technology)
 import logging
 from six import iteritems
 logger = logging.getLogger(__name__)
@@ -49,7 +48,8 @@ def extend_by_non_matched(df, extend_by, label=None, query=None,
         string is used if the columns of the additional database do not
         correspond to the ones of the dataset
     """
-    from .data import data_config
+    from . import data
+    from .cleaning import aggregate_units
     df = get_obj_if_Acc(df)
 
     if config is None:
@@ -57,7 +57,7 @@ def extend_by_non_matched(df, extend_by, label=None, query=None,
 
     if isinstance(extend_by, str):
         label = extend_by
-        extend_by = data_config[label]['read_function']()
+        extend_by = getattr(data, extend_by)()
     label = get_name(extend_by) if label is None else label
 
     if df.columns.nlevels > 1:
@@ -138,7 +138,7 @@ def fill_missing_duration(df):
     return df
 
 
-def extend_by_VRE(df, base_year, prune_beyond=True):
+def extend_by_VRE(df, config=None, base_year=2017, prune_beyond=True):
     """
     Extends a given reduced dataframe by externally given VREs.
 
@@ -154,45 +154,53 @@ def extend_by_VRE(df, base_year, prune_beyond=True):
     df : pd.DataFrame
          Extended dataframe
     """
-    from .data import IRENA_stats, OPSD_VRE
+    from .data import OPSD_VRE
     df = get_obj_if_Acc(df)
-    df = df.copy()
-    # Drop Solar (except CSP), Wind and Bioenergy which are to be replaced
-    df = df[~(((df.Fueltype == 'Solar') & (df.Technology != 'CSP')) |
-              (df.Fueltype == 'Wind') | (df.Fueltype == 'Bioenergy'))]
-    cols = df.columns
-    # Take CH, DE, DK values from OPSD
-    logger.info('Read OPSD_VRE dataframe...')
-    vre_CH_DE_DK = OPSD_VRE().loc[lambda x: x.Fueltype.isin(['Solar', 'Wind',
-                                                             'Bioenergy'])]
-    vre_DK = vre_CH_DE_DK[vre_CH_DE_DK.Country == 'Denmark']
-    vre_CH_DE = vre_CH_DE_DK[vre_CH_DE_DK.Country != 'Denmark']
-    logger.info('Aggregate CH+DE by commyear')
-    vre_CH_DE = aggregate_VRE_by_commyear(vre_CH_DE)
-    vre_CH_DE.loc[:, 'File'] = 'renewable_power_plants.sqlite'
-    # Take other countries from IRENA stats without:
-    # DE, DK_Wind+Solar+Hydro, CH_Bioenergy
-    logger.info('Read IRENA_stats dataframe...')
-    vre = IRENA_stats().loc[lambda x: x.Fueltype.isin(['Solar', 'Wind',
-                                                       'Bioenergy'])]
-    vre = vre[~(vre.Country == 'Germany')]
-    vre = vre[~((vre.Country == 'Denmark') & ((vre.Fueltype == 'Wind') |
-                (vre.Fueltype == 'Solar') | (vre.Fueltype == 'Hydro')))]
-    vre = vre[~((vre.Country == 'Switzerland') &
-                (vre.Fueltype == 'Bioenergy'))]
-    # Drop IRENA's CSP. This data seems to be outdated!
-    vre = vre[~(vre.Technology == 'CSP')]
-    vre = derive_vintage_cohorts_from_statistics(vre, base_year=base_year)
-    vre.loc[:, 'File'] = 'IRENA_CapacityStatistics2017.csv'
-    # Concatenate
-    logger.info('Concatenate...')
-    cc = pd.concat([df, vre_DK, vre_CH_DE, vre], ignore_index=True, sort=False)
-    cc = cc.loc[:, cols]
-    if prune_beyond:
-        cc = cc[(cc.YearCommissioned <= base_year) |
-                (cc.YearCommissioned.isnull())]
-    cc.reset_index(drop=True, inplace=True)
-    return cc
+    config = get_config() if config is None else config
+
+    vre = OPSD_VRE(config=config).query('Fueltype != "Hydro"')\
+            .reindex(columns=config['target_columns'])
+    return df.append(vre, sort=False)
+
+#I am sorry to drop this, but this is a bit too specific for maintaining
+#
+#    df = df.copy()
+#    # Drop Solar (except CSP), Wind and Bioenergy which are to be replaced
+#    df = df[~(((df.Fueltype == 'Solar') & (df.Technology != 'CSP')) |
+#              (df.Fueltype == 'Wind') | (df.Fueltype == 'Bioenergy'))]
+#    cols = df.columns
+#    # Take CH, DE, DK values from OPSD
+#    logger.info('Read OPSD_VRE dataframe...')
+#    vre_CH_DE_DK = OPSD_VRE().loc[lambda x: x.Fueltype.isin(['Solar', 'Wind',
+#                                                             'Bioenergy'])]
+#    vre_DK = vre_CH_DE_DK[vre_CH_DE_DK.Country == 'Denmark']
+#    vre_CH_DE = vre_CH_DE_DK[vre_CH_DE_DK.Country != 'Denmark']
+#    logger.info('Aggregate CH+DE by commyear')
+#    vre_CH_DE = aggregate_VRE_by_commyear(vre_CH_DE)
+#    vre_CH_DE.loc[:, 'File'] = 'renewable_power_plants.sqlite'
+#    # Take other countries from IRENA stats without:
+#    # DE, DK_Wind+Solar+Hydro, CH_Bioenergy
+#    logger.info('Read IRENA_stats dataframe...')
+#    vre = IRENA_stats().loc[lambda x: x.Fueltype.isin(['Solar', 'Wind',
+#                                                       'Bioenergy'])]
+#    vre = vre[~(vre.Country == 'Germany')]
+#    vre = vre[~((vre.Country == 'Denmark') & ((vre.Fueltype == 'Wind') |
+#                (vre.Fueltype == 'Solar') | (vre.Fueltype == 'Hydro')))]
+#    vre = vre[~((vre.Country == 'Switzerland') &
+#                (vre.Fueltype == 'Bioenergy'))]
+#    # Drop IRENA's CSP. This data seems to be outdated!
+#    vre = vre[~(vre.Technology == 'CSP')]
+#    vre = derive_vintage_cohorts_from_statistics(vre, base_year=base_year)
+#    vre.loc[:, 'File'] = 'IRENA_CapacityStatistics2017.csv'
+#    # Concatenate
+#    logger.info('Concatenate...')
+#    cc = pd.concat([df, vre_DK, vre_CH_DE, vre], ignore_index=True, sort=False)
+#    cc = cc.loc[:, cols]
+#    if prune_beyond:
+#        cc = cc[(cc.YearCommissioned <= base_year) |
+#                (cc.YearCommissioned.isnull())]
+#    cc.reset_index(drop=True, inplace=True)
+#    return cc
 
 
 def fill_missing_commyears(df):
@@ -413,6 +421,7 @@ def gross_to_net_factors(reference='opsd', aggfunc='median',
                          return_entire_data=False):
     """
     """
+    from .cleaning import clean_technology
     if reference == 'opsd':
         from .data import OPSD
         reference = OPSD(rawDE=True)
@@ -461,7 +470,7 @@ def scale_to_net_capacities(df, is_gross=True, catch_all=True):
 
 
 def PLZ_to_LatLon_map():
-    return pd.read_csv(_data_in('PLZ_Coords_map.csv'), index_col='PLZ')
+    return pd.read_csv(_package_data('PLZ_Coords_map.csv'), index_col='PLZ')
 
 
 def set_known_retire_years(df):

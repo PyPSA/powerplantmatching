@@ -6,24 +6,26 @@ from setuptools import setup, find_packages
 from codecs import open
 
 
-#with open('README.md', encoding='utf-8') as f:
-#    long_description = f.read()
+with open('README.md', encoding='utf-8') as f:
+    long_description = f.read()
 
 setup(
     name='powerplantmatching',
-    version='0.10.0',
+    version='0.4.1',
     author='Fabian Hofmann (FIAS), Jonas Hoersch (KIT), Fabian Gotzens (FZ Jülich)',
     author_email='hofmann@fias.uni-frankfurt.de',
     description='Toolset for generating and managing Power Plant Data',
-#    long_description=long_description,
+    long_description=long_description,
     url='https://github.com/FRESNA/powerplantmatching',
     license='GPLv3',
-    packages=find_packages(exclude=['duke_binaries', 'Hydro aggregation.py']),
+#    packages=find_packages(include='matching_analysis'),
+    packages=['powerplantmatching'],
     include_package_data=True,
     install_requires=['numpy','scipy','pandas>=0.23.0','networkx>=1.10',
                       'pycountry', 'xlrd', 'seaborn', 'pyyaml', 'requests',
-                      'matplotlib', 'cartopy', 'geopy', 'xlrd'],
+                      'matplotlib', 'geopy', 'xlrd', 'entsoe-py'],
     classifiers=[
+        'Programming Language :: Python :: 3',
 #        'Development Status :: 3 - Alpha',
         'Environment :: Console',
         'Intended Audience :: Science/Research',

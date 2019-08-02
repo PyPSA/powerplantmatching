@@ -20,64 +20,15 @@ Utility functions for checking data completness and supporting other functions
 
 from __future__ import print_function, absolute_import
 
-from .config import get_config
-from os.path import dirname
+from .core import get_config, _data_in, _package_data, logger, get_obj_if_Acc
 import os
 import time
 import pandas as pd
 import six
 import pycountry as pyc
-import logging
 import numpy as np
-import sys
 import multiprocessing
 from ast import literal_eval as liteval
-
-
-def _data(fn):
-    return os.path.join(dirname(__file__), '..', 'data', fn)
-
-
-def _data_in(fn):
-    return os.path.join(dirname(__file__), '..', 'data', 'in', fn)
-
-
-def _data_out(fn, config=None):
-    if config is None:
-        return os.path.join(dirname(__file__), '..', 'data', 'out',
-                            'default', fn)
-    else:
-        return os.path.join(dirname(__file__), '..', 'data', 'out',
-                            config['hash'], fn)
-
-
-# Logging: General Settings
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
-# Logging: File
-logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] "
-                                 "[%(levelname)-5.5s]  %(message)s")
-fileHandler = logging.FileHandler(_data_out('../PPM.log'))
-fileHandler.setFormatter(logFormatter)
-logger.addHandler(fileHandler)
-# Logging: Console
-# consoleHandler = logging.StreamHandler()
-# logger.addHandler(consoleHandler)
-text = str if sys.version_info >= (3, 0) else unicode
-
-
-class Accessor(object):
-    """
-    Helper class to define super class of PowerPlantAccessor
-    """
-    pass
-
-
-def get_obj_if_Acc(obj):
-    if isinstance(obj, Accessor):
-        return obj._obj
-    else:
-        return obj
 
 
 def lookup(df, keys=None, by='Country, Fueltype', exclude=None, unit='MW'):
@@ -126,6 +77,25 @@ def lookup(df, keys=None, by='Country, Fueltype', exclude=None, unit='MW'):
         return (lookup_single(df)/scaling).fillna(0.).round(3)
 
 
+def parse_if_not_stored(name, update=False, config=None,
+                        parse_func=None, **kwargs):
+    if config is None:
+        config = get_config()
+    df_config = config[name]
+    path = _data_in(df_config['fn'])
+
+    if not os.path.exists(path) or update:
+        if parse_func is None:
+            logger.info(f'Retrieving data from {df_config["url"]}')
+            data = pd.read_csv(df_config['url'], **kwargs)
+        else:
+            data = parse_func()
+        data.to_csv(path)
+    else:
+        data = pd.read_csv(path, **kwargs)
+    return data
+
+
 def config_filter(df, name=None, config=None):
     """
     Convenience function to filter data source according to the config.yaml
@@ -150,8 +120,9 @@ def config_filter(df, name=None, config=None):
                    for k, v in to_dict_if_string(source).items()}
         if name in queries and queries[name] is not None:
             df = df.query(queries[name])
-    return (df[lambda df: df.Country.isin(config['target_countries']) &
-               df.Fueltype.isin(config['target_fueltypes'])]
+    countries = config['target_countries']
+    fueltypes = config['target_fueltypes']
+    return (df.query("Country in @countries and Fueltype in @fueltypes")
             .reindex(columns=config['target_columns'])
             .reset_index(drop=True))
 
@@ -173,11 +144,14 @@ def correct_manually(df, name, config=None):
     if config is None:
         config = get_config()
 
-    corrections = (pd.read_csv(_data('manual_corrections.csv'),
+    corrections = pd.read_csv(_package_data('manual_corrections.csv'),
                                encoding='utf-8',
                                parse_dates=['last_update'])
-                   [lambda df: df[name].notnull()]
-                   .set_index(name))
+
+    if name in corrections:
+        corrections = corrections[corrections[name].notnull()].set_index(name)
+    else:
+        return df.reindex(columns=config['target_columns'])
     if len(corrections) == 0:
         return df.reindex(columns=config['target_columns'])
     source_file = data_config[name]['source_file']
@@ -196,7 +170,8 @@ def correct_manually(df, name, config=None):
     return df.reset_index().reindex(columns=config['target_columns'])
 
 
-def set_uncommon_fueltypes_to_other(df, fillna_other=True, **kwargs):
+def set_uncommon_fueltypes_to_other(df, fillna_other=True, config=None,
+                                    **kwargs):
     """
     Replace uncommon fueltype specifications as by 'Other'. This helps to
     compare datasources with Capacity statistics given by
@@ -214,6 +189,7 @@ def set_uncommon_fueltypes_to_other(df, fillna_other=True, **kwargs):
         ['Bioenergy', 'Geothermal', 'Mixed fuel types', 'Electro-mechanical',
         'Hydrogen Storage']
     """
+    config = get_config() if config is None else config
     df = get_obj_if_Acc(df)
 
     default = ['Bioenergy', 'Geothermal', 'Mixed fuel types',
@@ -225,14 +201,14 @@ def set_uncommon_fueltypes_to_other(df, fillna_other=True, **kwargs):
     return df
 
 
-def read_csv_if_string(data):
+def read_csv_if_string(df):
     """
     Convenience function to import powerplant data source if a string is given.
     """
-    from .data import data_config
+    from . import data
     if isinstance(data, six.string_types):
-        data = data_config[data]['read_function']()
-    return data
+        df =getattr(data, df)()
+    return df
 
 
 def to_categorical_columns(df):
@@ -295,9 +271,9 @@ def projectID_to_dict(df):
     """
     if df.columns.nlevels > 1:
         return df.assign(projectID=(df.projectID.stack().dropna().apply(
-                lambda df: liteval(df)).unstack()))
+                lambda ds: liteval(ds)).unstack()))
     else:
-        return df.assign(projectID=df.projectID.apply(lambda df: liteval(df)))
+        return df.assign(projectID=df.projectID.apply(lambda x: liteval(x)))
 
 
 def select_by_projectID(df, projectID, dataset_name=None):
@@ -306,7 +282,7 @@ def select_by_projectID(df, projectID, dataset_name=None):
     """
     df = get_obj_if_Acc(df)
 
-    if isinstance(df.projectID.iloc[0], text):
+    if isinstance(df.projectID.iloc[0], str):
         return df.query("projectID == @projectID")
     else:
         return df[df['projectID'].apply(lambda x:
@@ -388,19 +364,33 @@ def parmap(f, arg_list, config=None):
         return list(map(f, arg_list))
 
 
-def country_alpha_2(country):
+
+country_map = pd.read_csv(_package_data('country_codes.csv'))\
+                .replace({'name':{'Czechia': 'Czech Republic'}})
+
+def country_alpha2(country):
     """
     Convenience function for converting country name into alpha 2 codes
     """
+    if not isinstance(country, str):
+        return ''
     try:
         return pyc.countries.get(name=country).alpha_2
     except KeyError:
         return ''
 
 
+def convert_alpha2_to_country(df):
+    df = get_obj_if_Acc(df)
+    return df.assign(Country = df.Country
+                     .map(country_map.set_index('alpha_2')['name']))
+
+
 def convert_country_to_alpha2(df):
     df = get_obj_if_Acc(df)
-    return df.assign(Country = df.Country.apply(country_alpha_2))
+    return df.assign(Country = df.Country
+                     .map(country_map.set_index('name')['alpha_2']))
+
 
 
 def breakdown_matches(df):
@@ -416,16 +406,24 @@ def breakdown_matches(df):
     """
     df = get_obj_if_Acc(df)
 
-    from .data import data_config
+    from . import data
     assert('projectID' in df)
-    sources = set(df.projectID.apply(dict.keys).apply(list).sum())
+    if isinstance(df.projectID.iloc[0], list):
+        sources = [df.powerplant.get_name()]
+        single_source_b = True
+    else :
+        sources = set(df.projectID.apply(dict.keys).apply(list).sum())
+        single_source_b = False
     sources = pd.concat(
-            [data_config[s]['read_function']().set_index('projectID')
+            [getattr(data, s)().set_index('projectID')
              for s in sources], sort=False)
     if df.index.nlevels > 1:
         stackedIDs = (df['projectID'].stack()
                       .apply(pd.Series).stack()
                       .dropna())
+    elif single_source_b:
+        stackedIDs = (df['projectID']
+                      .apply(pd.Series).stack())
     else:
         stackedIDs = (df['projectID']
                       .apply(pd.Series).stack()
@@ -434,12 +432,12 @@ def breakdown_matches(df):
     return (sources
             .reindex(stackedIDs)
             .set_axis(stackedIDs.to_frame('projectID')
-                      .set_index('projectID', append=True).index,
+                      .set_index('projectID', append=True).droplevel(-2).index,
                       inplace=False))
 
 
 def parse_Geoposition(location, zipcode='', country='',
-                      use_saved_locations=False):
+                      use_saved_locations=False, saved_only=False):
     """
     Nominatim request for the Geoposition of a specific location in a country.
     Returns a tuples with (latitude, longitude, country) if the request was
@@ -468,44 +466,21 @@ def parse_Geoposition(location, zipcode='', country='',
     if location is None or location == float:
         return np.nan
 
-    countries = [(c, country_alpha_2(c)) for c in to_list_if_other(country)]
+    alpha2 = country_alpha2(country)
+    try:
+        gdata = (GoogleV3(api_key=get_config()['google_api_key'], timeout=10)
+                 .geocode(query=location,
+                          components={'country': alpha2,
+                                      'postal_code': str(zipcode)},
+                          exactly_one=True))
+    except geopy.exc.GeocoderQueryError as e:
+        logger.warn(e)
 
-    for country, country_abbr in countries:
-        if use_saved_locations:
-            saved = pd.read_csv(_data('parsed_locations.csv'),
-                                index_col=[0, 1], encoding='utf-8')
-            if saved.index.contains((location, country)):
-                return [saved.at[(location, country), 'lat'],
-                        saved.at[(location, country), 'lon'],
-                        country]
-        try:
-            gdata = (
-                    GoogleV3(api_key=get_config()['google_api_key'],
-                             timeout=10)
-                    .geocode(query=location,
-                             components={'country': country_abbr,
-                                         'postal_code': str(zipcode)},
-                             exactly_one=True))
-        except geopy.exc.GeocoderQueryError as e:
-            logger.warn(e)
-            return np.nan
+    if gdata is not None:
+        return pd.Series({'Name': location, 'Country': country,
+                          'lat': gdata.latitude, 'lon': gdata.longitude})
 
-        if gdata is None:
-            continue
-        if ',' not in gdata.address:
-            continue
-        values = [gdata.latitude, gdata.longitude,
-                  gdata.address.split(', ')[-1]]
-        if use_saved_locations:
-            (pd.DataFrame(dict(zip(['lat', 'lon', 'Country'], values)),
-                          index=[location])
-             .to_csv(_data('parsed_locations.csv'), header=False,
-                     mode='a', encoding='utf-8'))
-        return values
-    return np.nan
-
-
-def fill_geoposition(df, use_saved_locations=False):
+def fill_geoposition(df, use_saved_locations=False, saved_only=False):
     """
     Fill missing 'lat' and 'lon' values. Uses geoparsing with the value given
     in 'Name', limits the search through value in 'Country'.
@@ -521,24 +496,27 @@ def fill_geoposition(df, use_saved_locations=False):
     """
     df = get_obj_if_Acc(df)
 
-    logger.info("Parse geopositions for missing lat/lon values")
-
     if use_saved_locations and get_config()['google_api_key'] is None:
         logger.warning('Geoparsing not possible as no google api key was '
                        'found, please add the key to your config.yaml if you '
                        'want to enable it.')
 
-    geodata = (df
-               .apply(lambda ds:
-                      pd.Series(parse_Geoposition(
-                               ds['Name'], country=ds['Country'].split(', '),
-                               use_saved_locations=use_saved_locations),
-                               index=['lat', 'lon', 'Country'])
-                      if ds[['lat']].isnull()[0]
-                      else ds[['lat', 'lon', 'Country']],
-                      axis=1)
-               .assign(Country=lambda gd: gd.Country.fillna(df.Country)))
+    if use_saved_locations:
+        locs = pd.read_csv(_package_data('parsed_locations.csv'), index_col=[0, 1])
+        df = df.where(df[['lat', 'lon']].notnull().all(1),
+                 df.drop(columns=['lat', 'lon'])
+                   .join(locs, on=['Name', 'Country']))
+    if saved_only: return df
 
-    return (df
-            .assign(lat=geodata.lat, lon=geodata.lon, Country=geodata.Country)
-            .reindex(columns=df.columns))
+    logger.info("Parse geopositions for missing lat/lon values")
+    missing = df.lat.isnull()
+    geodata = df[missing].apply(
+                lambda ds: parse_Geoposition(ds['Name'], country=ds['Country']),
+                axis=1)
+    geodata.drop_duplicates(subset=['Name', 'Country'])\
+           .set_index(['Name', 'Country'])\
+           .to_csv(_package_data('parsed_locations.csv'), mode='a', header=False)
+
+    df.loc[missing, ['lat', 'lon']] = geodata
+
+    return df.reindex(columns=df.columns)
