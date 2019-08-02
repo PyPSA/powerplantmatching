@@ -16,7 +16,6 @@ setup(
     author_email='hofmann@fias.uni-frankfurt.de',
     description='Toolset for generating and managing Power Plant Data',
     long_description=long_description,
-    long_description_content_type='text/markdown',
     url='https://github.com/FRESNA/powerplantmatching',
     license='GPLv3',
 #    packages=find_packages(include='matching_analysis'),
