@@ -1,7 +1,7 @@
 # powerplantmatching
 
 
- ![https://pypi.org/project/powerplantmatching/](https://img.shields.io/pypi/v/powerplantmatching.svg) ![https://anaconda.org/conda-forge/powerplantmatching](https://img.shields.io/conda/vn/conda-forge/powerplantmatching.svg) ![](https://img.shields.io/pypi/pyversions/powerplantmatching) ![LICENSE](https://img.shields.io/pypi/l/powerplantmatching.svg) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3358985.svg)](https://doi.org/10.5281/zenodo.3358985)
+ [![pypi](https://img.shields.io/pypi/v/powerplantmatching.svg)](https://pypi.org/project/powerplantmatching/) [![conda](https://img.shields.io/conda/vn/conda-forge/powerplantmatching.svg)](https://anaconda.org/conda-forge/powerplantmatching) ![pythonversion](https://img.shields.io/pypi/pyversions/powerplantmatching) ![LICENSE](https://img.shields.io/pypi/l/powerplantmatching.svg) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3358985.svg)](https://zenodo.org/record/3358985#.XUReFPxS_MU)
 
 
 A toolset for cleaning, standardizing and combining multiple power
@@ -283,7 +283,7 @@ with bibtex
 
 and/or the current release stored on Zenodo with a release-specific DOI:
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3358985.svg)](https://doi.org/10.5281/zenodo.3358985)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3358985.svg)](https://zenodo.org/record/3358985#.XURat99fjRY)
 
 
 
