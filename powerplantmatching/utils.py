@@ -388,8 +388,10 @@ def convert_alpha2_to_country(df):
 
 def convert_country_to_alpha2(df):
     df = get_obj_if_Acc(df)
-    return df.assign(Country = df.Country
-                     .map(country_map.set_index('name')['alpha_2']))
+    alpha2 = df.Country.map(country_map.set_index('name')['alpha_2'])\
+               .fillna(country_map.dropna(subset=['official_name'])
+                       .set_index('official_name')['alpha_2'])
+    return df.assign(Country = alpha2)
 
 
 
