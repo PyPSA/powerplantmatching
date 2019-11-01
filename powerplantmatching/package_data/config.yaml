@@ -114,8 +114,10 @@ target_columns:
     - projectID
     # - eic_code
 target_countries:
+    - Albania
     - Austria
     - Belgium
+    - Bosnia and Herzegovina
     - Bulgaria
     - Croatia
     - Czech Republic
@@ -132,11 +134,13 @@ target_countries:
     - Lithuania
     - Luxembourg
     - Macedonia, Republic of
+    - Montenegro
     - Netherlands
     - Norway
     - Poland
     - Portugal
     - Romania
+    - Serbia
     - Slovakia
     - Slovenia
     - Spain
