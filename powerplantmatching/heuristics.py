@@ -230,7 +230,7 @@ def fill_missing_commyears(df):
     return df
 
 
-def add_decommissioning_year(df, config=None):
+def fill_missing_decommyears(df, config=None):
     """
     Function which sets/fills a column 'YearDecommissioning' with roughly
     estimated values for decommissioning years, based on the estimated lifetimes
@@ -475,7 +475,7 @@ def scale_to_net_capacities(df, is_gross=True, catch_all=True):
     df = get_obj_if_Acc(df)
     if is_gross:
         factors = gross_to_net_factors()
-        for ftype, tech in factors.index.get_values():
+        for ftype, tech in factors.index.values:
             df.loc[(df.Fueltype == ftype) & (df.Technology == tech),
                    'Capacity'] *= factors.loc[(ftype, tech)]
         if catch_all:

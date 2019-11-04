@@ -11,10 +11,10 @@ import powerplantmatching as pm
 dfs = pm.get_config()['matching_sources']
 s = pm.data.Capacity_stats()
 
-#for name in dfs:
-#    df = getattr(pm.data, name)().dropna(subset=["lat"])
-#    fig, ax = pm.plot.factor_comparison([df, s], [name, 'stats'])
-#    fig.savefig('factor_plot_{}.png'.format(name), dpi=300)
+for name in dfs:
+    df = getattr(pm.data, name)().dropna(subset=["lat"])
+    fig, ax = pm.plot.factor_comparison([df, s], [name, 'stats'])
+    fig.savefig('factor_plot_{}.png'.format(name), dpi=300)
 
 name = 'Matched Data'
 m = pm.powerplants()

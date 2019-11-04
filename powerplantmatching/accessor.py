@@ -38,7 +38,7 @@ class PowerPlantAccessor():
     from .heuristics import (
             extend_by_non_matched, scale_to_net_capacities,
             fill_missing_commyears, extend_by_VRE, fill_missing_duration,
-            rescale_capacities_to_country_totals, add_decommissioning_year)
+            rescale_capacities_to_country_totals, fill_missing_decommyears)
     from .cleaning import clean_powerplantname, aggregate_units
     from .matching import reduce_matched_dataframe
 

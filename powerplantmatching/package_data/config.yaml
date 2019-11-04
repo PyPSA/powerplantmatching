@@ -53,7 +53,7 @@ ESE:
 JRC:
   reliability_score: 6
   fn: jrc-hydro-power-plant-database.csv
-  url: https://zenodo.org/record/2669146/files/energy-modelling-toolkit/hydro-power-database-3.zip?download=1
+  url: https://github.com/energy-modelling-toolkit/hydro-power-database/releases/download/v4/jrc-hydro-power-database-04.zip
 GEO:
   net_capacity: false
   reliability_score: 3

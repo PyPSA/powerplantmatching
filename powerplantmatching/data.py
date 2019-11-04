@@ -29,7 +29,7 @@ import pycountry
 import logging
 import entsoe as entsoe_api
 
-from .core import get_config, _package_data, _data_in
+from .core import get_config, _package_data, _data_in, package_config
 from .utils import (parse_if_not_stored, fill_geoposition, correct_manually,
                     config_filter, set_column_name)
 from .heuristics import scale_to_net_capacities
@@ -43,7 +43,7 @@ net_caps = get_config()['display_net_caps']
 
 
 def OPSD(rawEU=False, rawDE=False, update=False,
-         statusDE=['operating', 'reserve', 'special_case'],
+         statusDE=['operating', 'reserve', 'special_case', 'shutdown_temporary'],
          config=None):
     """
     Importer for the OPSD (Open Power Systems Data) database.
@@ -258,6 +258,13 @@ def JRC(raw=False, config=None, update=False):
 
     config = get_config() if config is None else config
     url = config['JRC']['url']
+    default_url = get_config(_package_data('config.yaml'))['JRC']['url']
+
+    err = IOError(f'The URL seems to be outdated, please copy the new url '
+                  f'\n\n\t{default_url}\n\nin your custom config file '
+                  f'\n\n\t{package_config["custom_config"]}\n\nunder tag "JRC" '
+                  '-> "url"')
+
     def parse_func():
         import requests
         from zipfile import ZipFile
@@ -266,15 +273,13 @@ def JRC(raw=False, config=None, update=False):
         if parse.ok:
             content = parse.content
         else:
-            IOError(f'URL {url} seems to be outdated, please doulble the '
-                          'address at http://datasets.wri.org/dataset/'
-                          'globalpowerplantdatabase update the and update the '
-                          'url in your custom config file '
-                          '{config["custom_config"]}')
-        return pd.read_csv(ZipFile(BytesIO(content))
-                           .open('energy-modelling-toolkit-hydro-power-'
-                                 'database-e857dd4/data/'
-                                 'jrc-hydro-power-plant-database.csv'))
+            raise(err)
+        file = ZipFile(BytesIO(content))
+        key = 'jrc-hydro-power-plant-database.csv'
+        if key in file.namelist():
+            return pd.read_csv(file.open(key))
+        else:
+            raise(err)
 
 
     df = parse_if_not_stored('JRC', update, config, parse_func=parse_func)
@@ -402,7 +407,7 @@ def GPD(raw=False, filter_other_dbs=True, update=False, config=None):
                           'address at http://datasets.wri.org/dataset/'
                           'globalpowerplantdatabase update the and update the '
                           'url in your custom config file '
-                          '{config["custom_config"]}')
+                          '{package_config["custom_config"]}')
         return pd.read_csv(ZipFile(BytesIO(content))
                            .open('global_power_plant_database.csv'))
 
