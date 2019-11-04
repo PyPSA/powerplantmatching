@@ -230,6 +230,25 @@ def fill_missing_commyears(df):
     return df
 
 
+def add_decommissioning_year(df, config=None):
+    """
+    Function which sets/fills a column 'YearDecommissioning' with roughly
+    estimated values for decommissioning years, based on the estimated lifetimes
+    per `Fueltype` given in the config and corresponding commissioning years.
+    Note that the latter is filled up using `fill_missing_commyears`.
+    """
+    df = get_obj_if_Acc(df)
+    if config is None: config = get_config()
+    if 'YearDecommissioning' not in df:
+        df = df.reindex(columns = list(df.columns) + ['YearDecommissioning'])
+    lifetime = df.Fueltype.map(config['fuel_to_lifetime'])
+    df = fill_missing_commyears(df)
+    df['YearDecommissioning'] = (df.YearDecommissioning
+                                 .fillna(df[['YearCommissioned', 'Retrofit']].max(1)
+                                         + lifetime).astype(int))
+    return df
+
+
 def aggregate_VRE_by_commyear(df, target_fueltypes=None, agg_geo_by=None):
     """
     Aggregate the vast number of VRE (e.g. vom data.OPSD_VRE()) units to one
@@ -281,7 +300,7 @@ def derive_vintage_cohorts_from_statistics(df, base_year=2015, config=None):
     year.
     """
     def setInitial_Flat(mat, df, life):
-        y_start = df.index[0]
+        y_start = int(df.index[0])
         height_flat = float(df.loc[y_start].Capacity) / life
         for y in range(int(mat.index[0]), y_start+1):
             y_end = min(y+life-1, mat.columns[-1])
@@ -289,7 +308,7 @@ def derive_vintage_cohorts_from_statistics(df, base_year=2015, config=None):
         return mat
 
     def setInitial_Triangle(mat, df, life):
-        y_start = df.index[0]
+        y_start = int(df.index[0])
         years = range(y_start-life+1, y_start+1)
         height_flat = float(df.loc[y_start].Capacity) / life
         # decrement per period, 'slope' of the triangle
@@ -340,9 +359,9 @@ def derive_vintage_cohorts_from_statistics(df, base_year=2015, config=None):
     dfe = pd.DataFrame(columns=df.columns)
     for c, df_country in df.groupby(['Country']):
         for tech, dfs in df_country.groupby(['Technology']):
-            dfs.set_index('Year', drop=False, inplace=True)
-            y_start = dfs.index[0]
-            y_end = dfs.index[-1]
+            dfs.set_index('YearCommissioned', drop=False, inplace=True)
+            y_start = int(dfs.index[0])
+            y_end = int(dfs.index[-1])
             life = config['fuel_to_lifetime'][dfs.Fueltype.iloc[0]]
             mat = (pd.DataFrame(columns=range(y_start-life+1, y_end+life),
                                 index=range(y_start-life+1, y_end))

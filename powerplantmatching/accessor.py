@@ -29,7 +29,7 @@ class PowerPlantAccessor():
     def __init__(self, pandas_obj):
         self._obj = pandas_obj
 
-#    from .plot import powerplant_map as plot_map
+    from .plot import powerplant_map as plot_map
     from .utils import (lookup, set_uncommon_fueltypes_to_other,
                         select_by_projectID, breakdown_matches,
                         fill_geoposition, convert_country_to_alpha2,
@@ -38,7 +38,7 @@ class PowerPlantAccessor():
     from .heuristics import (
             extend_by_non_matched, scale_to_net_capacities,
             fill_missing_commyears, extend_by_VRE, fill_missing_duration,
-            rescale_capacities_to_country_totals)
+            rescale_capacities_to_country_totals, add_decommissioning_year)
     from .cleaning import clean_powerplantname, aggregate_units
     from .matching import reduce_matched_dataframe
 
