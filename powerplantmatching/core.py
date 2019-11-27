@@ -52,7 +52,6 @@ if not os.path.exists(_data_in('.')):
 
 # Logging: General Settings
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=20)
 logger.setLevel('INFO')
 # Logging: File
 logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] " +
