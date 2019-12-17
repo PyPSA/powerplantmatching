@@ -152,7 +152,12 @@ Optionally you can:
 - JRC - [Joint Research Centre Hydro-power plants database](https://github.com/energy-modelling-toolkit/hydro-power-database)
 - IRENA - [International Renewable Energy Agency](http://resourceirena.irena.org/gateway/dashboard/) open available statistics on power plant capacities.
 - BNETZA - [Bundesnetzagentur](https://www.bundesnetzagentur.de/EN/Areas/Energy/Companies/SecurityOfSupply/GeneratingCapacity/PowerPlantList/PubliPowerPlantList_node.html) open available data source for Germany's power plants
+- UBA (Umwelt Bundesamt Datenbank "Kraftwerke in Deutschland)
 
+### Not available but supported sources:
+
+- IWPDCY (International Water Power & Dam Country Yearbook)
+- WEPP (Platts, World Elecrtric Power Plants Database)
 
 The merged dataset is available in two versions: The bigger dataset, obtained by 
 
