@@ -685,7 +685,7 @@ def WEPP(raw=False, config=None):
                  'BUSTYPE': str, 'COMPID': str, 'LOCATIONID': str,
                  'UNITID': str}
     # Now read the Platts WEPP Database
-    wepp = pd.read_csv(data_config['WEPP']['source_file'], dtype=datatypes,
+    wepp = pd.read_csv(config['WEPP']['source_file'], dtype=datatypes,
                        encoding='utf-8')
     if raw:
         return wepp
@@ -709,7 +709,7 @@ def WEPP(raw=False, config=None):
     wepp.Country = wepp.Country.replace(c).str.title()
     wepp = (wepp.loc[lambda df: df.Country.isin(config['target_countries'])]
                 .loc[lambda df: df.Status.isin(['OPR', 'CON'])]
-                .assign(File=data_config['WEPP']['source_file']))
+                .assign(File=config['WEPP']['source_file']))
     # Replace fueltypes
     d = {'AGAS': 'Bioenergy',    # Syngas from gasified agricultural waste
          'BFG': 'Other',         # blast furnance gas -> "Hochofengas"
@@ -812,7 +812,7 @@ def WEPP(raw=False, config=None):
             .pipe(set_column_name, 'WEPP')
             .pipe(config_filter, name='WEPP', config=config)
             .pipe(scale_to_net_capacities,
-                  (not data_config['WEPP']['net_capacity']))
+                  (not config['WEPP']['net_capacity']))
             .pipe(correct_manually, 'WEPP', config=config))
 
 
@@ -1056,6 +1056,7 @@ def OPSD_VRE(config=None, raw=False):
     if raw: return df
 
     return df.rename(columns={'energy_source_level_2': 'Fueltype',
+                              'technology': 'Technology',
                               'data_source': 'file',
                               'country': 'Country',
                               'electrical_capacity': 'Capacity',
@@ -1066,6 +1067,28 @@ def OPSD_VRE(config=None, raw=False):
             .pipe(set_column_name, 'OPSD_VRE')\
             .pipe(config_filter, config=config)\
             .drop('Name', axis=1)
+
+
+def OPSD_VRE_country(country, config=None, raw=False):
+    """
+    Get country specifig data from OPSD for renewables. For using this,
+    the config has to be adjusted.
+    """
+    config = get_config() if config is None else config
+
+    df = parse_if_not_stored(f'OPSD_VRE_{country}')
+    if raw: return df
+
+    return (df.assign(Country = 'DE')
+            .rename(columns={'energy_source_level_2': 'Fueltype',
+                             'technology': 'Technology',
+                             'data_source': 'file',
+                             'country': 'Country',
+                             'electrical_capacity': 'Capacity',
+                             'municipality': 'Name'})\
+                .powerplant.convert_alpha2_to_country()\
+                .pipe(config_filter, config=config)\
+                .drop('Name', axis=1))
 
 
 def IRENA_stats(config=None):
