@@ -25,11 +25,8 @@ package_config = {
         'repo_data_dir': os.path.join(os.path.dirname(__file__), 'package_data'),
         'downloaders': {}}
 
-if not os.path.exists(_data_dir):
-    os.mkdir(package_config['data_dir'])
-    os.mkdir(os.path.join(package_config['data_dir'], 'data'))
-    os.mkdir(os.path.join(package_config['data_dir'], 'data', 'in'))
-    os.mkdir(os.path.join(package_config['data_dir'], 'data', 'out'))
+os.makedirs(os.path.join(package_config['data_dir'], 'data', 'in'), exist_ok=True)
+os.makedirs(os.path.join(package_config['data_dir'], 'data', 'out'), exist_ok=True)
 
 def _package_data(fn):
     return os.path.join(package_config['repo_data_dir'], fn)
