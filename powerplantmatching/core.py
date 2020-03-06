@@ -6,59 +6,60 @@ Created on Tue Jul 16 15:47:46 2019
 @author: fabian
 """
 
-import os
 import logging
 import pandas.api.extensions
+from os.path import join, expanduser, dirname, exists, isdir, abspath
+from os import environ, makedirs
 
 # for the writable data directory (i.e. the one where new data goes), follow
 # the XDG guidelines found at
 # https://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html
-_writable_dir = os.path.join(os.path.expanduser('~'), '.local', 'share')
-_data_dir = os.path.join(os.environ.get("XDG_DATA_HOME",
-                            os.environ.get("APPDATA", _writable_dir)),
-                                'powerplantmatching')
-#data file configuration
-package_config = {
-        'custom_config': os.path.join(os.path.expanduser('~'),
-                                      '.powerplantmatching_config.yaml'),
-        'data_dir': _data_dir,
-        'repo_data_dir': os.path.join(os.path.dirname(__file__), 'package_data'),
-        'downloaders': {}}
+_writable_dir = join(expanduser('~'), '.local', 'share')
+_data_dir = join(environ.get("XDG_DATA_HOME",
+                             environ.get("APPDATA", _writable_dir)),
+                 'powerplantmatching')
 
-os.makedirs(os.path.join(package_config['data_dir'], 'data', 'in'), exist_ok=True)
-os.makedirs(os.path.join(package_config['data_dir'], 'data', 'out'), exist_ok=True)
+# data file configuration
+package_config = {'custom_config': join(expanduser('~'),
+                                        '.powerplantmatching_config.yaml'),
+                  'data_dir': _data_dir,
+                  'repo_data_dir': join(dirname(__file__), 'package_data'),
+                  'downloaders': {}}
+
+makedirs(join(package_config['data_dir'], 'data', 'in'), exist_ok=True)
+makedirs(join(package_config['data_dir'], 'data', 'out'), exist_ok=True)
+
 
 def _package_data(fn):
-    return os.path.join(package_config['repo_data_dir'], fn)
+    return join(package_config['repo_data_dir'], fn)
 
 
 def _data_in(fn):
-    return os.path.join(package_config['data_dir'], 'data', 'in', fn)
+    return join(package_config['data_dir'], 'data', 'in', fn)
 
 
 def _data_out(fn, config=None):
     if config is None:
-        return os.path.join(package_config['data_dir'], 'data', 'out',
-                            'default', fn)
+        return join(package_config['data_dir'], 'data', 'out', 'default', fn)
     else:
-        return os.path.join(package_config['data_dir'], 'data', 'out',
-                            config['hash'], fn)
+        return join(package_config['data_dir'], 'data', 'out', config['hash'],
+                    fn)
+
 
 del _data_dir
 del _writable_dir
 
 
-if not os.path.exists(_data_in('.')):
-    os.makedirs(_data_in('.'))
+if not exists(_data_in('.')):
+    makedirs(_data_in('.'))
 
 # Logging: General Settings
 logger = logging.getLogger(__name__)
 logger.setLevel('INFO')
 # Logging: File
-logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] " +
+logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] "
                                  "[%(levelname)-5.5s]  %(message)s")
-fileHandler = logging.FileHandler(
-        os.path.join(package_config['data_dir'], 'PPM.log'))
+fileHandler = logging.FileHandler(join(package_config['data_dir'], 'PPM.log'))
 fileHandler.setFormatter(logFormatter)
 logger.addHandler(fileHandler)
 # logger.info('Initialization complete.')
@@ -67,8 +68,22 @@ del logFormatter
 del fileHandler
 
 
-
 def get_config(filename=None, **overrides):
+    """
+    Import the configuration setting from yaml file.
+
+    Parameters
+    ----------
+    filename : str, optional
+        DESCRIPTION. The default is None.
+    **overrides : dict
+        DESCRIPTION.
+
+    Returns
+    -------
+    config : dict
+        The configuration dictionary
+    """
     from hashlib import sha1
     from base64 import encodestring
     from six.moves import cPickle
@@ -77,7 +92,7 @@ def get_config(filename=None, **overrides):
 
     if filename is None:
         custom_config = package_config['custom_config']
-        if os.path.exists(custom_config):
+        if exists(custom_config):
             filename = custom_config
         else:
             filename = _package_data('config.yaml')
@@ -90,15 +105,14 @@ def get_config(filename=None, **overrides):
         if len(dict(**overrides)) == 0:
             config['hash'] = 'default'
         else:
-            config['hash'] = encodestring(sha1digest)\
-                             .decode('ascii')[2:12]
-    if not os.path.isdir(_data_out('.', config=config)):
-        os.makedirs(os.path.abspath(_data_out('.', config=config)))
-        os.makedirs(os.path.abspath(_data_out('matches', config=config)))
-        os.makedirs(os.path.abspath(_data_out('aggregations', config=config)))
+            config['hash'] = encodestring(sha1digest).decode('ascii')[2:12]
+
+    if not isdir(_data_out('.', config=config)):
+        makedirs(abspath(_data_out('.', config=config)))
+        makedirs(abspath(_data_out('matches', config=config)))
+        makedirs(abspath(_data_out('aggregations', config=config)))
         info('Outputs for this configuration will be saved under {}'
-                    .format(os.path.abspath(
-                            _data_out('.', config=config))))
+             .format(abspath(_data_out('.', config=config))))
         with open(_data_out('config.yaml', config=config), 'w') as file:
             yaml.dump(config, file, default_flow_style=False)
     return config
@@ -110,4 +124,3 @@ def get_obj_if_Acc(obj):
         return obj._obj
     else:
         return obj
-
