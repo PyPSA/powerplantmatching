@@ -39,7 +39,7 @@ cartopy_present = True
 try:
     import cartopy.crs as ccrs
     import cartopy
-except:
+except (ModuleNotFoundError, ImportError):
     cartopy_present = False
 
 if not cartopy_present:
