@@ -7,7 +7,6 @@ Created on Tue Jul 16 15:47:46 2019
 """
 
 import logging
-import pandas.api.extensions
 from os.path import join, expanduser, dirname, exists, isdir, abspath
 from os import environ, makedirs
 

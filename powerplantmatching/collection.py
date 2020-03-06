@@ -21,8 +21,7 @@ from __future__ import print_function
 
 from .core import _data_out, get_config
 from .utils import (set_uncommon_fueltypes_to_other, parmap,
-                    to_dict_if_string, projectID_to_dict, set_column_name,
-                    parse_if_not_stored)
+                    to_dict_if_string, projectID_to_dict, set_column_name)
 from .heuristics import (extend_by_non_matched, extend_by_VRE)
 from .cleaning import aggregate_units
 from .matching import combine_multiple_datasets, reduce_matched_dataframe
