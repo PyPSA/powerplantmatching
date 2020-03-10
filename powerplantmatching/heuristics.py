@@ -65,6 +65,10 @@ def extend_by_non_matched(df, extend_by, label=None, query=None,
     else:
         included_ids = (df.projectID.dropna().map(lambda d: d.get(label))
                           .dropna().sum())
+    if included_ids == 0:
+        logger.info(f'{label} not not existent in the matched date, extending'
+                    ' by all data entries.')
+        included_ids = []
 
     if query is not None:
         extend_by.query(query, inplace=True)
