@@ -21,8 +21,7 @@ from __future__ import print_function
 
 from .core import _data_out, get_config
 from .utils import (set_uncommon_fueltypes_to_other, parmap,
-                    to_dict_if_string, projectID_to_dict, set_column_name,
-                    parse_if_not_stored)
+                    to_dict_if_string, projectID_to_dict, set_column_name)
 from .heuristics import (extend_by_non_matched, extend_by_VRE)
 from .cleaning import aggregate_units
 from .matching import combine_multiple_datasets, reduce_matched_dataframe
@@ -98,8 +97,8 @@ def collect(datasets, update=False, use_saved_aggregation=True,
     if update:
         dfs = parmap(df_by_name, datasets)
         matched = combine_multiple_datasets(
-                dfs, datasets, use_saved_matches=use_saved_matches,
-                config=config, **dukeargs)
+            dfs, datasets, use_saved_matches=use_saved_matches, config=config,
+            **dukeargs)
         (matched.assign(projectID=lambda df: df.projectID.astype(str))
                 .to_csv(outfn_matched, index_label='id'))
 
@@ -204,12 +203,12 @@ def matched_data(config=None,
                 .pipe(projectID_to_dict)
                 .pipe(set_column_name, 'Matched Data'))
         if extend_by_vres:
-                return df.pipe(extend_by_VRE, config=config,
-                               base_year=config['opsd_vres_base_year'])
+            return df.pipe(extend_by_VRE, config=config,
+                           base_year=config['opsd_vres_base_year'])
         return df
 
-    matching_sources = [list(to_dict_if_string(a))[0] for a in
-                                  config['matching_sources']]
+    matching_sources = [list(to_dict_if_string(a))[0]
+                        for a in config['matching_sources']]
     matched = collect(matching_sources, **collection_kwargs)
 
     if isinstance(config['fully_included_sources'], list):
@@ -226,17 +225,17 @@ def matched_data(config=None,
     allowed_countries = config['CARMA_GEO_countries']
     if matched.columns.nlevels > 1:
         other = set(matching_sources) - set(['CARMA', 'GEO'])
-        matched = (matched[~matched.projectID[other].isna().all(1) |
-                           matched.Country.GEO.isin(allowed_countries) |
-                           matched.Country.CARMA.isin(allowed_countries)]
+        matched = (matched[~matched.projectID[other].isna().all(1)
+                           | matched.Country.GEO.isin(allowed_countries)
+                           | matched.Country.CARMA.isin(allowed_countries)]
                    .reset_index(drop=True))
         if config['remove_missing_coords']:
             matched = (matched[matched.lat.notnull().any(1)]
                        .reset_index(drop=True))
     else:
         matched = (matched[matched.projectID.apply(lambda x: sorted(x.keys())
-                           not in [['CARMA', 'GEO']]) |
-                           matched.Country.isin(allowed_countries)]
+                           not in [['CARMA', 'GEO']])
+                           | matched.Country.isin(allowed_countries)]
                    .reset_index(drop=True))
         if config['remove_missing_coords']:
             matched = matched[matched.lat.notnull()].reset_index(drop=True)
@@ -249,5 +248,3 @@ def matched_data(config=None,
     if subsume_uncommon_fueltypes:
         matched = set_uncommon_fueltypes_to_other(matched)
     return matched.pipe(set_column_name, 'Matched Data')
-
-

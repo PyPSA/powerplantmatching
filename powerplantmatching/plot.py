@@ -39,12 +39,11 @@ cartopy_present = True
 try:
     import cartopy.crs as ccrs
     import cartopy
-except:
+except (ModuleNotFoundError, ImportError):
     cartopy_present = False
 
 if not cartopy_present:
     logger.warn('Cartopy not existent.')
-
 
 
 def fueltype_stats(df):
@@ -99,6 +98,7 @@ def powerplant_map(df, scale=1e2, european_bounds=True, fillcontinents=False,
         if cartopy_present:
             ax.outline_patch.set_visible(False)
         return fig, ax
+
 
 # This approach is an alternative to bar_comparison_countries_fueltypes()
 def fueltype_and_country_totals_bar(dfs, keys=None, figsize=(18, 8)):
@@ -176,8 +176,8 @@ def factor_comparison(dfs, keys=None, figsize=(12, 9)):
         dfs = [set_uncommon_fueltypes_to_other(df) for df in dfs]
         compare = lookup(dfs, keys=keys, exclude=['Solar', 'Wind']).fillna(0.)
         compare = compare.append(
-                pd.concat([compare.groupby(level='Country').sum()],
-                          keys=['Total']).swaplevel()).sort_index()/1000
+            pd.concat([compare.groupby(level='Country').sum()],
+                      keys=['Total']).swaplevel()).sort_index()/1000
         n_countries, n_fueltypes = compare.index.levshape
         c = [get_config()['fuel_to_color'][i] for i in compare.index.levels[1]]
         rcParams["axes.prop_cycle"] = cycler(color=c)
@@ -186,8 +186,8 @@ def factor_comparison(dfs, keys=None, figsize=(12, 9)):
         compare[compare.sum(1) < 0.5] = np.nan
 
         fig, ax = plt.subplots(1, 1, figsize=figsize)
-        compare = (compare.unstack('Country').swaplevel(axis=1).sort_index(axis=1)
-                   .reindex(columns=keys, level=1))
+        compare = (compare.unstack('Country').swaplevel(axis=1)
+                   .sort_index(axis=1).reindex(columns=keys, level=1))
         compare.T.plot(ax=ax, markevery=(0, 2),
                        style='o', markersize=5)
         compare.T.plot(ax=ax, markevery=(1, 2),
@@ -267,9 +267,8 @@ def make_handler_map_to_scale_circles_as_in(ax,
     fig = ax.get_figure()
 
     def axes2pt():
-        return np.diff(
-                ax.transData.transform([(0, 0), (1, 1)]),
-                axis=0)[0] * (72./fig.dpi)
+        return np.diff(ax.transData.transform([(0, 0), (1, 1)]),
+                       axis=0)[0] * (72./fig.dpi)
     ellipses = []
     if not dont_resize_actively:
         def update_width_height(event):
@@ -303,8 +302,8 @@ def draw_basemap(resolution=True, ax=None, country_linewidth=0.3,
         if ax is None:
             ax = plt.gca(projection=ccrs.PlateCarree())
         resolution = '50m' if isinstance(resolution, bool) else resolution
-        assert resolution in ['10m', '50m', '110m'], ('Resolution has to be '
-                             "one of '10m', '50m', '110m'")
+        assert resolution in ['10m', '50m', '110m'],\
+            "Resolution has to be one of '10m', '50m', '110m'."
         ax.set_extent(ax.get_xlim() + ax.get_ylim(),
                       crs=ccrs.PlateCarree())
         ax.coastlines(linewidth=0.4, zorder=-1, resolution=resolution)
@@ -352,8 +351,8 @@ def gather_nrows_ncols(x, orientation='landscape'):
         # Solution 2:
         n, m = calc(k-1, k+1)
         sol2 = {'n': n, 'm': m, 'dif': (m*n) - x}
-        if (((sol1['dif'] <= sol2['dif']) & (sol1['n'] >= 2)) |
-                (x in [7, 13, 14])):
+        if (((sol1['dif'] <= sol2['dif']) & (sol1['n'] >= 2))
+                | (x in [7, 13, 14])):
             n, m = [sol1['n'], sol1['m']]
         else:
             n, m = [sol2['n'], sol2['m']]

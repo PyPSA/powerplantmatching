@@ -59,7 +59,7 @@ def to_pypsa_network(df, network, buslist=None):
     from scipy.spatial import cKDTree as KDTree
     substation_lv_i = network.buses.index[network.buses['substation_lv']]
     substation_lv_i = substation_lv_i.intersection(
-            network.buses.reindex(buslist).index)
+        network.buses.reindex(buslist).index)
     kdtree = KDTree(network.buses.loc[substation_lv_i, ['x', 'y']].values)
     df = df.assign(bus=substation_lv_i[kdtree.query(df[['lon',
                                                         'lat']].values)[1]])
@@ -92,8 +92,8 @@ def to_TIMES(df=None, use_scaled_capacity=False, baseyear=2015):
         df = matched_data()
         if df is None:
             raise RuntimeError("The data to be exported does not yet exist.")
-    df = df.loc[(df.YearCommissioned.isnull()) |
-                (df.YearCommissioned <= baseyear)]
+    df = df.loc[(df.YearCommissioned.isnull())
+                | (df.YearCommissioned <= baseyear)]
     plausible = True
 
     # Set region via country names by iso3166-2 codes
@@ -117,39 +117,39 @@ def to_TIMES(df=None, use_scaled_capacity=False, baseyear=2015):
     df.loc[:, 'TimesType'] = pd.Series('ConELC-' for _ in range(len(df))) +\
         np.where(df.loc[:, 'Set'].str.contains('CHP'), 'CHP', 'PP') +\
         '_' + df.loc[:, 'Fueltype'].map(fueltype_to_abbrev())
-    df.loc[(df.Fueltype == 'Wind') &
-           (df.Technology.str.contains('offshore', case=False)),
+    df.loc[(df.Fueltype == 'Wind')
+           & (df.Technology.str.contains('offshore', case=False)),
            'TimesType'] += 'F'
-    df.loc[(df.Fueltype == 'Wind') &
-           ~(df.Technology.str.contains('offshore', case=False)),
+    df.loc[(df.Fueltype == 'Wind')
+           & ~(df.Technology.str.contains('offshore', case=False)),
            'TimesType'] += 'N'
-    df.loc[(df.Fueltype == 'Solar') &
-           (df.Technology.str.contains('CSP', case=False)),
+    df.loc[(df.Fueltype == 'Solar')
+           & (df.Technology.str.contains('CSP', case=False)),
            'TimesType'] += 'CSP'
-    df.loc[(df.Fueltype == 'Solar') &
-           ~(df.Technology.str.contains('CSP', case=False)),
+    df.loc[(df.Fueltype == 'Solar')
+           & ~(df.Technology.str.contains('CSP', case=False)),
            'TimesType'] += 'SPV'
-    df.loc[(df.Fueltype == 'Natural Gas') &
-           (df.Technology.str.contains('CCGT', case=False)),
+    df.loc[(df.Fueltype == 'Natural Gas')
+           & (df.Technology.str.contains('CCGT', case=False)),
            'TimesType'] += '-CCGT'
-    df.loc[(df.Fueltype == 'Natural Gas') &
-           ~(df.Technology.str.contains('CCGT', case=False)) &
-           (df.Technology.str.contains('OCGT', case=False)),
+    df.loc[(df.Fueltype == 'Natural Gas')
+           & ~(df.Technology.str.contains('CCGT', case=False))
+           & (df.Technology.str.contains('OCGT', case=False)),
            'TimesType'] += '-OCGT'
-    df.loc[(df.Fueltype == 'Natural Gas') &
-           ~(df.Technology.str.contains('CCGT', case=False)) &
-           ~(df['Technology'].str.contains('OCGT', case=False)),
+    df.loc[(df.Fueltype == 'Natural Gas')
+           & ~(df.Technology.str.contains('CCGT', case=False))
+           & ~(df['Technology'].str.contains('OCGT', case=False)),
            'TimesType'] += '-ST'
-    df.loc[(df.Fueltype == 'Hydro') &
-           (df.Technology.str.contains('pumped storage', case=False)),
+    df.loc[(df.Fueltype == 'Hydro')
+           & (df.Technology.str.contains('pumped storage', case=False)),
            'TimesType'] += '-PST'
-    df.loc[(df.Fueltype == 'Hydro') &
-           (df.Technology.str.contains('run-of-river', case=False)) &
-           ~(df.Technology.str.contains('pumped storage', case=False)),
+    df.loc[(df.Fueltype == 'Hydro')
+           & (df.Technology.str.contains('run-of-river', case=False))
+           & ~(df.Technology.str.contains('pumped storage', case=False)),
            'TimesType'] += '-ROR'
-    df.loc[(df.Fueltype == 'Hydro') &
-           ~(df.Technology.str.contains('run-of-river', case=False)) &
-           ~(df.Technology.str.contains('pumped storage', case=False)),
+    df.loc[(df.Fueltype == 'Hydro')
+           & ~(df.Technology.str.contains('run-of-river', case=False))
+           & ~(df.Technology.str.contains('pumped storage', case=False)),
            'TimesType'] += '-STO'
 
     if None in set(df.TimesType):
@@ -210,14 +210,14 @@ def to_TIMES(df=None, use_scaled_capacity=False, baseyear=2015):
                 else:
                     df_exp.loc[row, reg] = 0.0
                 # Plausibility-Check:
-                if (yr > baseyear and (df_exp.loc[row, reg] >
-                                       df_exp.loc[row-1, reg])):
+                if (yr > baseyear and (df_exp.loc[row, reg]
+                                       > df_exp.loc[row-1, reg])):
                     plausible = False
-                    logger.error("For region '{}' and timestype '{}' the value \
-                                 for year {} ({0.000}) is higher than in the \
-                                 year before ({0.000})."
-                                 .format(reg, tt, yr, df_exp.loc[row, reg],
-                                         df_exp.loc[row-1, reg]))
+                    logger.error(
+                        "For region '{}' and timestype '{}' the value for "
+                        "year {} ({0.000}) is higher than in the year before "
+                        "({0.000}).".format(reg, tt, yr, df_exp.loc[row, reg],
+                                            df_exp.loc[row-1, reg]))
             df_exp.loc[row, 'Pset_Pn'] = tt
             row += 1
     df_exp.loc[:, 'Attribute'] = 'STOCK'
@@ -264,7 +264,7 @@ def timestype_to_life():
     """
     Returns the timestype-specific technical lifetime.
     """
-    data = {'ConELC-PP_COA': 45,
+    return {'ConELC-PP_COA': 45,
             'ConELC-PP_LIG': 45,
             'ConELC-PP_NG-OCGT': 40,
             'ConELC-PP_NG-ST': 40,
@@ -294,6 +294,4 @@ def timestype_to_life():
             'ConELC-CHP_WST': 30,
             'ConELC-CHP_SYN': 5,
             'ConELC-CHP_GEO': 30,
-            'ConELC-CHP_OTH': 5,
-            }
-    return data
+            'ConELC-CHP_OTH': 5}

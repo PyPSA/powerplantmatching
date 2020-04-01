@@ -33,7 +33,7 @@ def add_geoposition_for_duke(df):
 
     """
     if not df.loc[:, ['lat', 'lon']].isnull().all().all():
-        return df.assign(Geoposition = df[['lat', 'lon']].astype(str)
+        return df.assign(Geoposition=df[['lat', 'lon']].astype(str)
                          .apply(lambda s: ','.join(s), axis=1)
                          .replace('nan,nan', np.nan))
     else:
@@ -123,7 +123,7 @@ def duke(datasets, labels=['one', 'two'], singlematch=False,
                                encoding='utf-8', usecols=[1, 2], names=labels)
         else:
             res = pd.read_csv(os.path.join(tmpdir, 'linkfile.txt'),
-                             usecols=[1, 2, 3], names=labels + ['scores'])
+                              usecols=[1, 2, 3], names=labels + ['scores'])
             res.iloc[:, 1] -= shift_by
             return res
 
