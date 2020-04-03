@@ -159,21 +159,31 @@ def GEO(raw=False, config=None):
                    'Longitude_Start': 'lon',
                    'Latitude_Start': 'lat'}
 
-#    geo = pd.read_csv(_data_in(config['GEO']['fn']), low_memory=False,
-#                      usecols=list(rename_cols.keys()))
     geo = parse_if_not_stored('GEO', config=config, low_memory=False)
     if raw:
         return geo
 
-    return (geo.rename(columns=rename_cols)
-              .assign(Retrofit=lambda s: s.Retrofit.astype(float),
-                      projectID=lambda s: 'GEO' + s.projectID.astype(str))
-              .assign(YearCommissioned=(lambda s: s.YearCommissioned
-                                        .str[:4]
+    units = parse_if_not_stored('GEO_units', config=config, low_memory=False)
+    units['YearCommissioned'] = units.Date_Commissioned_dt.str[:4].astype(float)
+    units['Effiency'] = units.Unit_Efficiency_Percent.str.replace('%', '')\
+                             .astype(float) / 100
+    units = units.groupby('GEO_Assigned_Identification_Number')\
+                 .agg({'YearCommissioned': [min, max], 'Effiency': 'mean'})
+
+    _ = geo.GEO_Assigned_Identification_Number.map(units.YearCommissioned['min'])
+    geo['Year_Project_Commissioned'] = (geo.Year_Project_Commissioned.str[:4]
                                         .apply(pd.to_numeric, errors='coerce')
                                         .where(lambda x: x > 1900)
-                                        .fillna(s.Retrofit)))
-              .assign(Retrofit=lambda s: s.Retrofit.fillna(s.YearCommissioned))
+                                        .fillna(_))
+
+    _ = geo.GEO_Assigned_Identification_Number.map(units.YearCommissioned['max'])
+    geo['Year_rng1_yr1'] = geo.Year_rng1_yr1.astype(float).fillna(_)
+
+    _ = units.Effiency['mean']
+    geo['Effiency'] = geo.GEO_Assigned_Identification_Number.map(_)
+
+    return (geo.rename(columns=rename_cols)
+              .assign(projectID=lambda s: 'GEO' + s.projectID.astype(str))
               .query("Country in @countries")
               .replace({col: {'Gas': 'Natural Gas'} for col in
                         {'Fueltype', 'FuelClassification1',
