@@ -246,7 +246,7 @@ The new entry should look like this
         config = get_config() if config is None else config
         df = parse_if_not_stored('FOO', config=config)
         if raw:
-            return geo
+            return foo
         df = (df
 	      .rename(columns){'Latitude': 'lat',
                                'Longitude': 'lon'})
