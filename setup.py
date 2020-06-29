@@ -22,7 +22,7 @@ setup(
 #    packages=find_packages(include='matching_analysis'),
     packages=['powerplantmatching'],
     include_package_data=True,
-    install_requires=['numpy','scipy','pandas>=0.23.0','networkx>=1.10',
+    install_requires=['numpy','scipy','pandas>=0.24.0','networkx>=1.10',
                       'pycountry', 'xlrd', 'seaborn', 'pyyaml >=5.1.0',
                       'requests', 'matplotlib', 'geopy', 'xlrd', 'entsoe-py'],
     classifiers=[
