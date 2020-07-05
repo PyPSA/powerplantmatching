@@ -290,25 +290,28 @@ def aggregate_units(df, dataset_name=None,
     def mode(x):
         return x.mode(dropna=False).at[0]
 
-    props_for_groups = pd.Series({
-                'Name': mode,
-                'Country': mode,
-                'Fueltype': mode,
-                'Technology': mode,
-                'Set': mode,
-                'File': mode,
-                'Capacity': 'sum',
-                'lat': 'mean',
-                'lon': 'mean',
-                'YearCommissioned': 'min',
-                'Retrofit': 'max',
-                'projectID': list,
-                'eic_code': set,
-                'Duration': 'sum',  # note this is weighted sum
-                'Volume_Mm3': 'sum',
-                'DamHeight_m': 'sum',
-                'Efficiency': 'mean'  # note this is weighted mean
-                })[config['target_columns']].to_dict()
+    props_for_groups = pd.Series(
+        {'Name': mode,
+         'Fueltype': mode,
+         'Technology': mode,
+         'Set': mode,
+         'Country': mode,
+         'Capacity': 'sum',
+         'lat': 'mean',
+         'lon': 'mean',
+         'DateIn': 'min',
+         'DateRetrofit': 'max',  # choose latest Retrofit-Year
+         'DateMothball': 'min',
+         'DateOut': 'min',
+         'File': mode,
+         'projectID': list,
+         'EIC': set,
+         'Duration': 'sum',  # note this is weighted sum
+         'Volume_Mm3': 'sum',
+         'DamHeight_m': 'sum',
+         'StorageCapacity_MWh': 'sum',
+         'Efficiency': 'mean'  # note this is weighted mean
+         }).reindex(config['target_columns'], axis=1).to_dict()
 
     dataset_name = get_name(df) if dataset_name is None else dataset_name
 
@@ -351,8 +354,8 @@ def aggregate_units(df, dataset_name=None,
     df = df.groupby('grouped').agg(props_for_groups)
     df = df.replace('nan', np.nan)
 
-    if 'eic_code' in df:
-        df = df.assign(eic_code = df['eic_code'].apply(list))
+    if 'EIC' in df:
+        df = df.assign(EIC=df['EIC'].apply(list))
 
     df = (df
           .assign(**{col: df[col].div(df['Capacity']) 

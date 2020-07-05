@@ -106,13 +106,16 @@ target_columns:
     - Duration
     - Volume_Mm3
     - DamHeight_m
-    - YearCommissioned
-    - Retrofit
+    - StorageCapacity_MWh
+    - DateIn
+    - DateRetrofit
+    - DateMothball
+    - DateOut
     - lat
     - lon
     # - File
+    - EIC
     - projectID
-    # - eic_code
 target_countries:
     - Albania
     - Austria
