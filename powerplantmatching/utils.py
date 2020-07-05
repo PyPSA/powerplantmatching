@@ -366,7 +366,7 @@ def parmap(f, arg_list, config=None):
 
 
 country_map = pd.read_csv(_package_data('country_codes.csv'))\
-                .replace({'name':{'Czechia': 'Czech Republic'}})
+                .replace({'name': {'Czechia': 'Czech Republic'}})
 
 def country_alpha2(country):
     """

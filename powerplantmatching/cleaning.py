@@ -244,6 +244,7 @@ def cliques(df, dataduplicates):
 
     return df.assign(grouped=grouped)
 
+
 def aggregate_units(df, dataset_name=None,
                     pre_clean_name=True,
                     save_aggregation=True,
@@ -329,11 +330,13 @@ def aggregate_units(df, dataset_name=None,
                         .reindex(index=df.index))
             df = df.assign(grouped=groups.values)
         else:
-            logger.info("Non-existing saved aggregation groups for dataset"
-                           " '{0}', continuing by aggregating again"
-                           .format(dataset_name))
+            logger.info(f"No existing saved aggregation groups for dataset "
+                        f"'{dataset_name}', continuing by aggregating again.")
             if 'grouped' in df:
                 df.drop('grouped', axis=1, inplace=True)
+    else:
+        logger.info(f"Not using saved aggregation groups for dataset "
+                    f"'{dataset_name}'.")
 
     if 'grouped' not in df:
         if country_wise:
@@ -352,8 +355,8 @@ def aggregate_units(df, dataset_name=None,
         df = df.assign(eic_code = df['eic_code'].apply(list))
 
     df = (df
-          .assign(**{col: df[col].div(df['Capacity'])
-                  for col in weighted_cols})
+          .assign(**{col: df[col].div(df['Capacity']) 
+                     for col in weighted_cols})
           .reset_index(drop=True)
           .pipe(clean_powerplantname)
           .reindex(columns=config['target_columns'])
