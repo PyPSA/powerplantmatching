@@ -285,7 +285,7 @@ def JRC(raw=False, config=None, update=False):
     df = parse_if_not_stored('JRC', update, config, parse_func=parse_func)
     if raw:
         return df
-    return (df.rename(columns={'id': 'projectID',
+    df = (df.rename(columns={'id': 'projectID',
                                'name': 'Name',
                                'installed_capacity_MW': 'Capacity',
                                'country_code': 'Country',
@@ -300,6 +300,13 @@ def JRC(raw=False, config=None, update=False):
             .assign(Set='Store', Fueltype='Hydro')
             .powerplant.convert_alpha2_to_country()
             .pipe(config_filter))
+    # TODO: Temporary section to deal with duplicate identifiers in the JRC 
+    # input file. Can be removed again, once the duplicates have been removed
+    # in a new release.
+    mask = df.projectID.duplicated(keep=False)
+    df.loc[mask, 'projectID'] += (df.groupby('projectID').cumcount()
+                                    .replace({0: 'a', 1: 'b', 2: 'c', 3: 'd'}))
+    return df
 
 
 def IWPDCY(config=None):
