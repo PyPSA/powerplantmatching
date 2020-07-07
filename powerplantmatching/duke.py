@@ -110,8 +110,10 @@ def duke(datasets, labels=['one', 'two'], singlematch=False,
         try:        
             run = sub.Popen(args, stderr=sub.PIPE, cwd=tmpdir, stdout=stdout,
                             universal_newlines=True)
-        except FileNotFoundError as fnfe:
-            logger.error(f"Java was not found on your system.\n{fnfe}")
+        except FileNotFoundError:
+            err = "Java was not found on your system."
+            logger.error(err)
+            raise FileNotFoundError(err)
 
         _, stderr = run.communicate()
 
