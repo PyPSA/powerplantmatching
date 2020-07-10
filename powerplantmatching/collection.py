@@ -158,7 +158,7 @@ def matched_data(config=None,
             Whether extend the dataset by variable renewable energy sources
             given by powerplantmatching.data.OPSD_VRE()
     extendby_kwargs : Dict, default {'use_saved_aggregation': True}
-            Dict of keywordarguments passed to powerplatnmatchting.
+            Dict of keywordarguments passed to powerplantmatchting.
             heuristics.extend_by_non_matched
     subsume_uncommon_fueltypes : Boolean, default False
             Whether to replace uncommon fueltype specification by 'Other'

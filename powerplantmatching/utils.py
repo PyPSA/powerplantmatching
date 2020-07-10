@@ -366,7 +366,7 @@ def parmap(f, arg_list, config=None):
 
 
 country_map = pd.read_csv(_package_data('country_codes.csv'))\
-                .replace({'name':{'Czechia': 'Czech Republic'}})
+                .replace({'name': {'Czechia': 'Czech Republic'}})
 
 def country_alpha2(country):
     """
@@ -382,7 +382,9 @@ def country_alpha2(country):
 
 def convert_alpha2_to_country(df):
     df = get_obj_if_Acc(df)
-    return df.assign(Country = df.Country
+    dic = {'EL': 'GR',  # needed, as some datasets use for Greece and United K.
+           'UK': 'GB'}  # codes that are not conform to ISO 3166-1 alpha2.
+    return df.assign(Country=df.Country.replace(dic)
                      .map(country_map.set_index('alpha_2')['name']))
 
 

@@ -107,8 +107,14 @@ def duke(datasets, labels=['one', 'two'], singlematch=False,
             stdout = None
         args.append('config.xml')
 
-        run = sub.Popen(args, stderr=sub.PIPE, cwd=tmpdir, stdout=stdout,
-                        universal_newlines=True)
+        try:        
+            run = sub.Popen(args, stderr=sub.PIPE, cwd=tmpdir, stdout=stdout,
+                            universal_newlines=True)
+        except FileNotFoundError:
+            err = "Java was not found on your system."
+            logger.error(err)
+            raise FileNotFoundError(err)
+
         _, stderr = run.communicate()
 
         if showmatches:

@@ -1,11 +1,31 @@
 # History of Changes
 
+## Version 0.4.2 (07.07.2020)
 
-## Version 0.4.1 (02.08.19)
+Triggered by the ongoing phase-outs of especially nuclear, coal and lignite plants in many countries, we acknowledge that time-related data of power stations and their single blocks becomes increasingly important.  
+Therefore, we decided to
+- adapt the columns:
+	- rename `YearCommissioned` to `DateIn` (reflects when a station/block had initially started operation)
+	- rename `Retrofit` to `DateRetrofit` (reflects when a station/block has been retrofitted)
+	- add `DateMothball` (reflects when a station/block has been mothballed)
+	- add `DateOut` (reflects when a station/block has been finally decommissioned)  
+**Please note:** Currently, these columns only contain the year, but we aim in future to provide exact dates (i.e. including day and month) whereever possible.
+
+Further changes:
+- new target_columns:
+    - add `EIC` (the European _Energy Identification Code_)
+	- add `StorageCapacity_MWh`
+- update [JRC Hydro Database](https://github.com/energy-modelling-toolkit/hydro-power-database) to v5 and add quick workaround so that pm can deal with non-unique identifiers
+- replace deprecated by current pandas functions
+
+
+## Version 0.4.1 (02.08.2019)
 
 ### Data structure
 - abolish git lfs in the favour of direct url parsing
-- store data in ~/.local/share/powerplantmatching (adjusted for different OS) 
+- store data in user folders 
+	- Linux `~/.local/share/powerplantmatching`
+	- Windows `C:\Users\<USERNAME>\AppData\Roaming\powerplantmatching`
 - move necessary files to package_data in powerplantmatching folder (such as duke binaries, xml files etc.) 
 - include [JRC Hydro Database](https://github.com/energy-modelling-toolkit/hydro-power-database) 
 
