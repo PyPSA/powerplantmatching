@@ -190,7 +190,88 @@ The considered reliability scores are:
 | BNETZA  |                   3 |
 | CARMA   |                   1 |
 
+## Intergrating new Data-Sources
 
+Let's say you have a new dataset "FOO.csv" which you want to combine with the other data bases. Follow these steps to properly integrate it. Please, before starting, make sure that you've installed `powerplantmatching` from your downloaded local repository (link).
+
+1. Look where powerplantmatching stores all data files
+    ```python
+    import powerplantmatching as pm
+    pm.core.package_config['data_dir']
+    ```
+
+2. Store FOO.csv in this directory under the subfolder `data/in`. So on Linux machines the total path under which you store your data file would be:
+`/home/<user>/.local/share/powerplantmatching/data/in/FOO.csv`
+
+3. Look where powerplantmatching looks for a custom configuration file
+    ```python
+    pm.core.package_config['custom_config']
+    ```
+
+    If this file does not yet exist on your machine, download the [standard configuration](https://raw.githubusercontent.com/FRESNA/powerplantmatching/master/powerplantmatching/package_data/config.yaml) and store it under the given path as `.powerplantmatching_config.yaml`.
+
+5. Open the yaml file and add a new entry under the section `#data config`.
+The new entry should look like this
+    ```python
+    FOO:
+      reliability_score: 4
+      fn: FOO.csv
+    ```
+    The `reliability_score` indicates the reliability of your data, choose a number between 1 (low quality data) and 7 (high quality data). If the data is openly available, you can add an `url` argument linking directly to the .csv file, which will enable automatic downloading.
+
+    Add the name of the new entry to the `matching_sources` in your yaml file like shown below
+    ```python
+    #matching config
+    matching_sources:
+        ...
+        - OPSD
+        - FOO
+    ```
+
+7. Add a function `FOO()` to the data.py in the powerplantmatching source code. You find the file in your local repository under `powerplantmatching/data.py`. The function should be structured like this:
+    ```python
+    def FOO(raw=False, config=None):
+        """
+        Importer for the FOO database.
+    
+        Parameters
+        ----------
+        raw : Boolean, default False
+            Whether to return the original dataset
+        config : dict, default None
+            Add custom specific configuration,
+            e.g. powerplantmatching.config.get_config(target_countries='Italy'),
+            defaults to powerplantmatching.config.get_config()
+        """
+        config = get_config() if config is None else config
+        df = parse_if_not_stored('FOO', config=config)
+        if raw:
+            return foo
+        df = (df
+	      .rename(columns){'Latitude': 'lat',
+                               'Longitude': 'lon'})
+	      .loc[lambda df: df.Country.isin(config['target_countries'])]
+	      .pipe(set_column_name, 'FOO')
+	      )
+			
+        return df
+    ```
+    Note that the code given after `df = ` is just a placeholder for anything necessary to turn the raw data into the standardized format. You should ensure that the data gets the appropriate column names and that any attributes are in the correct format (all of the standard labels can be found in the yaml or by `pm.get_config()['target_x']` when replacing x by `columns, countries, fueltypes, sets or technologies`. 
+
+8. Make sure the FOO entry is given in the configuration
+    ```python
+    pm.get_config()
+    ```
+
+    and load the file
+    ```python
+    pm.data.FOO()
+    ```
+
+9. If everything works fine, you can run the whole matching process with
+    ```python
+    pm.powerplants(update_all=True)
+    ```
 
 ## Getting Started
 

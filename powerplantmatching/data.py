@@ -161,21 +161,30 @@ def GEO(raw=False, config=None):
                    'Longitude_Start': 'lon',
                    'Latitude_Start': 'lat'}
 
-#    geo = pd.read_csv(_data_in(config['GEO']['fn']), low_memory=False,
-#                      usecols=list(rename_cols.keys()))
     geo = parse_if_not_stored('GEO', config=config, low_memory=False)
     if raw:
         return geo
+    geo = geo.rename(columns=rename_cols)
+                     
+    units = parse_if_not_stored('GEO_units', config=config, low_memory=False)
 
-    return (geo.rename(columns=rename_cols)
-              .assign(DateRetrofit=lambda s: s.DateRetrofit.astype(float),
-                      projectID=lambda s: 'GEO' + s.projectID.astype(str))
-              .assign(DateIn=(lambda s: s.DateIn.str[:4]
-                              .apply(pd.to_numeric, errors='coerce')
-                              .where(lambda x: x > 1900)
-                              .fillna(s.DateRetrofit)))
-              .assign(DateRetrofit=lambda s:
-                      s.DateRetrofit.fillna(s.DateIn))
+    # map from units to plants
+    units['DateIn'] = units.Date_Commissioned_dt.str[:4].astype(float)
+    units['Effiency'] = units.Unit_Efficiency_Percent.str.replace('%', '')\
+                             .astype(float) / 100
+    units = units.groupby('GEO_Assigned_Identification_Number')\
+                 .agg({'DateIn': [min, max], 'Effiency': 'mean'})
+
+    _ = geo.GEO_Assigned_Identification_Number.map(units.DateIn['min'])
+    geo['DateIn'] = (geo.DateIn.str[:4].apply(pd.to_numeric, errors='coerce')
+                     .where(lambda x: x > 1900).fillna(_))
+
+    _ = geo.GEO_Assigned_Identification_Number.map(units.DateIn['max'])
+    geo['Year_rng1_yr1'] = geo.Year_rng1_yr1.astype(float).fillna(_)
+
+    _ = units.Effiency['mean']
+    geo['Effiency'] = geo.GEO_Assigned_Identification_Number.map(_)
+    return (geo.assign(projectID=lambda s: 'GEO' + s.projectID.astype(str))
               .query("Country in @countries")
               .replace({col: {'Gas': 'Natural Gas'} for col in
                         {'Fueltype', 'FuelClassification1',

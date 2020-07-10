@@ -1,6 +1,6 @@
 # io config
-entsoe_token: 
-google_api_key: 
+entsoe_token:
+google_api_key:
 opsd_vres_base_year: 2016
 
 
@@ -59,6 +59,11 @@ GEO:
   reliability_score: 3
   url: https://vfs.fias.science/f/b4607c76b4/?raw=1
   fn: global_energy_observatory_power_plants.csv
+GEO_units:
+  net_capacity: false
+  reliability_score: 3
+  url: https://vfs.fias.science/f/3f4cc3876f/?raw=1
+  fn: global_energy_observatory_ppl_units.csv
 GPD:
   reliability_score: 3
   fn: global_power_plant_database.csv
