@@ -416,7 +416,7 @@ def breakdown_matches(df):
         sources = [df.powerplant.get_name()]
         single_source_b = True
     else :
-        sources = set(df.projectID.apply(dict.keys).apply(list).sum())
+        sources = df.projectID.apply(list).explode().unique()
         single_source_b = False
     sources = pd.concat(
             [getattr(data, s)().set_index('projectID')
@@ -437,7 +437,54 @@ def breakdown_matches(df):
             .reindex(stackedIDs)
             .set_axis(stackedIDs.to_frame('projectID')
                       .set_index('projectID', append=True).droplevel(-2).index,
-                      inplace=False))
+                      inplace=False)
+            .rename_axis(index=['id', 'source', 'projectID']))
+
+
+
+
+def restore_blocks(df, mode=2, config=None):
+    """
+    Restore blocks of powerplants from a matched dataframe.
+
+    This function breaks down all matches. For each match separately it selects
+    blocks from only one input data source.
+    For this selection the following modi are available:
+
+        1. Select the source with most number of blocks in the match
+
+        2. Select the source with the highest reliability score
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Matched data with not empty projectID-column. Keys of projectID must
+        be specified in powerplantmatching.data.data_config
+    """
+    df = get_obj_if_Acc(df)
+    assert('projectID' in df)
+
+    config = get_config() if config is None else config
+
+
+    bd = breakdown_matches(df)
+    if mode == 1:
+        block_map = (bd.reset_index(['source'])['source'].groupby(level='id')
+                     .agg(lambda x: pd.Series(x).mode()[0]))
+        blocks_i = pd.MultiIndex.from_frame(block_map.reset_index())
+        res = bd.reset_index('projectID').loc[blocks_i].set_index('projectID',
+                                                                  append=True)
+    elif mode == 2:
+        sources = df.projectID.apply(list).explode().unique()
+        rel_scores = pd.Series({s: config[s]['reliability_score']
+                                for s in sources})\
+                       .sort_values(ascending=False)
+        res = pd.DataFrame().rename_axis(index='id')
+        for s in rel_scores.index:
+            subset = bd.reindex(index=[s], level='source')
+            subset_i = subset.index.unique('id').difference(res.index.unique('id'))
+            res = pd.concat([res, subset.reindex(index=subset_i, level='id')])
+    return res.sort_index(level='id')
 
 
 def parse_Geoposition(location, zipcode='', country='',
