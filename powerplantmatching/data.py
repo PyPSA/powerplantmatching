@@ -165,7 +165,7 @@ def GEO(raw=False, config=None):
     if raw:
         return geo
     geo = geo.rename(columns=rename_cols)
-                     
+
     units = parse_if_not_stored('GEO_units', config=config, low_memory=False)
 
     # map from units to plants
@@ -175,15 +175,15 @@ def GEO(raw=False, config=None):
     units = units.groupby('GEO_Assigned_Identification_Number')\
                  .agg({'DateIn': [min, max], 'Effiency': 'mean'})
 
-    _ = geo.GEO_Assigned_Identification_Number.map(units.DateIn['min'])
+    _ = geo.projectID.map(units.DateIn['min'])
     geo['DateIn'] = (geo.DateIn.str[:4].apply(pd.to_numeric, errors='coerce')
                      .where(lambda x: x > 1900).fillna(_))
 
-    _ = geo.GEO_Assigned_Identification_Number.map(units.DateIn['max'])
-    geo['Year_rng1_yr1'] = geo.Year_rng1_yr1.astype(float).fillna(_)
+    _ = geo.projectID.map(units.DateIn['max'])
+    geo['DateRetrofit'] = geo.DateRetrofit.astype(float).fillna(_)
 
     _ = units.Effiency['mean']
-    geo['Effiency'] = geo.GEO_Assigned_Identification_Number.map(_)
+    geo['Effiency'] = geo.projectID.map(_)
     return (geo.assign(projectID=lambda s: 'GEO' + s.projectID.astype(str))
               .query("Country in @countries")
               .replace({col: {'Gas': 'Natural Gas'} for col in
@@ -312,7 +312,7 @@ def JRC(raw=False, config=None, update=False):
             .assign(Set='Store', Fueltype='Hydro')
             .powerplant.convert_alpha2_to_country()
             .pipe(config_filter))
-    # TODO: Temporary section to deal with duplicate identifiers in the JRC 
+    # TODO: Temporary section to deal with duplicate identifiers in the JRC
     # input file. Can be removed again, once the duplicates have been removed
     # in a new release.
     mask = df.projectID.duplicated(keep=False)
