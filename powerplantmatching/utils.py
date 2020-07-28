@@ -396,7 +396,6 @@ def convert_country_to_alpha2(df):
     return df.assign(Country = alpha2)
 
 
-
 def breakdown_matches(df):
     """
     Function to inspect grouped and matched entries of a matched
@@ -442,7 +441,6 @@ def breakdown_matches(df):
 
 
 
-
 def restore_blocks(df, mode=2, config=None):
     """
     Restore blocks of powerplants from a matched dataframe.
@@ -461,10 +459,12 @@ def restore_blocks(df, mode=2, config=None):
         Matched data with not empty projectID-column. Keys of projectID must
         be specified in powerplantmatching.data.data_config
     """
+    from .data import OPSD
     df = get_obj_if_Acc(df)
     assert('projectID' in df)
 
     config = get_config() if config is None else config
+    
 
 
     bd = breakdown_matches(df)
@@ -484,7 +484,16 @@ def restore_blocks(df, mode=2, config=None):
             subset = bd.reindex(index=[s], level='source')
             subset_i = subset.index.unique('id').difference(res.index.unique('id'))
             res = pd.concat([res, subset.reindex(index=subset_i, level='id')])
-    return res.sort_index(level='id')
+    else:
+        raise ValueError(f'Given `mode` must be either 1 or 2 but is: {mode}')
+        
+    res = res.sort_index(level='id').reset_index(level=[0, 1])
+
+    # Now append Block information from OPSD German list:
+    df_blocks = (OPSD(rawDE_withBlocks=True)
+                 .rename(columns={'name_bnetza': 'Name'}))['Name']
+    res.update(df_blocks)
+    return res
 
 
 def parse_Geoposition(location, zipcode='', country='',

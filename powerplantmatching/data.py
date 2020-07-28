@@ -42,7 +42,7 @@ cget = pycountry.countries.get
 net_caps = get_config()['display_net_caps']
 
 
-def OPSD(rawEU=False, rawDE=False, update=False,
+def OPSD(rawEU=False, rawDE=False, rawDE_withBlocks=False, update=False,
          statusDE=['operating', 'reserve', 'special_case',
                    'shutdown_temporary'], config=None):
     """
@@ -75,6 +75,23 @@ def OPSD(rawEU=False, rawDE=False, update=False,
         return opsd_EU
     if rawDE:
         return opsd_DE
+    if rawDE_withBlocks:
+        DE_blocks = (opsd_DE
+                     .loc[lambda x: ~(x['block_bnetza'].isna())]
+                     .loc[lambda x: x['block_bnetza'] != x['name_bnetza']]
+                     .assign(block=lambda x: x.block_bnetza.str.strip())
+                     .loc[lambda x: ~(x.block.isin(['-', 'entfällt']))]
+                     .assign(len_block=lambda x: x.block.apply(len)))
+        upd = (DE_blocks.loc[lambda x: (x.len_block <= 6)]
+                        .loc[lambda x: (x.block.str.slice(0, 5) != 'Block')]
+                        .assign(block=lambda x: 'Block ' + x['block']))
+        DE_blocks.update(upd)
+        DE_blocks = DE_blocks.assign(name_bnetza=lambda x:
+                                     x['name_bnetza'].str.strip() + ' '
+                                     + x['block'])
+        opsd_DE.update(DE_blocks)
+        return opsd_DE.drop('Unnamed: 0', axis=1).set_index('id')
+    
     opsd_EU = (opsd_EU.rename(columns=str.title)
                      .rename(columns={'Lat': 'lat',
                                       'Lon': 'lon',
