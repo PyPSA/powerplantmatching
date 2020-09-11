@@ -1118,7 +1118,7 @@ def OPSD_VRE_country(country, config=None, raw=False):
     if raw:
         return df
 
-    return (df.assign(Country='DE')
+    return (df.assign(Country=country)
               .rename(columns={'energy_source_level_2': 'Fueltype',
                                'technology': 'Technology',
                                'data_source': 'file',

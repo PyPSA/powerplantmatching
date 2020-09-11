@@ -82,8 +82,29 @@ OPSD_EU:
   fn: conventional_power_plants_EU.csv
   url: https://data.open-power-system-data.org/conventional_power_plants/2018-12-20/conventional_power_plants_EU.csv
 OPSD_VRE:
-  url: https://data.open-power-system-data.org/renewable_power_plants/2019-04-05/renewable_power_plants_EU.csv
+  url: https://data.open-power-system-data.org/renewable_power_plants/2020-08-25/renewable_power_plants_EU.csv
   fn: renewable_power_plants_EU.csv
+OPSD_VRE_DE:
+  url: https://data.open-power-system-data.org/renewable_power_plants/2020-08-25/renewable_power_plants_DE.csv
+  fn: renewable_power_plants_DE.csv
+OPSD_VRE_FR:
+  url: https://data.open-power-system-data.org/renewable_power_plants/2020-08-25/renewable_power_plants_FR.csv
+  fn: renewable_power_plants_FR.csv
+OPSD_VRE_PL:
+  url: https://data.open-power-system-data.org/renewable_power_plants/2020-08-25/renewable_power_plants_PL.csv
+  fn: renewable_power_plants_PL.csv
+OPSD_VRE_CH:
+  url: https://data.open-power-system-data.org/renewable_power_plants/2020-08-25/renewable_power_plants_CH.csv
+  fn: renewable_power_plants_CH.csv
+OPSD_VRE_DK:
+  url: https://data.open-power-system-data.org/renewable_power_plants/2020-08-25/renewable_power_plants_DK.csv
+  fn: renewable_power_plants_DK.csv
+OPSD_VRE_CZ:
+  url: https://data.open-power-system-data.org/renewable_power_plants/2020-08-25/renewable_power_plants_CZ.csv
+  fn: renewable_power_plants_CZ.csv
+OPSD_VRE_SE:
+  url: https://data.open-power-system-data.org/renewable_power_plants/2020-08-25/renewable_power_plants_SE.csv
+  fn: renewable_power_plants_SE.csv
 OPSD:
   reliability_score: 5
 Capacity_stats:
