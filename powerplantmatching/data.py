@@ -1109,8 +1109,8 @@ def OPSD_VRE(config=None, raw=False):
 
 def OPSD_VRE_country(country, config=None, raw=False):
     """
-    Get country specifig data from OPSD for renewables. For using this,
-    the config has to be adjusted.
+    Get country specifig data from OPSD for renewables, if available.
+    Available for DE, FR, PL, CH, DK, CZ and SE (last update: 09/2020).
     """
     config = get_config() if config is None else config
 
