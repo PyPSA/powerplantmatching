@@ -1109,16 +1109,16 @@ def OPSD_VRE(config=None, raw=False):
 
 def OPSD_VRE_country(country, config=None, raw=False):
     """
-    Get country specifig data from OPSD for renewables. For using this,
-    the config has to be adjusted.
+    Get country specifig data from OPSD for renewables, if available.
+    Available for DE, FR, PL, CH, DK, CZ and SE (last update: 09/2020).
     """
     config = get_config() if config is None else config
 
-    df = parse_if_not_stored(f'OPSD_VRE_{country}')
+    df = parse_if_not_stored(f'OPSD_VRE_{country}', low_memory=False)
     if raw:
         return df
 
-    return (df.assign(Country='DE')
+    return (df.assign(Country=country)
               .rename(columns={'energy_source_level_2': 'Fueltype',
                                'technology': 'Technology',
                                'data_source': 'file',
