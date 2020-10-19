@@ -105,6 +105,9 @@ OPSD_VRE_CZ:
 OPSD_VRE_SE:
   url: https://data.open-power-system-data.org/renewable_power_plants/2020-08-25/renewable_power_plants_SE.csv
   fn: renewable_power_plants_SE.csv
+OPSD_VRE_GB:
+  url: https://data.open-power-system-data.org/renewable_power_plants/2020-08-25/renewable_power_plants_UK.csv
+  fn: renewable_power_plants_UK.csv
 OPSD:
   reliability_score: 5
 Capacity_stats:
