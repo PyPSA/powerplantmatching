@@ -464,7 +464,7 @@ def restore_blocks(df, mode=2, config=None):
     assert('projectID' in df)
 
     config = get_config() if config is None else config
-    
+
 
 
     bd = breakdown_matches(df)
@@ -486,7 +486,7 @@ def restore_blocks(df, mode=2, config=None):
             res = pd.concat([res, subset.reindex(index=subset_i, level='id')])
     else:
         raise ValueError(f'Given `mode` must be either 1 or 2 but is: {mode}')
-        
+
     res = res.sort_index(level='id').reset_index(level=[0, 1])
 
     # Now append Block information from OPSD German list:

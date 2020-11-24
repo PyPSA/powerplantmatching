@@ -91,7 +91,7 @@ def OPSD(rawEU=False, rawDE=False, rawDE_withBlocks=False, update=False,
                                      + x['block'])
         opsd_DE.update(DE_blocks)
         return opsd_DE.drop('Unnamed: 0', axis=1).set_index('id')
-    
+
     opsd_EU = (opsd_EU.rename(columns=str.title)
                      .rename(columns={'Lat': 'lat',
                                       'Lon': 'lon',
@@ -975,9 +975,10 @@ def BNETZA(header=9, sheet_name='Gesamtkraftwerksliste BNetzA',
     """
     config = get_config() if config is None else config
 
-    parse_func = lambda url: pd.read_excel(url, header=header,
-                                           sheet_name=sheet_name,
-                                           parse_dates=False)
+    url = config['BNETZA']['url']
+    def parse_func():
+        return  pd.read_excel(url, header=header, sheet_name=sheet_name,
+                              parse_dates=False)
     bnetza = parse_if_not_stored('BNETZA', update, config, parse_func)
 
     if raw:
@@ -1122,7 +1123,6 @@ def OPSD_VRE_country(country, config=None, raw=False):
               .rename(columns={'energy_source_level_2': 'Fueltype',
                                'technology': 'Technology',
                                'data_source': 'file',
-                               # 'country': 'Country', # (breaks code for GB if included)
                                'electrical_capacity': 'Capacity',
                                'municipality': 'Name'})
               .powerplant.convert_alpha2_to_country()

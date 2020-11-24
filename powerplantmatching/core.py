@@ -45,6 +45,7 @@ def _data_out(fn, config=None):
                     fn)
 
 
+
 del _data_dir
 del _writable_dir
 
@@ -68,9 +69,9 @@ del logFormatter
 del fileHandler
 
 
-def get_config(filename=None, **overrides):
+def get_config(**overrides):
     """
-    Import the configuration setting from yaml file.
+    Import the default configuration file and update custom settings.
 
     Parameters
     ----------
@@ -90,22 +91,21 @@ def get_config(filename=None, **overrides):
     import yaml
     from logging import info
 
-    if filename is None:
-        custom_config = package_config['custom_config']
-        if exists(custom_config):
-            filename = custom_config
-        else:
-            filename = _package_data('config.yaml')
+    package_config = _package_data('config.yaml')
+    custom_config = _package_data('custom.yaml')
 
-    with open(filename) as f:
+    with open(package_config) as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
-        config.update(overrides)
+    if exists(custom_config):
+        with open(custom_config) as f:
+            config.update(yaml.load(f, Loader=yaml.FullLoader))
+    config.update(overrides)
 
-        sha1digest = sha1(cPickle.dumps(overrides)).digest()
-        if len(dict(**overrides)) == 0:
-            config['hash'] = 'default'
-        else:
-            config['hash'] = encodestring(sha1digest).decode('ascii')[2:12]
+    sha1digest = sha1(cPickle.dumps(overrides)).digest()
+    if len(dict(**overrides)) == 0:
+        config['hash'] = 'default'
+    else:
+        config['hash'] = encodestring(sha1digest).decode('ascii')[2:12]
 
     if not isdir(_data_out('.', config=config)):
         makedirs(abspath(_data_out('.', config=config)))

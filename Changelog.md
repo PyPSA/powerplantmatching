@@ -1,6 +1,7 @@
 # History of Changes
 
-## Version 0.4.2 (07.07.2020)
+
+## Version 0.4.2 (24.11.2020)
 
 Triggered by the ongoing phase-outs of especially nuclear, coal and lignite plants in many countries, we acknowledge that time-related data of power stations and their single blocks becomes increasingly important.  
 Therefore, we decided to
@@ -17,6 +18,9 @@ Further changes:
 	- add `StorageCapacity_MWh`
 - update [JRC Hydro Database](https://github.com/energy-modelling-toolkit/hydro-power-database) to v5 and add quick workaround so that pm can deal with non-unique identifiers
 - replace deprecated by current pandas functions
+- custom configuration and package configuration are now merged when calling `get_config()` (values in the custom configuration are prioritized)
+- fix retrieving BNETZA data   
+
 
 
 ## Version 0.4.1 (02.08.2019)
