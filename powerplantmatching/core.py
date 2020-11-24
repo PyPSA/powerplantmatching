@@ -69,7 +69,7 @@ del logFormatter
 del fileHandler
 
 
-def get_config(**overrides):
+def get_config(filename=None, **overrides):
     """
     Import the default configuration file and update custom settings.
 
@@ -92,7 +92,7 @@ def get_config(**overrides):
     from logging import info
 
     package_config = _package_data('config.yaml')
-    custom_config = _package_data('custom.yaml')
+    custom_config = filename if filename else _package_data('custom.yaml')
 
     with open(package_config) as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
