@@ -1114,7 +1114,7 @@ def OPSD_VRE_country(country, config=None, raw=False):
     """
     config = get_config() if config is None else config
 
-    df = parse_if_not_stored(f'OPSD_VRE_{country}', low_memory=False)
+    df = parse_if_not_stored(f'OPSD_VRE_{country}', engine='python')
     if raw:
         return df
 
@@ -1122,7 +1122,7 @@ def OPSD_VRE_country(country, config=None, raw=False):
               .rename(columns={'energy_source_level_2': 'Fueltype',
                                'technology': 'Technology',
                                'data_source': 'file',
-                               'country': 'Country',
+                               # 'country': 'Country', # (breaks code for GB if included)
                                'electrical_capacity': 'Capacity',
                                'municipality': 'Name'})
               .powerplant.convert_alpha2_to_country()
