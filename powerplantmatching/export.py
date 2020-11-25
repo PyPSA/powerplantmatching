@@ -135,8 +135,8 @@ def to_TIMES(df=None, use_scaled_capacity=False, baseyear=2015):
         df = matched_data()
         if df is None:
             raise RuntimeError("The data to be exported does not yet exist.")
-    df = df.loc[(df.YearCommissioned.isnull())
-                | (df.YearCommissioned <= baseyear)]
+    df = df.loc[(df.DateIn.isnull())
+                | (df.DateIn <= baseyear)]
     plausible = True
 
     # Set region via country names by iso3166-2 codes
@@ -242,7 +242,7 @@ def to_TIMES(df=None, use_scaled_capacity=False, baseyear=2015):
                     # are being filtered.
                     elif yr > baseyear:
                         series = ct_group.apply(lambda x: x[cap_column]
-                                                if yr >= x['YearCommissioned']
+                                                if yr >= x['DateIn']
                                                 and yr <= x['YearRetire']
                                                 else 0, axis=1)
                     else:

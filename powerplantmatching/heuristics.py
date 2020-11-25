@@ -202,8 +202,8 @@ def extend_by_VRE(df, config=None, base_year=2017, prune_beyond=True):
 #    cc = pd.concat([df, vre_DK, vre_CH_DE, vre], ignore_index=True, sort=False)
 #    cc = cc.loc[:, cols]
 #    if prune_beyond:
-#        cc = cc[(cc.YearCommissioned <= base_year) |
-#                (cc.YearCommissioned.isnull())]
+#        cc = cc[(cc.DateIn <= base_year) |
+#                (cc.DateIn.isnull())]
 #    cc.reset_index(drop=True, inplace=True)
 #    return cc
 
@@ -215,29 +215,29 @@ def fill_missing_commyears(df):
     df = get_obj_if_Acc(df)
     df = df.copy()
     # 1st try: Fill with both country- and fueltypespecific averages
-    df.YearCommissioned.fillna(df.groupby(['Country', 'Fueltype'])
-                                 .YearCommissioned
+    df.DateIn.fillna(df.groupby(['Country', 'Fueltype'])
+                                 .DateIn
                                  .transform('mean'), inplace=True)
     # 2nd try: Fill remaining with only fueltype-specific average
-    df.YearCommissioned.fillna(df.groupby(['Fueltype']).YearCommissioned
+    df.DateIn.fillna(df.groupby(['Fueltype']).DateIn
                                  .transform('mean'), inplace=True)
     # 3rd try: Fill remaining with only country-specific average
-    df.YearCommissioned.fillna(df.groupby(['Country']).YearCommissioned
+    df.DateIn.fillna(df.groupby(['Country']).DateIn
                                  .transform('mean'), inplace=True)
-    if df.YearCommissioned.isnull().any():
-        count = len(df[df.YearCommissioned.isnull()])
+    if df.DateIn.isnull().any():
+        count = len(df[df.DateIn.isnull()])
         raise(ValueError('''There are still *{0}* empty values for
-                            'YearCommissioned' in the DataFrame. These should
+                            'DateIn' in the DataFrame. These should
                             be either be filled manually or dropped to
                             continue.'''.format(count)))
-    df.loc[:, 'YearCommissioned'] = df.YearCommissioned.astype(int)
-    df.Retrofit.fillna(df.YearCommissioned.astype(int), inplace=True)
+    df.loc[:, 'DateIn'] = df.DateIn.astype(int)
+    df.DateRetrofit.fillna(df.DateIn.astype(int), inplace=True)
     return df
 
 
 def fill_missing_decommyears(df, config=None):
     """
-    Function which sets/fills a column 'YearDecommissioning' with roughly
+    Function which sets/fills a column 'DateOut' with roughly
     estimated values for decommissioning years, based on the estimated lifetimes
     per `Fueltype` given in the config and corresponding commissioning years.
     Note that the latter is filled up using `fill_missing_commyears`.
@@ -245,12 +245,11 @@ def fill_missing_decommyears(df, config=None):
     df = get_obj_if_Acc(df)
     if config is None:
         config = get_config()
-    if 'YearDecommissioning' not in df:
-        df = df.reindex(columns=list(df.columns) + ['YearDecommissioning'])
+    if 'DateOut' not in df:
+        df = df.reindex(columns=list(df.columns) + ['DateOut'])
     lifetime = df.Fueltype.map(config['fuel_to_lifetime'])
     df = fill_missing_commyears(df)
-    df['YearDecommissioning'] = (df.YearDecommissioning
-                                 .fillna(df[['YearCommissioned', 'Retrofit']].max(1)
+    df['DateOut'] = (df.DateOut.fillna(df[['DateIn', 'DateRetrofit']].max(1)
                                          + lifetime).astype(int))
     return df
 
@@ -292,11 +291,11 @@ def aggregate_VRE_by_commyear(df, target_fueltypes=None, agg_geo_by=None):
     df = df[df.Fueltype.isin(target_fueltypes)]
     df = fill_missing_commyears(df)
     df.Technology.fillna('-', inplace=True)
-    df = (df.groupby(['Country', 'YearCommissioned', 'Fueltype', 'Technology'])
+    df = (df.groupby(['Country', 'DateIn', 'Fueltype', 'Technology'])
             .agg(f).reset_index().replace({'-': np.NaN}))
     df.columns = df.columns.droplevel(level=1)
     return df.assign(Set='PP',
-                     Retrofit=df.YearCommissioned)
+                     DateRetrofit=df.DateIn)
 
 
 def derive_vintage_cohorts_from_statistics(df, base_year=2015, config=None):
@@ -365,7 +364,7 @@ def derive_vintage_cohorts_from_statistics(df, base_year=2015, config=None):
     dfe = pd.DataFrame(columns=df.columns)
     for c, df_country in df.groupby(['Country']):
         for tech, dfs in df_country.groupby(['Technology']):
-            dfs.set_index('YearCommissioned', drop=False, inplace=True)
+            dfs.set_index('DateIn', drop=False, inplace=True)
             y_start = int(dfs.index[0])
             y_end = int(dfs.index[-1])
             life = config['fuel_to_lifetime'][dfs.Fueltype.iloc[0]]
@@ -388,8 +387,8 @@ def derive_vintage_cohorts_from_statistics(df, base_year=2015, config=None):
             add.Set = dfs.Set.iloc[0]
             dfe = pd.concat([dfe, add[add.Capacity > 0.0]], ignore_index=True)
     dfe.Year = dfe.Year.apply(pd.to_numeric)
-    dfe.rename(columns={'Year': 'YearCommissioned'}, inplace=True)
-    dfe = dfe.assign(Retrofit=dfe.YearCommissioned)
+    dfe.rename(columns={'Year': 'DateIn'}, inplace=True)
+    dfe = dfe.assign(DateRetrofit=dfe.DateIn)
     return dfe[~np.isclose(dfe.Capacity, 0)]
 
 

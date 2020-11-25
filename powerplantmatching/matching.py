@@ -271,7 +271,7 @@ def reduce_matched_dataframe(df, show_orig_names=False, config=None):
     props_for_groups = {col: 'first'
                         for col in cols}
     props_for_groups.update({'YearCommisisoned': 'min',
-                             'Retrofit': 'max',
+                             'DateRetrofit': 'max',
                              'projectID': lambda x: dict(x.droplevel(0).dropna()),
                              'eic_code': 'unique'})
     props_for_groups = pd.Series(props_for_groups)[cols].to_dict()

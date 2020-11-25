@@ -1,4 +1,4 @@
-,CARMA,Capacity,Country,Duration,ENTSOE,ESE,Efficiency,Fueltype,GEO,GPD,IWPDCY,Name,OPSD,Retrofit,Set,Technology,WEPP,YearCommissioned,last_update,lat,lon
+,CARMA,Capacity,Country,Duration,ENTSOE,ESE,Efficiency,Fueltype,GEO,GPD,IWPDCY,Name,OPSD,DateRetrofit,Set,Technology,WEPP,DateIn,last_update,lat,lon
 0,,,,,,,,,,,,Vianden,BNA1675,,,Pumped storage,,,09. Aug 18,,
 1,,,,,,,,,,,,Vianden,BNA0978,,,Pumped storage,,,09. Aug 18,,
 2,,,,,,,,,,,,Vianden,BNA0979,,,Pumped storage,,,09. Aug 18,,

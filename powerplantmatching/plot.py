@@ -589,7 +589,7 @@ def gather_nrows_ncols(x, orientation='landscape'):
 #    # Insert periodwise capacities
 #    df.loc[:, 2015] = df.loc[:, 'Capacity']
 #    for yr in range(2020, 2055, 5):
-#        df.loc[yr <= (df.loc[:, 'YearCommissioned']
+#        df.loc[yr <= (df.loc[:, 'DateIn']
 #                      + df.loc[:, 'Life']), yr] = df.loc[:, 'Capacity']
 #        df.loc[:, yr].fillna(0., inplace=True)
 #
@@ -661,7 +661,7 @@ def gather_nrows_ncols(x, orientation='landscape'):
 #        figsize : tuple
 #        ylabel : str
 #    """
-#    dfp = [df.pivot_table(values='Capacity', index='YearCommissioned',
+#    dfp = [df.pivot_table(values='Capacity', index='DateIn',
 #                          columns='Fueltype', aggfunc='sum')/1000
 #           for df in dfs]
 #    labels_mpatches = collections.OrderedDict()
@@ -866,7 +866,7 @@ def gather_nrows_ncols(x, orientation='landscape'):
 #    s = "Fueltype!='Solar' and Fueltype!='Wind' and Fueltype!='Geothermal'"
 #    queryexpr = kwargs.get('queryexpr', s)
 #    # 1+2: WEPP itself + Reduced w/ WEPP
-#    s = '(YearCommissioned<={:04d}) or (YearCommissioned!=YearCommissioned)'
+#    s = '(DateIn<={:04d}) or (DateIn!=DateIn)'
 #    if include_WEPP:
 #        wepp = WEPP()
 #        wepp.query(s.format(yr), inplace=True)
