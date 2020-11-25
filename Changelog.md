@@ -20,7 +20,7 @@ Further changes:
 - replace deprecated by current pandas functions
 - custom configuration and package configuration are now merged when calling `get_config()` (values in the custom configuration are prioritized)
 - fix retrieving BNETZA data   
-
+- export.py has now a function for mapping bus coordinates to the power plant list 
 
 
 

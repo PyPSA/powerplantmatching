@@ -65,6 +65,7 @@ def map_bus(df, buses):
     -------
     DataFrame with an extra column 'bus' indicating the nearest bus.
     '''
+    df = get_obj_if_Acc(df)
     kdtree = KDTree(buses[['x', 'y']])
     buses_i = buses.index.append(pd.Index([np.nan]))
     return df.assign(bus=buses_i[kdtree.query(df[['lon', 'lat']].values)[1]])
@@ -87,6 +88,7 @@ def map_country_bus(df, buses):
     -------
     DataFrame with an extra column 'bus' indicating the nearest bus.
     '''
+    df = get_obj_if_Acc(df)
     diff = set(df.Country.unique()) - set(buses.country)
     if len(diff):
         logger.warning(f'Power plants in {", ".join(diff)} cannot be mapped '

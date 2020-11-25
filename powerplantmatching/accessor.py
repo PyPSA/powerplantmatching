@@ -36,7 +36,7 @@ class PowerPlantAccessor():
                         select_by_projectID, breakdown_matches,
                         fill_geoposition, convert_country_to_alpha2,
                         convert_alpha2_to_country)
-    from .export import to_pypsa_names
+    from .export import to_pypsa_names, map_bus, map_country_bus
     from .heuristics import (
         extend_by_non_matched, scale_to_net_capacities,
         fill_missing_commyears, extend_by_VRE, fill_missing_duration,
