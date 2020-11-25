@@ -67,7 +67,7 @@ def extend_by_non_matched(df, extend_by, label=None, query=None,
                           .dropna().sum())
     if included_ids == 0:
         logger.warning(f'{label} not existent in the matched date, extending'
-                    ' by all data entries.')
+                       ' by all data entries.')
         included_ids = []
 
     if query is not None:
@@ -78,16 +78,17 @@ def extend_by_non_matched(df, extend_by, label=None, query=None,
         extend_by = aggregate_units(extend_by, dataset_name=label,
                                     config=config, **aggkwargs)
         extend_by = extend_by.assign(
-                projectID=extend_by.projectID.map(lambda x: {label: x}))
+            projectID=extend_by.projectID.map(lambda x: {label: x}))
     else:
         extend_by = extend_by.assign(
-                projectID=extend_by.projectID.map(lambda x: {label: [x]}))
+            projectID=extend_by.projectID.map(lambda x: {label: [x]}))
 
     if df.columns.nlevels > 1:
         return df.append(
-                pd.concat([extend_by], keys=[label], axis=1) #, ignore_index=True ??
-                .swaplevel(axis=1)
-                .reindex(columns=df.columns), ignore_index=True)
+            # , ignore_index=True ??
+            pd.concat([extend_by], keys=[label], axis=1)
+            .swaplevel(axis=1)
+            .reindex(columns=df.columns), ignore_index=True)
     else:
         return df.append(extend_by.reindex(columns=df.columns),
                          ignore_index=True)
@@ -163,10 +164,10 @@ def extend_by_VRE(df, config=None, base_year=2017, prune_beyond=True):
     config = get_config() if config is None else config
 
     vre = OPSD_VRE(config=config).query('Fueltype != "Hydro"')\
-            .reindex(columns=config['target_columns'])
+        .reindex(columns=config['target_columns'])
     return df.append(vre, sort=False)
 
-#I am sorry to drop this, but this is a bit too specific for maintaining
+# I am sorry to drop this, but this is a bit too specific for maintaining
 #
 #    df = df.copy()
 #    # Drop Solar (except CSP), Wind and Bioenergy which are to be replaced
@@ -242,9 +243,10 @@ def fill_missing_decommyears(df, config=None):
     Note that the latter is filled up using `fill_missing_commyears`.
     """
     df = get_obj_if_Acc(df)
-    if config is None: config = get_config()
+    if config is None:
+        config = get_config()
     if 'YearDecommissioning' not in df:
-        df = df.reindex(columns = list(df.columns) + ['YearDecommissioning'])
+        df = df.reindex(columns=list(df.columns) + ['YearDecommissioning'])
     lifetime = df.Fueltype.map(config['fuel_to_lifetime'])
     df = fill_missing_commyears(df)
     df['YearDecommissioning'] = (df.YearDecommissioning
@@ -277,7 +279,7 @@ def aggregate_VRE_by_commyear(df, target_fueltypes=None, agg_geo_by=None):
         f = {'Capacity': ['sum'], 'lat': ['mean'], 'lon': ['mean']}
     elif agg_geo_by == 'wm':
         # TODO: This does not work yet, when NaNs are in lat/lon columns.
-        wm = lambda x: np.average(x, weights=df.loc[x.index, 'Capacity'])
+        def wm(x): return np.average(x, weights=df.loc[x.index, 'Capacity'])
         f = {'Capacity': ['sum'],
              'lat': {'weighted mean': wm},
              'lon': {'weighted mean': wm}}
@@ -369,7 +371,7 @@ def derive_vintage_cohorts_from_statistics(df, base_year=2015, config=None):
             life = config['fuel_to_lifetime'][dfs.Fueltype.iloc[0]]
             mat = (pd.DataFrame(columns=range(y_start-life+1, y_end+life),
                                 index=range(y_start-life+1, y_end))
-                     .astype(np.float))
+                   .astype(np.float))
             if dfs.Fueltype.iloc[0] in ['Solar', 'Wind', 'Bioenergy',
                                         'Geothermal']:
                 mat = setInitial_Triangle(mat, dfs, life)
@@ -457,15 +459,15 @@ def gross_to_net_factors(reference='opsd', aggfunc='median',
     else:
         df.energy_source_level_2.fillna(value=df.fuel, inplace=True)
         df.replace(dict(energy_source_level_2={
-                'Biomass and biogas': 'Bioenergy',
-                'Fossil fuels': 'Other',
-                'Mixed fossil fuels': 'Other',
-                'Natural gas': 'Natural Gas',
-                'Non-renewable waste': 'Waste',
-                'Other bioenergy and renewable waste': 'Bioenergy',
-                'Other or unspecified energy sources': 'Other',
-                'Other fossil fuels': 'Other',
-                'Other fuels': 'Other'}), inplace=True)
+            'Biomass and biogas': 'Bioenergy',
+            'Fossil fuels': 'Other',
+            'Mixed fossil fuels': 'Other',
+            'Natural gas': 'Natural Gas',
+            'Non-renewable waste': 'Waste',
+            'Other bioenergy and renewable waste': 'Bioenergy',
+            'Other or unspecified energy sources': 'Other',
+            'Other fossil fuels': 'Other',
+            'Other fuels': 'Other'}), inplace=True)
         df.rename(columns={'technology': 'Technology'}, inplace=True)
         df = (clean_technology(df)
               .assign(energy_source_level_2=lambda df:

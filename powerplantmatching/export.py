@@ -71,8 +71,6 @@ def map_bus(df, buses):
     return df.assign(bus=buses_i[kdtree.query(df[['lon', 'lat']].values)[1]])
 
 
-
-
 def map_country_bus(df, buses):
     '''
     Assign a 'bus' colum based on a list of coordinates and countries.
@@ -95,9 +93,9 @@ def map_country_bus(df, buses):
                        'because the countries do not appear in `buses`.')
     res = []
     for c in df.Country.unique():
-        res.append(map_bus(df.query('Country == @c'), buses.query('country == @c')))
+        res.append(map_bus(df.query('Country == @c'),
+                           buses.query('country == @c')))
     return pd.concat(res)
-
 
 
 def to_pypsa_network(df, network, buslist=None):

@@ -164,13 +164,13 @@ def gather_set_info(df, search_col=['Name', 'Fueltype', 'Technology']):
                         'power and heat', 'heat and power'])
     for i in search_col:
         isCHP_b = df[i].dropna().str.contains(pattern, case=False)\
-                    .reindex(df.index).fillna(False)
+            .reindex(df.index).fillna(False)
         Set.loc[isCHP_b] = 'CHP'
 
     pattern = '|'.join(['battery', 'storage'])
     for i in search_col:
         isStore_b = df[i].dropna().str.contains(pattern, case=False) \
-                    .reindex(df.index).fillna(False)
+            .reindex(df.index).fillna(False)
         Set.loc[isStore_b] = 'Store'
 
     df = df.assign(Set=Set)
@@ -198,7 +198,7 @@ def clean_technology(df, generalize_hydros=False):
     if len(tech) == 0:
         return df
     tech = tech.replace(
-            {' and ': ', ', ' Power Plant': '', 'Battery': ''}, regex=True)
+        {' and ': ', ', ' Power Plant': '', 'Battery': ''}, regex=True)
     if generalize_hydros:
         tech[tech.str.contains('pump', case=False)] = 'Pumped Storage'
         tech[tech.str.contains('reservoir|lake', case=False)] = 'Reservoir'
@@ -324,7 +324,6 @@ def aggregate_units(df, dataset_name=None,
     path_name = _data_out('aggregations/aggregation_groups_{}.csv'
                           .format(dataset_name), config=config)
 
-
     if use_saved_aggregation & save_aggregation:
         if os.path.exists(path_name):
             logger.info("Reading saved aggregation groups for dataset '{}'."
@@ -358,7 +357,7 @@ def aggregate_units(df, dataset_name=None,
         df = df.assign(EIC=df['EIC'].apply(list))
 
     df = (df
-          .assign(**{col: df[col].div(df['Capacity']) 
+          .assign(**{col: df[col].div(df['Capacity'])
                      for col in weighted_cols})
           .reset_index(drop=True)
           .pipe(clean_powerplantname)

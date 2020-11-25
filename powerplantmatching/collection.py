@@ -234,7 +234,7 @@ def matched_data(config=None,
                        .reset_index(drop=True))
     else:
         matched = (matched[matched.projectID.apply(lambda x: sorted(x.keys())
-                           not in [['CARMA', 'GEO']])
+                                                   not in [['CARMA', 'GEO']])
                            | matched.Country.isin(allowed_countries)]
                    .reset_index(drop=True))
         if config['remove_missing_coords']:

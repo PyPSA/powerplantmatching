@@ -93,15 +93,15 @@ def OPSD(rawEU=False, rawDE=False, rawDE_withBlocks=False, update=False,
         return opsd_DE.drop('Unnamed: 0', axis=1).set_index('id')
 
     opsd_EU = (opsd_EU.rename(columns=str.title)
-                     .rename(columns={'Lat': 'lat',
-                                      'Lon': 'lon',
-                                      'Energy_Source': 'Fueltype',
-                                      'Commissioned': 'DateIn',
-                                      'Eic_Code': 'EIC'})
-                     .eval('DateRetrofit = DateIn')
-                     .assign(projectID=lambda s: 'OEU'
-                             + pd.Series(s.index.astype(str), s.index))
-                     .reindex(columns=config['target_columns']))
+               .rename(columns={'Lat': 'lat',
+                                'Lon': 'lon',
+                                'Energy_Source': 'Fueltype',
+                                'Commissioned': 'DateIn',
+                                'Eic_Code': 'EIC'})
+               .eval('DateRetrofit = DateIn')
+               .assign(projectID=lambda s: 'OEU'
+                       + pd.Series(s.index.astype(str), s.index))
+               .reindex(columns=config['target_columns']))
 
     opsd_DE = (opsd_DE.rename(columns=str.title)
                       .rename(columns={'Lat': 'lat',
@@ -115,7 +115,7 @@ def OPSD(rawEU=False, rawDE=False, rawDE_withBlocks=False, update=False,
                                        'Eic_Code_Plant': 'EIC',
                                        'Id': 'projectID'})
                       .assign(Name=lambda d:
-                                  d.Name_Bnetza.fillna(d.Name_Uba),
+                              d.Name_Bnetza.fillna(d.Name_Uba),
                               Fueltype=lambda d:
                                   d.Fueltype.fillna(d.Energy_Source_Level_1),
                               DateRetrofit=lambda d:
@@ -202,23 +202,23 @@ def GEO(raw=False, config=None):
     _ = units.Effiency['mean']
     geo['Effiency'] = geo.projectID.map(_)
     return (geo.assign(projectID=lambda s: 'GEO' + s.projectID.astype(str))
-              .query("Country in @countries")
-              .replace({col: {'Gas': 'Natural Gas'} for col in
-                        {'Fueltype', 'FuelClassification1',
-                         'FuelClassification2'}})
-             .pipe(gather_fueltype_info, search_col=['FuelClassification1'])
-             .pipe(gather_technology_info, search_col=['FuelClassification1'],
-                   config=config)
-             .pipe(gather_set_info)
-             .pipe(set_column_name, 'GEO')
-             .pipe(config_filter, name='GEO', config=config)
-             .pipe(clean_powerplantname)
-             .pipe(clean_technology, generalize_hydros=True)
-             .pipe(scale_to_net_capacities,
-                   (not config['GEO']['net_capacity']))
-             .pipe(config_filter, name='GEO', config=config)
-             # .pipe(correct_manually, 'GEO', config=config)
-             )
+            .query("Country in @countries")
+            .replace({col: {'Gas': 'Natural Gas'} for col in
+                      {'Fueltype', 'FuelClassification1',
+                       'FuelClassification2'}})
+            .pipe(gather_fueltype_info, search_col=['FuelClassification1'])
+            .pipe(gather_technology_info, search_col=['FuelClassification1'],
+                  config=config)
+            .pipe(gather_set_info)
+            .pipe(set_column_name, 'GEO')
+            .pipe(config_filter, name='GEO', config=config)
+            .pipe(clean_powerplantname)
+            .pipe(clean_technology, generalize_hydros=True)
+            .pipe(scale_to_net_capacities,
+                  (not config['GEO']['net_capacity']))
+            .pipe(config_filter, name='GEO', config=config)
+            # .pipe(correct_manually, 'GEO', config=config)
+            )
 
 
 def CARMA(raw=False, config=None):
@@ -314,21 +314,21 @@ def JRC(raw=False, config=None, update=False):
     if raw:
         return df
     df = (df.rename(columns={'id': 'projectID',
-                               'name': 'Name',
-                               'installed_capacity_MW': 'Capacity',
-                               'country_code': 'Country',
-                               'type': 'Technology',
-                               'dam_height_m': 'DamHeight_m',
-                               'volume_Mm3': 'Volume_Mm3',
-                               'storage_capacity_MWh': 'StorageCapacity_MWh'})
-            .eval('Duration = StorageCapacity_MWh / Capacity')
-            .replace(dict(Technology={'HDAM': 'Reservoir',
-                                      'HPHS': 'Pumped Storage',
-                                      'HROR': 'Run-Of-River'}))
-            .drop(columns=['pypsa_id', 'GEO'])
-            .assign(Set='Store', Fueltype='Hydro')
-            .powerplant.convert_alpha2_to_country()
-            .pipe(config_filter))
+                             'name': 'Name',
+                             'installed_capacity_MW': 'Capacity',
+                             'country_code': 'Country',
+                             'type': 'Technology',
+                             'dam_height_m': 'DamHeight_m',
+                             'volume_Mm3': 'Volume_Mm3',
+                             'storage_capacity_MWh': 'StorageCapacity_MWh'})
+          .eval('Duration = StorageCapacity_MWh / Capacity')
+          .replace(dict(Technology={'HDAM': 'Reservoir',
+                                    'HPHS': 'Pumped Storage',
+                                    'HROR': 'Run-Of-River'}))
+          .drop(columns=['pypsa_id', 'GEO'])
+          .assign(Set='Store', Fueltype='Hydro')
+          .powerplant.convert_alpha2_to_country()
+          .pipe(config_filter))
     # TODO: Temporary section to deal with duplicate identifiers in the JRC
     # input file. Can be removed again, once the duplicates have been removed
     # in a new release.
@@ -440,10 +440,10 @@ def GPD(raw=False, filter_other_dbs=True, update=False, config=None):
             content = parse.content
         else:
             IOError(f'URL {url} seems to be outdated, please doulble the '
-                          'address at http://datasets.wri.org/dataset/'
-                          'globalpowerplantdatabase update the and update the '
-                          'url in your custom config file '
-                          '{package_config["custom_config"]}')
+                    'address at http://datasets.wri.org/dataset/'
+                    'globalpowerplantdatabase update the and update the '
+                    'url in your custom config file '
+                    '{package_config["custom_config"]}')
         return pd.read_csv(ZipFile(BytesIO(content))
                            .open('global_power_plant_database.csv'))
 
@@ -874,8 +874,8 @@ def UBA(header=9, skipfooter=26, prune_wind=True, prune_solar=True,
     """
     config = get_config() if config is None else config
 
-    parse_func = lambda url: pd.read_excel(url, skipfooter=skipfooter,
-                                           na_values='n.b.', header=header)
+    def parse_func(url): return pd.read_excel(url, skipfooter=skipfooter,
+                                              na_values='n.b.', header=header)
     uba = parse_if_not_stored('UBA', update, config, parse_func)
     if raw:
         return uba
@@ -976,9 +976,10 @@ def BNETZA(header=9, sheet_name='Gesamtkraftwerksliste BNetzA',
     config = get_config() if config is None else config
 
     url = config['BNETZA']['url']
+
     def parse_func():
-        return  pd.read_excel(url, header=header, sheet_name=sheet_name,
-                              parse_dates=False)
+        return pd.read_excel(url, header=header, sheet_name=sheet_name,
+                             parse_dates=False)
     bnetza = parse_if_not_stored('BNETZA', update, config, parse_func)
 
     if raw:
@@ -994,10 +995,10 @@ def BNETZA(header=9, sheet_name='Gesamtkraftwerksliste BNetzA',
         'Kraftwerksstatus \n(in Betrieb/\nvorläufig '
         'stillgelegt/\nsaisonale Konservierung\nNetzreserve/ '
         'Sicherheitsbereitschaft/\nSonderfall)': 'Status',
-         ('Aufnahme der kommerziellen Stromerzeugung der derzeit '
-          'in Betrieb befindlichen Erzeugungseinheit\n(Datum/Jahr)'):
-         'DateIn',
-         'PLZ\n(Standort Kraftwerk)': 'PLZ'})
+        ('Aufnahme der kommerziellen Stromerzeugung der derzeit '
+         'in Betrieb befindlichen Erzeugungseinheit\n(Datum/Jahr)'):
+        'DateIn',
+        'PLZ\n(Standort Kraftwerk)': 'PLZ'})
     # If BNetzA-Name is empty replace by company, if this is empty by city.
 
     from .heuristics import PLZ_to_LatLon_map
@@ -1010,9 +1011,9 @@ def BNETZA(header=9, sheet_name='Gesamtkraftwerksliste BNetzA',
               Name=bnetza.Name.where(bnetza.Name.str.len().fillna(0) > 4,
                                      bnetza.Unternehmen + ' '
                                      + bnetza.Name.fillna(''))
-                              .fillna(bnetza.Ort).str.strip(),
+              .fillna(bnetza.Ort).str.strip(),
               DateIn=bnetza.DateIn.str[:4]
-                               .apply(pd.to_numeric, errors='coerce'),
+              .apply(pd.to_numeric, errors='coerce'),
               Blockname=bnetza.Blockname.replace(
                   {'.*(GT|gasturbine).*': 'OCGT',
                    '.*(DT|HKW|(?i)dampfturbine|(?i)heizkraftwerk).*':
@@ -1065,7 +1066,7 @@ def BNETZA(header=9, sheet_name='Gesamtkraftwerksliste BNetzA',
                                              'Luxemburg'])]
     return (bnetza.assign(Country='Germany',
                           Set=bnetza.Set.fillna('Nein').str.title()
-                              .replace({'Ja': 'CHP', 'Nein': 'PP'}))
+                          .replace({'Ja': 'CHP', 'Nein': 'PP'}))
             .pipe(set_column_name, 'BNETZA')
             # .pipe(config_filter, name='BNETZA', config=config)
             # .pipe(correct_manually, 'BNETZA', config=config)
@@ -1100,13 +1101,13 @@ def OPSD_VRE(config=None, raw=False):
                               'country': 'Country',
                               'electrical_capacity': 'Capacity',
                               'municipality': 'Name'})\
-            .assign(DateIn=lambda df:
-                        df.commissioning_date.str[:4].astype(float),
-                    Set='PP')\
-            .powerplant.convert_alpha2_to_country()\
-            .pipe(set_column_name, 'OPSD_VRE')\
-            .pipe(config_filter, config=config)\
-            .drop('Name', axis=1)
+        .assign(DateIn=lambda df:
+                df.commissioning_date.str[:4].astype(float),
+                Set='PP')\
+        .powerplant.convert_alpha2_to_country()\
+        .pipe(set_column_name, 'OPSD_VRE')\
+        .pipe(config_filter, config=config)\
+        .drop('Name', axis=1)
 
 
 def OPSD_VRE_country(country, config=None, raw=False):

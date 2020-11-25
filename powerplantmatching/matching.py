@@ -91,12 +91,12 @@ def compare_two_datasets(dfs, labels, use_saved_matches=False,
                            " continuing by matching again".format(*labels))
 
     def country_link(dfs, country):
-        #country_selector for both dataframes
+        # country_selector for both dataframes
         sel_country_b = [df['Country'] == country for df in dfs]
-        #only append if country appears in both dataframse
+        # only append if country appears in both dataframse
         if all(sel.any() for sel in sel_country_b):
             return duke([df[sel] for df, sel in zip(dfs, sel_country_b)],
-                         labels, **dukeargs)
+                        labels, **dukeargs)
         else:
             return pd.DataFrame()
 
@@ -263,28 +263,26 @@ def reduce_matched_dataframe(df, show_orig_names=False, config=None):
     if config is None:
         config = get_config()
 
-
     # define which databases are present and get their reliability_score
     sources = df.columns.levels[1]
     rel_scores = pd.Series({s: config[s]['reliability_score'] for s in sources})\
                    .sort_values(ascending=False)
     cols = config['target_columns']
-    props_for_groups = {col : 'first'
+    props_for_groups = {col: 'first'
                         for col in cols}
     props_for_groups.update({'YearCommisisoned': 'min',
-                     'Retrofit': 'max',
-                     'projectID': lambda x: dict(x.droplevel(0).dropna()),
-                     'eic_code': 'unique'})
+                             'Retrofit': 'max',
+                             'projectID': lambda x: dict(x.droplevel(0).dropna()),
+                             'eic_code': 'unique'})
     props_for_groups = pd.Series(props_for_groups)[cols].to_dict()
 
-    #set low priority on Fueltype 'Other'
-    #turn it since aggregating only possible for axis=0
-    sdf = df.replace({'Fueltype' : {'Other': np.nan}})\
+    # set low priority on Fueltype 'Other'
+    # turn it since aggregating only possible for axis=0
+    sdf = df.replace({'Fueltype': {'Other': np.nan}})\
             .stack(1).reindex(rel_scores.index, level=1)\
             .groupby(level=0)\
             .agg(props_for_groups)\
-            .replace({'Fueltype' : {np.nan: 'Other'}})
-
+            .replace({'Fueltype': {np.nan: 'Other'}})
 
     if show_orig_names:
         sdf = sdf.assign(**dict(df.Name))

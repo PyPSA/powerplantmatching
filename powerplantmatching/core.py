@@ -45,7 +45,6 @@ def _data_out(fn, config=None):
                     fn)
 
 
-
 del _data_dir
 del _writable_dir
 

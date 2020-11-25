@@ -76,7 +76,7 @@ def duke(datasets, labels=['one', 'two'], singlematch=False,
 
     os.environ['CLASSPATH'] = \
         os.pathsep.join([os.path.join(duke_bin_dir, r)
-                        for r in os.listdir(duke_bin_dir)])
+                         for r in os.listdir(duke_bin_dir)])
     tmpdir = tempfile.mkdtemp()
 
     try:
@@ -107,7 +107,7 @@ def duke(datasets, labels=['one', 'two'], singlematch=False,
             stdout = None
         args.append('config.xml')
 
-        try:        
+        try:
             run = sub.Popen(args, stderr=sub.PIPE, cwd=tmpdir, stdout=stdout,
                             universal_newlines=True)
         except FileNotFoundError:

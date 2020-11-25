@@ -75,15 +75,15 @@ def powerplant_map(df, scale=1e2, european_bounds=True, fillcontinents=False,
         legendcols = (pd.Series(get_config()['fuel_to_color'])
                         .reindex(shown_fueltypes))
         handles = sum(legendcols.apply(lambda x:
-                      make_legend_circles_for([10.], scale=scale*legendscale,
-                                              facecolor=x)).tolist(), [])
+                                       make_legend_circles_for([10.], scale=scale*legendscale,
+                                                               facecolor=x)).tolist(), [])
         ax.legend(handles, legendcols.index,
-                   handler_map=make_handler_map_to_scale_circles_as_in(ax),
-                   markerscale=1,
-                   ncol=kwargs.get('ncol', 2),
-                   loc=kwargs.get('loc', "upper left"),
-                   frameon=True, fancybox=True, edgecolor='w',
-                   facecolor='w', framealpha=1)
+                  handler_map=make_handler_map_to_scale_circles_as_in(ax),
+                  markerscale=1,
+                  ncol=kwargs.get('ncol', 2),
+                  loc=kwargs.get('loc', "upper left"),
+                  frameon=True, fancybox=True, edgecolor='w',
+                  facecolor='w', framealpha=1)
 
         ax.set_xlabel('')
         ax.set_ylabel('')
@@ -199,8 +199,8 @@ def factor_comparison(dfs, keys=None, figsize=(12, 9)):
             ax.plot(np.array([0, 1]) + (2*i), compare[j].T)
 
         indexhandles = [Line2D([0.4, 0.6], [0.4, 0.6], marker=m, linewidth=0.,
-                        markersize=msize, color='w', markeredgecolor='k',
-                        markeredgewidth=0.5)
+                               markersize=msize, color='w', markeredgecolor='k',
+                               markeredgewidth=0.5)
                         for m, msize in [['o', 5.], ['s', 4.5]]]
         ax.add_artist(ax.legend(handles=indexhandles, labels=keys))
         ax.legend(handles=lgd[0][:len(c)], labels=lgd[1][:len(c)],
@@ -365,18 +365,17 @@ def gather_nrows_ncols(x, orientation='landscape'):
             raise ValueError('Wrong `orientation` given!')
 
 
-
-#%% extra data needed, plots for publication
+# %% extra data needed, plots for publication
 #
 #
-#def Show_all_plots():
+# def Show_all_plots():
 #    comparison_single_matched_bar()
 #    comparison_1dim(by='Country')
 #    comparison_1dim(by='Fueltype')
 #    return
 #
 #
-#def comparison_countries_fueltypes_bar(
+# def comparison_countries_fueltypes_bar(
 #        dfs=None, include_WEPP=True, include_VRE=False, exclude=None,
 #        show_indicators=True, year=2015, **kwargs):
 #    """
@@ -524,7 +523,7 @@ def gather_nrows_ncols(x, orientation='landscape'):
 #    return fig, ax
 #
 #
-#def matched_fueltype_totals_bar(figsize=(9, 4), axes_style='whitegrid'):
+# def matched_fueltype_totals_bar(figsize=(9, 4), axes_style='whitegrid'):
 #    from . import data
 #    from .collection import Carma_ENTSOE_GEO_OPSD_WRI_matched_reduced
 #    matched = set_uncommon_fueltypes_to_other(
@@ -569,7 +568,7 @@ def gather_nrows_ncols(x, orientation='landscape'):
 #
 #
 #
-#def bar_decomissioning_curves(df=None, ylabel=None, title=None,
+# def bar_decomissioning_curves(df=None, ylabel=None, title=None,
 #                              legend_in_subplots=False):
 #    """
 #    Plots per country a decommissioning curve as a bar chart with
@@ -648,7 +647,7 @@ def gather_nrows_ncols(x, orientation='landscape'):
 #    return fig, ax
 #
 #
-#def area_yearcommissioned(dfs, keys, figsize=(7, 5),
+# def area_yearcommissioned(dfs, keys, figsize=(7, 5),
 #                          ylabel='Capacity [$GW$]'):
 #    """
 #    Plots an area chart by commissioning year.
@@ -701,11 +700,11 @@ def gather_nrows_ncols(x, orientation='landscape'):
 #    return fig, ax
 #
 #
-## %% Plot utilities
+# %% Plot utilities
 #
 #
 #
-#def comparison_single_matched_bar(df=None, include_WEPP=True, cleaned=True,
+# def comparison_single_matched_bar(df=None, include_WEPP=True, cleaned=True,
 #                                  use_saved_aggregation=True, figsize=(9, 5),
 #                                  exclude=['Geothermal', 'Solar', 'Wind'],
 #                                  axes_style='whitegrid'):
@@ -785,7 +784,7 @@ def gather_nrows_ncols(x, orientation='landscape'):
 #    return fig, ax
 #
 #
-#def comparison_1dim(dfs=None, keys=None, by='Country', include_WEPP=True,
+# def comparison_1dim(dfs=None, keys=None, by='Country', include_WEPP=True,
 #                    include_VRE=False, year=2016, how='hbar',
 #                    axes_style='whitegrid',
 #                    exclude=['Geothermal', 'Solar', 'Wind', 'Battery'],
@@ -855,7 +854,7 @@ def gather_nrows_ncols(x, orientation='landscape'):
 #        return g.fig, g.axes
 #
 #
-#def gather_comparison_data(include_WEPP=True, include_VRE=False, **kwargs):
+# def gather_comparison_data(include_WEPP=True, include_VRE=False, **kwargs):
 #    from .data import WEPP, Capacity_stats
 #    from .collection import (
 #            matched_data,
@@ -901,7 +900,7 @@ def gather_nrows_ncols(x, orientation='landscape'):
 #    return red_w_wepp, red_wo_wepp, wepp, statistics
 #
 #
-#def matchcount_stats(df):
+# def matchcount_stats(df):
 #    """
 #    Plots the number of matches against the number of involved databases,
 #    across all databases.
@@ -912,7 +911,7 @@ def gather_nrows_ncols(x, orientation='landscape'):
 #    return
 #
 #
-#def gather_nrows_ncols(x, orientation='landscape'):
+# def gather_nrows_ncols(x, orientation='landscape'):
 #    """
 #    Derives [nrows, ncols] based on x plots, so that a subplot looks nicely.
 #
@@ -964,6 +963,6 @@ def gather_nrows_ncols(x, orientation='landscape'):
 #
 #
 #
-#orderdedfuels = ['Hydro',  # 'Solar', 'Wind',
+# orderdedfuels = ['Hydro',  # 'Solar', 'Wind',
 #                 'Nuclear', 'Hard Coal', 'Lignite',
 #                 'Oil', 'Natural Gas', 'Other']

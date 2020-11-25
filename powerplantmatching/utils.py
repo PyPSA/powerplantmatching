@@ -70,7 +70,7 @@ def lookup(df, keys=None, by='Country, Fueltype', exclude=None, unit='MW'):
         if keys is None:
             keys = [get_name(d) for d in df]
         dfs = pd.concat([lookup_single(a) for a in df], axis=1,
-                         keys=keys, sort=False)
+                        keys=keys, sort=False)
         dfs = dfs.fillna(0.)
         return (dfs/scaling).round(3)
     else:
@@ -145,8 +145,8 @@ def correct_manually(df, name, config=None):
         config = get_config()
 
     corrections = pd.read_csv(_package_data('manual_corrections.csv'),
-                               encoding='utf-8',
-                               parse_dates=['last_update'])
+                              encoding='utf-8',
+                              parse_dates=['last_update'])
 
     if name in corrections:
         corrections = corrections[corrections[name].notnull()].set_index(name)
@@ -164,7 +164,7 @@ def correct_manually(df, name, config=None):
         logger.warning('Manual corrections in {0} for file {1} older than last'
                        ' update of the source file, please update your manual '
                        'corrections.'.format(os.path.abspath(
-                               _data_in('manual_corrections.csv')), name))
+                           _data_in('manual_corrections.csv')), name))
     df = df.set_index('projectID').copy()
     df.update(corrections)
     return df.reset_index().reindex(columns=config['target_columns'])
@@ -207,7 +207,7 @@ def read_csv_if_string(df):
     """
     from . import data
     if isinstance(data, six.string_types):
-        df =getattr(data, df)()
+        df = getattr(data, df)()
     return df
 
 
@@ -222,7 +222,7 @@ def to_categorical_columns(df):
             'Set': get_config()['target_sets']}
     return df.assign(**{c: df[c].astype('category') for c in cols})\
              .assign(**{c: lambda df: df[c].cat.set_categories(v)
-                     for c,v in cats.items()})
+                        for c, v in cats.items()})
 
 
 def set_column_name(df, name):
@@ -271,7 +271,7 @@ def projectID_to_dict(df):
     """
     if df.columns.nlevels > 1:
         return df.assign(projectID=(df.projectID.stack().dropna().apply(
-                lambda ds: liteval(ds)).unstack()))
+            lambda ds: liteval(ds)).unstack()))
     else:
         return df.assign(projectID=df.projectID.apply(lambda x: liteval(x)))
 
@@ -286,7 +286,7 @@ def select_by_projectID(df, projectID, dataset_name=None):
         return df.query("projectID == @projectID")
     else:
         return df[df['projectID'].apply(lambda x:
-                  projectID in sum(x.values(), []))]
+                                        projectID in sum(x.values(), []))]
 
 
 def update_saved_matches_for_(name):
@@ -364,9 +364,9 @@ def parmap(f, arg_list, config=None):
         return list(map(f, arg_list))
 
 
-
 country_map = pd.read_csv(_package_data('country_codes.csv'))\
                 .replace({'name': {'Czechia': 'Czech Republic'}})
+
 
 def country_alpha2(country):
     """
@@ -393,7 +393,7 @@ def convert_country_to_alpha2(df):
     alpha2 = df.Country.map(country_map.set_index('name')['alpha_2'])\
                .fillna(country_map.dropna(subset=['official_name'])
                        .set_index('official_name')['alpha_2'])
-    return df.assign(Country = alpha2)
+    return df.assign(Country=alpha2)
 
 
 def breakdown_matches(df):
@@ -414,12 +414,12 @@ def breakdown_matches(df):
     if isinstance(df.projectID.iloc[0], list):
         sources = [df.powerplant.get_name()]
         single_source_b = True
-    else :
+    else:
         sources = df.projectID.apply(list).explode().unique()
         single_source_b = False
     sources = pd.concat(
-            [getattr(data, s)().set_index('projectID')
-             for s in sources], sort=False)
+        [getattr(data, s)().set_index('projectID')
+         for s in sources], sort=False)
     if df.index.nlevels > 1:
         stackedIDs = (df['projectID'].stack()
                       .apply(pd.Series).stack()
@@ -438,7 +438,6 @@ def breakdown_matches(df):
                       .set_index('projectID', append=True).droplevel(-2).index,
                       inplace=False)
             .rename_axis(index=['id', 'source', 'projectID']))
-
 
 
 def restore_blocks(df, mode=2, config=None):
@@ -465,8 +464,6 @@ def restore_blocks(df, mode=2, config=None):
 
     config = get_config() if config is None else config
 
-
-
     bd = breakdown_matches(df)
     if mode == 1:
         block_map = (bd.reset_index(['source'])['source'].groupby(level='id')
@@ -482,7 +479,8 @@ def restore_blocks(df, mode=2, config=None):
         res = pd.DataFrame().rename_axis(index='id')
         for s in rel_scores.index:
             subset = bd.reindex(index=[s], level='source')
-            subset_i = subset.index.unique('id').difference(res.index.unique('id'))
+            subset_i = subset.index.unique(
+                'id').difference(res.index.unique('id'))
             res = pd.concat([res, subset.reindex(index=subset_i, level='id')])
     else:
         raise ValueError(f'Given `mode` must be either 1 or 2 but is: {mode}')
@@ -540,6 +538,7 @@ def parse_Geoposition(location, zipcode='', country='',
         return pd.Series({'Name': location, 'Country': country,
                           'lat': gdata.latitude, 'lon': gdata.longitude})
 
+
 def fill_geoposition(df, use_saved_locations=False, saved_only=False):
     """
     Fill missing 'lat' and 'lon' values. Uses geoparsing with the value given
@@ -562,17 +561,19 @@ def fill_geoposition(df, use_saved_locations=False, saved_only=False):
                        'want to enable it.')
 
     if use_saved_locations:
-        locs = pd.read_csv(_package_data('parsed_locations.csv'), index_col=[0, 1])
+        locs = pd.read_csv(_package_data(
+            'parsed_locations.csv'), index_col=[0, 1])
         df = df.where(df[['lat', 'lon']].notnull().all(1),
-                 df.drop(columns=['lat', 'lon'])
-                   .join(locs, on=['Name', 'Country']))
-    if saved_only: return df
+                      df.drop(columns=['lat', 'lon'])
+                      .join(locs, on=['Name', 'Country']))
+    if saved_only:
+        return df
 
     logger.info("Parse geopositions for missing lat/lon values")
     missing = df.lat.isnull()
     geodata = df[missing].apply(
-                lambda ds: parse_Geoposition(ds['Name'], country=ds['Country']),
-                axis=1)
+        lambda ds: parse_Geoposition(ds['Name'], country=ds['Country']),
+        axis=1)
     geodata.drop_duplicates(subset=['Name', 'Country'])\
            .set_index(['Name', 'Country'])\
            .to_csv(_package_data('parsed_locations.csv'), mode='a', header=False)
