@@ -1,7 +1,7 @@
 # History of Changes
 
 
-## Version 0.4.2 (24.11.2020)
+## Version 0.4.6 (25.11.2020)
 
 Triggered by the ongoing phase-outs of especially nuclear, coal and lignite plants in many countries, we acknowledge that time-related data of power stations and their single blocks becomes increasingly important.  
 Therefore, we decided to
