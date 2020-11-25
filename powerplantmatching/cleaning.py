@@ -331,8 +331,6 @@ def aggregate_units(df, dataset_name=None,
                         .reindex(index=df.index))
             df = df.assign(grouped=groups.values)
         else:
-            logger.info(f"No existing saved aggregation groups for dataset "
-                        f"'{dataset_name}', continuing by aggregating again.")
             if 'grouped' in df:
                 df.drop('grouped', axis=1, inplace=True)
     else:

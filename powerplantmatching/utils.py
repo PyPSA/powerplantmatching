@@ -151,13 +151,6 @@ def correct_manually(df, name, config=None):
     if corrections.empty:
         return df
 
-    source_file = _data_in(config[name]['fn'])
-
-    outdated = (pd.Timestamp(time.ctime(os.path.getmtime(source_file)))
-                > pd.Timestamp(time.ctime(os.path.getmtime(corrections_fn))))
-    if outdated:
-        logger.warning('Corrections file older than last updated source file '
-                       f'for {name}')
     df = df.set_index('projectID').copy()
     df.update(corrections)
     return df.reset_index().reindex(columns=config['target_columns'])
