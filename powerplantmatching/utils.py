@@ -143,8 +143,8 @@ def correct_manually(df, name, config=None):
     if config is None:
         config = get_config()
 
-    corrections = pd.read_csv(_package_data('manual_corrections.csv'),
-                              parse_dates=['last_update'])
+    corrections_fn = _package_data('manual_corrections.csv')
+    corrections = pd.read_csv(corrections_fn)
 
     corrections = (corrections.query('Source == @name')
                    .drop(columns='Source').set_index('projectID'))
@@ -154,12 +154,10 @@ def correct_manually(df, name, config=None):
     source_file = _data_in(config[name]['fn'])
 
     outdated = (pd.Timestamp(time.ctime(os.path.getmtime(source_file)))
-                > corrections.last_update).any()
+                > pd.Timestamp(time.ctime(os.path.getmtime(corrections_fn))))
     if outdated:
-        logger.warning('Manual corrections in {0} for file {1} older than last'
-                       ' update of the source file, please update your manual '
-                       'corrections.'.format(os.path.abspath(
-                           _data_in('manual_corrections.csv')), name))
+        logger.warning('Corrections file older than last updated source file '
+                       f'for {name}')
     df = df.set_index('projectID').copy()
     df.update(corrections)
     return df.reset_index().reindex(columns=config['target_columns'])

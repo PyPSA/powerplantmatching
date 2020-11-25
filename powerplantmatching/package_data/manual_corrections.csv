@@ -1,54 +1,54 @@
-Source,projectID,Name,Fueltype,Technology,Set,Country,Capacity,Efficiency,Duration,Volume_Mm3,DamHeight_m,StorageCapacity_MWh,DateIn,DateRetrofit,DateMothball,DateOut,lat,lon,EIC,last_update
-CARMA,CARMA30807,Grande dixence,,,,,,,,,,,,,,,,,,22. Aug 2018
-CARMA,CARMA4536,Cleuson dixence,,,,,,,,,,,,,,,,,,
-ENTSOE,44W-T-YT-000020M,,Natural Gas,,,,,,,,,,,,,,,,,19. Aug 2018
-ENTSOE,26WIMPI-S13BSSUZ,,Natural Gas,,,,,,,,,,,,,,,,,19. Aug 2018
-ENTSOE,26WIMPI-S18SCNDX,,Natural Gas,,,,,,,,,,,,,,,,,19. Aug 2018
-ENTSOE,26WIMPI-S07SCPZX,,Natural Gas,,,,,,,,,,,,,,,,,19. Aug 2018
-ENTSOE,26WIMPI-0543164A,,Natural Gas,,,,,,,,,,,,,,,,,19. Aug 2018
-ENTSOE,26WIMPI-S03BBSR5,,Natural Gas,,,,,,,,,,,,,,,,,19. Aug 2018
-ENTSOE,26WIMPI-S02MNAEP,,Natural Gas,,,,,,,,,,,,,,,,,19. Aug 2018
-ENTSOE,26WIMZI-S11JSEI0,,Natural Gas,,,,,,,,,,,,,,,,,19. Aug 2018
-ENTSOE,26WIMPI-S03TVZZK,,Natural Gas,,,,,,,,,,,,,,,,,19. Aug 2018
-ENTSOE,26WIMPI-S14TERME,,Natural Gas,,,,,,,,,,,,,,,,,19. Aug 2018
-ENTSOE,26WIMPI-S18RTSN9,,Natural Gas,,,,,,,,,,,,,,,,,19. Aug 2018
-ENTSOE,26WIMPI-S12AOCS3,,Natural Gas,,,,,,,,,,,,,,,,,19. Aug 2018
-ENTSOE,26WIMPI-S06ECLTM,,Natural Gas,,,,,,,,,,,,,,,,,19. Aug 2018
-ENTSOE,26WIMPI-S06TRVC2,,Natural Gas,,,,,,,,,,,,,,,,,19. Aug 2018
-ENTSOE,26WIMPI-S05APGPJ,,Natural Gas,,,,,,,,,,,,,,,,,19. Aug 2018
-ENTSOE,26WIMPI-S03FERRD,,Natural Gas,,,,,,,,,,,,,,,,,19. Aug 2018
-ENTSOE,26WIMPI-S10NMRNY,,Natural Gas,,,,,,,,,,,,,,,,,19. Aug 2018
-ENTSOE,26WIMPI-S03ATSMM,,Natural Gas,,,,,,,,,,,,,,,,,19. Aug 2018
-ENTSOE,26WIMPI-S03FMGSC,,Natural Gas,,,,,,,,,,,,,,,,,19. Aug 2018
-ENTSOE,26WIMPI-S12ATCRM,,Natural Gas,,,,,,,,,,,,,,,,,19. Aug 2018
-ENTSOE,26WIMPI-S10PTRFC,,Natural Gas,,,,,,,,,,,,,,,,,19. Aug 2018
-ENTSOE,26WIMPI-S03DBLMQ,,Natural Gas,,,,,,,,,,,,,,,,,19. Aug 2018
-ENTSOE,26WIMPI-S15TDARG,,Natural Gas,,,,,,,,,,,,,,,,,19. Aug 2018
-ENTSOE,26WIMPI-S08AGCA5,,Natural Gas,,,,,,,,,,,,,,,,,19. Aug 2018
-ENTSOE,26WIMPI-S14LTRNT,,Natural Gas,,,,,,,,,,,,,,,,,19. Aug 2018
-ENTSOE,26WIMPI-S19APGPP,,Natural Gas,,,,,,,,,,,,,,,,,19. Aug 2018
-ENTSOE,26WIMPI-S07GTNV2,,Natural Gas,,,,,,,,,,,,,,,,,19. Aug 2018
-ENTSOE,26WIMPI-S03TRBGZ,,Natural Gas,,,,,,,,,,,,,,,,,19. Aug 2018
-ENTSOE,26WIMPI-S16ETNPN,,Natural Gas,,,,,,,,,,,,,,,,,19. Aug 2018
-ENTSOE,26WIMPI-S09AGPP4,,Natural Gas,,,,,,,,,,,,,,,,,19. Aug 2018
-ENTSOE,26WIMPI-S08PCRTB,,Natural Gas,,,,,,,,,,,,,,,,,19. Aug 2018
-ENTSOE,26WIMPI-S15SCPRH,,Natural Gas,,,,,,,,,,,,,,,,,19. Aug 2018
-ENTSOE,26WIMPI-S08ERNPQ,,Natural Gas,,,,,,,,,,,,,,,,,19. Aug 2018
-ENTSOE,26WIMPI-S19IESBL,,Natural Gas,,,,,,,,,,,,,,,,,19. Aug 2018
-ENTSOE,26WIMPI-S08CCVRV,,Natural Gas,,,,,,,,,,,,,,,,,19. Aug 2018
-ENTSOE,26WIMPI-S15MTDD6,,Natural Gas,,,,,,,,,,,,,,,,,19. Aug 2018
-ENTSOE,26WIMPI-S08PLCNW,,Natural Gas,,,,,,,,,,,,,,,,,19. Aug 2018
-ENTSOE,26WIMYI-S06ELTTB,,Natural Gas,,,,,,,,,,,,,,,,,19. Aug 2018
-ENTSOE,26WIMPI-S12TRRVU,,Natural Gas,,,,,,,,,,,,,,,,,19. Aug 2018
-ENTSOE,26WIMPI-S07CERNC,,Natural Gas,,,,,,,,,,,,,,,,,19. Aug 2018
-ENTSOE,26WIMZI-S01BVRG0,,Natural Gas,,,,,,,,,,,,,,,,,19. Aug 2018
-ENTSOE,26WIMPI-S03SSSN8,,Natural Gas,,,,,,,,,,,,,,,,,19. Aug 2018
-ENTSOE,26WIMPI-S01ECLF6,,Natural Gas,,,,,,,,,,,,,,,,,19. Aug 2018
-ENTSOE,26WIMPI-S08LCCS4,,Natural Gas,,,,,,,,,,,,,,,,,19. Aug 2018
-ENTSOE,26WIMPI-S19TCRMT,,Natural Gas,,,,,,,,,,,,,,,,,19. Aug 2018
-ENTSOE,26WIMPI-S01MNRFF,,Natural Gas,,,,,,,,,,,,,,,,,19. Aug 2018
-ENTSOE,26WIMPI-S03EMC43,,Natural Gas,,,,,,,,,,,,,,,,,19. Aug 2018
-ENTSOE,26WIMPI-S16EBNPL,,Natural Gas,,,,,,,,,,,,,,,,,19. Aug 2018
-ENTSOE,12W-0000000902-P,Grande dixence,,,,,,,,,,,,,,,,,,22. Aug 2018
-ENTSOE,12W-0000000034-F,Grande dixence,,,,,,,,,,,,,,,,,,22. Aug 2018
-GEO,GEO45288,Grande dixence,,,,,,,,,,,,,,,,,,22. Aug 2018
+Source,projectID,Name,Fueltype,Technology,Set,Country,Capacity,Efficiency,Duration,Volume_Mm3,DamHeight_m,StorageCapacity_MWh,DateIn,DateRetrofit,DateMothball,DateOut,lat,lon,EIC
+CARMA,CARMA30807,Grande dixence,,,,,,,,,,,,,,,,,
+CARMA,CARMA4536,Cleuson dixence,,,,,,,,,,,,,,,,,
+ENTSOE,44W-T-YT-000020M,,Natural Gas,,,,,,,,,,,,,,,,
+ENTSOE,26WIMPI-S13BSSUZ,,Natural Gas,,,,,,,,,,,,,,,,
+ENTSOE,26WIMPI-S18SCNDX,,Natural Gas,,,,,,,,,,,,,,,,
+ENTSOE,26WIMPI-S07SCPZX,,Natural Gas,,,,,,,,,,,,,,,,
+ENTSOE,26WIMPI-0543164A,,Natural Gas,,,,,,,,,,,,,,,,
+ENTSOE,26WIMPI-S03BBSR5,,Natural Gas,,,,,,,,,,,,,,,,
+ENTSOE,26WIMPI-S02MNAEP,,Natural Gas,,,,,,,,,,,,,,,,
+ENTSOE,26WIMZI-S11JSEI0,,Natural Gas,,,,,,,,,,,,,,,,
+ENTSOE,26WIMPI-S03TVZZK,,Natural Gas,,,,,,,,,,,,,,,,
+ENTSOE,26WIMPI-S14TERME,,Natural Gas,,,,,,,,,,,,,,,,
+ENTSOE,26WIMPI-S18RTSN9,,Natural Gas,,,,,,,,,,,,,,,,
+ENTSOE,26WIMPI-S12AOCS3,,Natural Gas,,,,,,,,,,,,,,,,
+ENTSOE,26WIMPI-S06ECLTM,,Natural Gas,,,,,,,,,,,,,,,,
+ENTSOE,26WIMPI-S06TRVC2,,Natural Gas,,,,,,,,,,,,,,,,
+ENTSOE,26WIMPI-S05APGPJ,,Natural Gas,,,,,,,,,,,,,,,,
+ENTSOE,26WIMPI-S03FERRD,,Natural Gas,,,,,,,,,,,,,,,,
+ENTSOE,26WIMPI-S10NMRNY,,Natural Gas,,,,,,,,,,,,,,,,
+ENTSOE,26WIMPI-S03ATSMM,,Natural Gas,,,,,,,,,,,,,,,,
+ENTSOE,26WIMPI-S03FMGSC,,Natural Gas,,,,,,,,,,,,,,,,
+ENTSOE,26WIMPI-S12ATCRM,,Natural Gas,,,,,,,,,,,,,,,,
+ENTSOE,26WIMPI-S10PTRFC,,Natural Gas,,,,,,,,,,,,,,,,
+ENTSOE,26WIMPI-S03DBLMQ,,Natural Gas,,,,,,,,,,,,,,,,
+ENTSOE,26WIMPI-S15TDARG,,Natural Gas,,,,,,,,,,,,,,,,
+ENTSOE,26WIMPI-S08AGCA5,,Natural Gas,,,,,,,,,,,,,,,,
+ENTSOE,26WIMPI-S14LTRNT,,Natural Gas,,,,,,,,,,,,,,,,
+ENTSOE,26WIMPI-S19APGPP,,Natural Gas,,,,,,,,,,,,,,,,
+ENTSOE,26WIMPI-S07GTNV2,,Natural Gas,,,,,,,,,,,,,,,,
+ENTSOE,26WIMPI-S03TRBGZ,,Natural Gas,,,,,,,,,,,,,,,,
+ENTSOE,26WIMPI-S16ETNPN,,Natural Gas,,,,,,,,,,,,,,,,
+ENTSOE,26WIMPI-S09AGPP4,,Natural Gas,,,,,,,,,,,,,,,,
+ENTSOE,26WIMPI-S08PCRTB,,Natural Gas,,,,,,,,,,,,,,,,
+ENTSOE,26WIMPI-S15SCPRH,,Natural Gas,,,,,,,,,,,,,,,,
+ENTSOE,26WIMPI-S08ERNPQ,,Natural Gas,,,,,,,,,,,,,,,,
+ENTSOE,26WIMPI-S19IESBL,,Natural Gas,,,,,,,,,,,,,,,,
+ENTSOE,26WIMPI-S08CCVRV,,Natural Gas,,,,,,,,,,,,,,,,
+ENTSOE,26WIMPI-S15MTDD6,,Natural Gas,,,,,,,,,,,,,,,,
+ENTSOE,26WIMPI-S08PLCNW,,Natural Gas,,,,,,,,,,,,,,,,
+ENTSOE,26WIMYI-S06ELTTB,,Natural Gas,,,,,,,,,,,,,,,,
+ENTSOE,26WIMPI-S12TRRVU,,Natural Gas,,,,,,,,,,,,,,,,
+ENTSOE,26WIMPI-S07CERNC,,Natural Gas,,,,,,,,,,,,,,,,
+ENTSOE,26WIMZI-S01BVRG0,,Natural Gas,,,,,,,,,,,,,,,,
+ENTSOE,26WIMPI-S03SSSN8,,Natural Gas,,,,,,,,,,,,,,,,
+ENTSOE,26WIMPI-S01ECLF6,,Natural Gas,,,,,,,,,,,,,,,,
+ENTSOE,26WIMPI-S08LCCS4,,Natural Gas,,,,,,,,,,,,,,,,
+ENTSOE,26WIMPI-S19TCRMT,,Natural Gas,,,,,,,,,,,,,,,,
+ENTSOE,26WIMPI-S01MNRFF,,Natural Gas,,,,,,,,,,,,,,,,
+ENTSOE,26WIMPI-S03EMC43,,Natural Gas,,,,,,,,,,,,,,,,
+ENTSOE,26WIMPI-S16EBNPL,,Natural Gas,,,,,,,,,,,,,,,,
+ENTSOE,12W-0000000902-P,Grande dixence,,,,,,,,,,,,,,,,,
+ENTSOE,12W-0000000034-F,Grande dixence,,,,,,,,,,,,,,,,,
+GEO,GEO45288,Grande dixence,,,,,,,,,,,,,,,,,

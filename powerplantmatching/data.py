@@ -649,7 +649,6 @@ def ENTSOE(update=False, raw=False, entsoe_token=None, config=None):
                     Capacity=lambda df: pd.to_numeric(df.Capacity))
             .powerplant.convert_alpha2_to_country()
             .pipe(clean_powerplantname)
-            # .query('Country in @countries')
             .pipe(fill_geoposition, use_saved_locations=True, saved_only=True)
             .query('Capacity > 0')
             .pipe(gather_technology_info, config=config)
