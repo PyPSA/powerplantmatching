@@ -249,13 +249,13 @@ fig.savefig('capacity_additions_century.png', dpi=200)
 
 # %% Table 4 - Data
 
-yr_wepp = df_w_wepp.pivot_table(values='YearCommissioned', index='Country',
+yr_wepp = df_w_wepp.pivot_table(values='DateIn', index='Country',
                                 aggfunc='count')
 count_wepp = df_w_wepp.pivot_table(values='Name', index='Country',
                                    aggfunc='count')
 ratio_wepp = yr_wepp.iloc[:, 0].div(count_wepp.iloc[:, 0])
 
-yr_wo = df_wo_wepp.pivot_table(values='YearCommissioned', index='Country',
+yr_wo = df_wo_wepp.pivot_table(values='DateIn', index='Country',
                                aggfunc='count')
 count_wo = df_wo_wepp.pivot_table(values='Name', index='Country',
                                   aggfunc='count')

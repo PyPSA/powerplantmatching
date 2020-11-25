@@ -1,4 +1,4 @@
-id,Name,Fueltype,Technology,Set,Country,Capacity,Efficiency,Duration,Volume_Mm3,DamHeight_m,YearCommissioned,Retrofit,lat,lon,projectID
+id,Name,Fueltype,Technology,Set,Country,Capacity,Efficiency,Duration,Volume_Mm3,DamHeight_m,DateIn,DateRetrofit,lat,lon,projectID
 0,Alta,Hydro,Reservoir,Store,Norway,150.0,,389.7,135.0,185.0,1987.0,1987.0,69.718538,23.807803,"{'JRC': ['N278'], 'OPSD': ['OEU5361'], 'ENTSOE': ['50WP00000000006N'], 'GPD': ['WRI1002997'], 'GEO': ['GEO45724'], 'CARMA': ['CARMA1122']}"
 1,Porabka porabka porabka,Hydro,Pumped Storage,Store,Poland,552.4394904458597,,3.620305996564169,0.0,0.0,1953.0,1998.0,49.7888983,19.206831550000004,"{'JRC': ['H1649', 'H50'], 'OPSD': ['OEU302', 'OEU301', 'OEU300', 'OEU299'], 'ENTSOE': ['19W000000000247X'], 'GPD': ['WRI1061543', 'WRI1019048'], 'GEO': ['GEO42472', 'GEO42466'], 'CARMA': ['CARMA35310', 'CARMA35311']}"
 2,Żydowo zydowops zydowo,Hydro,Pumped Storage,Store,Poland,157.0,,4.267515923566879,0.0,0.0,1971.0,1971.0,54.0216713,16.7385445,"{'JRC': ['H315'], 'OPSD': ['OEU332', 'OEU331', 'OEU333'], 'ENTSOE': ['19W0000000002426'], 'GPD': ['WRI1019070'], 'GEO': ['GEO42470'], 'CARMA': ['CARMA51126']}"
