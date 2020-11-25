@@ -27,6 +27,7 @@ import pandas as pd
 import numpy as np
 import pycountry
 import logging
+from scipy.spatial import cKDTree as KDTree
 logger = logging.getLogger(__name__)
 cget = pycountry.countries.get
 
@@ -49,6 +50,54 @@ def to_pypsa_names(df):
                                'Set': 'component'}))
 
 
+def map_bus(df, buses):
+    '''
+    Assign a 'bus' colum to the dataframe based on a list of coordinates.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        power plant list with coordinates 'lat' and 'lon'
+    buses : pd.DataFrame
+        bus list with coordites 'x' and 'y'
+
+    Returns
+    -------
+    DataFrame with an extra column 'bus' indicating the nearest bus.
+    '''
+    kdtree = KDTree(buses[['x', 'y']])
+    buses_i = buses.index.append(pd.Index([np.nan]))
+    return df.assign(bus=buses_i[kdtree.query(df[['lon', 'lat']].values)[1]])
+
+
+
+
+def map_country_bus(df, buses):
+    '''
+    Assign a 'bus' colum based on a list of coordinates and countries.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        power plant list with coordinates 'lat', 'lon' and 'Country'
+    buses : pd.DataFrame
+        bus list with coordites 'x', 'y', 'country'
+
+    Returns
+    -------
+    DataFrame with an extra column 'bus' indicating the nearest bus.
+    '''
+    diff = set(df.Country.unique()) - set(buses.country)
+    if len(diff):
+        logger.warning(f'Power plants in {", ".join(diff)} cannot be mapped '
+                       'because the countries do not appear in `buses`.')
+    res = []
+    for c in df.Country.unique():
+        res.append(map_bus(df.query('Country == @c'), buses.query('country == @c')))
+    return pd.concat(res)
+
+
+
 def to_pypsa_network(df, network, buslist=None):
     """
     Export a powerplant dataframe to a pypsa.Network(), specify specific buses
@@ -56,13 +105,7 @@ def to_pypsa_network(df, network, buslist=None):
 
     """
     df = get_obj_if_Acc(df)
-    from scipy.spatial import cKDTree as KDTree
-    substation_lv_i = network.buses.index[network.buses['substation_lv']]
-    substation_lv_i = substation_lv_i.intersection(
-        network.buses.reindex(buslist).index)
-    kdtree = KDTree(network.buses.loc[substation_lv_i, ['x', 'y']].values)
-    df = df.assign(bus=substation_lv_i[kdtree.query(df[['lon',
-                                                        'lat']].values)[1]])
+    df = map_bus(df, network.buses.reindex(buslist))
     df.Set.replace('CHP', 'PP', inplace=True)
     if 'Duration' in df:
         df['weighted_duration'] = df['Duration'] * df['Capacity']

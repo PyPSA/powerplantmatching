@@ -1101,7 +1101,8 @@ def OPSD_VRE(config=None, raw=False):
                               'electrical_capacity': 'Capacity',
                               'municipality': 'Name'})\
             .assign(DateIn=lambda df:
-                    df.commissioning_date.str[:4].astype(float))\
+                        df.commissioning_date.str[:4].astype(float),
+                    Set='PP')\
             .powerplant.convert_alpha2_to_country()\
             .pipe(set_column_name, 'OPSD_VRE')\
             .pipe(config_filter, config=config)\
@@ -1119,7 +1120,7 @@ def OPSD_VRE_country(country, config=None, raw=False):
     if raw:
         return df
 
-    return (df.assign(Country=country)
+    return (df.assign(Country=country, Set='PP')
               .rename(columns={'energy_source_level_2': 'Fueltype',
                                'technology': 'Technology',
                                'data_source': 'file',

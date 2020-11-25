@@ -23,6 +23,7 @@ Further changes:
 
 
 
+
 ## Version 0.4.1 (02.08.2019)
 
 ### Data structure
