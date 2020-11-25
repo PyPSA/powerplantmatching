@@ -140,24 +140,19 @@ def correct_manually(df, name, config=None):
     name : str
         Name of the data source, should be in columns of manual_corrections.csv
     """
-    from .data import data_config
     if config is None:
         config = get_config()
 
     corrections = pd.read_csv(_package_data('manual_corrections.csv'),
-                              encoding='utf-8',
                               parse_dates=['last_update'])
 
-    if name in corrections:
-        corrections = corrections[corrections[name].notnull()].set_index(name)
-    else:
-        return df.reindex(columns=config['target_columns'])
-    if len(corrections) == 0:
-        return df.reindex(columns=config['target_columns'])
-    source_file = data_config[name]['source_file']
-    # assume OPSD files are updated on the same time
-    if isinstance(source_file, list):
-        source_file = source_file[0]
+    corrections = (corrections.query('Source == @name')
+                   .drop(columns='Source').set_index('projectID'))
+    if corrections.empty:
+        return df
+
+    source_file = _data_in(config[name]['fn'])
+
     outdated = (pd.Timestamp(time.ctime(os.path.getmtime(source_file)))
                 > corrections.last_update).any()
     if outdated:

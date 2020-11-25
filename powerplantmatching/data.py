@@ -146,6 +146,7 @@ def OPSD(rawEU=False, rawDE=False, rawDE_withBlocks=False, update=False,
             # .pipe(correct_manually, 'OPSD', config=config)
             .pipe(config_filter, name='OPSD', config=config)
             .pipe(gather_set_info)
+            .pipe(clean_powerplantname)
             .pipe(clean_technology))
 
 
@@ -217,7 +218,7 @@ def GEO(raw=False, config=None):
             .pipe(scale_to_net_capacities,
                   (not config['GEO']['net_capacity']))
             .pipe(config_filter, name='GEO', config=config)
-            # .pipe(correct_manually, 'GEO', config=config)
+            .pipe(correct_manually, 'GEO', config=config)
             )
 
 
@@ -275,7 +276,7 @@ def CARMA(raw=False, config=None):
             .pipe(gather_set_info)
             .pipe(clean_technology)
             .pipe(scale_to_net_capacities, not config['CARMA']['net_capacity'])
-            # .pipe(correct_manually, 'CARMA', config=config)
+            .pipe(correct_manually, 'CARMA', config=config)
             )
 
 
@@ -656,7 +657,7 @@ def ENTSOE(update=False, raw=False, entsoe_token=None, config=None):
             .pipe(clean_technology)
             .pipe(set_column_name, 'ENTSOE')
             .pipe(config_filter, name='ENTSOE', config=config)
-            # .pipe(correct_manually, 'ENTSOE', config=config)
+            .pipe(correct_manually, 'ENTSOE', config=config)
             )
 
 

@@ -64,11 +64,10 @@ def clean_powerplantname(df):
                           'gkn', 'Gemeinschaftskernkraftwerk', 'kki', 'kkp',
                           'kle', 'wkw', 'rwe', 'bis', 'nordsee', 'ostsee',
                           'dampfturbinenanlage', 'ikw', 'kw', 'kohlekraftwerk',
-                          'raffineriekraftwerk', 'Kraftwerke'])]
+                          'raffineriekraftwerk', 'Kraftwerke', 'Psw'])]
     name = (name
             .replace(regex=True, to_replace=pattern, value=' ')
-            .replace('\s+', ' ', regex=True)
-            .replace('"', '', regex=True)
+            .replace(['\s+', '"', 'ß'], [' ', '', 'ss'], regex=True)
             .str.strip()
             .str.capitalize())
 
