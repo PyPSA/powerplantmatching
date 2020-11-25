@@ -10,5 +10,4 @@ import powerplantmatching as pm
 
 
 pm.collection.matched_data(
-        update=True, use_saved_aggregation=True, use_saved_matches=False)
-
+    update=True, use_saved_aggregation=True, use_saved_matches=False)

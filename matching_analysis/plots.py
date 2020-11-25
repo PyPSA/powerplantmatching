@@ -42,7 +42,8 @@ df_dict = {0: 'CARMA', 1: 'ENTSOE', 2: 'ESE', 3: 'GEO', 4: 'OPSD', 5: 'WEPP',
 for i, name in df_dict.items():
     dfp = (locals()[str.lower(name)]
            .loc[lambda x: ~x.Fueltype.isin(excluded_fueltypes)])
-    dfp.loc[:, 'matches'] = float(i) + 0.4*(2.*np.random.rand(len(dfp)) - 1.)
+    dfp.loc[:, 'matches'] = float(
+        i) + 0.4 * (2. * np.random.rand(len(dfp)) - 1.)
     locals()[str.lower(name)] = dfp
 ft = sorted(set(entsoe.Fueltype))
 fig, ax = plt.subplots(figsize=(figwidth, 6))
@@ -50,7 +51,7 @@ for i, name in df_dict.items():
     dfr = locals()[str.lower(name)].loc[lambda x: ~x.Fueltype.isna()]
     dfr.plot.scatter(ax=ax, x='Capacity', y='matches', logx=True, alpha=0.5,
                      c=dfr.Fueltype.map(fueltype_to_color),
-                     rasterized=True, s=dfr.Capacity/50.0)
+                     rasterized=True, s=dfr.Capacity / 50.0)
 ax.set_ylim(-.5, 6.5)
 ax.set_yticks(df_dict.keys())
 ax.set_yticklabels(df_dict.values())
@@ -106,8 +107,8 @@ compared = pm.utils.lookup([opsd, matched_uba_bnetza], ['opsd', 'ppm'],
                            by='Fueltype')
 print('''\n\nDifference between manual opsd matches and automatic ppm matches
 (ppm - opsd, positive -> overestimation): \n''')
-print(compared.diff(axis=1)['ppm']/1000)
-print('\ntotal caps\n',  compared.sum())
+print(compared.diff(axis=1)['ppm'] / 1000)
+print('\ntotal caps\n', compared.sum())
 
 
 # %% Figure 5
@@ -187,12 +188,13 @@ df_dict = {0: 'CARMA', 1: 'ENTSOE', 2: 'ESE', 3: 'GEO', 4: 'OPSD',
 for i, name in df_dict.items():
     dfp = (locals()[str.lower(name)]
            .loc[lambda x: ~x.Fueltype.isin(excluded_fueltypes)])
-    dfp.loc[:, 'matches'] = float(i) + 0.4*(2.*np.random.rand(len(dfp)) - 1.)
+    dfp.loc[:, 'matches'] = float(
+        i) + 0.4 * (2. * np.random.rand(len(dfp)) - 1.)
     locals()[str.lower(name)] = dfp
 
 df = pm.collection.Carma_ENTSOE_ESE_GEO_IWPDCY_OPSD_WEPP_WRI_matched_reduced()
 df['matches'] = df['projectID'].apply(len)
-df['matches'] += 0.4 * (2.*np.random.rand(len(df)) - 1.)
+df['matches'] += 0.4 * (2. * np.random.rand(len(df)) - 1.)
 
 projects = ['Matched w/ WEPP', 'OPSD', 'CARMA', 'ENTSOE', 'ESE', 'GEO', 'WRI',
             'WEPP']
@@ -274,6 +276,6 @@ lu = pm.utils.lookup([m_with_wepp, m_without_wepp, stats],
 
 # %% Figure 12
 fig, ax = pm.plot.comparison_countries_fueltypes_bar(
-        include_WEPP=True, include_VRE=False, show_indicators=False, year=2015,
-        legend_in_subplots=False, exclude=excluded_fueltypes, figsize=(18, 10))
+    include_WEPP=True, include_VRE=False, show_indicators=False, year=2015,
+    legend_in_subplots=False, exclude=excluded_fueltypes, figsize=(18, 10))
 fig.savefig('comparison_countries_fueltypes.png', dpi=200)
