@@ -1117,7 +1117,8 @@ def OPSD_VRE_country(country, config=None, raw=False):
     """
     config = get_config() if config is None else config
 
-    df = parse_if_not_stored(f'OPSD_VRE_{country}', engine='python')
+    #there is a problem with GB in line 1651 (version 20/08/20) use low_memory
+    df = parse_if_not_stored(f'OPSD_VRE_{country}', low_memory=False)
     if raw:
         return df
 
@@ -1127,6 +1128,8 @@ def OPSD_VRE_country(country, config=None, raw=False):
                                'data_source': 'file',
                                'electrical_capacity': 'Capacity',
                                'municipality': 'Name'})
+              #there is a problem with GB in line 1651 (version 20/08/20)
+              .assign(Capacity = lambda df: pd.to_numeric(df.Capacity, 'coerce'))
               .powerplant.convert_alpha2_to_country()
               .pipe(config_filter, config=config)
               .drop('Name', axis=1))
