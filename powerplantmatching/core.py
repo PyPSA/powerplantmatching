@@ -85,7 +85,7 @@ def get_config(filename=None, **overrides):
         The configuration dictionary
     """
     from hashlib import sha1
-    from base64 import encodestring
+    from base64 import encodebytes
     from six.moves import cPickle
     import yaml
     from logging import info
@@ -104,7 +104,7 @@ def get_config(filename=None, **overrides):
     if len(dict(**overrides)) == 0:
         config['hash'] = 'default'
     else:
-        config['hash'] = encodestring(sha1digest).decode('ascii')[2:12]
+        config['hash'] = encodebytes(sha1digest).decode('ascii')[2:12]
 
     if not isdir(_data_out('.', config=config)):
         makedirs(abspath(_data_out('.', config=config)))

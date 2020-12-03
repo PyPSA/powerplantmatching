@@ -24,7 +24,7 @@ power plant databases.
 
 from __future__ import absolute_import
 
-__version__ = "0.4.7"
+__version__ = "0.4.8"
 __author__ = "Fabian Hofmann, Jonas Hoersch, Fabian Gotzens"
 __copyright__ = "Copyright 2017-2020 Frankfurt Institute for Advanced Studies"
 # The rough hierarchy of this package is
