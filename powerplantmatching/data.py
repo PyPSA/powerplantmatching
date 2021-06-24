@@ -365,7 +365,7 @@ def IWPDCY(config=None):
 
 
 def Capacity_stats(raw=False, level=2, config=None, update=False,
-                   source='entsoe SO&AF', year='2016'):
+                   source='entsoe SO&AF', year=2016):
     """
     Standardize the aggregated capacity statistics provided by the ENTSO-E.
 
