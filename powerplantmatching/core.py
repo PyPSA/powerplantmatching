@@ -90,13 +90,16 @@ def get_config(filename=None, **overrides):
     import yaml
     from logging import info
 
-    package_config = _package_data('config.yaml')
+    used_config = _package_data('config.yaml')
     custom_config = filename if filename else _package_data('custom.yaml')
 
-    with open(package_config) as f:
+    with open(used_config) as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
     if exists(custom_config):
         with open(custom_config) as f:
+            config.update(yaml.load(f, Loader=yaml.FullLoader))
+    if exists(package_config["custom_config"]):
+        with open(package_config["custom_config"]) as f:
             config.update(yaml.load(f, Loader=yaml.FullLoader))
     config.update(overrides)
 
