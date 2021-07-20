@@ -20,3 +20,4 @@ dependencies:
   - pip:
     - pycountry
     - quilt
+    - entsoe-py
