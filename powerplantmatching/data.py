@@ -858,11 +858,11 @@ def UBA(header=9, skipfooter=26, prune_wind=True, prune_solar=True,
         config=None, update=False, raw=False):
     """
     Importer for the UBA Database. Please download the data from
-    ``https://www.umweltbundesamt.de/dokument/datenbank-kraftwerke-in
-    -deutschland`` and place it in ``powerplantmatching/data/in``.
+    `<https://www.umweltbundesamt.de/dokument/datenbank-kraftwerke-in
+    -deutschland>`_.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     header : int, Default 9
         The zero-indexed row in which the column headings are found.
     skipfooter : int, Default 26
@@ -957,13 +957,12 @@ def BNETZA(header=9, sheet_name='Gesamtkraftwerksliste BNetzA',
     Importer for the database put together by Germany's 'Federal Network
     Agency' (dt. 'Bundesnetzagentur' (BNetzA)).
     Please download the data from
-    ``https://www.bundesnetzagentur.de/DE/Sachgebiete/ElektrizitaetundGas/
+    `<https://www.bundesnetzagentur.de/DE/Sachgebiete/ElektrizitaetundGas/
     Unternehmen_Institutionen/Versorgungssicherheit/Erzeugungskapazitaeten/
-    Kraftwerksliste/kraftwerksliste-node.html``
-    and place it in ``powerplantmatching/data/in``.
+    Kraftwerksliste/kraftwerksliste-node.html>`_.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     header : int, Default 9
         The zero-indexed row in which the column headings are found.
     raw : Boolean, default False
@@ -1079,8 +1078,8 @@ def OPSD_VRE(config=None, raw=False):
     database.
 
     This sqlite database is very big and hence not part of the package.
-    It needs to be obtained here:
-        http://data.open-power-system-data.org/renewable_power_plants/
+    It needs to be obtained from
+    `<http://data.open-power-system-data.org/renewable_power_plants/>`_
 
     Parameters
     ----------
