@@ -1,0 +1,26 @@
+# -*- coding: utf-8 -*-
+
+# SPDX-FileCopyrightText: 2016-2019 The Atlite Authors
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+# Read the Docs configuration file
+# See https://docs.readthedocs.io/en/stable/config-file/v2.html for details
+
+version: 2
+
+build:
+    image: latest
+
+
+python:
+   version: 3.8
+   install:
+      - method: pip
+        path: .
+        extra_requirements:
+           - docs
+
+# Location of SPHINX specific configuration file
+sphinx:
+    configuration: doc/conf.py

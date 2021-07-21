@@ -1,0 +1,3 @@
+
+
+.. automodapi:: powerplantmatching.plot

@@ -96,3 +96,6 @@ matching_analysis/*.png
 
 Changelog.md
 matching_analysis/german_postcode_map.py
+doc/_build
+.vscode
+doc/api

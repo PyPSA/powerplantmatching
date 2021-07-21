@@ -25,6 +25,10 @@ setup(
     install_requires=['numpy','scipy','pandas>=0.24.0','networkx>=1.10',
                       'pycountry', 'xlrd', 'seaborn', 'pyyaml >=5.1.0',
                       'requests', 'matplotlib', 'geopy', 'xlrd', 'entsoe-py'],
+    extras_require={
+        "docs": ["numpydoc", "sphinx", "sphinx_rtd_theme", "nbsphinx", "nbsphinx-link"],
+        "dev": ["pre-commit", "pytest", "pytest-cov"],
+    },
     classifiers=[
         'Programming Language :: Python :: 3',
 #        'Development Status :: 3 - Alpha',
