@@ -26,7 +26,7 @@ setup(
                       'pycountry', 'xlrd', 'seaborn', 'pyyaml >=5.1.0',
                       'requests', 'matplotlib', 'geopy', 'xlrd', 'entsoe-py'],
     extras_require={
-        "docs": ["numpydoc", "sphinx", "sphinx_rtd_theme", "nbsphinx", "nbsphinx-link"],
+        "docs": ["numpydoc", "sphinx", "sphinx_rtd_theme", "nbsphinx", "sphinx-automodapi"],
         "dev": ["pre-commit", "pytest", "pytest-cov"],
     },
     classifiers=[
