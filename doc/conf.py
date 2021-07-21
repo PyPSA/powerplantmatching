@@ -32,7 +32,6 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx_automodapi.automodapi",  # for api reference
     "nbsphinx",
-    "nbsphinx_link",
     "sphinx.ext.imgconverter",  # for SVG conversion
 ]
 numpydoc_show_class_members = False
