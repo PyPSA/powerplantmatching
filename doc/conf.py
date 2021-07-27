@@ -17,9 +17,9 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'powerplantmatching'
-copyright = '2021, Fabian Hofmann, Fabian Gotzens, Jonas Hörsch, Martha Frysztacki'
-author = 'Fabian Hofmann, Fabian Gotzens, Jonas Hörsch, Martha Frysztacki'
+project = "powerplantmatching"
+copyright = "2021, Fabian Hofmann, Fabian Gotzens, Jonas Hörsch, Martha Frysztacki"
+author = "Fabian Hofmann, Fabian Gotzens, Jonas Hörsch, Martha Frysztacki"
 
 
 # -- General configuration ---------------------------------------------------
@@ -37,12 +37,12 @@ extensions = [
 numpydoc_show_class_members = False
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+templates_path = ["_templates"]
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', "**.ipynb_checkpoints"]
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "**.ipynb_checkpoints"]
 
 source_suffix = {
     ".rst": "restructuredtext",

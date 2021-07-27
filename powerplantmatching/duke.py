@@ -15,14 +15,18 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import absolute_import, print_function
+
 import logging
 import os
-import subprocess as sub
 import shutil
+import subprocess as sub
 import tempfile
-import pandas as pd
+
 import numpy as np
+import pandas as pd
+
 from .core import _package_data
+
 logger = logging.getLogger(__name__)
 
 
@@ -32,16 +36,25 @@ def add_geoposition_for_duke(df):
     which concats the latitude and longitude of the powerplant in a string
 
     """
-    if not df.loc[:, ['lat', 'lon']].isnull().all().all():
-        return df.assign(Geoposition=df[['lat', 'lon']].astype(str)
-                         .apply(lambda s: ','.join(s), axis=1)
-                         .replace('nan,nan', np.nan))
+    if not df.loc[:, ["lat", "lon"]].isnull().all().all():
+        return df.assign(
+            Geoposition=df[["lat", "lon"]]
+            .astype(str)
+            .apply(lambda s: ",".join(s), axis=1)
+            .replace("nan,nan", np.nan)
+        )
     else:
         return df.assign(Geoposition=np.nan)
 
 
-def duke(datasets, labels=['one', 'two'], singlematch=False,
-         showmatches=False, keepfiles=False, showoutput=False):
+def duke(
+    datasets,
+    labels=["one", "two"],
+    singlematch=False,
+    showmatches=False,
+    keepfiles=False,
+    showoutput=False,
+):
     """
     Run duke in different modes (Deduplication or Record Linkage Mode) to
     either locate duplicates in one database or find the similar entries in two
@@ -72,44 +85,55 @@ def duke(datasets, labels=['one', 'two'], singlematch=False,
     else:
         duke_config = "Comparison.xml"
 
-    duke_bin_dir = _package_data('duke_binaries')
+    duke_bin_dir = _package_data("duke_binaries")
 
-    os.environ['CLASSPATH'] = \
-        os.pathsep.join([os.path.join(duke_bin_dir, r)
-                         for r in os.listdir(duke_bin_dir)])
+    os.environ["CLASSPATH"] = os.pathsep.join(
+        [os.path.join(duke_bin_dir, r) for r in os.listdir(duke_bin_dir)]
+    )
     tmpdir = tempfile.mkdtemp()
 
     try:
-        shutil.copyfile(os.path.join(_package_data(duke_config)),
-                        os.path.join(tmpdir, "config.xml"))
+        shutil.copyfile(
+            os.path.join(_package_data(duke_config)), os.path.join(tmpdir, "config.xml")
+        )
 
         logger.debug("Comparing files: %s", ", ".join(labels))
 
         for n, df in enumerate(datasets):
             df = add_geoposition_for_duke(df)
-#            due to index unity (see https://github.com/larsga/Duke/issues/236)
+            #            due to index unity (see https://github.com/larsga/Duke/issues/236)
             if n == 1:
-                shift_by = (datasets[0].index.max()+1)
+                shift_by = datasets[0].index.max() + 1
                 df.index += shift_by
-            df.to_csv(os.path.join(tmpdir, "file{}.csv".format(n+1)),
-                      index_label='id')
+            df.to_csv(
+                os.path.join(tmpdir, "file{}.csv".format(n + 1)), index_label="id"
+            )
             if n == 1:
                 df.index -= shift_by
 
-        args = ['java', '-Dfile.encoding=UTF-8', 'no.priv.garshol.duke.Duke',
-                '--linkfile=linkfile.txt']
+        args = [
+            "java",
+            "-Dfile.encoding=UTF-8",
+            "no.priv.garshol.duke.Duke",
+            "--linkfile=linkfile.txt",
+        ]
         if singlematch:
-            args.append('--singlematch')
+            args.append("--singlematch")
         if showmatches:
-            args.append('--showmatches')
+            args.append("--showmatches")
             stdout = sub.PIPE
         else:
             stdout = None
-        args.append('config.xml')
+        args.append("config.xml")
 
         try:
-            run = sub.Popen(args, stderr=sub.PIPE, cwd=tmpdir, stdout=stdout,
-                            universal_newlines=True)
+            run = sub.Popen(
+                args,
+                stderr=sub.PIPE,
+                cwd=tmpdir,
+                stdout=stdout,
+                universal_newlines=True,
+            )
         except FileNotFoundError:
             err = "Java was not found on your system."
             logger.error(err)
@@ -121,22 +145,28 @@ def duke(datasets, labels=['one', 'two'], singlematch=False,
             print(_)
 
         logger.debug("Stderr: {}".format(stderr))
-        if any(word in stderr.lower() for word in ['error', 'fehler']):
+        if any(word in stderr.lower() for word in ["error", "fehler"]):
             raise RuntimeError("duke failed: {}".format(stderr))
 
         if dedup:
-            return pd.read_csv(os.path.join(tmpdir, 'linkfile.txt'),
-                               encoding='utf-8', usecols=[1, 2], names=labels)
+            return pd.read_csv(
+                os.path.join(tmpdir, "linkfile.txt"),
+                encoding="utf-8",
+                usecols=[1, 2],
+                names=labels,
+            )
         else:
-            res = pd.read_csv(os.path.join(tmpdir, 'linkfile.txt'),
-                              usecols=[1, 2, 3], names=labels + ['scores'])
+            res = pd.read_csv(
+                os.path.join(tmpdir, "linkfile.txt"),
+                usecols=[1, 2, 3],
+                names=labels + ["scores"],
+            )
             res.iloc[:, 1] -= shift_by
             return res
 
     finally:
         if keepfiles:
-            logger.debug('Files of the duke run are kept in {}'.format(tmpdir))
+            logger.debug("Files of the duke run are kept in {}".format(tmpdir))
         else:
             shutil.rmtree(tmpdir)
-            logger.debug('Files of the duke run have been deleted in {}'
-                         .format(tmpdir))
+            logger.debug("Files of the duke run have been deleted in {}".format(tmpdir))
