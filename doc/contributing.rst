@@ -7,7 +7,25 @@ be it with new ideas, suggestions, by filing bug reports or
 contributing code.
 
 You are invited to submit pull requests / issues to our
-`Github repository <https://github.com/FRESNA/powerplantmachting>`_.
+`Github repository <https://github.com/FRESNA/powerplantmatching>`_.
+
+Therefore, we encourage to install ``powerplantmatching`` together with packages used for developing:
+
+.. code:: bash
+
+  pip install powerplantmatching[dev]
+
+
+This will also install the ``pre-commit`` package which checks that new changes are aligned with the guidelines. 
+To automatically activate ``pre-commit`` on every ``git commit``, run ``pre-commit install``. 
+To manually run it, execute ``pre-commit run --all``.
+
+To double-check that your code is working, we welcome you to write a unit test. Run all tests with 
+
+.. code:: bash
+
+  pytest
+
 
 
 Integrating new Data-Sources
