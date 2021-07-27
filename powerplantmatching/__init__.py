@@ -28,18 +28,14 @@ __version__ = "0.4.8"
 __author__ = "Fabian Hofmann, Jonas Hoersch, Fabian Gotzens"
 __copyright__ = "Copyright 2017-2020 Frankfurt Institute for Advanced Studies"
 # The rough hierarchy of this package is
-#core, utils, heuristics, cleaning, matching, collection, data
+# core, utils, heuristics, cleaning, matching, collection, data
 
+# from . import cleaning
+# from . import matching
+# from . import collection
 # Commonly used sub-modules. Imported here to provide end-user
 # convenience.
-from . import core
-from . import utils
-from . import heuristics
-from . import data
-#from . import cleaning
-#from . import matching
-#from . import collection
-from . import plot
-from .core import get_config, package_config
-from .collection import matched_data as powerplants
+from . import core, data, heuristics, plot, utils
 from .accessor import PowerPlantAccessor
+from .collection import matched_data as powerplants
+from .core import get_config, package_config

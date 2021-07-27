@@ -17,26 +17,37 @@
 """
 Processed datasets of merged and/or adjusted data
 """
-from .core import _data_out, get_config
-from .utils import (set_uncommon_fueltypes_to_other, parmap,
-                    to_dict_if_string, projectID_to_dict, set_column_name)
-from .heuristics import (extend_by_non_matched, extend_by_VRE)
-from .cleaning import aggregate_units
-from .matching import combine_multiple_datasets, reduce_matched_dataframe
-
+import logging
+import os
 
 import pandas as pd
-import os
-import logging
-
 from deprecation import deprecated
+
+from .cleaning import aggregate_units
+from .core import _data_out, get_config
+from .heuristics import extend_by_non_matched, extend_by_VRE
+from .matching import combine_multiple_datasets, reduce_matched_dataframe
+from .utils import (
+    parmap,
+    projectID_to_dict,
+    set_column_name,
+    set_uncommon_fueltypes_to_other,
+    to_dict_if_string,
+)
 
 logger = logging.getLogger(__name__)
 
 
-def collect(datasets, update=False, use_saved_aggregation=True,
-            use_saved_matches=True, reduced=True,
-            custom_config={}, config=None, **dukeargs):
+def collect(
+    datasets,
+    update=False,
+    use_saved_aggregation=True,
+    use_saved_matches=True,
+    reduced=True,
+    custom_config={},
+    config=None,
+    **dukeargs,
+):
     """
     Return the collection for a given list of datasets in matched or
     reduced form.
@@ -61,6 +72,7 @@ def collect(datasets, update=False, use_saved_aggregation=True,
     """
 
     from . import data
+
     if config is None:
         config = get_config()
 
@@ -69,11 +81,13 @@ def collect(datasets, update=False, use_saved_aggregation=True,
 
         get_df = getattr(data, name)
         df = get_df(config=config)
-        if not conf.get('aggregated_units', False):
-            return aggregate_units(df,
-                                   use_saved_aggregation=use_saved_aggregation,
-                                   dataset_name=name,
-                                   config=config)
+        if not conf.get("aggregated_units", False):
+            return aggregate_units(
+                df,
+                use_saved_aggregation=use_saved_aggregation,
+                dataset_name=name,
+                config=config,
+            )
         else:
             return df.assign(projectID=df.projectID.map(lambda x: [x]))
 
@@ -82,16 +96,16 @@ def collect(datasets, update=False, use_saved_aggregation=True,
         return df_by_name(datasets)
 
     datasets = sorted(datasets)
-    logger.info('Collect combined dataset for {}'.format(', '.join(datasets)))
-    outfn_matched = _data_out('Matched_{}.csv'
-                              .format('_'.join(map(str.upper, datasets))),
-                              config=config)
-    outfn_reduced = _data_out('Matched_{}_reduced.csv'
-                              .format('_'.join(map(str.upper, datasets))),
-                              config=config)
+    logger.info("Collect combined dataset for {}".format(", ".join(datasets)))
+    outfn_matched = _data_out(
+        "Matched_{}.csv".format("_".join(map(str.upper, datasets))), config=config
+    )
+    outfn_reduced = _data_out(
+        "Matched_{}_reduced.csv".format("_".join(map(str.upper, datasets))),
+        config=config,
+    )
 
-    if not update and not os.path.exists(outfn_reduced
-                                         if reduced else outfn_matched):
+    if not update and not os.path.exists(outfn_reduced if reduced else outfn_matched):
         logger.warning("Forcing update since the cache file is missing")
         update = True
         use_saved_aggregation = True
@@ -99,39 +113,52 @@ def collect(datasets, update=False, use_saved_aggregation=True,
     if update:
         dfs = parmap(df_by_name, datasets)
         matched = combine_multiple_datasets(
-            dfs, datasets, use_saved_matches=use_saved_matches, config=config,
-            **dukeargs)
-        (matched.assign(projectID=lambda df: df.projectID.astype(str))
-                .to_csv(outfn_matched, index_label='id'))
+            dfs,
+            datasets,
+            use_saved_matches=use_saved_matches,
+            config=config,
+            **dukeargs,
+        )
+        (
+            matched.assign(projectID=lambda df: df.projectID.astype(str)).to_csv(
+                outfn_matched, index_label="id"
+            )
+        )
 
         reduced_df = reduce_matched_dataframe(matched, config=config)
-        reduced_df.to_csv(outfn_reduced, index_label='id')
+        reduced_df.to_csv(outfn_reduced, index_label="id")
 
         return reduced_df if reduced else matched
     else:
         if reduced:
             df = pd.read_csv(outfn_reduced, index_col=0)
         else:
-            df = pd.read_csv(outfn_matched, index_col=0, header=[0, 1],
-                             low_memory=False)
+            df = pd.read_csv(
+                outfn_matched, index_col=0, header=[0, 1], low_memory=False
+            )
         return df.pipe(projectID_to_dict)
 
 
-@deprecated(deprecated_in="0.4.8", removed_in="0.5.0",
-            details="Use the collect function instead")
+@deprecated(
+    deprecated_in="0.4.8",
+    removed_in="0.5.0",
+    details="Use the collect function instead",
+)
 def Collection(**kwargs):
     return collect(**kwargs)
 
 
-def matched_data(config=None,
-                 stored=True,
-                 update=False,
-                 update_all=False,
-                 from_url=False,
-                 extend_by_vres=False,
-                 extendby_kwargs={'use_saved_aggregation': True},
-                 subsume_uncommon_fueltypes=False,
-                 **collection_kwargs):
+def matched_data(
+    config=None,
+    stored=True,
+    update=False,
+    update_all=False,
+    from_url=False,
+    extend_by_vres=False,
+    extendby_kwargs={"use_saved_aggregation": True},
+    subsume_uncommon_fueltypes=False,
+    **collection_kwargs,
+):
     """
     Return the full matched dataset including all data sources listed in
     config.yaml/matching_sources. The combined data is additionally extended
@@ -176,79 +203,89 @@ def matched_data(config=None,
         config = get_config()
 
     if update_all:
-        collection_kwargs['use_saved_aggregation'] = False
-        collection_kwargs['use_saved_matches'] = False
+        collection_kwargs["use_saved_aggregation"] = False
+        collection_kwargs["use_saved_matches"] = False
         update = True
     if update:
         stored = False
 
-    collection_kwargs.setdefault('update', update)
+    collection_kwargs.setdefault("update", update)
 
-    if collection_kwargs.get('reduced', True):
-        fn = _data_out('matched_data_red.csv')
+    if collection_kwargs.get("reduced", True):
+        fn = _data_out("matched_data_red.csv")
         header = 0
     else:
-        fn = _data_out('matched_data.csv')
+        fn = _data_out("matched_data.csv")
         header = [0, 1]
 
     if from_url:
-        fn = _data_out('matched_data_red.csv')
-        url = config['matched_data_url']
-        logger.info(f'Retrieving data from {url}')
-        df = (pd.read_csv(url, index_col=0)
-                .pipe(projectID_to_dict)
-                .pipe(set_column_name, 'Matched Data'))
-        logger.info(f'Store data at {fn}')
+        fn = _data_out("matched_data_red.csv")
+        url = config["matched_data_url"]
+        logger.info(f"Retrieving data from {url}")
+        df = (
+            pd.read_csv(url, index_col=0)
+            .pipe(projectID_to_dict)
+            .pipe(set_column_name, "Matched Data")
+        )
+        logger.info(f"Store data at {fn}")
         df.to_csv(fn)
         return df
 
     if stored and os.path.exists(fn):
-        df = (pd.read_csv(fn, index_col=0, header=header)
-                .pipe(projectID_to_dict)
-                .pipe(set_column_name, 'Matched Data'))
+        df = (
+            pd.read_csv(fn, index_col=0, header=header)
+            .pipe(projectID_to_dict)
+            .pipe(set_column_name, "Matched Data")
+        )
         if extend_by_vres:
-            return df.pipe(extend_by_VRE, config=config,
-                           base_year=config['opsd_vres_base_year'])
+            return df.pipe(
+                extend_by_VRE, config=config, base_year=config["opsd_vres_base_year"]
+            )
         return df
 
-    matching_sources = [list(to_dict_if_string(a))[0]
-                        for a in config['matching_sources']]
+    matching_sources = [
+        list(to_dict_if_string(a))[0] for a in config["matching_sources"]
+    ]
     matched = collect(matching_sources, **collection_kwargs)
 
-    if isinstance(config['fully_included_sources'], list):
-        for source in config['fully_included_sources']:
+    if isinstance(config["fully_included_sources"], list):
+        for source in config["fully_included_sources"]:
             source = to_dict_if_string(source)
-            name, = list(source)
-            extendby_kwargs.update({'query': source[name]})
-            matched = extend_by_non_matched(matched, name, config=config,
-                                            **extendby_kwargs)
+            (name,) = list(source)
+            extendby_kwargs.update({"query": source[name]})
+            matched = extend_by_non_matched(
+                matched, name, config=config, **extendby_kwargs
+            )
 
     # Drop matches between only low reliability-data, this is necessary since
     # a lot of those are decommissioned, however some countries only appear in
     # GEO and CARMA
-    allowed_countries = config['CARMA_GEO_countries']
+    allowed_countries = config["CARMA_GEO_countries"]
     if matched.columns.nlevels > 1:
-        other = set(matching_sources) - set(['CARMA', 'GEO'])
-        matched = (matched[~matched.projectID[other].isna().all(1)
-                           | matched.Country.GEO.isin(allowed_countries)
-                           | matched.Country.CARMA.isin(allowed_countries)]
-                   .reset_index(drop=True))
-        if config['remove_missing_coords']:
-            matched = (matched[matched.lat.notnull().any(1)]
-                       .reset_index(drop=True))
+        other = set(matching_sources) - set(["CARMA", "GEO"])
+        matched = matched[
+            ~matched.projectID[other].isna().all(1)
+            | matched.Country.GEO.isin(allowed_countries)
+            | matched.Country.CARMA.isin(allowed_countries)
+        ].reset_index(drop=True)
+        if config["remove_missing_coords"]:
+            matched = matched[matched.lat.notnull().any(1)].reset_index(drop=True)
     else:
-        matched = (matched[matched.projectID.apply(lambda x: sorted(x.keys())
-                                                   not in [['CARMA', 'GEO']])
-                           | matched.Country.isin(allowed_countries)]
-                   .reset_index(drop=True))
-        if config['remove_missing_coords']:
+        matched = matched[
+            matched.projectID.apply(
+                lambda x: sorted(x.keys()) not in [["CARMA", "GEO"]]
+            )
+            | matched.Country.isin(allowed_countries)
+        ].reset_index(drop=True)
+        if config["remove_missing_coords"]:
             matched = matched[matched.lat.notnull()].reset_index(drop=True)
-    matched.to_csv(fn, index_label='id', encoding='utf-8')
+    matched.to_csv(fn, index_label="id", encoding="utf-8")
 
     if extend_by_vres:
-        matched = extend_by_VRE(matched, config=config,
-                                base_year=config['opsd_vres_base_year'])
+        matched = extend_by_VRE(
+            matched, config=config, base_year=config["opsd_vres_base_year"]
+        )
 
     if subsume_uncommon_fueltypes:
         matched = set_uncommon_fueltypes_to_other(matched)
-    return matched.pipe(set_column_name, 'Matched Data')
+    return matched.pipe(set_column_name, "Matched Data")
