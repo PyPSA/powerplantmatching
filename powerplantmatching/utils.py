@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-Utility functions for checking data completness and supporting other functions
+Utility functions for checking data completeness and supporting other functions
 """
 
 from __future__ import absolute_import, print_function
@@ -355,15 +355,15 @@ def fun(f, q_in, q_out):
 
 def parmap(f, arg_list, config=None):
     """
-    Parallel mapping function. Use this function to parallely map function
+    Parallel mapping function. Use this function to parallelly map function
     f onto arguments in arg_list. The maximum number of parallel threads is
     taken from config.yaml:parallel_duke_processes.
 
-    Paramters
+    Parameters
     ---------
 
     f : function
-        python funtion with one argument
+        python function with one argument
     arg_list : list
         list of arguments mapped to f
     """
@@ -545,7 +545,7 @@ def parse_Geoposition(
     """
     Nominatim request for the Geoposition of a specific location in a country.
     Returns a tuples with (latitude, longitude, country) if the request was
-    sucessful, returns np.nan otherwise.
+    successful, returns np.nan otherwise.
 
     ToDo:   There exist further online sources for lat/long data which could be
             used, if this one fails, e.g.

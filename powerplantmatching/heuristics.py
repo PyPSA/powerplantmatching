@@ -294,7 +294,7 @@ def aggregate_VRE_by_commyear(df, target_fueltypes=None, agg_geo_by=None):
     df : pd.DataFrame
         DataFrame containing the data to aggregate
     target_fueltypes : list
-        list of fueltypes to be aggregated (Others are cutted!)
+        list of fueltypes to be aggregated (Others are cut!)
     agg_by_geo : str
         How to deal with lat/lon positions. Allowed:
             NoneType : Do not show geoposition at all

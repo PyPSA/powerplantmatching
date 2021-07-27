@@ -279,11 +279,11 @@ def GEO(raw=False, update=False, config=None):
 
     # map from units to plants
     units["DateIn"] = units.Date_Commissioned_dt.str[:4].astype(float)
-    units["Effiency"] = (
+    units["Efficiency"] = (
         units.Unit_Efficiency_Percent.str.replace("%", "").astype(float) / 100
     )
     units = units.groupby("GEO_Assigned_Identification_Number").agg(
-        {"DateIn": [min, max], "Effiency": "mean"}
+        {"DateIn": [min, max], "Efficiency": "mean"}
     )
 
     _ = geo.projectID.map(units.DateIn["min"])
@@ -297,8 +297,8 @@ def GEO(raw=False, update=False, config=None):
     _ = geo.projectID.map(units.DateIn["max"])
     geo["DateRetrofit"] = geo.DateRetrofit.astype(float).fillna(_)
 
-    _ = units.Effiency["mean"]
-    geo["Effiency"] = geo.projectID.map(_)
+    _ = units.Efficiency["mean"]
+    geo["Efficiency"] = geo.projectID.map(_)
 
     countries = config["target_countries"]
 
@@ -670,18 +670,18 @@ def ESE(raw=False, update=False, config=None):
 def ENTSOE(update=False, raw=False, entsoe_token=None, config=None):
     """
     Importer for the list of installed generators provided by the ENTSO-E
-    Trasparency Project. Geographical information is not given.
+    Transparency Project. Geographical information is not given.
     If update=True, the dataset is parsed through a request to
     'https://transparency.entsoe.eu/generation/r2/\
     installedCapacityPerProductionUnit/show',
-    Internet connection requiered. If raw=True, the same request is done, but
+    Internet connection required. If raw=True, the same request is done, but
     the unprocessed data is returned.
 
     Parameters
     ----------
     update : Boolean, Default False
         Whether to update the database through a request to the ENTSO-E
-        transparency plattform
+        transparency platform
     raw : Boolean, Default False
         Whether to return the raw data, obtained from the request to
         the ENTSO-E transparency platform
@@ -929,7 +929,7 @@ def WEPP(raw=False, config=None):
         inplace=True,
     )
     wepp.loc[:, "DateRetrofit"] = wepp.DateIn
-    # Do country transformations and drop those which are not in definded scope
+    # Do country transformations and drop those which are not in defined scope
     c = {
         "ENGLAND & WALES": "UNITED KINGDOM",
         "GIBRALTAR": "SPAIN",

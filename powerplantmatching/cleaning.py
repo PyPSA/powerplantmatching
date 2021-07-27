@@ -302,7 +302,7 @@ def aggregate_units(
     pre_clean_name : Boolean, default True
         Whether to clean the 'Name'-column before aggregating.
     use_saved_aggregation : bool (default False):
-        Whether to use the automaticly saved aggregation file, which
+        Whether to use the automatically saved aggregation file, which
         is stored in data/out/default/aggregations/aggregation_groups_XX.csv
         with XX being the name for the dataset. This saves time if you
         want to have aggregated powerplants without running the

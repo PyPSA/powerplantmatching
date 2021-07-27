@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-# This export script is intented for the users of PyPSA:
+# This export script is intended for the users of PyPSA:
 #   https://www.pypsa.org/
 # or the VEDA-TIMES modelling framework:
 #   http://iea-etsap.org/index.php/etsap-tools/data-handling-shells/veda
@@ -57,7 +57,7 @@ def to_pypsa_names(df):
 
 def map_bus(df, buses):
     """
-    Assign a 'bus' colum to the dataframe based on a list of coordinates.
+    Assign a 'bus' column to the dataframe based on a list of coordinates.
 
     Parameters
     ----------
@@ -78,7 +78,7 @@ def map_bus(df, buses):
 
 def map_country_bus(df, buses):
     """
-    Assign a 'bus' colum based on a list of coordinates and countries.
+    Assign a 'bus' column based on a list of coordinates and countries.
 
     Parameters
     ----------

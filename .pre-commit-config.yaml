@@ -21,4 +21,5 @@ repos:
     hooks:
     -   id: codespell
         types_or: [python, rst, markdown]
-        files: ^(linopy|doc)/
+        # files: ^(powerplantmatching|doc|test)/
+        entry: codespell --ignore-words ignore-spelling-words.txt
