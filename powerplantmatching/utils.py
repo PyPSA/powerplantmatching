@@ -89,12 +89,9 @@ def get_raw_file(name, update=False, config=None, skip_retrieve=False):
     if (not os.path.exists(path) or update) and not skip_retrieve:
         url = df_config["url"]
         logger.info(f'Retrieving data from {url}')
-        try:
-            urlretrieve(url, path)
-        except HTTPError:
-            r = requests.get(url)
-            with open(path, 'wb') as outfile:
-                outfile.write(r.content)
+        r = requests.get(url)
+        with open(path, 'wb') as outfile:
+            outfile.write(r.content)
 
     return path
 
