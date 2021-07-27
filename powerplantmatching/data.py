@@ -18,8 +18,6 @@
 Collection of power plant data bases and statistical data
 """
 
-from __future__ import absolute_import, print_function
-
 import logging
 import os
 import re
@@ -31,6 +29,7 @@ import numpy as np
 import pandas as pd
 import pycountry
 import requests
+from deprecation import deprecated
 
 from .cleaning import (
     clean_powerplantname,
@@ -55,6 +54,21 @@ net_caps = get_config()["display_net_caps"]
 
 
 def BEYONDCOAL(raw=False, update=False, config=None):
+    """
+    Importer for the BEYOND COAL database.
+
+    Parameters
+    ----------
+    raw : boolean, default False
+        Whether to return the original dataset
+    update: bool, default False
+        Whether to update the data from the url.
+    config : dict, default None
+        Add custom specific configuration,
+        e.g. powerplantmatching.config.get_config(target_countries='Italy'),
+        defaults to powerplantmatching.config.get_config()
+    """
+
     config = get_config() if config is None else config
 
     fn = get_raw_file("BEYONDCOAL", update=update, config=config)
@@ -113,6 +127,8 @@ def OPSD(
         Whether to return the raw EU (=non-DE) database.
     rawDE : Boolean, default False
         Whether to return the raw DE database.
+    update: bool, default False
+        Whether to update the data from the url.
     statusDE : list, default ['operating', 'reserve', 'special_case']
         Filter DE entries by operational status ['operating', 'shutdown',
         'reserve', etc.]
@@ -324,7 +340,12 @@ def GEO(raw=False, update=False, config=None):
     )
 
 
-def CARMA(raw=False, config=None):
+@deprecated(
+    deprecated_in="0.4.9",
+    removed_in="0.5.0",
+    details="Removed since data is not publicly available anymore",
+)
+def CARMA(raw=False, update=False, config=None):
     """
     Importer for the Carma database.
 
@@ -332,6 +353,8 @@ def CARMA(raw=False, config=None):
     ----------
     raw : Boolean, default False
         Whether to return the original dataset
+    update: bool, default False
+        Whether to update the data from the url.
     config : dict, default None
         Add custom specific configuration,
         e.g. powerplantmatching.config.get_config(target_countries='Italy'),
@@ -339,8 +362,7 @@ def CARMA(raw=False, config=None):
     """
     config = get_config() if config is None else config
 
-    #    carmadata = pd.read_csv(_datconfig['CARMA']['fn'], low_memory=False)
-    carma = pd.read_csv(get_raw_file("CARMA", config=config), low_memory=False)
+    carma = pd.read_csv(get_raw_file("CARMA", update, config), low_memory=False)
     if raw:
         return carma
 
@@ -392,10 +414,22 @@ def CARMA(raw=False, config=None):
     )
 
 
-def JRC(raw=False, config=None, update=False):
+def JRC(raw=False, update=False, config=None):
     """
     Importer for the JRC Hydro-power plants database retrieves from
     https://github.com/energy-modelling-toolkit/hydro-power-database.
+
+    Parameters
+    ----------
+    raw : Boolean, default False
+        Whether to return the original dataset
+    update: bool, default False
+        Whether to update the data from the url.
+    config : dict, default None
+        Add custom specific configuration,
+        e.g. powerplantmatching.config.get_config(target_countries='Italy'),
+        defaults to powerplantmatching.config.get_config()
+
     """
 
     config = get_config() if config is None else config
@@ -447,6 +481,11 @@ def JRC(raw=False, config=None, update=False):
     return df
 
 
+@deprecated(
+    deprecated_in="0.4.9",
+    removed_in="0.5.0",
+    details="Use the JRC data instead",
+)
 def IWPDCY(config=None):
     """
     This data is not yet available. Was extracted manually from
@@ -530,13 +569,16 @@ def Capacity_stats(
     return df
 
 
-def GPD(raw=False, filter_other_dbs=True, update=False, config=None):
+def GPD(raw=False, update=False, config=None, filter_other_dbs=True):
     """
     Importer for the `Global Power Plant Database`.
 
     Parameters
     ----------
-
+    raw : Boolean, default False
+        Whether to return the original dataset
+    update: bool, default False
+        Whether to update the data from the url.
     config : dict, default None
         Add custom specific configuration,
         e.g. powerplantmatching.config.get_config(target_countries='Italy'),
@@ -556,11 +598,11 @@ def GPD(raw=False, filter_other_dbs=True, update=False, config=None):
 
     other_dbs = []
     if filter_other_dbs:
-        other_dbs = ["GEODB", "CARMA", "Open Power System Data", "ENTSOE"]
+        other_dbs = ["GEODB", "Open Power System Data", "ENTSOE"]
     countries = config["target_countries"]
     return (
         df.rename(columns=lambda x: x.title())
-        .query("Country_Long in @countries &" " Geolocation_Source not in @other_dbs")
+        .query("Country_Long in @countries &" " Source not in @other_dbs")
         .drop(columns="Country")
         .rename(
             columns={
@@ -587,7 +629,7 @@ def GPD(raw=False, filter_other_dbs=True, update=False, config=None):
         .pipe(clean_powerplantname)
         .pipe(set_column_name, "GPD")
         .pipe(config_filter, name="GPD", config=config)
-        # .pipe(gather_technology_info, config=config)
+        .pipe(gather_technology_info, config=config)
         # .pipe(gather_set_info)
         # .pipe(correct_manually, 'GPD', config=config)
     )
@@ -620,6 +662,8 @@ def ESE(raw=False, update=False, config=None):
     ----------
     raw : Boolean, default False
         Whether to return the original dataset
+    update: bool, default False
+        Whether to update the data from the url.
     config : dict, default None
         Add custom specific configuration,
         e.g. powerplantmatching.config.get_config(target_countries='Italy'),
@@ -667,7 +711,7 @@ def ESE(raw=False, update=False, config=None):
     )
 
 
-def ENTSOE(update=False, raw=False, entsoe_token=None, config=None):
+def ENTSOE(raw=False, update=False, config=None, entsoe_token=None):
     """
     Importer for the list of installed generators provided by the ENTSO-E
     Transparency Project. Geographical information is not given.
@@ -679,18 +723,16 @@ def ENTSOE(update=False, raw=False, entsoe_token=None, config=None):
 
     Parameters
     ----------
-    update : Boolean, Default False
-        Whether to update the database through a request to the ENTSO-E
-        transparency platform
-    raw : Boolean, Default False
-        Whether to return the raw data, obtained from the request to
-        the ENTSO-E transparency platform
-    entsoe_token: String
-        Security token of the ENTSO-E Transparency platform
+    raw : Boolean, default False
+        Whether to return the original dataset
+    update: bool, default False
+        Whether to update the data from the url.
     config : dict, default None
         Add custom specific configuration,
         e.g. powerplantmatching.config.get_config(target_countries='Italy'),
         defaults to powerplantmatching.config.get_config()
+    entsoe_token: String
+        Security token of the ENTSO-E Transparency platform
 
     Note: For obtaining a security token refer to section 2 of the
     RESTful API documentation of the ENTSOE-E Transparency platform
@@ -840,6 +882,11 @@ def ENTSOE(update=False, raw=False, entsoe_token=None, config=None):
 #
 
 
+@deprecated(
+    deprecated_in="0.4.9",
+    removed_in="0.5.0",
+    details="This function is not maintained anymore.",
+)
 def WEPP(raw=False, config=None):
     """
     Importer for the standardized WEPP (Platts, World Elecrtric Power
@@ -1092,13 +1139,13 @@ def WEPP(raw=False, config=None):
 
 
 def UBA(
+    raw=False,
+    update=False,
+    config=None,
     header=9,
     skipfooter=26,
     prune_wind=True,
     prune_solar=True,
-    config=None,
-    update=False,
-    raw=False,
 ):
     """
     Importer for the UBA Database. Please download the data from
@@ -1107,13 +1154,17 @@ def UBA(
 
     Parameters
     ----------
-    header : int, Default 9
-        The zero-indexed row in which the column headings are found.
-    skipfooter : int, Default 26
+    raw : Boolean, default False
+        Whether to return the original dataset
+    update: bool, default False
+        Whether to update the data from the url.
     config : dict, default None
         Add custom specific configuration,
         e.g. powerplantmatching.config.get_config(target_countries='Italy'),
         defaults to powerplantmatching.config.get_config()
+    header : int, Default 9
+        The zero-indexed row in which the column headings are found.
+    skipfooter : int, Default 26
 
     """
     config = get_config() if config is None else config
@@ -1210,13 +1261,13 @@ def UBA(
 
 
 def BNETZA(
+    raw=False,
+    update=False,
+    config=None,
     header=9,
     sheet_name="Gesamtkraftwerksliste BNetzA",
     prune_wind=True,
     prune_solar=True,
-    raw=False,
-    update=False,
-    config=None,
 ):
     """
     Importer for the database put together by Germany's 'Federal Network
@@ -1228,14 +1279,16 @@ def BNETZA(
 
     Parameters
     ----------
-    header : int, Default 9
-        The zero-indexed row in which the column headings are found.
     raw : Boolean, default False
         Whether to return the original dataset
+    update: bool, default False
+        Whether to update the data from the url.
     config : dict, default None
         Add custom specific configuration,
         e.g. powerplantmatching.config.get_config(target_countries='Italy'),
         defaults to powerplantmatching.config.get_config()
+    header : int, Default 9
+        The zero-indexed row in which the column headings are found.
     """
     config = get_config() if config is None else config
 
@@ -1366,7 +1419,7 @@ def BNETZA(
     )
 
 
-def OPSD_VRE(config=None, raw=False):
+def OPSD_VRE(raw=False, update=False, config=None):
     """
     Importer for the OPSD (Open Power Systems Data) renewables (VRE)
     database.
@@ -1377,6 +1430,10 @@ def OPSD_VRE(config=None, raw=False):
 
     Parameters
     ----------
+    raw : Boolean, default False
+        Whether to return the original dataset
+    update: bool, default False
+        Whether to update the data from the url.
     config : dict, default None
         Add custom specific configuration,
         e.g. powerplantmatching.config.get_config(target_countries='Italy'),
@@ -1408,10 +1465,21 @@ def OPSD_VRE(config=None, raw=False):
     )
 
 
-def OPSD_VRE_country(country, config=None, raw=False):
+def OPSD_VRE_country(country, raw=False, update=False, config=None):
     """
     Get country specifig data from OPSD for renewables, if available.
     Available for DE, FR, PL, CH, DK, CZ and SE (last update: 09/2020).
+
+    Parameters
+    ----------
+    raw : Boolean, default False
+        Whether to return the original dataset
+    update: bool, default False
+        Whether to update the data from the url.
+    config : dict, default None
+        Add custom specific configuration,
+        e.g. powerplantmatching.config.get_config(target_countries='Italy'),
+        defaults to powerplantmatching.config.get_config()
     """
     config = get_config() if config is None else config
 
@@ -1440,6 +1508,11 @@ def OPSD_VRE_country(country, config=None, raw=False):
     )
 
 
+@deprecated(
+    deprecated_in="0.4.9",
+    removed_in="0.5.0",
+    details="Removed since data is not publicly available anymore",
+)
 def IRENA_stats(config=None):
     """
     Reads the IRENA Capacity Statistics 2017 Database

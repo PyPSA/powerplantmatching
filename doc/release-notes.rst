@@ -1,6 +1,16 @@
 History of Changes
 ==================
 
+Upcoming Release
+----------------
+
+* The `BEYOND COAL <https://beyond-coal.eu/coal-exit-tracker/>`_ data is now available as an data source. 
+* All scripts were aligned with the ``black`` coding style.
+* A documentation on readthedocs was added.
+
+**Breaking Changes:**
+* All keyword arguments of the data functions in ``powerplantmatching.data`` were sorted according to ``raw``, ``update``, ``config``. This lead to some hard changes of the arguments order.
+
 Version 0.4.6 (25.11.2020)
 --------------------------
 
