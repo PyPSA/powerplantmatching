@@ -153,7 +153,7 @@ powerplantmatching is released as free software under the
    :caption: API Reference
 
    api-data
-   api-utils
+   api-plot
    api-core
 
    
@@ -164,14 +164,4 @@ powerplantmatching is released as free software under the
 
    contributing
    release-notes
-
-.. .. toctree::
-..    :hidden:
-..    :maxdepth: 2
-..    :caption: API Reference
-
-..    api-model
-..    api-solvers
-..    api-io
-
 
