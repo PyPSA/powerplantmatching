@@ -24,7 +24,8 @@ setup(
     include_package_data=True,
     install_requires=['numpy','scipy','pandas>=0.24.0','networkx>=1.10',
                       'pycountry', 'xlrd', 'seaborn', 'pyyaml >=5.1.0',
-                      'requests', 'matplotlib', 'geopy', 'xlrd', 'entsoe-py'],
+                      'requests', 'matplotlib', 'geopy', 'xlrd', 'entsoe-py',
+                      'deprecation'],
     extras_require={
         "docs": ["numpydoc", "sphinx", "sphinx_rtd_theme", "nbsphinx", "sphinx-automodapi"],
         "dev": ["pre-commit", "pytest", "pytest-cov"],

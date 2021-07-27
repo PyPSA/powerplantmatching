@@ -37,6 +37,10 @@ BNETZA:
   reliability_score: 3
   fn: Kraftwerksliste_2017_2.xlsx
   url: https://www.bundesnetzagentur.de/SharedDocs/Downloads/DE/Sachgebiete/Energie/Unternehmen_Institutionen/Versorgungssicherheit/Erzeugungskapazitaeten/Kraftwerksliste/Kraftwerksliste_2019_1.xlsx;jsessionid=17E419F28D025C7DD9FC6E2BEB3D088F?__blob=publicationFile&v=2
+BEYONDCOAL:
+  reliability_score: 6
+  fn: Europe_Beyond_Coal-European_Coal_Database_hc5n.xlsx
+  url: https://beyond-coal.eu/wp-content/uploads/2021/07/2021-04-20_Europe_Beyond_Coal-European_Coal_Database_hc5n.xlsx
 CARMA:
   net_capacity: false
   reliability_score: 1
@@ -52,7 +56,7 @@ ESE:
   url: http://energystorageexchange.org/data/projects.csv?q=all #not openly available
 JRC:
   reliability_score: 6
-  fn: jrc-hydro-power-plant-database.csv
+  fn: jrc-hydro-power-database-05.zip
   url: https://github.com/energy-modelling-toolkit/hydro-power-database/releases/download/v5/jrc-hydro-power-database-05.zip
 GEO:
   net_capacity: false
@@ -66,9 +70,9 @@ GEO_units:
   fn: global_energy_observatory_ppl_units.csv
 GPD:
   reliability_score: 3
-  fn: global_power_plant_database.csv
+  fn: globalpowerplantdatabasev120.zip
   #if outdated, look at http://datasets.wri.org/dataset/globalpowerplantdatabase
-  url: http://datasets.wri.org/dataset/540dcf46-f287-47ac-985d-269b04bea4c6/resource/c240ed2e-1190-4d7e-b1da-c66b72e08858/download/globalpowerplantdatabasev120
+  url: https://wri-dataportal-prod.s3.amazonaws.com/manual/global_power_plant_database_v_1_3.zip
 IWPDCY:
   aggregated_units: true
   reliability_score: 3

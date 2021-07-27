@@ -46,13 +46,13 @@ def clean_powerplantname(df):
     df = get_obj_if_Acc(df)
     df = df[df.Name.notnull()]
     name = df.Name.replace(regex=True, value=' ',
-                           to_replace=['-', '/', ',', '\(', '\)', '\[', '\]',
-                                       '"', '_', '\+', '[0-9]'])
+                           to_replace=['-', '/', ',', r'\(', r'\)', r'\[', r'\]',
+                                       '"', '_', r'\+', '[0-9]'])
 
     common_words = pd.Series(sum(name.str.split(), [])).value_counts()
     cw = list(common_words[common_words >= 20].index)
 
-    pattern = [('(?i)(^|\s)'+x+'(?=\s|$)')
+    pattern = [(r'(?i)(^|\s)'+ x + r'(?=\s|$)')
                for x in (cw +
                          ['[a-z]', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII',
                           'VIII', 'IX', 'X', 'XI', 'Grupo', 'parque', 'eolico',
@@ -67,7 +67,7 @@ def clean_powerplantname(df):
                           'raffineriekraftwerk', 'Kraftwerke', 'Psw'])]
     name = (name
             .replace(regex=True, to_replace=pattern, value=' ')
-            .replace(['\s+', '"', 'ß'], [' ', '', 'ss'], regex=True)
+            .replace([r'\s+', '"', 'ß'], [' ', '', 'ss'], regex=True)
             .str.strip()
             .str.capitalize())
 
@@ -122,7 +122,7 @@ def gather_technology_info(df, search_col=['Name', 'Fueltype'],
                   if 'Technology' in df
                   else pd.Series())
 
-    pattern = '|'.join(('(?i)'+x) for x in config['target_technologies'])
+    pattern = r'(?i)' + '|'.join(config['target_technologies'])
     for i in search_col:
         found = (df[i].dropna()
                  .str.findall(pattern)
@@ -157,7 +157,7 @@ def gather_set_info(df, search_col=['Name', 'Fueltype', 'Technology']):
     """
     Set = (df['Set'].copy()
            if 'Set' in df
-           else pd.Series(index=df.index))
+           else pd.Series(index=df.index, dtype=str))
 
     pattern = '|'.join(['heizkraftwerk', 'hkw', 'chp', 'bhkw', 'cogeneration',
                         'power and heat', 'heat and power'])
@@ -173,7 +173,7 @@ def gather_set_info(df, search_col=['Name', 'Fueltype', 'Technology']):
         Set.loc[isStore_b] = 'Store'
 
     df = df.assign(Set=Set)
-    df.loc[:, 'Set'].fillna('PP', inplace=True)
+    df.Set.fillna('PP', inplace=True)
     return df
 
 

@@ -22,13 +22,16 @@ from __future__ import print_function, absolute_import
 
 from .core import get_config, _data_in, _package_data, logger, get_obj_if_Acc
 import os
-import time
+from urllib.request import urlretrieve
+from urllib.error import HTTPError
+import requests
 import pandas as pd
 import six
 import pycountry as pyc
 import numpy as np
 import multiprocessing
 from ast import literal_eval as liteval
+from deprecation import deprecated
 
 
 def lookup(df, keys=None, by='Country, Fueltype', exclude=None, unit='MW'):
@@ -77,6 +80,27 @@ def lookup(df, keys=None, by='Country, Fueltype', exclude=None, unit='MW'):
         return (lookup_single(df)/scaling).fillna(0.).round(3)
 
 
+def get_raw_file(name, update=False, config=None, skip_retrieve=False):
+    if config is None:
+        config = get_config()
+    df_config = config[name]
+    path = _data_in(df_config['fn'])
+
+    if (not os.path.exists(path) or update) and not skip_retrieve:
+        url = df_config["url"]
+        logger.info(f'Retrieving data from {url}')
+        try:
+            urlretrieve(url, path)
+        except HTTPError:
+            r = requests.get(url)
+            with open(path, 'wb') as outfile:
+                outfile.write(r.content)
+
+    return path
+
+
+@deprecated(deprecated_in="0.4.8", removed_in="0.5.1",
+            details="Use the get_raw_file function instead")
 def parse_if_not_stored(name, update=False, config=None,
                         parse_func=None, **kwargs):
     if config is None:
