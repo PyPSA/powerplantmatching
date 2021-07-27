@@ -25,12 +25,15 @@ import pandas as pd
 import requests
 import xml.etree.ElementTree as ET
 import re
+import os
 import pycountry
 import logging
 import entsoe as entsoe_api
 
-from .core import get_config, _package_data, _data_in, package_config
-from .utils import (parse_if_not_stored, fill_geoposition, correct_manually,
+from zipfile import ZipFile
+
+from .core import get_config, _package_data, _data_in
+from .utils import (get_raw_file, fill_geoposition, correct_manually,
                     config_filter, set_column_name)
 from .heuristics import scale_to_net_capacities
 from .cleaning import (gather_fueltype_info, gather_set_info,
@@ -40,6 +43,40 @@ from .cleaning import (gather_fueltype_info, gather_set_info,
 logger = logging.getLogger(__name__)
 cget = pycountry.countries.get
 net_caps = get_config()['display_net_caps']
+
+
+def BEYONDCOAL(raw=False, update=False, config=None):
+    config = get_config() if config is None else config
+
+    fn = get_raw_file('BEYONDCOAL', update=update, config=config)
+    df = pd.read_excel(fn, sheet_name='Plant', header=[0,1,2], skiprows=[3])
+
+    if raw:
+        return df
+
+    phaseout_col = 'Covered by country phase-out? [if yes: country phase-out year]'
+
+    df = (df['Plant Data'].droplevel(1, axis=1)
+          .rename(columns={'Plant name': 'Name',
+                           'Fuel type': 'Fueltype',
+                           'Latitude': 'lat',
+                           'Longitude': 'lon',
+                           'Commissioning year of first unit': 'DateIn',
+                           '(Announced) Retirement year of last unit': 'DateOut',
+                           'Coal capacity open': 'Capacity',
+                           'Plant status\n(gross)': 'status',
+                           'EBC plant ID': 'projectID'})
+          .query('status != "Cancelled"')
+          .assign(DateOut = lambda df: df.DateOut.fillna(df[phaseout_col])
+                                         .replace({8888: np.nan}),
+                  projectID = lambda df: 'BEYOND-' + df.projectID,
+                  Fueltype = lambda df: df.Fueltype.str.title(),
+                  Set = 'PP'
+                  )
+          .pipe(config_filter, name='BEYONDCOAL', config=config)
+          .pipe(set_column_name, 'BEYONDCOAL')
+          )
+    return df
 
 
 def OPSD(rawEU=False, rawDE=False, rawDE_withBlocks=False, update=False,
@@ -64,8 +101,8 @@ def OPSD(rawEU=False, rawDE=False, rawDE_withBlocks=False, update=False,
     """
     config = get_config() if config is None else config
 
-    opsd_DE = parse_if_not_stored('OPSD_DE', update, config, na_values=' ')
-    opsd_EU = parse_if_not_stored('OPSD_EU', update, config, na_values=' ')
+    opsd_DE = pd.read_csv(get_raw_file('OPSD_DE', update, config), na_values=' ')
+    opsd_EU = pd.read_csv(get_raw_file('OPSD_EU', update, config), na_values=' ')
     if rawEU and rawDE:
         raise(NotImplementedError('''
                 It is not possible to show both DE and EU raw databases at the
@@ -150,7 +187,7 @@ def OPSD(rawEU=False, rawDE=False, rawDE_withBlocks=False, update=False,
             .pipe(clean_technology))
 
 
-def GEO(raw=False, config=None):
+def GEO(raw=False, update=False, config=None):
     """
     Importer for the GEO database.
 
@@ -165,7 +202,6 @@ def GEO(raw=False, config=None):
     """
     config = get_config() if config is None else config
 
-    countries = config['target_countries']
     rename_cols = {'GEO_Assigned_Identification_Number': 'projectID',
                    'Name': 'Name',
                    'Type': 'Fueltype',
@@ -179,12 +215,12 @@ def GEO(raw=False, config=None):
                    'Longitude_Start': 'lon',
                    'Latitude_Start': 'lat'}
 
-    geo = parse_if_not_stored('GEO', config=config, low_memory=False)
+    geo = pd.read_csv(get_raw_file('GEO', update=update, config=config), low_memory=False)
     if raw:
         return geo
     geo = geo.rename(columns=rename_cols)
 
-    units = parse_if_not_stored('GEO_units', config=config, low_memory=False)
+    units = pd.read_csv(get_raw_file('GEO_units', update=update, config=config), low_memory=False)
 
     # map from units to plants
     units['DateIn'] = units.Date_Commissioned_dt.str[:4].astype(float)
@@ -202,6 +238,9 @@ def GEO(raw=False, config=None):
 
     _ = units.Effiency['mean']
     geo['Effiency'] = geo.projectID.map(_)
+
+    countries = config['target_countries']
+
     return (geo.assign(projectID=lambda s: 'GEO' + s.projectID.astype(str))
             .query("Country in @countries")
             .replace({col: {'Gas': 'Natural Gas'} for col in
@@ -238,7 +277,7 @@ def CARMA(raw=False, config=None):
     config = get_config() if config is None else config
 
 #    carmadata = pd.read_csv(_datconfig['CARMA']['fn'], low_memory=False)
-    carma = parse_if_not_stored('CARMA', config=config, low_memory=False)
+    carma = pd.read_csv(get_raw_file('CARMA', config=config), low_memory=False)
     if raw:
         return carma
 
@@ -287,33 +326,16 @@ def JRC(raw=False, config=None, update=False):
     """
 
     config = get_config() if config is None else config
-    url = config['JRC']['url']
-    default_url = get_config(_package_data('config.yaml'))['JRC']['url']
 
-    err = IOError(f'The URL seems to be outdated, please copy the new url '
-                  f'\n\n\t{default_url}\n\nin your custom config file '
-                  f'\n\n\t{package_config["custom_config"]}\n\nunder tag "JRC" '
-                  '-> "url"')
+    fn = get_raw_file('JRC', update, config)
+    key = 'jrc-hydro-power-plant-database.csv'
 
-    def parse_func():
-        import requests
-        from zipfile import ZipFile
-        from io import BytesIO
-        parse = requests.get(url)
-        if parse.ok:
-            content = parse.content
-        else:
-            raise(err)
-        file = ZipFile(BytesIO(content))
-        key = 'jrc-hydro-power-plant-database.csv'
-        if key in file.namelist():
-            return pd.read_csv(file.open(key))
-        else:
-            raise(err)
+    with ZipFile(fn, 'r') as file:
+        df = pd.read_csv(file.open(key))
 
-    df = parse_if_not_stored('JRC', update, config, parse_func=parse_func)
     if raw:
         return df
+
     df = (df.rename(columns={'id': 'projectID',
                              'name': 'Name',
                              'installed_capacity_MW': 'Capacity',
@@ -387,7 +409,8 @@ def Capacity_stats(raw=False, level=2, config=None, update=False,
     if config is None:
         config = get_config()
 
-    df = parse_if_not_stored('Capacity_stats', update, config, index_col=0)
+    df = pd.read_csv(get_raw_file('Capacity_stats', update, config), index_col=0)
+
     if raw:
         return df
 
@@ -428,27 +451,12 @@ def GPD(raw=False, filter_other_dbs=True, update=False, config=None):
     """
     config = get_config() if config is None else config
 
-    # if outdated have a look at
-    # http://datasets.wri.org/dataset/globalpowerplantdatabase
-    url = config['GPD']['url']
+    fn = get_raw_file('GPD', update, config)
+    key = 'global_power_plant_database.csv'
 
-    def parse_func():
-        import requests
-        from zipfile import ZipFile
-        from io import BytesIO
-        parse = requests.get(url)
-        if parse.ok:
-            content = parse.content
-        else:
-            IOError(f'URL {url} seems to be outdated, please doulble the '
-                    'address at http://datasets.wri.org/dataset/'
-                    'globalpowerplantdatabase update the and update the '
-                    'url in your custom config file '
-                    '{package_config["custom_config"]}')
-        return pd.read_csv(ZipFile(BytesIO(content))
-                           .open('global_power_plant_database.csv'))
+    with ZipFile(fn, 'r') as file:
+        df = pd.read_csv(file.open(key), low_memory=False)
 
-    df = parse_if_not_stored('GPD', update, config, parse_func, index_col=0)
     if raw:
         return df
 
@@ -514,7 +522,7 @@ def ESE(raw=False, update=False, config=None):
         defaults to powerplantmatching.config.get_config()
     """
     config = get_config() if config is None else config
-    df = parse_if_not_stored('ESE', update, config, error_bad_lines=False)
+    df = pd.read_csv(get_raw_file('ESE', update, config), error_bad_lines=False)
     if raw:
         return df
 
@@ -574,8 +582,7 @@ def ENTSOE(update=False, raw=False, entsoe_token=None, config=None):
     """
     config = get_config() if config is None else config
 
-    def parse_entsoe():
-        assert entsoe_token is not None, "entsoe_token is missing"
+    def parse_entsoe(entsoe_token):
         url = 'https://transparency.entsoe.eu/api'
         # retrieved from pd.read_html('https://transparency.entsoe.eu/content/stat
         # ic_content/Static%20content/web%20api/Guide.html#_request_methods')[-1]
@@ -586,7 +593,7 @@ def ENTSOE(update=False, raw=False, entsoe_token=None, config=None):
         level3 = ['quantity']
 
         def namespace(element):
-            m = re.match('\{.*\}', element.tag)
+            m = re.match(r'\{.*\}', element.tag)
             return m.group(0) if m else ''
 
         entsoe = pd.DataFrame()
@@ -606,14 +613,20 @@ def ENTSOE(update=False, raw=False, entsoe_token=None, config=None):
             entsoe = entsoe.append(df_domain, ignore_index=True)
         return entsoe
 
-    if config['entsoe_token'] is not None:
-        entsoe_token = config['entsoe_token']
-        df = parse_if_not_stored('ENTSOE', update, config, parse_entsoe)
+
+    path = get_raw_file('ENTSOE', config=config, skip_retrieve=True)
+
+    if os.path.exists(path) and not update:
+        df = pd.read_csv(path)
     else:
-        if update:
+        token = config.get('entsoe_token')
+        if token is not None:
+            df = parse_entsoe(token)
+            df.to_csv(path)
+        else:
             logger.info('No entsoe_token in config.yaml given, '
                         'falling back to stored version.')
-        df = parse_if_not_stored('ENTSOE', update, config)
+            df = pd.read_csv(get_raw_file('ENTSOE', update, config))
 
     if raw:
         return df
@@ -621,7 +634,6 @@ def ENTSOE(update=False, raw=False, entsoe_token=None, config=None):
     fuelmap = entsoe_api.mappings.PSRTYPE_MAPPINGS
     country_map_entsoe = pd.read_csv(_package_data('entsoe_country_codes.csv'),
                                      index_col=0).rename(index=str).Country
-    countries = config['target_countries']
 
     return (df.rename(columns={'psrType': 'Fueltype',
                                'quantity': 'Capacity',
@@ -874,11 +886,12 @@ def UBA(header=9, skipfooter=26, prune_wind=True, prune_solar=True,
     """
     config = get_config() if config is None else config
 
-    def parse_func(url): return pd.read_excel(url, skipfooter=skipfooter,
-                                              na_values='n.b.', header=header)
-    uba = parse_if_not_stored('UBA', update, config, parse_func)
+    fn = get_raw_file('UBA', update, config)
+    uba = pd.read_excel(fn, skipfooter=skipfooter, na_values='n.b.', header=header)
+
     if raw:
         return uba
+
     uba = uba.rename(columns={
         u'Kraftwerksname / Standort': 'Name',
         u'Elektrische Bruttoleistung (MW)': 'Capacity',
@@ -889,11 +902,11 @@ def UBA(header=9, skipfooter=26, prune_wind=True, prune_solar=True,
         u'Standort-PLZ': 'PLZ'})
     from .heuristics import PLZ_to_LatLon_map
     uba = (uba.assign(
-        Name=uba.Name.replace({'\s\s+': ' '}, regex=True),
+        Name=uba.Name.replace({r'\s\s+': ' '}, regex=True),
         lon=uba.PLZ.map(PLZ_to_LatLon_map()['lon']),
         lat=uba.PLZ.map(PLZ_to_LatLon_map()['lat']),
         DateIn=uba.DateIn.str.replace(
-            "\(|\)|\/|\-", " ").str.split(' ').str[0].astype(float),
+            r"\(|\)|\/|\-", " ").str.split(' ').str[0].astype(float),
         Country='Germany',
         File='kraftwerke-de-ab-100-mw.xls',
         projectID=['UBA{:03d}'.format(i + header + 2) for i in uba.index],
@@ -974,15 +987,12 @@ def BNETZA(header=9, sheet_name='Gesamtkraftwerksliste BNetzA',
     """
     config = get_config() if config is None else config
 
-    url = config['BNETZA']['url']
-
-    def parse_func():
-        return pd.read_excel(url, header=header, sheet_name=sheet_name,
-                             parse_dates=False)
-    bnetza = parse_if_not_stored('BNETZA', update, config, parse_func)
+    fn = get_raw_file('BNETZA', update, config)
+    bnetza = pd.read_excel(fn, header=header, sheet_name=sheet_name, parse_dates=False)
 
     if raw:
         return bnetza
+
     bnetza = bnetza.rename(columns={
         'Kraftwerksnummer Bundesnetzagentur': 'projectID',
         'Kraftwerksname': 'Name',
@@ -1090,7 +1100,8 @@ def OPSD_VRE(config=None, raw=False):
     """
     config = get_config() if config is None else config
 
-    df = parse_if_not_stored('OPSD_VRE', index_col=0, low_memory=False)
+    df = pd.read_csv(get_raw_file('OPSD_VRE', index_col=0), low_memory=False)
+
     if raw:
         return df
 
@@ -1117,7 +1128,8 @@ def OPSD_VRE_country(country, config=None, raw=False):
     config = get_config() if config is None else config
 
     #there is a problem with GB in line 1651 (version 20/08/20) use low_memory
-    df = parse_if_not_stored(f'OPSD_VRE_{country}', low_memory=False)
+    df = pd.read_csv(get_raw_file(f'OPSD_VRE_{country}'), low_memory=False)
+
     if raw:
         return df
 

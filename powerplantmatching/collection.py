@@ -17,8 +17,6 @@
 """
 Processed datasets of merged and/or adjusted data
 """
-from __future__ import print_function
-
 from .core import _data_out, get_config
 from .utils import (set_uncommon_fueltypes_to_other, parmap,
                     to_dict_if_string, projectID_to_dict, set_column_name)
@@ -26,9 +24,13 @@ from .heuristics import (extend_by_non_matched, extend_by_VRE)
 from .cleaning import aggregate_units
 from .matching import combine_multiple_datasets, reduce_matched_dataframe
 
+
 import pandas as pd
 import os
 import logging
+
+from deprecation import deprecated
+
 logger = logging.getLogger(__name__)
 
 
@@ -66,7 +68,7 @@ def collect(datasets, update=False, use_saved_aggregation=True,
         conf = config[name]
 
         get_df = getattr(data, name)
-        df = get_df(config=config, **conf.get('read_kwargs', {}))
+        df = get_df(config=config)
         if not conf.get('aggregated_units', False):
             return aggregate_units(df,
                                    use_saved_aggregation=use_saved_aggregation,
@@ -115,6 +117,8 @@ def collect(datasets, update=False, use_saved_aggregation=True,
         return df.pipe(projectID_to_dict)
 
 
+@deprecated(deprecated_in="0.4.8", removed_in="0.5.0",
+            details="Use the collect function instead")
 def Collection(**kwargs):
     return collect(**kwargs)
 
