@@ -140,7 +140,7 @@ def collect(
 
 
 @deprecated(
-    deprecated_in="0.4.8",
+    deprecated_in="0.4.9",
     removed_in="0.5.0",
     details="Use the collect function instead",
 )

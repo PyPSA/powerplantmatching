@@ -99,7 +99,7 @@ def get_raw_file(name, update=False, config=None, skip_retrieve=False):
 
 @deprecated(
     deprecated_in="0.4.8",
-    removed_in="0.5.1",
+    removed_in="0.5.0",
     details="Use the get_raw_file function instead",
 )
 def parse_if_not_stored(name, update=False, config=None, parse_func=None, **kwargs):
