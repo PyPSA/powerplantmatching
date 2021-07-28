@@ -746,7 +746,6 @@ def ENTSOE(raw=False, update=False, config=None, entsoe_token=None):
         url = "https://transparency.entsoe.eu/api"
         # retrieved from pd.read_html('https://transparency.entsoe.eu/content/stat
         # ic_content/Static%20content/web%20api/Guide.html#_request_methods')[-1]
-        domains = list(entsoe_api.mappings.BIDDING_ZONES.values())
 
         level1 = ["registeredResource.name", "registeredResource.mRID"]
         level2 = ["voltage_PowerSystemResources.highVoltageLimit", "psrType"]
@@ -758,7 +757,7 @@ def ENTSOE(raw=False, update=False, config=None, entsoe_token=None):
 
         entsoe = pd.DataFrame()
         logger.info(f"Retrieving data from {url}")
-        for domain in domains:
+        for domain in entsoe_api.mappings.Area:
             ret = requests.get(
                 url,
                 params=dict(
@@ -766,8 +765,8 @@ def ENTSOE(raw=False, update=False, config=None, entsoe_token=None):
                     documentType="A71",
                     processType="A33",
                     In_Domain=domain,
-                    periodStart="201612312300",
-                    periodEnd="201712312300",
+                    periodStart="201912312300",
+                    periodEnd="202012312300",
                 ),
             )
             etree = ET.fromstring(ret.content)

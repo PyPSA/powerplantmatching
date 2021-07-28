@@ -33,7 +33,7 @@ setup(
         "matplotlib",
         "geopy",
         "xlrd",
-        "entsoe-py",
+        "entsoe-py >=0.3.1",
         "deprecation",
         "openpyxl",
     ],

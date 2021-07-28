@@ -19,5 +19,4 @@ dependencies:
   - xlrd
   - pip:
     - pycountry
-    - quilt
-    - entsoe-py
+    - entsoe-py>=0.3.1
