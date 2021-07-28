@@ -1,0 +1,57 @@
+Centrale nucléaire,Nom du réacteur,Palier,Puissance therm. (MWt),Puissance nette (MWe),Début constr.,1er raccord. au réseau,Mise en service comm.,"Arrêt définitif prévu[10],[11]",Source froide[12]
+Belleville,Belleville-1,P'4,3 817,1 310,1980,1987,1988,,TAR[13]
+Belleville,Belleville-2,P'4,3 817,1 310,1980,1988,1989,,TAR
+Blayais,Blayais-1[14],CP1,2 785,910,1977,1981,1981,2029-2035,Gironde
+Blayais,Blayais-2[14],CP1,2 785,910,1977,1982,1983,2029-2035,Gironde
+Blayais,Blayais-3,CP1,2 785,910,1978,1983,1983,,Gironde
+Blayais,Blayais-4,CP1,2 785,910,1978,1983,1983,,Gironde
+Bugey,Bugey-2,CP0,2 785,910,1972,1978,1979,2029-2035,Rhône
+Bugey,Bugey-3,CP0,2 785,910,1973,1978,1979,2029-2035,Rhône
+Bugey,Bugey-4,CP0,2 785,880,1974,1979,1979,,TARx2
+Bugey,Bugey-5,CP0,2 785,880,1974,1979,1980,,TARx2
+Cattenom,Cattenom-1,P'4,3 817,1 300,1979,1986,1987,,TAR
+Cattenom,Cattenom-2,P'4,3 817,1 300,1980,1987,1988,,TAR
+Cattenom,Cattenom-3,P'4,3 817,1 300,1982,1990,1991,,TAR
+Cattenom,Cattenom-4,P'4,3 817,1 300,1983,1991,1992,,TAR
+Chinon-B,Chinon-B1[14],CP2,2 785,905,1977,1982,1984,2029-2035,TAR
+Chinon-B,Chinon-B2[14],CP2,2 785,905,1977,1983,1984,2029-2035,TAR
+Chinon-B,Chinon-B3[14],CP2,2 785,905,1980,1986,1987,,TAR
+Chinon-B,Chinon-B4[14],CP2,2 785,905,1981,1987,1988,,TAR
+Chooz-B,Chooz-B1,N4,4 270,1 500,1984,1996,2000,,TAR
+Chooz-B,Chooz-B2,N4,4 270,1 500,1985,1997,2000,,TAR
+Civaux,Civaux-1,N4,4 270,1 495,1988,1997,2002,,TAR
+Civaux,Civaux-2,N4,4 270,1 495,1991,1999,2002,,TAR
+Cruas,Cruas-1,CP2,2 785,915,1978,1983,1984,2029-2035,TAR
+Cruas,Cruas-2,CP2,2 785,915,1978,1984,1985,2029-2035,TAR
+Cruas,Cruas-3,CP2,2 785,915,1979,1984,1984,,TAR
+Cruas,Cruas-4,CP2,2 785,915,1979,1984,1985,,TAR
+Dampierre,Dampierre-1[14],CP1,2 785,890,1975,1980,1980,2029-2035,TAR
+Dampierre,Dampierre-2[14],CP1,2 785,890,1975,1980,1981,2029-2035,TAR
+Dampierre,Dampierre-3[14],CP1,2 785,890,1975,1981,1981,,TAR
+Dampierre,Dampierre-4[14],CP1,2 785,890,1975,1981,1981,,TAR
+Flamanville,Flamanville-1,P4,3 817,1 330,1979,1985,1986,,mer
+Flamanville,Flamanville-2,P4,3 817,1 330,1980,1986,1987,,mer
+Golfech,Golfech-1,P'4,3 817,1 310,1982,1990,1991,,TAR
+Golfech,Golfech-2,P'4,3 817,1 310,1984,1993,1994,,TAR
+Gravelines,Gravelines-1[14],CP1,2 785,910,1975,1980,1980,2029-2035,mer
+Gravelines,Gravelines-2[14],CP1,2 785,910,1975,1980,1980,2029-2035,mer
+Gravelines,Gravelines-3[14],CP1,2 785,910,1975,1980,1981,,mer
+Gravelines,Gravelines-4[14],CP1,2 785,910,1976,1981,1981,,mer
+Gravelines,Gravelines-5[15],CP1,2 785,910,1979,1984,1985,,mer
+Gravelines,Gravelines-6[15],CP1,2 785,910,1979,1985,1985,,mer
+Nogent,Nogent-1,P'4,3 817,1 310,1981,1987,1988,,TAR
+Nogent,Nogent-2,P'4,3 817,1 310,1982,1988,1989,,TAR
+Paluel,Paluel-1,P4,3 817,1 300,1977,1984,1985,,mer
+Paluel,Paluel-2,P4,3 817,1 300,1978,1984,1985,,mer
+Paluel,Paluel-3,P4,3 817,1 300,1979,1985,1986,,mer
+Paluel,Paluel-4,P4,3 817,1 300,1980,1986,1986,,mer
+Penly,Penly-1,P'4,3 817,1 330,1982,1990,1990,,mer
+Penly,Penly-2,P'4,3 817,1 330,1984,1992,1992,,mer
+Saint-Alban,St-Alban-1,P4,3 817,1 335,1979,1985,1986,,Rhône
+Saint-Alban,St-Alban-2,P4,3 817,1 335,1979,1986,1987,,Rhône
+Saint-Laurent,St-Laurent-B1[14],CP2,2 785,915,1976,1981,1983,,TAR
+Saint-Laurent,St-Laurent-B2[14],CP2,2 785,915,1976,1981,1983,,TAR
+Tricastin,Tricastin-1[14],CP1,2 785,915,1974,1980,1980,2029-2035,Rhône (canal)
+Tricastin,Tricastin-2[14],CP1,2 785,915,1974,1980,1980,2029-2035,Rhône (canal)
+Tricastin,Tricastin-3[14],CP1,2 785,915,1975,1981,1981,,Rhône (canal)
+Tricastin,Tricastin-4[14],CP1,2 785,915,1975,1981,1981,,Rhône (canal)
