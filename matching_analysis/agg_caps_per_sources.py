@@ -21,7 +21,7 @@ m = pm.powerplants()
 fig, ax = pm.plot.factor_comparison([m, s], [name, r"ENTSOE SO\&AF"])
 fig.savefig("factor_plot_{}.png".format(name), dpi=300)
 
-name = "Matched Data without Extention"
+name = "Matched Data without Extension"
 # Note that here, low priority reliability matches are not excluded
 m_wo_ext = pm.collection.collect(pm.get_config()["matching_sources"])[
     lambda df: df.lat.notnull()
