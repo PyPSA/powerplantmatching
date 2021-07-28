@@ -93,10 +93,14 @@ def get_config(filename=None, **overrides):
     import yaml
     from six.moves import cPickle
 
-    package_config = _package_data("config.yaml")
-    custom_config = filename if filename else _package_data("custom.yaml")
+    base_config = _package_data("config.yaml")
+    if filename is not None:
+        assert exists(filename)
+        custom_config = filename
+    else:
+        custom_config = package_config["custom_config"]
 
-    with open(package_config) as f:
+    with open(base_config) as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
     if exists(custom_config):
         with open(custom_config) as f:
