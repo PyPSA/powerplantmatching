@@ -1440,7 +1440,7 @@ def OPSD_VRE(raw=False, update=False, config=None):
     """
     config = get_config() if config is None else config
 
-    df = pd.read_csv(get_raw_file("OPSD_VRE", index_col=0), low_memory=False)
+    df = pd.read_csv(get_raw_file("OPSD_VRE"), index_col=0, low_memory=False)
 
     if raw:
         return df
