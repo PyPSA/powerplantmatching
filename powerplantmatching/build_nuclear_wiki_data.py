@@ -12,7 +12,7 @@ from tqdm import tqdm
 # add progress_apply to pandas
 tqdm.pandas()
 
-# import python build-in packages
+# import python built-in packages
 import re
 
 
@@ -46,7 +46,7 @@ def main():
 
     # parse html source code
     for table in tqdm(tables):
-        # convert to bs obejct
+        # convert to bs object
         soup = BS(table, 'html.parser')
         columns, content = process_table(soup)
 
@@ -162,7 +162,7 @@ def main():
     # translate German to English
     df['Technology'] = translate(df['Technology'])
 
-    # remove speical symbols in the dataset
+    # remove special symbols in the dataset
     for column in df.columns:
         if df[column].dtype != 'float64' and column != 'source':
             df[column] = df[column].str.replace(r'\[.+\]', '', regex=True)
