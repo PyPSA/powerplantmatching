@@ -23,8 +23,6 @@ from __future__ import absolute_import, print_function
 import multiprocessing
 import os
 from ast import literal_eval as liteval
-from urllib.error import HTTPError
-from urllib.request import urlretrieve
 
 import numpy as np
 import pandas as pd
