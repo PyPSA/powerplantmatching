@@ -22,7 +22,7 @@ dependencies:
     - webdriver_manager
     - selenium
     - beautifulsoup4
-    - googletrans==3.1.0a0
+    - googletrans==4.0.0rc1
     - tqdm
     - lxml
     - entsoe-py>=0.3.1

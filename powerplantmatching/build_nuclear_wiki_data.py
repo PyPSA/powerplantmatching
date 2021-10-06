@@ -1,8 +1,5 @@
 # import crawler packages
 from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager # this package make sure code works for every PC
 from bs4 import BeautifulSoup as BS
@@ -12,11 +9,11 @@ import pycountry
 import pandas as pd
 from googletrans import Translator
 from tqdm import tqdm
+# add progress_apply to pandas
+tqdm.pandas()
 
 # import python build-in packages
-from time import sleep
 import re
-import json
 
 
 def main():
@@ -50,7 +47,7 @@ def main():
     # parse html source code
     for table in tqdm(tables):
         # convert to bs obejct
-        soup = BS(table, 'html')
+        soup = BS(table, 'html.parser')
         columns, content = process_table(soup)
 
         eu_list.append(pd.DataFrame(content, columns=columns))
@@ -150,18 +147,27 @@ def main():
 
     # load extra france data
     france = pd.read_csv('package_data/france.csv')
-    france['Nom du réacteur'] = france['Nom du réacteur'].str.replace(r'\[.+\]|St-', '')
+    france['Nom du réacteur'] = france['Nom du réacteur'].str.replace(r'\[.+\]|St-', '',regex = True)
     france = france.set_index('Nom du réacteur')
-
     # update dataset with extra france data
     df['DateRetrofit'] = df.apply(lambda x: new_date(x, france), axis=1)
 
+    # load extra information of power plant that are under construction
     under_construction = pd.read_excel('package_data/new_powerplant_checked.xls')
     # update dataset with extra information of power plant that are under construction
     df = df[df['DateIn'].notna()]
     df = pd.concat([df, under_construction])
-
     df.reset_index(drop=True, inplace=True)
+
+    # translate German to English
+    df['Technology'] = translate(df['Technology'])
+
+    # remove speical symbols in the dataset
+    for column in df.columns:
+        if df[column].dtype != 'float64' and column != 'source':
+            df[column] = df[column].str.replace(r'\[.+\]', '', regex=True)
+            df[column] = df[column].str.replace(r'\xa0', '', regex=True)
+            df[column] = df[column].str.replace(r'^[-–]', '', regex=True)
 
     driver.quit()
     return df
@@ -172,6 +178,24 @@ def main():
 # =================
 
 def process_table(table):
+    '''
+    extract table from input html file (table)
+
+    Inputs
+    ----------
+    table: str
+    html file of the table that we want convert to pandas dataframe
+
+    Outputs
+    -------
+    columns: list
+    a list of column names of the table
+
+    content: list
+    content of the table
+    a list of list, which is suitable for pandas dataframe creation
+
+    '''
     thead = table.find('thead').find('tr')
     tbody = table.find_all('tbody')[0].find_all('tr')
     # first row is head
@@ -190,6 +214,19 @@ def process_table(table):
 
 # process to get the head
 def process_head2list(head):
+    '''
+    extract column name list from html string (head)
+
+    Inputs
+    ----------
+    head: str
+    a string of table heads in html format
+
+    Outputs
+    -------
+    head_list: list
+    list of table's column names
+    '''
     head_list = []
     for th in head.find_all('th'):
         head_list.append(''.join(th.strings).strip())
@@ -201,6 +238,27 @@ def process_head2list(head):
 
 
 def process_tbody2row(row, length=0):
+    '''
+    extract content of a row of the table from html string (row)
+
+    Inputs
+    ----------
+    row: str
+    one row of the table we want to parse
+
+    length:
+    the number of columns of a table.
+    In html,the row will not maintain the position of nan values.
+    E.g., if there are 10 columns in the table, in the row there 4 nan values, then the row only have 6 elements.
+    But position information is important for later process.
+    Therefore we need the length of the table to make each row have same length (10)
+
+    Output
+    -------
+    row_list: list
+    a list version of the input row. Each element in the list is the value of a column in that row
+
+    '''
     row_list = []
     need_link = True  # only get the link of first column
     for td in row.find_all('td'):
@@ -232,6 +290,18 @@ def process_tbody2row(row, length=0):
 
 
 def deal_with_format_problem(x):
+    '''
+
+    Input
+    ----------
+    x: str
+    number of year
+
+    Output
+    -------
+    year in format 'yyyy'
+
+    '''
     if re.findall(r'veraltet', x):
         return 'veraltet'
     m = re.findall(r'[0-9]{2}\.[0-9]{2}\.[0-9]{4}', x)
@@ -243,6 +313,23 @@ def deal_with_format_problem(x):
 
 def get_location(link,
                  driver):
+    '''
+    get the geographical coordinate of a nuclear power plant from the input link.
+    It is the basis of next function: get_geo(series, driver, need_country=False)
+
+    Inputs
+    ----------
+    link: str
+    link to the website that contains lat and long
+
+    driver: object
+    crawler object
+
+    Outputs
+    -------
+    coordinate: {'lat': float,'long': float}
+    country name: str
+    '''
     # this script only work for deutsch version website
 
     # get website
@@ -273,6 +360,25 @@ def get_location(link,
 
 
 def get_geo(series, driver, need_country=False):
+    '''
+    get the geographical coordinate of a series of nuclear power plants
+
+    Inputs
+    ----------
+    series: list
+    list of links, which store coordinate information
+
+    driver: object
+
+    need_country: boolean
+    True: output will contain country names
+    False: output will not contain country names
+
+    Outputs
+    -------
+    result: list
+    list of dict, which can be converted to pandas dataframe
+    '''
     geo = {}
     result = []
     for unit in series.to_list():
@@ -302,18 +408,94 @@ def get_geo(series, driver, need_country=False):
 
 
 def pd_column_translate(column_series):
+    '''
+    translate strings in a list to English strings
+
+    Inputs
+    ----------
+    column_series: list
+    list of string wait to be translated
+
+    Returns
+    -------
+    list of string that are translated to English
+
+    '''
     cont = column_series
     if not isinstance(column_series, list):
         cont = column_series.to_list()
-    cont = str(cont)
-    cont = cont.replace('_', ' ')
-    translator = Translator()
-    cont = translator.translate(cont).text
-    # return eval(translator.translate(cont).text)
-    return [i.strip() for i in eval(cont)]
+    cont = [c.replace('_', ' ') for c in cont]
+    translator = Translator(service_urls=['translate.google.com'])
+    x = [robust_string_translate(g,translator).text for g in cont]
+    return x
+
+def translate(series):
+    '''
+    translate each string in a pandas series to English
+
+    Inputs
+    ----------
+    series: pandas.Series
+    series that wait to be translated
+
+    Outputs
+    -------
+    translated pandas.Series
+
+    '''
+    translator = Translator(service_urls=['translate.google.com'])
+    tmp = series.progress_apply(lambda x : robust_string_translate(x,translator))
+    return tmp.apply(lambda x: x.text if x.src == 'de' else x.origin)
+
+def robust_string_translate(string,translator):
+    '''
+    translate a string to English string robustly.
+    It is the basis of function: translate() and pd_column_translate()
+
+    Inputs
+    ----------
+    string: str
+    string wait to be translated
+
+    translator: object
+    googletrans.Translator
+
+    Outputs
+    -------
+    translated string
+
+    '''
+    from time import sleep
+    translate_result = string
+    for i in range(10):
+        try:
+            translate_result = translator.translate(string)
+            break
+        except:
+            sleep(3)
+    return translate_result
 
 
 def to_year(x, notmatchNaN=False):
+    '''
+    extract year (format: yyyy) from the string
+
+    Inputs
+    ----------
+    x: str
+    a string contain year(e.g., '1986-01-02','1986[4]')
+
+    notmatchNaN: boolean
+    if the string does not contain year (e.g., '01-02'), this parameter decides
+    what will be the output
+    True:  return  None
+    False: return the the input string x
+
+    Outputs
+    -------
+    a year, or the placeholder decided by notmatchNaN
+
+    '''
     m = re.findall('[0-9]{4}', x)
     if m:
         return m[0]
@@ -325,12 +507,30 @@ def to_year(x, notmatchNaN=False):
 
 
 def new_date(x, france):
+    '''
+    update the decomission date of nuclear power plants in France
+
+    Inputs
+    ----------
+    x: pandas.Series
+    a row in pandas dataframe, that records the information of a nuclear power plant
+
+    france: pandas.DataFrame
+    a table that contains new decomission dates of nuclear power plant in France
+
+    Outputs
+    -------
+    new decomission date: str
+    (e.g., '2030-2035', '2030')
+
+    '''
     key = x['Name'].replace(r'\(.*\)|\[.*\]|Saint-', '') + '-' + x['Block']
     try:
         date = france.loc[key, 'Arrêt définitif prévu[10],[11]']
     except:
         date = x['DateRetrofit']
     return date
+
 
 
 if __name__ == '__main__':
