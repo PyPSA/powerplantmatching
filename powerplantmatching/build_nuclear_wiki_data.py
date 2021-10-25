@@ -3,12 +3,13 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager # this package make sure code works for every PC
 from bs4 import BeautifulSoup as BS
-
+import numpy as np
 # import other third party packages
 import pycountry
 import pandas as pd
 from googletrans import Translator
 from tqdm import tqdm
+from time import sleep
 # add progress_apply to pandas
 tqdm.pandas()
 
@@ -36,8 +37,11 @@ def main():
 
     # download website source code wiki
     driver.get('https://de.wikipedia.org/wiki/Liste_der_Kernkraftwerke_in_Europa')
+    #wait website loading
+    sleep(5)
     # select source code that related to tables
-    country = driver.find_element_by_xpath('/html/body/div[3]/div[3]/div[5]/div[1]/div[1]/ul/li[1]/ul')
+    country = driver.find_element(by = 'xpath', value = '//*[@id="toc"]/ul/li[1]/ul')
+
     tables_list = driver.find_elements_by_xpath('//table[@class = \'wikitable sortable jquery-tablesorter\']')
     # get html code of tables and store them in list
     tables = [i.get_attribute('innerHTML') for i in tables_list]
@@ -170,6 +174,15 @@ def main():
             df[column] = df[column].str.replace(r'^[-–]', '', regex=True)
 
     driver.quit()
+    # remove special symbols in the dataset
+    df['DateIn'] = df['DateIn'].str.split(r'[–-]').str[-1].replace('', np.nan) #use the latest comission date
+    df['DateRetrofit'] = df['DateRetrofit'].str.split(r'[–-]').str[-1].replace('', np.nan)
+    # use the lastest decomission estimation
+    df['Capacity'] = df['Capacity'].str.replace('\.', '')  # deal with germany number representation
+    df['Capacity'] = df['Capacity'].str.replace(r'\[.+\]', '')
+    df['Capacity'] = df['Capacity'].replace('-', np.nan)
+    df['Capacity'] = df['Capacity'].replace('', np.nan)
+    df['Capacity'] = df['Capacity'].astype(float)
     return df
 
 
