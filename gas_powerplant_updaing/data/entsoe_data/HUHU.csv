@@ -1,0 +1,20 @@
+Area / Date,Production Type,Code,Name,Intalled Capacity at the beginning of year [MW],Current Installed Capacity [MW],Location,Voltage Connection Level [kV],Commissioning Date,Decommissioning Date,country
+BZN|HU / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,15WTISZA-----PPN,Tiszai Erőmű,864,864,Tiszaújváros,400,31.12.2013,,HU
+BZN|HU / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,15WDUME------PPI,Dunamenti Erőmű,783,783,Százhalombatta,220,31.12.2013,,HU
+BZN|HU / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,15WGONYU-----PP5,Gönyűi Erőmű,437,437,Gönyű,400,31.12.2013,,HU
+BZN|HU / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,15WCSEPEL----PPI,Alpiq Csepel Erőmű,401,401,Budapest,120,31.12.2013,,HU
+BZN|HU / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,15WKELENF----PP8,Kelenföldi Erőmű,173,173,Budapest,120,31.12.2013,,HU
+BZN|HU / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,15WMVMSZK----PPY,MVM szabályozási központ,140,140,Budapest,20,31.12.2014,,HU
+BZN|HU / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,15WBAKONY----PP6,Bakonyi Gázturbinás Erőmű,114,114,Ajka,120,31.12.2013,,HU
+BZN|HU / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,15WKISP------PP6,Kispesti Erőmű,109,109,Budapest,120,31.12.2013,,HU
+BZN|HU / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,15WUJPEST----PPO,Újpesti Erőmű,102,102,Budapest,120,31.12.2013,,HU
+BZN|HU / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,15WDKCE------PPQ,Debreceni Kombináltciklusú Erőmű,95,95,Debrecen,120,31.12.2013,,HU
+BZN|HU / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,15WALPIQ-----PPY,ALPIQ szabályzási csoport,87,87,Budapest,120,31.12.2013,,HU
+BZN|HU / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,15WVPP-------PPZ,VPP szabályozási csoport,68,68,Budapest,20,31.12.2013,,HU
+BZN|HU / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,15WVEOLIASZK-PPQ,VEOLIA szabályozási központ,68,68,Budapest,20,01.04.2015,,HU
+BZN|HU / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,15WEONSUM----PPI,EONSUM szabályozási központ,63,63,Budapest,20,31.12.2013,,HU
+BZN|HU / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,15WGREEN-----PPZ,GREENERGY szabályozási központ,63,63,Budapest,20,31.12.2013,,HU
+BZN|HU / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,15WSINERGY---PPQ,Sinergy szabályozási központ,58,58,Budapest,20,31.12.2013,,HU
+BZN|HU / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,15WNYKCE-----PP6,Nyíregyházi Kombináltciklusú Erőmű,47,47,Oroszlány,120,31.12.2013,,HU
+BZN|HU / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,15WTATAB-----PPG,Tatabánya Erőmű,43,43,Tatabánya,120,31.12.2013,,HU
+BZN|HU / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,15WPLOOP-----PPL,PLOOP szabályozási központ,28,28,Budapest,20,31.12.2013,,HU

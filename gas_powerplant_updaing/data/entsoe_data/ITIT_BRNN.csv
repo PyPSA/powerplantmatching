@@ -1,0 +1,18 @@
+Area / Date,Production Type,Code,Name,Intalled Capacity at the beginning of year [MW],Current Installed Capacity [MW],Location,Voltage Connection Level [kV],Commissioning Date,Decommissioning Date,country
+BZN|IE(SEM) / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,47W000000000173I,Huntstown Production,744,744,Dublin,220,23.12.2014,,IT
+BZN|IE(SEM) / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,47W000000000164J,Aghada Prod,678,678,Cork,220,23.12.2014,,IT
+BZN|IE(SEM) / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,47W000000000156I,Kilroot,655,655,Coolkeeragh,275,23.12.2014,,IT
+BZN|IE(SEM) / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,47W000000000154M,Ballylumford C Station,494,494,Ballylumford,275,23.12.2014,,IT
+BZN|IE(SEM) / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,47W000000000168B,Poolbeg Production,490,490,Dublin,220,23.12.2014,,IT
+BZN|IE(SEM) / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,47W000000000155K,Coolkeeragh,467,467,Coolkeeragh,275,23.12.2014,,IT
+BZN|IE(SEM) / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,47W000000000158E,Whitegate Prod,435,435,Cork,220,23.12.2014,,IT
+BZN|IE(SEM) / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,47W000000000171M,Dublin Bay Prod,405,405,Dublin,220,23.12.2014,,IT
+BZN|IE(SEM) / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,47W000000000172K,Tynagh Production,404,404,Galway,220,23.12.2014,,IT
+BZN|IE(SEM) / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,47W000000000167D,North Wall Production,271,271,Dublin,220,23.12.2014,,IT
+BZN|IE(SEM) / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,47W000000000355C,Poolbeg A,238,238,"Pigeon House Road, Ringsend, Dublin",220,24.05.2016,,IT
+BZN|IE(SEM) / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,47W000000000356A,Poolbeg B,230,230,"Pigeon House Road, Ringsend, Dublin",220,24.05.2016,,IT
+BZN|IE(SEM) / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,47W000000000153O,Ballylumford B Station,217,217,Ballylumford,220,23.12.2014,,IT
+BZN|IE(SEM) / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,47W000000000157G,Aughinish Alumnia(Sealrock),170,170,Limerick,110,01.01.2015,,IT
+BZN|IE(SEM) / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,47W000000000239E,Cushaling Production,112,112,Offaly,110,23.12.2014,,IT
+BZN|IE(SEM) / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,47W000000000242P,Knockmore Hill AGU Production,12,12,County Antrim,33,23.12.2014,,IT
+BZN|IE(SEM) / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,47W000000000241R,Knockmore Hill,3,3,County Antrim,33,23.12.2014,,IT

@@ -1,0 +1,5 @@
+Area / Date,Production Type,Code,Name,Intalled Capacity at the beginning of year [MW],Current Installed Capacity [MW],Location,Voltage Connection Level [kV],Commissioning Date,Decommissioning Date,country
+BZN|FI / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,44W-T-YT-000013J,Vuosaari,480,480,Helsinki,110,21.05.2013,,FI
+BZN|FI / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,44W-T-YT-000010P,Suomenoja,354,354,Espoo,110,05.09.2013,,FI
+BZN|FI / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,44W-T-YT-000005I,Lielahti,142,142,Tampere,110,30.10.2013,,FI
+BZN|FI / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,44W-T-YT-000007E,Naistenlahti 1,129,129,Tampere,110,30.10.2013,,FI

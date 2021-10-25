@@ -1,0 +1,25 @@
+Release Notes for Global Power Plant Database v1.3.0                                             
+
+Changes Since 1.2.0:
+        Change: Remove field `estimated_generation_gwh` and add many yearly estimation fields
+        Change: Truncate decimal places for reported generation fields
+        New: Add field `generation_gwh_2018`
+        New: Add field `generation_gwh_2019`
+        New: Add field `generation_data_source`
+        New: Add field `estimated_generation_gwh_2013`
+        New: Add field `estimated_generation_gwh_2014`
+        New: Add field `estimated_generation_gwh_2015`
+        New: Add field `estimated_generation_gwh_2016`
+        New: Add field `estimated_generation_gwh_2017`
+        New: Add field `estimated_generation_note_2013`
+        New: Add field `estimated_generation_note_2014`
+        New: Add field `estimated_generation_note_2015`
+        New: Add field `estimated_generation_note_2016`
+        New: Add field `estimated_generation_note_2017`
+        Update: Extensive solar data provided from wiki-solar.org with over 3700 solar facilities totalling over 113 GW of capacity
+        Update: Add generation for some European plants (around 450 distinct plants) from JRC-PPDB-OPEN (original values come from ENTSO-E)
+       Update: Add data updates for USA from the US EIA
+       Update: Change source of Australia data, add additional NGER generation data
+       Update: Add data from United Kingdom's Renewable Energy Planning Database
+       Update: Add data updates from India's Central Electricity Authority
+

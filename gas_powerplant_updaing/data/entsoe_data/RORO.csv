@@ -1,0 +1,7 @@
+Area / Date,Production Type,Code,Name,Intalled Capacity at the beginning of year [MW],Current Installed Capacity [MW],Location,Voltage Connection Level [kV],Commissioning Date,Decommissioning Date,country
+BZN|RO / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,30W-CET-PETROM-L,TPP CCCC Petrom Brazi,832,832,internal,400,01.12.2014,,RO
+BZN|RO / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,30W-CET-IERN---J,TPP Iernut,282,282,internal,220,01.12.2014,,RO
+BZN|RO / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,30W-CET-BRAZ---Q,TPP Brazi,223,223,internal,110,01.12.2014,,RO
+BZN|RO / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,30W-CET-GALA---G,TPP Galati,344,192,internal,110,01.12.2014,,RO
+BZN|RO / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,30W-CET-BUCV---D,TPP Bucuresti Vest,171,171,internal,110,01.12.2014,,RO
+BZN|RO / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,30W-CET-BUCS---S,TPP Bucuresti Sud,168,168,internal,220,01.12.2014,,RO

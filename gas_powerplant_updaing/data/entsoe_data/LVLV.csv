@@ -1,0 +1,4 @@
+Area / Date,Production Type,Code,Name,Intalled Capacity at the beginning of year [MW],Current Installed Capacity [MW],Location,Voltage Connection Level [kV],Commissioning Date,Decommissioning Date,country
+BZN|LV / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,43W-RTEC-2-1---C,RTEC2-1,441,441,Latvia,330,01.01.2000,,LV
+BZN|LV / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,43W-RTEC-2-2---7,RTEC2-2,440,440,Latvia,330,01.01.2000,,LV
+BZN|LV / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,43W-RTEC-1-----T,RTEC1,144,144,Latvia,110,01.01.2000,,LV

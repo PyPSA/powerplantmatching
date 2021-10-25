@@ -1,0 +1,5 @@
+Area / Date,Production Type,Code,Name,Intalled Capacity at the beginning of year [MW],Current Installed Capacity [MW],Location,Voltage Connection Level [kV],Commissioning Date,Decommissioning Date,country
+BZN|DE-AT-LU / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,11WD7BOLA--KWNIK,HKW Niehl,866,866,intra_zonal,380,01.02.2010,,LU
+BZN|DE-AT-LU / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,11WD7BISC5GKW23O,KW Mainz-Wiesbaden,785,785,Hesse,110,01.01.2010,,LU
+BZN|DE-AT-LU / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,11WD7GARE5XHEKWQ,HERDECKE,424,424,Garenfeld,110,01.01.2010,,LU
+BZN|DE-AT-LU / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,11WD7FUEH5GMEKW7,HKW Merkenich,110,110,intra_zonal,110,01.02.2010,,LU

@@ -1,0 +1,5 @@
+Area / Date,Production Type,Code,Name,Intalled Capacity at the beginning of year [MW],Current Installed Capacity [MW],Location,Voltage Connection Level [kV],Commissioning Date,Decommissioning Date,country
+BZN|PT / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,16WRIBATE------E,Ribatejo,1176,1176,ALENQUER,400,01.12.2014,,PT
+BZN|PT / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,16WRTG---------V,T.Outeiro C.C.,990,990,GONDOMAR,220,01.12.2014,,PT
+BZN|PT / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,16WPEGO--------O,Pego C.C.,837,837,ABRANTES,400,01.12.2014,,PT
+BZN|PT / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,16WLARES-------R,Lares,826,826,FIGUEIRA DA FOZ,400,01.12.2014,,PT

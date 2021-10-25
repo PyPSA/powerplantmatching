@@ -1,0 +1,5 @@
+Area / Date,Production Type,Code,Name,Intalled Capacity at the beginning of year [MW],Current Installed Capacity [MW],Location,Voltage Connection Level [kV],Commissioning Date,Decommissioning Date,country
+BZN|LT / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,41W1023600243EL3,Lietuvos elektrine,1045,1045,Elektrenai,110,01.01.2014,,LT
+BZN|LT / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,41W3185595680EL8,VilniausE3,360,360,Vilnius,110,01.01.2014,,LT
+BZN|LT / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,41WME-------TG1J,Mazeikiu elektrine,160,160,Mazeikiai,110,11.09.2014,,LT
+BZN|LT / 01.01.2021 00:00 - 01.01.2022 00:00,Fossil Gas,41W8538227475ELN,KaunoTE,110,110,Kaunas,110,01.01.2014,,LT
