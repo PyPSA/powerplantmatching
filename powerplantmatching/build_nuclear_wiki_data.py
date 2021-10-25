@@ -1,4 +1,6 @@
 # import crawler packages
+from time import sleep
+
 import numpy as np
 import pandas as pd
 
@@ -9,7 +11,6 @@ from googletrans import Translator
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from tqdm import tqdm
-from time import sleep
 from webdriver_manager.chrome import (  # this package make sure code works for every PC
     ChromeDriverManager,
 )
@@ -40,13 +41,15 @@ def main():
     eu_list = []  # main variable for storing nuclear power plant data
 
     # download website source code wiki
-    driver.get('https://de.wikipedia.org/wiki/Liste_der_Kernkraftwerke_in_Europa')
-    #wait website loading
+    driver.get("https://de.wikipedia.org/wiki/Liste_der_Kernkraftwerke_in_Europa")
+    # wait website loading
     sleep(5)
     # select source code that related to tables
-    country = driver.find_element(by = 'xpath', value = '//*[@id="toc"]/ul/li[1]/ul')
+    country = driver.find_element(by="xpath", value='//*[@id="toc"]/ul/li[1]/ul')
 
-    tables_list = driver.find_elements_by_xpath('//table[@class = \'wikitable sortable jquery-tablesorter\']')
+    tables_list = driver.find_elements_by_xpath(
+        "//table[@class = 'wikitable sortable jquery-tablesorter']"
+    )
     # get html code of tables and store them in list
     tables = [i.get_attribute("innerHTML") for i in tables_list]
     # get more accurate table column from pandas html reader
@@ -187,14 +190,20 @@ def main():
 
     driver.quit()
     # remove special symbols in the dataset
-    df['DateIn'] = df['DateIn'].str.split(r'[–-]').str[-1].replace('', np.nan) #use the latest comission date
-    df['DateRetrofit'] = df['DateRetrofit'].str.split(r'[–-]').str[-1].replace('', np.nan)
+    df["DateIn"] = (
+        df["DateIn"].str.split(r"[–-]").str[-1].replace("", np.nan)
+    )  # use the latest comission date
+    df["DateRetrofit"] = (
+        df["DateRetrofit"].str.split(r"[–-]").str[-1].replace("", np.nan)
+    )
     # use the lastest decomission estimation
-    df['Capacity'] = df['Capacity'].str.replace('\.', '')  # deal with germany number representation
-    df['Capacity'] = df['Capacity'].str.replace(r'\[.+\]', '')
-    df['Capacity'] = df['Capacity'].replace('-', np.nan)
-    df['Capacity'] = df['Capacity'].replace('', np.nan)
-    df['Capacity'] = df['Capacity'].astype(float)
+    df["Capacity"] = df["Capacity"].str.replace(
+        "\.", ""
+    )  # deal with germany number representation
+    df["Capacity"] = df["Capacity"].str.replace(r"\[.+\]", "")
+    df["Capacity"] = df["Capacity"].replace("-", np.nan)
+    df["Capacity"] = df["Capacity"].replace("", np.nan)
+    df["Capacity"] = df["Capacity"].astype(float)
     return df
 
 
