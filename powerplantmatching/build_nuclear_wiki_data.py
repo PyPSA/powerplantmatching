@@ -192,11 +192,11 @@ def main():
     # remove special symbols in the dataset
     df["DateIn"] = (
         df["DateIn"].str.split(r"[–-]").str[-1].replace("", np.nan)
-    )  # use the latest comission date
+    )  # use the latest commission date
     df["DateRetrofit"] = (
         df["DateRetrofit"].str.split(r"[–-]").str[-1].replace("", np.nan)
     )
-    # use the lastest decomission estimation
+    # use the latest decomission estimation
     df["Capacity"] = df["Capacity"].str.replace(
         "\.", ""
     )  # deal with germany number representation
