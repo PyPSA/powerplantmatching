@@ -19,16 +19,16 @@ OPSD_links.rename(
 )
 OPSD_links.uba_match_fuel.replace(
     {
-        u"Biomasse": "Bioenergy",
-        u"Gichtgas": "Other",
-        u"HS": "Oil",
-        u"Konvertergas": "Other",
-        u"Licht": "Solar",
-        u"Raffineriegas": "Other",
-        u"Uran": "Nuclear",
-        u"Wasser": "Hydro",
+        "Biomasse": "Bioenergy",
+        "Gichtgas": "Other",
+        "HS": "Oil",
+        "Konvertergas": "Other",
+        "Licht": "Solar",
+        "Raffineriegas": "Other",
+        "Uran": "Nuclear",
+        "Wasser": "Hydro",
         "Wind (L)": "Wind",
-        u"\xd6lr\xfcckstand": "Oil",
+        "\xd6lr\xfcckstand": "Oil",
     },
     inplace=True,
 )
