@@ -162,6 +162,7 @@ def duke(
                 names=labels + ["scores"],
             )
             res.iloc[:, 1] -= shift_by
+            res["scores"] = res.scores.astype(float)
             return res
 
     finally:

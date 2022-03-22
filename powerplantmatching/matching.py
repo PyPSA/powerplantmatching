@@ -283,7 +283,7 @@ def reduce_matched_dataframe(df, show_orig_names=False, config=None):
     # define which databases are present and get their reliability_score
     sources = df.columns.levels[1]
     rel_scores = pd.Series(
-        {s: config[s]["reliability_score"] for s in sources}
+        {s: config[s]["reliability_score"] for s in sources}, dtype=float
     ).sort_values(ascending=False)
     cols = config["target_columns"]
     props_for_groups = {col: "first" for col in cols}
