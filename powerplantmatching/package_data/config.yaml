@@ -189,9 +189,10 @@ target_fueltypes:
   # A list will be converted to a regex expression matching all words (case-insensitive)
   # given by the list. An empty string results in a regex expression containing only the key.
   # Parsed of representatives at the top may be overwritten by representatives further below.
-  Bioenergy: [biological, biogas, bioenergy]
+  Other: ".*"
+  Bioenergy: [biological, biogas, bioenergy, agricultural, wood]
   Nuclear: [nuclear]
-  Natural Gas: [ccgt, gas, natural gas, ocgt]
+  Natural Gas: [ccgt, gas, natural gas, ocgt, lng]
   Hydro:
     [
       run-off,
@@ -203,9 +204,9 @@ target_fueltypes:
       hydroelectric,
       wasserkraft,
     ]
-  Hard Coal: [coal]
+  Hard Coal: [coal, coke, peat]
   Lignite: [brown coal, lignite]
-  Oil: ""
+  Oil: [oil, diesel]
   Geothermal: ""
   Solar: ""
   Waste: ""

@@ -32,7 +32,7 @@ import requests
 from deprecation import deprecated
 
 from .cleaning import (
-    clean_powerplantname,
+    clean_name,
     clean_technology,
     gather_fueltype_info,
     gather_set_info,
@@ -223,14 +223,12 @@ def OPSD(
             regex=True,
         )
         .pipe(gather_specifications, config=config)
+        .pipe(clean_name)
+        .query("Name != ''")
         .dropna(subset=["Capacity"])
         .powerplant.convert_alpha2_to_country()
         .pipe(set_column_name, "OPSD")
-        # .pipe(correct_manually, 'OPSD', config=config)
         .pipe(config_filter, name="OPSD", config=config)
-        .pipe(gather_set_info)
-        .pipe(clean_powerplantname)
-        .pipe(clean_technology)
     )
 
 
@@ -249,7 +247,15 @@ def GEO(raw=False, update=False, config=None):
     """
     config = get_config() if config is None else config
 
-    rename_cols = {
+    GEO_UNITS_RENAME_COLS = {
+        "GEO_Assigned_Identification_Number": "projectID",
+        "Capacity_MWe_nbr": "Capacity",
+        "Date_Commissioned_dt": "DateIn",
+        "Decommission_Date_dt": "DateOut",
+        "Unit_Efficiency_Percent": "Efficiency",
+    }
+
+    GEO_PPL_RENAME_COLS = {
         "GEO_Assigned_Identification_Number": "projectID",
         "Name": "Name",
         "Type": "Fueltype",
@@ -264,62 +270,46 @@ def GEO(raw=False, update=False, config=None):
         "Latitude_Start": "lat",
     }
 
-    geo = pd.read_csv(
-        get_raw_file("GEO", update=update, config=config), low_memory=False
-    )
+    def to_year(ds):
+        years = pd.to_numeric(ds.dropna().astype(str).str[:4], errors="coerce")
+        year = years[lambda x: x > 1900]
+        return years.reindex_like(ds)
+
+    fn = get_raw_file("GEO_units", update=update, config=config)
+    units = pd.read_csv(fn, low_memory=False)
+
+    fn = get_raw_file("GEO", update=update, config=config)
+    ppl = pd.read_csv(fn, low_memory=False)
+
     if raw:
-        return geo
-    geo = geo.rename(columns=rename_cols)
+        return {"Units": units, "Plants": ppl}
 
-    units = pd.read_csv(
-        get_raw_file("GEO_units", update=update, config=config), low_memory=False
-    )
+    date_cols = ["Date_Commissioned_dt", "Decommission_Date_dt"]
+    units[date_cols] = units[date_cols].apply(to_year)
+    units = units.rename(columns=GEO_UNITS_RENAME_COLS)
+    units.Efficiency = units.Efficiency.str.replace("%", "").astype(float) / 100
 
-    # map from units to plants
-    units["DateIn"] = units.Date_Commissioned_dt.str[:4].astype(float)
-    units["Efficiency"] = (
-        units.Unit_Efficiency_Percent.str.replace("%", "").astype(float) / 100
-    )
-    units = units.groupby("GEO_Assigned_Identification_Number").agg(
-        {"DateIn": [min, max], "Efficiency": "mean"}
-    )
+    date_cols = ["Year_Project_Commissioned", "Year_rng1_yr1"]
+    ppl[date_cols] = ppl[date_cols].apply(to_year)
+    ppl = ppl.rename(columns=GEO_PPL_RENAME_COLS)
+    cols = [
+        "Name",
+        "Fueltype",
+        "Technology",
+        "FuelClassification1",
+        "FuelClassification2",
+    ]
+    ppl = gather_specifications(ppl, parse_columns=cols)
+    ppl = clean_name(ppl)
 
-    _ = geo.projectID.map(units.DateIn["min"])
-    geo["DateIn"] = (
-        geo.DateIn.str[:4]
-        .apply(pd.to_numeric, errors="coerce")
-        .where(lambda x: x > 1900)
-        .fillna(_)
-    )
+    res = units.join(ppl, "projectID", rsuffix="_ppl")
+    res.DateIn.fillna(res.DateIn_ppl, inplace=True)
+    not_included_ppl = ppl.query("projectID not in @res.projectID")
+    res = pd.concat([res, not_included_ppl])
+    res = config_filter(res, "GEO")
+    res["projectID"] = "GEO" + res.projectID.astype(str)
 
-    _ = geo.projectID.map(units.DateIn["max"])
-    geo["DateRetrofit"] = geo.DateRetrofit.astype(float).fillna(_)
-
-    _ = units.Efficiency["mean"]
-    geo["Efficiency"] = geo.projectID.map(_)
-
-    countries = config["target_countries"]
-
-    return (
-        geo.assign(projectID=lambda s: "GEO" + s.projectID.astype(str))
-        .query("Country in @countries")
-        .replace(
-            {
-                col: {"Gas": "Natural Gas"}
-                for col in {"Fueltype", "FuelClassification1", "FuelClassification2"}
-            }
-        )
-        .pipe(gather_fueltype_info, search_col=["FuelClassification1"])
-        .pipe(gather_technology_info, search_col=["FuelClassification1"], config=config)
-        .pipe(gather_set_info)
-        .pipe(set_column_name, "GEO")
-        .pipe(config_filter, name="GEO", config=config)
-        .pipe(clean_powerplantname)
-        .pipe(clean_technology, generalize_hydros=True)
-        .pipe(scale_to_net_capacities, (not config["GEO"]["net_capacity"]))
-        .pipe(config_filter, name="GEO", config=config)
-        .pipe(correct_manually, "GEO", config=config)
-    )
+    return res
 
 
 @deprecated(
