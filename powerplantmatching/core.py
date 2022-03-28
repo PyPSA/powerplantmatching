@@ -124,6 +124,17 @@ def get_config(filename=None, **overrides):
         )
         with open(_data_out("config.yaml", config=config), "w") as file:
             yaml.dump(config, file, default_flow_style=False)
+
+    changed_cols = ["target_fueltypes", "target_technologies", "target_sets"]
+    old_config = any(isinstance(config[key], list) for key in changed_cols)
+    if old_config:
+        logger.warning(
+            "Your configuration file seems to be from a powerplantmatching version "
+            f"lower than v0.5.0. Please delete (or adjust) the keys {changed_cols} "
+            f"in your custom config file at `{custom_config}`. For more information, "
+            "see the release notes of version v0.5.0 at "
+            "https://powerplantmatching.readthedocs.io/en/latest/release-notes.html."
+        )
     return config
 
 

@@ -11,7 +11,8 @@ import pytest
 import powerplantmatching as pm
 from powerplantmatching import data
 
-sources = ["OPSD", "ENTSOE", "GEO", "JRC", "GPD", "BEYONDCOAL"]
+config = pm.get_config()
+sources = config["matching_sources"]
 
 
 @pytest.mark.parametrize("source", sources)

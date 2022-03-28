@@ -36,6 +36,7 @@ from .cleaning import (
     clean_technology,
     gather_fueltype_info,
     gather_set_info,
+    gather_specifications,
     gather_technology_info,
 )
 from .core import _data_in, _package_data, get_config
@@ -101,7 +102,7 @@ def BEYONDCOAL(raw=False, update=False, config=None):
                 {8888: np.nan}
             ),
             projectID=lambda df: "BEYOND-" + df.projectID,
-            Fueltype=lambda df: df.Fueltype.str.title(),
+            Fueltype=lambda df: df.Fueltype.str.title().replace("Unknown", "Other"),
             Set="PP",
         )
         .pipe(config_filter, name="BEYONDCOAL", config=config)
@@ -218,30 +219,11 @@ def OPSD(
     return (
         pd.concat([opsd_EU, opsd_DE], ignore_index=True)
         .replace(
-            dict(
-                Fueltype={
-                    "Biomass and biogas": "Bioenergy",
-                    "Fossil fuels": np.nan,
-                    "Mixed fossil fuels": "Other",
-                    "Natural gas": "Natural Gas",
-                    "Non-renewable waste": "Waste",
-                    "Other bioenergy and renewable waste": "Bioenergy",
-                    "Other or unspecified energy sources": "Other",
-                    "Other fossil fuels": "Other",
-                    "Other fuels": "Other",
-                },
-                Set={"IPP": "PP"},
-            )
-        )
-        .replace(
             {"Country": {"UK": "GB", "[ \t]+|[ \t]+$.": ""}, "Capacity": {0.0: np.nan}},
             regex=True,
         )
+        .pipe(gather_specifications, config=config)
         .dropna(subset=["Capacity"])
-        .assign(
-            Name=lambda df: df.Name.str.title().str.strip(),
-            Fueltype=lambda df: df.Fueltype.str.title().str.strip(),
-        )
         .powerplant.convert_alpha2_to_country()
         .pipe(set_column_name, "OPSD")
         # .pipe(correct_manually, 'OPSD', config=config)

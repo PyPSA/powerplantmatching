@@ -4,13 +4,29 @@ History of Changes
 Upcoming Release
 ----------------
 
+This release contains many breaking changes. Due to time-constraints we cannot ensure a smooth transition to the new release. If you are using a custom config file (e.g. ``~/powerplantmatching_config.yaml``) please be aware of the following config changes: 
+
+**Configuration Changes**
+
+* The custom configuration now only updates the package default configuration, which makes the compatibility of configuration updates much easier. So, instead of replacing the whole package configuration (the default config provided by powerplantmatching), the new purpose of the custom config is to adjust individual values. So, please make sure to only add keys to the custom config which you want to change in comparison to the default config.
+* The following sections of the configuration file ``~/powerplantmatching_config.yaml`` changed: 
+  * the ``target_fueltypes`` section is now mapping the representative fueltypes to the regular expressions that are used in order to determine them.  
+  * the ``target_technologies`` section is now mapping the representative technologies to the regular expressions that are used in order to determine them.  
+  * the ``target_set`` section is now mapping the representative sets to the regular expressions that are used in order to determine them.  
+  * a section ``clean_name`` was added. This section contains the regular expressions and lists of words that are used to clean the names of the plants.
+In order to ensure compatibility with the new code, please delete these sections in your custom config. 
+
+**Non-Breaking Code Changes**
+
 * The `BEYOND COAL <https://beyond-coal.eu/coal-exit-tracker/>`_ data is now available as an data source. 
 * All scripts were aligned with the ``black`` coding style.
 * A documentation on readthedocs was added.
-* The custom configuration in ``~/powerplantmatching_config.yaml`` now only updates the package configuration, which makes the compatibility with configuration updates much easier. So, instead of replacing the package config, the new purpose of the custom config is to add/modify configuration values.  
 
-**Breaking Changes:**
-* All keyword arguments of the data functions in ``powerplantmatching.data`` were sorted according to ``raw``, ``update``, ``config``. This lead to some hard changes of the arguments order.
+**Breaking Code Changes:**
+
+* All keyword arguments of the data functions in ``powerplantmatching.data`` were sorted according to ``raw``, ``update``, ``config``. This lead to some breaking changes of the arguments order.
+* The Fueltype `Other` was replaced by NaN. 
+
 
 Version 0.4.6 (25.11.2020)
 --------------------------

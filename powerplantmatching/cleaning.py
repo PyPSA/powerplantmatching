@@ -21,7 +21,6 @@ from __future__ import absolute_import, print_function
 
 import logging
 import os
-import re
 
 import networkx as nx
 import numpy as np
@@ -35,65 +34,53 @@ from .utils import get_name, set_column_name
 logger = logging.getLogger(__name__)
 
 
-def clean_powerplantname(df):
+def clean_name(df, config=None):
     """
-    Cleans the column "Name" of the database by deleting very frequent
-    words, numericals and nonalphanumerical characters of the
-    column. Returns a reduced dataframe with nonempty Name-column.
+    Clean the name of a power plant list.
+
+    Cleans the column "Name" of the database by deleting very frequent words
+    and nonalphanumerical characters of the column. Returns a  reduced
+    dataframe with nonempty Name-column.
 
     Parameters
     ----------
     df : pandas.Dataframe
         dataframe to be cleaned
+    config : dict, default None
+        Custom configuration, defaults to
+        `powerplantmatching.config.get_config()`.
 
     """
     df = get_obj_if_Acc(df)
-    df = df[df.Name.notnull()]
-    name = df.Name.replace(
-        regex=True,
-        value=" ",
-        to_replace=[
-            "-",
-            "/",
-            ",",
-            r"\(",
-            r"\)",
-            r"\[",
-            r"\]",
-            '"',
-            "_",
-            r"\+",
-            "[0-9]",
-        ],
-    )
 
-    common_words = pd.Series(sum(name.str.split(), [])).value_counts()
-    cw = list(common_words[common_words >= 20].index)
+    if config is None:
+        config = get_config()
 
-    snippets = (
-        """
-        [a-z] I II III IV V VI VII VIII IX X XI Grupo parque eolico
-        gas biomasa COGENERACION gt unnamed planta de la
-        station power storage plant stage pumped project dt gud hkw kbr Kernkraft
-        Kernkraftwerk kwg krb ohu gkn Gemeinschaftskernkraftwerk kki kkp kle wkw
-        rwe bis nordsee ostsee dampfturbinenanlage ikw kw kohlekraftwerk
-        raffineriekraftwerk Kraftwerke Psw
-        """
-    ).split()
-    pattern = [(r"(?i)(^|\s)" + x + r"(?=\s|$)") for x in (cw + snippets)]
-    name = (
-        name.replace(regex=True, to_replace=pattern, value=" ")
-        .replace([r"\s+", '"', "ß"], [" ", "", "ss"], regex=True)
-        .str.strip()
-        .str.capitalize()
-    )
+    name = df.Name.copy()
 
-    return (
-        df.assign(Name=name)
-        .loc[lambda x: x.Name != ""]
-        .sort_values("Name")
-        .reset_index(drop=True)
-    )
+    replace = config["clean_name"]["replace"]
+
+    if config["clean_name"]["remove_common_words"]:
+        common_words = pd.Series(sum(name.str.split(), [])).value_counts()
+        common_words = list(common_words[common_words >= 20].index)
+        replace[""] = replace.get("", []) + common_words
+
+    for key, pattern in replace.items():
+        if isinstance(pattern, list):
+            # if pattern is a list, concat all entries in a case-insensitive regex
+            pattern = r"(?i)" + "|".join([rf"\b{p}\b" for p in pattern])
+        elif not isinstance(pattern, str):
+            raise ValueError(f"Pattern must be string or list, not {type(pattern)}")
+        name = name.str.replace(pattern, key, regex=True)
+
+    name = name.str.strip().str.title().str.replace(r" +", " ", regex=True)
+
+    return df.assign(Name=name).sort_values("Name")
+
+
+@deprecated("4.9", "5.0", "Use `clean_name` instead.")
+def clean_powerplantname(df, config=None):
+    return clean_name(df, config=config)
 
 
 def config_target_key(column):
@@ -137,7 +124,7 @@ def gather_and_replace(df, mapping):
     res = pd.Series(index=df.index, dtype=object)
     for key, pattern in mapping.items():
         if not pattern:
-            # if pattern is not given, fall back to key
+            # if pattern is not given, fall back to case-insensitive key
             pattern = r"(?i)%s" % key
         elif isinstance(pattern, list):
             # if pattern is a list, concat all entries in a case-insensitive regex
@@ -156,6 +143,33 @@ def gather_specifications(
     parse_columns=["Name", "Fueltype", "Technology", "Set"],
     config=None,
 ):
+    """
+        Parse columns to collect representative keys.
+
+
+    This function will parse the columns specified in `parse_columns` and collects
+    the representative keys for each row in `target_columns`. The parsing is based
+    on the config file.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Power plant dataframe.
+    target_columns : list, optional
+        Columns where the representative keys will be collected,
+        by default ["Fueltype", "Technology", "Set"]
+    parse_columns : list, optional
+        Columns that should be parsed, by default
+        ["Name", "Fueltype", "Technology", "Set"]
+    config : dict, default None
+        Custom configuration, defaults to
+        `powerplantmatching.config.get_config()`.
+
+    Returns
+    -------
+    pandas.DataFrame
+    """
+
     if config is None:
         config = get_config()
 
