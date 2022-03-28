@@ -34,6 +34,37 @@ from .utils import get_name, set_column_name
 logger = logging.getLogger(__name__)
 
 
+def mode(x):
+    """
+    Get the most common value of a series.
+    """
+    return x.mode(dropna=False).at[0]
+
+
+AGGREGATION_FUNCTIONS = {
+    "Name": mode,
+    "Fueltype": mode,
+    "Technology": mode,
+    "Set": mode,
+    "Country": mode,
+    "Capacity": "sum",
+    "lat": "mean",
+    "lon": "mean",
+    "DateIn": "min",
+    "DateRetrofit": "max",  # choose latest Retrofit-Year
+    "DateMothball": "min",
+    "DateOut": "min",
+    "File": mode,
+    "projectID": list,
+    "EIC": set,
+    "Duration": "sum",  # note this is weighted sum
+    "Volume_Mm3": "sum",
+    "DamHeight_m": "sum",
+    "StorageCapacity_MWh": "sum",
+    "Efficiency": "mean",  # note this is weighted mean
+}
+
+
 def clean_name(df, config=None):
     """
     Clean the name of a power plant list.
@@ -56,7 +87,7 @@ def clean_name(df, config=None):
     if config is None:
         config = get_config()
 
-    name = df.Name.copy()
+    name = df.Name.astype(str).copy()
 
     replace = config["clean_name"]["replace"]
 
@@ -78,7 +109,7 @@ def clean_name(df, config=None):
     return df.assign(Name=name).sort_values("Name")
 
 
-@deprecated("4.9", "5.0", "Use `clean_name` instead.")
+@deprecated(deprecated_in="5.0", removed_in="0.6", details="Use `clean_name` instead.")
 def clean_powerplantname(df, config=None):
     return clean_name(df, config=config)
 
@@ -144,7 +175,7 @@ def gather_specifications(
     config=None,
 ):
     """
-        Parse columns to collect representative keys.
+    Parse columns to collect representative keys.
 
 
     This function will parse the columns specified in `parse_columns` and collects
@@ -182,6 +213,11 @@ def gather_specifications(
     return df.assign(**cols)
 
 
+@deprecated(
+    deprecated_in="0.5",
+    removed_in="0.6",
+    details="Use `gather_specifications` instead.",
+)
 def gather_fueltype_info(
     df, search_col=["Name", "Fueltype", "Technology"], config=None
 ):
@@ -211,6 +247,11 @@ def gather_fueltype_info(
     return df.assign(Fueltype=fueltype)
 
 
+@deprecated(
+    deprecated_in="0.5",
+    removed_in="0.6",
+    details="Use `gather_specifications` instead.",
+)
 def gather_technology_info(
     df, search_col=["Name", "Fueltype", "Technology", "Set"], config=None
 ):
@@ -240,6 +281,11 @@ def gather_technology_info(
     return df.assign(Technology=technology)
 
 
+@deprecated(
+    deprecated_in="0.5",
+    removed_in="0.6",
+    details="Use `gather_specifications` instead.",
+)
 def gather_set_info(df, search_col=["Name", "Fueltype", "Technology"], config=None):
     """
     Parses in a set of columns for distinct Set specifications.
@@ -268,8 +314,8 @@ def gather_set_info(df, search_col=["Name", "Fueltype", "Technology"], config=No
 
 
 @deprecated(
-    deprecated_in="0.4.9",
-    removed_in="0.5.0",
+    deprecated_in="0.5",
+    removed_in="0.6",
 )
 def clean_technology(df, generalize_hydros=False):
     """
@@ -374,88 +420,44 @@ def aggregate_units(
     if config is None:
         config = get_config()
 
-    weighted_cols = [
-        col for col in ["Efficiency", "Duration"] if col in config["target_columns"]
-    ]
+    if dataset_name is None:
+        ds_name = get_name(df)
+    else:
+        ds_name = dataset_name
+
+    cols = config["target_columns"]
+    weighted_cols = {"Efficiency", "Duration"} & set(cols)
+    str_cols = {"Name", "Country", "Fueltype", "Technology", "Set"} & set(cols)
+    props_for_groups = {k: v for k, v in AGGREGATION_FUNCTIONS.items() if k in cols}
+
     df = (
-        df.assign(**{col: df[col] * df.Capacity for col in weighted_cols})
+        df.assign(**(df[weighted_cols] * df.Capacity))
         .assign(lat=df.lat.astype(float), lon=df.lon.astype(float))
-        .assign(
-            **{
-                col: df[col].astype(str)
-                for col in ["Name", "Country", "Fueltype", "Technology", "Set", "File"]
-                if col in config["target_columns"]
-            }
-        )
+        .assign(**df[str_cols].fillna("").astype(str))
     )
-
-    def mode(x):
-        return x.mode(dropna=False).at[0]
-
-    props_for_groups = (
-        pd.Series(
-            {
-                "Name": mode,
-                "Fueltype": mode,
-                "Technology": mode,
-                "Set": mode,
-                "Country": mode,
-                "Capacity": "sum",
-                "lat": "mean",
-                "lon": "mean",
-                "DateIn": "min",
-                "DateRetrofit": "max",  # choose latest Retrofit-Year
-                "DateMothball": "min",
-                "DateOut": "min",
-                "File": mode,
-                "projectID": list,
-                "EIC": set,
-                "Duration": "sum",  # note this is weighted sum
-                "Volume_Mm3": "sum",
-                "DamHeight_m": "sum",
-                "StorageCapacity_MWh": "sum",
-                "Efficiency": "mean",  # note this is weighted mean
-            }
-        )
-        .reindex(config["target_columns"], axis=1)
-        .to_dict()
-    )
-
-    dataset_name = get_name(df) if dataset_name is None else dataset_name
 
     if pre_clean_name:
-        df = clean_powerplantname(df)
+        df = clean_name(df)
 
-    logger.info("Aggregating blocks to entire units in '{}'.".format(dataset_name))
-
-    path_name = _data_out(
-        "aggregations/aggregation_groups_{}.csv".format(dataset_name), config=config
-    )
+    logger.info(f"Aggregating blocks to entire units in '{ds_name}'.")
+    path_name = _data_out(f"aggregations/aggregation_groups_{ds_name}.csv", config)
 
     if use_saved_aggregation & save_aggregation:
         if os.path.exists(path_name):
-            logger.info(
-                "Reading saved aggregation groups for dataset '{}'.".format(
-                    dataset_name
-                )
-            )
-            groups = pd.read_csv(path_name, header=None, index_col=0).reindex(
-                index=df.index
-            )
+            logger.info(f"Using saved aggregation groups for dataset '{ds_name}'")
+            groups = pd.read_csv(path_name, header=None, index_col=0)
+            groups = groups.reindex(index=df.index)
             df = df.assign(grouped=groups.values)
         else:
             if "grouped" in df:
                 df.drop("grouped", axis=1, inplace=True)
     else:
-        logger.info(
-            f"Not using saved aggregation groups for dataset " f"'{dataset_name}'."
-        )
+        logger.info(f"Not using saved aggregation groups for dataset '{ds_name}'.")
 
     if "grouped" not in df:
         if country_wise:
-            duplicates = pd.concat(
-                [duke(df.query("Country == @c")) for c in df.Country.unique()]
-            )
+            countries = df.Country.unique()
+            duplicates = pd.concat([duke(df.query("Country == @c")) for c in countries])
         else:
             duplicates = duke(df)
         df = cliques(df, duplicates)
@@ -469,10 +471,10 @@ def aggregate_units(
         df = df.assign(EIC=df["EIC"].apply(list))
 
     df = (
-        df.assign(**{col: df[col].div(df["Capacity"]) for col in weighted_cols})
+        df.assign(**df[weighted_cols].div(df["Capacity"]))
         .reset_index(drop=True)
-        .pipe(clean_powerplantname)
-        .reindex(columns=config["target_columns"])
-        .pipe(set_column_name, dataset_name)
+        .pipe(clean_name)
+        .reindex(columns=cols)
+        .pipe(set_column_name, ds_name)
     )
     return df
