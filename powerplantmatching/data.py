@@ -777,7 +777,7 @@ def ENTSOE(raw=False, update=False, config=None, entsoe_token=None):
                     df_domain[arg] = [
                         e.text for e in etree.findall("*/" * (i + 1) + ns + arg)
                     ]
-            entsoe = entsoe.append(df_domain, ignore_index=True)
+            entsoe = pd.concat([entsoe, df_domain], axis=1, ignore_index=True)
         return entsoe
 
     path = get_raw_file("ENTSOE", config=config, skip_retrieve=True)

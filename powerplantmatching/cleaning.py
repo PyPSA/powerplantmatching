@@ -21,10 +21,12 @@ from __future__ import absolute_import, print_function
 
 import logging
 import os
+import re
 
 import networkx as nx
 import numpy as np
 import pandas as pd
+from deprecation import deprecated
 
 from .core import _data_out, get_config, get_obj_if_Acc
 from .duke import duke
@@ -94,122 +96,167 @@ def clean_powerplantname(df):
     )
 
 
-def gather_fueltype_info(df, search_col=["Name", "Technology"]):
+def config_target_key(column):
     """
-    Parses in search_col columns for distinct coal specifications, e.g.
-    'lignite', and passes this information to the 'Fueltype' column.
+    Convert a column name to the key that is used to specify the target
+    values in the config.
+
+    Parameters
+    ----------
+    column : str
+        Name of the column.
+
+    Returns
+    -------
+    str
+        Name of the key used in the config file.
+    """
+    if column.endswith("y"):
+        column = column[:-1] + "ie"
+    column = str.lower(column)
+    return f"target_{column}s"
+
+
+def gather_and_replace(df, mapping):
+    """
+    Search for patterns in multiple columns and return a series of represantativ keys.
+
+    The function will return a series of unique identifyers given by the keys of the
+    `mapping` dictionary. The order in the `mapping` dictionary determines which
+    represantativ keys are calculated first. Note that these may be overwritten by
+    the following mappings.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        DataFrame with columns that should be parsed.
+    mapping : dict
+        Dictionary mapping the represantativ keys to the regex patterns.
+    """
+    assert isinstance(mapping, dict)
+    res = pd.Series(index=df.index, dtype=object)
+    for key, pattern in mapping.items():
+        if not pattern:
+            # if pattern is not given, fall back to key
+            pattern = r"(?i)%s" % key
+        elif isinstance(pattern, list):
+            # if pattern is a list, concat all entries in a case-insensitive regex
+            pattern = r"(?i)" + "|".join([rf"\b{p}\b" for p in pattern])
+        elif not isinstance(pattern, str):
+            raise ValueError(f"Pattern must be string or list, not {type(pattern)}")
+        func = lambda ds: ds.str.contains(pattern)
+        where = df.astype(str).apply(func).any(1)
+        res = res.where(~where, key)
+    return res
+
+
+def gather_specifications(
+    df,
+    target_columns=["Fueltype", "Technology", "Set"],
+    parse_columns=["Name", "Fueltype", "Technology", "Set"],
+    config=None,
+):
+    if config is None:
+        config = get_config()
+
+    cols = {}
+    for c in target_columns:
+        target_key = config_target_key(c)
+        keys = config[target_key]
+        cols[c] = gather_and_replace(df[parse_columns], keys)
+
+    return df.assign(**cols)
+
+
+def gather_fueltype_info(
+    df, search_col=["Name", "Fueltype", "Technology"], config=None
+):
+    """
+    Parses in a set of columns for distinct fueltype specifications.
+
+    This function uses the mappings (key -> regex pattern) given
+    by the `config` under the section `target_technologies`.
+    The representative keys are set if any of the columns
+    in `search_col` matches the regex pattern.
 
     Parameter
     ---------
-    search_col : list, default is ['Name', 'Technology']
-        Specify the columns to be parsed
-    """
-    fueltype = pd.Series(df["Fueltype"])
-
-    for i in search_col:
-        found_b = df[i].dropna().str.contains("(?i)lignite|brown")
-        fueltype.loc[found_b.reindex(fueltype.index, fill_value=False)] = "Lignite"
-    fueltype.replace({"Coal": "Hard Coal"}, inplace=True)
-
-    return df.assign(Fueltype=fueltype)
-
-
-def gather_technology_info(df, search_col=["Name", "Fueltype"], config=None):
-    """
-    Parses in search_col columns for distinct technology specifications, e.g.
-    'Run-of-River', and passes this information to the 'Technology' column.
-
-    Parameter
-    ---------
-    search_col : list, default is ['Name', 'Fueltype']
-        Specify the columns to be parsed
+    df : pandas.DataFrame
+        DataFrame to be parsed.
+    search_col : list, default is ["Name", "Fueltype", "Technology", "Set"]
+        Set of columns to be parsed. Must be in `df`.
     config : dict, default None
-        Add custom specific configuration,
-        e.g. powerplantmatching.config.get_config(target_countries='Italy'),
-        defaults to powerplantmatching.config.get_config()
-
+        Custom configuration, defaults to
+        `powerplantmatching.config.get_config()`.
     """
     if config is None:
         config = get_config()
 
-    technology = df["Technology"].dropna() if "Technology" in df else pd.Series()
-
-    pattern = r"(?i)" + "|".join(config["target_technologies"])
-    for i in search_col:
-        found = (
-            df[i]
-            .dropna()
-            .str.findall(pattern)
-            .loc[lambda s: s.str.len() > 0]
-            .str.join(sep=", ")
-        )
-
-        exists_i = technology.index.intersection(found.index)
-        if len(exists_i) > 0:
-            technology.loc[exists_i] = technology.loc[exists_i].str.cat(
-                found.loc[exists_i], sep=", "
-            )
-
-        new_i = found.index.difference(technology.index)
-        technology = technology.append(found[new_i])
-
-    return df.assign(Technology=technology)
+    keys = config["target_fueltypes"]
+    fueltype = gather_and_replace(df[search_col], keys)
+    return df.assign(Fueltype=fueltype)
 
 
-def gather_set_info(df, search_col=["Name", "Fueltype", "Technology"]):
+def gather_technology_info(
+    df, search_col=["Name", "Fueltype", "Technology", "Set"], config=None
+):
     """
-    Parses in search_col columns for distinct set specifications, e.g.
-    'Store', and passes this information to the 'Set' column.
+    Parses in a set of columns for distinct technology specifications.
+
+    This function uses the mappings (key -> regex pattern) given
+    by the `config` under the section `target_technologies`.
+    The representative keys are set if any of the columns
+    in `search_col` matches the regex pattern.
 
     Parameter
     ---------
-    search_col : list, default is ['Name', 'Fueltype', 'Technology']
-        Specify the columns to be parsed
+    df : pandas.DataFrame
+        DataFrame to be parsed.
+    search_col : list, default is ["Name", "Fueltype", "Technology", "Set"]
+        Set of columns to be parsed. Must be in `df`.
     config : dict, default None
-        Add custom specific configuration,
-        e.g. powerplantmatching.config.get_config(target_countries='Italy'),
-        defaults to powerplantmatching.config.get_config()
-
+        Custom configuration, defaults to
+        `powerplantmatching.config.get_config()`.
     """
-    Set = df["Set"].copy() if "Set" in df else pd.Series(index=df.index, dtype=str)
+    if config is None:
+        config = get_config()
 
-    pattern = "|".join(
-        [
-            "heizkraftwerk",
-            "hkw",
-            "chp",
-            "bhkw",
-            "cogeneration",
-            "power and heat",
-            "heat and power",
-        ]
-    )
-    for i in search_col:
-        isCHP_b = (
-            df[i]
-            .dropna()
-            .str.contains(pattern, case=False)
-            .reindex(df.index)
-            .fillna(False)
-        )
-        Set.loc[isCHP_b] = "CHP"
-
-    pattern = "|".join(["battery", "storage"])
-    for i in search_col:
-        isStore_b = (
-            df[i]
-            .dropna()
-            .str.contains(pattern, case=False)
-            .reindex(df.index)
-            .fillna(False)
-        )
-        Set.loc[isStore_b] = "Store"
-
-    df = df.assign(Set=Set)
-    df.Set.fillna("PP", inplace=True)
-    return df
+    keys = config["target_technologies"]
+    technology = gather_and_replace(df[search_col], keys)
+    return df.assign(Technology=technology)
 
 
+def gather_set_info(df, search_col=["Name", "Fueltype", "Technology"], config=None):
+    """
+    Parses in a set of columns for distinct Set specifications.
+
+    This function uses the mappings (key -> regex pattern) given
+    by the `config` under the section `target_sets`.
+    The representative keys are set if any of the columns
+    in `search_col` matches the regex pattern.
+
+    Parameter
+    ---------
+    df : pandas.DataFrame
+        DataFrame to be parsed.
+    search_col : list, default is ["Name", "Fueltype", "Technology", "Set"]
+        Set of columns to be parsed. Must be in `df`.
+    config : dict, default None
+        Custom configuration, defaults to
+        `powerplantmatching.config.get_config()`.
+    """
+    if config is None:
+        config = get_config()
+
+    keys = config["target_sets"]
+    Set = gather_and_replace(df[search_col], keys)
+    return df.assign(Set=Set)
+
+
+@deprecated(
+    deprecated_in="0.4.9",
+    removed_in="0.5.0",
+)
 def clean_technology(df, generalize_hydros=False):
     """
     Clean the 'Technology' by condensing down the value into one claim. This
