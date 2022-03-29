@@ -193,6 +193,8 @@ def matched_data(
             use_saved_matches.
 
     """
+    from . import __version__
+
     if config is None:
         config = get_config()
 
@@ -214,7 +216,7 @@ def matched_data(
 
     if from_url:
         fn = _data_out("matched_data_red.csv")
-        url = config["matched_data_url"]
+        url = config["matched_data_url"].format(tag="v" + __version__)
         logger.info(f"Retrieving data from {url}")
         df = (
             pd.read_csv(url, index_col=0)

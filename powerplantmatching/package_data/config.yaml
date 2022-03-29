@@ -1,36 +1,29 @@
 # io config
 entsoe_token:
 google_api_key:
-opsd_vres_base_year: 2022
+opsd_vres_base_year: 2020
 
 #matching config
 matching_sources:
-  - CARMA
   - ENTSOE
   - GEO
   - GPD
   - JRC
   - OPSD
   - BEYONDCOAL
-  # - ESE
-  # - IWPDCY
-  # - WEPP
 
 fully_included_sources:
   - OPSD: Country not in ['Switzerland']
   - JRC: Country not in ['Switzerland']
   - ENTSOE: Country not in ['Spain', 'Switzerland', 'United Kingdom']
-  - CARMA: Country == 'France' and Fueltype == 'Hydro'
   - GEO: Country == 'Czech Republic' and Fueltype == 'Lignite'
-  # - ESE: Country not in ['Switzerland']
-  # - IWPDCY: lat == lat and Country == 'Sweden'
 
 parallel_duke_processes: false
 process_limit: 2
 remove_missing_coords: true
 
 #already build data
-matched_data_url: https://raw.githubusercontent.com/FRESNA/powerplantmatching/v0.4.8/powerplants.csv
+matched_data_url: https://raw.githubusercontent.com/FRESNA/powerplantmatching/tree/{tag}/powerplants.csv
 
 #data config
 BNETZA:
