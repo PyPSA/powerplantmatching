@@ -133,6 +133,11 @@ def to_pypsa_network(df, network, buslist=None):
     )
 
 
+@deprecated(
+    deprecated_in="0.5.0",
+    removed_in="0.6.0",
+    reason="This function is not maintained anymore and will be removed in the future.",
+)
 def to_TIMES(df=None, use_scaled_capacity=False, baseyear=2015):
     """
     Transform a given dataset into the TIMES format and export as .xlsx.

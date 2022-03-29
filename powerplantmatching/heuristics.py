@@ -22,6 +22,7 @@ import logging
 
 import numpy as np
 import pandas as pd
+from deprecation import deprecated
 from six import iteritems
 
 from .core import _package_data, get_config, get_obj_if_Acc
@@ -192,48 +193,7 @@ def extend_by_VRE(df, config=None, base_year=2017, prune_beyond=True):
     return df.append(vre, sort=False)
 
 
-# I am sorry to drop this, but this is a bit too specific for maintaining
-#
-#    df = df.copy()
-#    # Drop Solar (except CSP), Wind and Bioenergy which are to be replaced
-#    df = df[~(((df.Fueltype == 'Solar') & (df.Technology != 'CSP')) |
-#              (df.Fueltype == 'Wind') | (df.Fueltype == 'Bioenergy'))]
-#    cols = df.columns
-#    # Take CH, DE, DK values from OPSD
-#    logger.info('Read OPSD_VRE dataframe...')
-#    vre_CH_DE_DK = OPSD_VRE().loc[lambda x: x.Fueltype.isin(['Solar', 'Wind',
-#                                                             'Bioenergy'])]
-#    vre_DK = vre_CH_DE_DK[vre_CH_DE_DK.Country == 'Denmark']
-#    vre_CH_DE = vre_CH_DE_DK[vre_CH_DE_DK.Country != 'Denmark']
-#    logger.info('Aggregate CH+DE by commyear')
-#    vre_CH_DE = aggregate_VRE_by_commyear(vre_CH_DE)
-#    vre_CH_DE.loc[:, 'File'] = 'renewable_power_plants.sqlite'
-#    # Take other countries from IRENA stats without:
-#    # DE, DK_Wind+Solar+Hydro, CH_Bioenergy
-#    logger.info('Read IRENA_stats dataframe...')
-#    vre = IRENA_stats().loc[lambda x: x.Fueltype.isin(['Solar', 'Wind',
-#                                                       'Bioenergy'])]
-#    vre = vre[~(vre.Country == 'Germany')]
-#    vre = vre[~((vre.Country == 'Denmark') & ((vre.Fueltype == 'Wind') |
-#                (vre.Fueltype == 'Solar') | (vre.Fueltype == 'Hydro')))]
-#    vre = vre[~((vre.Country == 'Switzerland') &
-#                (vre.Fueltype == 'Bioenergy'))]
-#    # Drop IRENA's CSP. This data seems to be outdated!
-#    vre = vre[~(vre.Technology == 'CSP')]
-#    vre = derive_vintage_cohorts_from_statistics(vre, base_year=base_year)
-#    vre.loc[:, 'File'] = 'IRENA_CapacityStatistics2017.csv'
-#    # Concatenate
-#    logger.info('Concatenate...')
-#    cc = pd.concat([df, vre_DK, vre_CH_DE, vre], ignore_index=True, sort=False)
-#    cc = cc.loc[:, cols]
-#    if prune_beyond:
-#        cc = cc[(cc.DateIn <= base_year) |
-#                (cc.DateIn.isnull())]
-#    cc.reset_index(drop=True, inplace=True)
-#    return cc
-
-
-def fill_missing_commyears(df):
+def fill_missing_commissioning_years(df):
     """
     Fills the empty commissioning years with averages.
     """
@@ -264,7 +224,7 @@ def fill_missing_commyears(df):
     return df
 
 
-def fill_missing_decommyears(df, config=None):
+def fill_missing_decommissioning_years(df, config=None):
     """
     Function which sets/fills a column 'DateOut' with roughly
     estimated values for decommissioning years, based on the estimated lifetimes
@@ -284,7 +244,7 @@ def fill_missing_decommyears(df, config=None):
     return df
 
 
-def aggregate_VRE_by_commyear(df, target_fueltypes=None, agg_geo_by=None):
+def aggregate_VRE_by_commissioning_year(df, target_fueltypes=None, agg_geo_by=None):
     """
     Aggregate the vast number of VRE (e.g. vom data.OPSD_VRE()) units to one
     specific (Fueltype + Technology) cohorte per commissioning year.
@@ -339,6 +299,38 @@ def aggregate_VRE_by_commyear(df, target_fueltypes=None, agg_geo_by=None):
     return df.assign(Set="PP", DateRetrofit=df.DateIn)
 
 
+@deprecated(
+    deprecated_in="0.5.0",
+    removed_in="0.6.0",
+    reason="This function was renamed to `fill_missing_commissioning_years`",
+)
+def fill_missing_commyears(df, config=None):
+    return fill_missing_commissioning_years(df, config=config)
+
+
+@deprecated(
+    deprecated_in="0.5.0",
+    removed_in="0.6.0",
+    reason="This function was renamed to `fill_missing_decommissioning_years`",
+)
+def fill_missing_decommyears(df, config=None):
+    return fill_missing_decommissioning_years(df, config=config)
+
+
+@deprecated(
+    deprecated_in="0.5.0",
+    removed_in="0.6.0",
+    reason="This function was renamed to `aggregate_VRE_by_commissioning_year`",
+)
+def aggregate_VRE_by_commyear(df, config=None):
+    return aggregate_VRE_by_commissioning_year(df, config=config)
+
+
+@deprecated(
+    deprecated_in="0.5.0",
+    removed_in="0.6.0",
+    reason="This function is not maintained anymore and will be removed in the future.",
+)
 def derive_vintage_cohorts_from_statistics(df, base_year=2015, config=None):
     """
     This function assumes an age-distribution for given capacity statistics
@@ -434,6 +426,11 @@ def derive_vintage_cohorts_from_statistics(df, base_year=2015, config=None):
     return dfe[~np.isclose(dfe.Capacity, 0)]
 
 
+@deprecated(
+    deprecated_in="0.5.0",
+    removed_in="0.6.0",
+    reason="This function is not maintained anymore and will be removed in the future.",
+)
 def set_denmark_region_id(df):
     """
     Used to set the Region column to DKE/DKW (East/West) for electricity models
@@ -475,6 +472,11 @@ def set_denmark_region_id(df):
     return df
 
 
+@deprecated(
+    deprecated_in="0.5.0",
+    removed_in="0.6.0",
+    reason="This function is not maintained anymore and will be removed in the future.",
+)
 def remove_oversea_areas(df, lat=[36, 72], lon=[-10.6, 31]):
     """
     Remove plants outside continental Europe such as the Canarian Islands etc.
@@ -498,7 +500,7 @@ def gross_to_net_factors(reference="opsd", aggfunc="median", return_entire_data=
     if reference == "opsd":
         from .data import OPSD
 
-        reference = OPSD(rawDE=True)
+        reference = OPSD(raw=True)["DE"]
     df = reference.copy()
     df = df[df.capacity_gross_uba.notnull() & df.capacity_net_bnetza.notnull()]
     df.loc[:, "ratio"] = df.capacity_net_bnetza / df.capacity_gross_uba
@@ -554,6 +556,11 @@ def PLZ_to_LatLon_map():
     return pd.read_csv(_package_data("PLZ_Coords_map.csv"), index_col="PLZ")
 
 
+@deprecated(
+    deprecated_in="0.5.0",
+    removed_in="0.6.0",
+    reason="This function is not maintained anymore and will be removed in the future.",
+)
 def set_known_retire_years(df):
     """
     Integrate known retire years, e.g. for German nuclear plants with fixed
