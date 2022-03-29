@@ -47,6 +47,7 @@ In order to ensure compatibility with the new code, please delete these sections
 * The Fueltype `Other` was replaced by NaN. 
 * The `GEO` data now returns a dataset containing power plant units.  
 * The ``ESE`` dataset was removed due the hosting website taken down. 
+* The argument ``subsume_uncommon_fueltypes_to_other`` in ``powerplantmatching.collection.matched_data`` was removed. 
 
 Version 0.4.6 (25.11.2020)
 --------------------------

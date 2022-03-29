@@ -44,7 +44,6 @@ def collect(
     use_saved_aggregation=True,
     use_saved_matches=True,
     reduced=True,
-    custom_config={},
     config=None,
     **dukeargs,
 ):
@@ -66,8 +65,6 @@ def collect(
         or to do an horizontal matching (False)
     reduced : bool
         Switch as to return the reduced (True) or matched (False) dataset.
-    custom_config : dict
-        Updates to the data_config dict from data module
     **dukeargs : keyword-args for duke
     """
 
@@ -140,8 +137,8 @@ def collect(
 
 
 @deprecated(
-    deprecated_in="0.4.9",
-    removed_in="0.5.0",
+    deprecated_in="0.5.0",
+    removed_in="0.6.0",
     details="Use the collect function instead",
 )
 def Collection(**kwargs):
@@ -156,14 +153,13 @@ def matched_data(
     from_url=False,
     extend_by_vres=False,
     extendby_kwargs={"use_saved_aggregation": True},
-    subsume_uncommon_fueltypes=False,
     **collection_kwargs,
 ):
     """
     Return the full matched dataset including all data sources listed in
     config.yaml/matching_sources. The combined data is additionally extended
     by non-matched entries of sources given in
-    config.yaml/fully_inculded_souces.
+    config.yaml/fully_included_souces.
 
 
     Parameters
@@ -191,8 +187,6 @@ def matched_data(
     extendby_kwargs : Dict, default {'use_saved_aggregation': True}
             Dict of keywordarguments passed to powerplantmatchting.
             heuristics.extend_by_non_matched
-    subsume_uncommon_fueltypes : Boolean, default False
-            Whether to replace uncommon fueltype specification by 'Other'
     **collection_kwargs : kwargs
             Arguments passed to powerplantmatching.collection.Collection.
             Typical arguments are update, use_saved_aggregation,
@@ -257,35 +251,10 @@ def matched_data(
                 matched, name, config=config, **extendby_kwargs
             )
 
-    # Drop matches between only low reliability-data, this is necessary since
-    # a lot of those are decommissioned, however some countries only appear in
-    # GEO and CARMA
-    allowed_countries = config["CARMA_GEO_countries"]
-    if matched.columns.nlevels > 1:
-        other = set(matching_sources) - set(["CARMA", "GEO"])
-        matched = matched[
-            ~matched.projectID[other].isna().all(1)
-            | matched.Country.GEO.isin(allowed_countries)
-            | matched.Country.CARMA.isin(allowed_countries)
-        ].reset_index(drop=True)
-        if config["remove_missing_coords"]:
-            matched = matched[matched.lat.notnull().any(1)].reset_index(drop=True)
-    else:
-        matched = matched[
-            matched.projectID.apply(
-                lambda x: sorted(x.keys()) not in [["CARMA", "GEO"]]
-            )
-            | matched.Country.isin(allowed_countries)
-        ].reset_index(drop=True)
-        if config["remove_missing_coords"]:
-            matched = matched[matched.lat.notnull()].reset_index(drop=True)
     matched.to_csv(fn, index_label="id", encoding="utf-8")
 
     if extend_by_vres:
         matched = extend_by_VRE(
             matched, config=config, base_year=config["opsd_vres_base_year"]
         )
-
-    if subsume_uncommon_fueltypes:
-        matched = set_uncommon_fueltypes_to_other(matched)
     return matched.pipe(set_column_name, "Matched Data")
