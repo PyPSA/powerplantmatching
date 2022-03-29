@@ -3,10 +3,8 @@ import pandas as pd
 import pytest
 
 from powerplantmatching.cleaning import (
-    clean_powerplantname,
+    clean_name,
     gather_and_replace,
-    gather_fueltype_info,
-    gather_set_info,
     gather_specifications,
     gather_technology_info,
 )
@@ -68,12 +66,6 @@ def test_gather_and_replace(data):
     assert res[3] == "Coal"
 
 
-def test_gather_technology_info(data):
-    processed = gather_technology_info(data)
-    assert processed.at[2, "Technology"] == "OCGT"
-    assert np.isnan(processed.at[4, "Technology"])
-
-
 def test_gather_specifications(data):
     res = gather_specifications(data)
     assert res.Fueltype[0] == "Natural Gas"
@@ -87,7 +79,7 @@ def test_gather_specifications(data):
 
 
 def test_clean_name(data):
-    res = clean_powerplantname(data)
+    res = clean_name(data)
     assert res.Name[0] == "Powerplant"
     assert res.Name[1] == "An Hydro Powerplant"
     assert res.Name[2] == "Another Powerplant With Whitespaces"

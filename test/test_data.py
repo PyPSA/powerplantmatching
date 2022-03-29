@@ -18,12 +18,15 @@ sources = config["matching_sources"]
 @pytest.mark.parametrize("source", sources)
 def test_data_request_raw(source):
     func = getattr(data, source)
+    df = func(update=True, raw=True)
     if source == "OPSD":
-        kwargs = {"rawDE": True}
+        assert len(df["DE"])
+        assert len(df["EU"])
+    elif source == "GEO":
+        assert len(df["Units"])
+        assert len(df["Plants"])
     else:
-        kwargs = {"raw": True}
-    df = func(update=True, **kwargs)
-    assert len(df)
+        assert len(df)
 
 
 @pytest.mark.parametrize("source", sources)

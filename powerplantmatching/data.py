@@ -148,27 +148,32 @@ def OPSD(
         "Lon": "lon",
         "Energy_Source": "Fueltype",
         "Commissioned": "DateIn",
+        "Efficiency_Source": "Efficiency",
         "Eic_Code": "EIC",
     }
 
     DE_RENAME_COLUMNS = {
         "Lat": "lat",
         "Lon": "lon",
-        "Fuel": "Fueltype",
+        "Energy_Source": "Fueltype",
         "Type": "Set",
         "Country_Code": "Country",
         "Capacity_Net_Bnetza": "Capacity",
         "Commissioned": "DateIn",
         "Shutdown": "DateOut",
+        "Efficiency_Source": "Efficiency",
         "Eic_Code_Plant": "EIC",
         "Id": "projectID",
     }
 
     opsd_EU = (
         opsd_EU.rename(columns=str.title)
-        .rename(EU_RENAME_COLUMNS)
+        .rename(columns=EU_RENAME_COLUMNS)
         .eval("DateRetrofit = DateIn")
-        .assign(projectID=lambda s: "OEU" + s.index.astype(str))
+        .assign(
+            projectID=lambda s: "OEU" + s.index.astype(str),
+            Fueltype=lambda d: d.Fueltype.fillna(d.Energy_Source_Level_1),
+        )
         .reindex(columns=config["target_columns"])
     )
 
