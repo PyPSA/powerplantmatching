@@ -50,14 +50,10 @@ ENTSOE:
   reliability_score: 4
   url: https://vfs.fias.science/f/ebbdf6ba8c/?raw=1
   fn: entsoe_powerplants.csv
-ESE:
-  reliability_score: 6
-  fn: projects.csv
-  url: http://energystorageexchange.org/data/projects.csv?q=all #not openly available
 JRC:
   reliability_score: 6
-  fn: jrc-hydro-power-database-05.zip
-  url: https://github.com/energy-modelling-toolkit/hydro-power-database/releases/download/v5/jrc-hydro-power-database-05.zip
+  fn: jrc-hydro-power-database-10.zip
+  url: https://github.com/energy-modelling-toolkit/hydro-power-database/archive/refs/tags/v10.zip
 GEO:
   net_capacity: false
   reliability_score: 3
@@ -80,11 +76,11 @@ IWPDCY:
 OPSD_DE:
   reliability_score: 5
   fn: conventional_power_plants_DE.csv
-  url: https://data.open-power-system-data.org/conventional_power_plants/2018-12-20/conventional_power_plants_DE.csv
+  url: https://data.open-power-system-data.org/conventional_power_plants/2020-10-01/conventional_power_plants_DE.csv
 OPSD_EU:
   reliability_score: 5
   fn: conventional_power_plants_EU.csv
-  url: https://data.open-power-system-data.org/conventional_power_plants/2018-12-20/conventional_power_plants_EU.csv
+  url: https://data.open-power-system-data.org/conventional_power_plants/2020-10-01/conventional_power_plants_EU.csv
 OPSD_VRE:
   url: https://data.open-power-system-data.org/renewable_power_plants/2020-08-25/renewable_power_plants_EU.csv
   fn: renewable_power_plants_EU.csv
@@ -115,13 +111,13 @@ OPSD_VRE_GB:
 OPSD:
   reliability_score: 5
 Capacity_stats:
-  url: https://data.open-power-system-data.org/national_generation_capacity/2019-02-22/national_generation_capacity_stacked.csv
+  url: https://data.open-power-system-data.org/national_generation_capacity/2020-10-01/national_generation_capacity_stacked.csv
   fn: national_generation_capacity_stacked.csv
 UBA:
   net_capacity: false
   reliability_score: 5
   fn: kraftwerke-de-ab-100-mw.xls
-  url: https://www.umweltbundesamt.de/sites/default/files/medien/372/dokumente/kraftwerke_de_ab_100_mw.xls
+  url: https://www.umweltbundesamt.de/sites/default/files/medien/372/dokumente/kraftwerke_de_ab_100_mw_0.xls
 WEPP:
   net_capacity: false
   reliability_score: 4
@@ -211,6 +207,7 @@ target_fueltypes:
   Solar: ""
   Waste: ""
   Wind: ""
+  Battery: [Electro-chemical, battery]
 target_sets:
   # Provide a mapping of the keys to a list or a regex expression which are used for parsing.
   # A list will be converted to a regex expression matching all words (case-insensitive)
