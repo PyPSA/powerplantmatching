@@ -25,8 +25,8 @@ import logging
 import numpy as np
 import pandas as pd
 import pycountry
+from deprecation import deprecated
 from scipy.spatial import cKDTree as KDTree
-from sklearn.utils import deprecated
 
 from .core import _data_out, get_obj_if_Acc
 from .heuristics import set_denmark_region_id, set_known_retire_years
@@ -137,7 +137,7 @@ def to_pypsa_network(df, network, buslist=None):
 @deprecated(
     deprecated_in="0.5.0",
     removed_in="0.6.0",
-    reason="This function is not maintained anymore and will be removed in the future.",
+    details="This function is not maintained anymore and will be removed in the future.",
 )
 def to_TIMES(df=None, use_scaled_capacity=False, baseyear=2015):
     """

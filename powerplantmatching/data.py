@@ -276,7 +276,6 @@ def GEO(raw=False, update=False, config=None):
     res.DateIn.fillna(res.DateIn_ppl, inplace=True)
     not_included_ppl = ppl.query("projectID not in @res.projectID")
     res = pd.concat([res, not_included_ppl])
-    breakpoint()
     res = config_filter(res, "GEO")
     res["projectID"] = "GEO" + res.projectID.astype(str)
 

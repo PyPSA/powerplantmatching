@@ -96,7 +96,7 @@ def clean_name(df, config=None):
         if config["clean_name"]["remove_common_words"] and (key == ""):
             common_words = pd.Series(sum(name.str.split(), [])).value_counts()
             common_words = list(common_words[common_words >= 20].index)
-            pattern.append(common_words)
+            pattern += common_words
         if isinstance(pattern, list):
             # if pattern is a list, concat all entries in a case-insensitive regex
             pattern = r"(?i)" + "|".join([rf"\b{p}\b" for p in pattern])
