@@ -95,29 +95,6 @@ def get_raw_file(name, update=False, config=None, skip_retrieve=False):
     return path
 
 
-@deprecated(
-    deprecated_in="0.4.8",
-    removed_in="0.5.0",
-    details="Use the get_raw_file function instead",
-)
-def parse_if_not_stored(name, update=False, config=None, parse_func=None, **kwargs):
-    if config is None:
-        config = get_config()
-    df_config = config[name]
-    path = _data_in(df_config["fn"])
-
-    if not os.path.exists(path) or update:
-        if parse_func is None:
-            logger.info(f'Retrieving data from {df_config["url"]}')
-            data = pd.read_csv(df_config["url"], **kwargs)
-        else:
-            data = parse_func()
-        data.to_csv(path)
-    else:
-        data = pd.read_csv(path, **kwargs)
-    return data
-
-
 def config_filter(df, name=None, config=None):
     """
     Convenience function to filter data source according to the config.yaml

@@ -26,6 +26,7 @@ import numpy as np
 import pandas as pd
 import pycountry
 from scipy.spatial import cKDTree as KDTree
+from sklearn.utils import deprecated
 
 from .core import _data_out, get_obj_if_Acc
 from .heuristics import set_denmark_region_id, set_known_retire_years
@@ -311,6 +312,7 @@ def to_TIMES(df=None, use_scaled_capacity=False, baseyear=2015):
     return df_exp
 
 
+@deprecated(deprecated_in="0.5.0", removed_in="0.6.0")
 def store_open_dataset():
     from .collection import matched_data, reduce_matched_dataframe
 
@@ -323,6 +325,7 @@ def store_open_dataset():
     return m
 
 
+@deprecated(deprecated_in="0.5.0", removed_in="0.6.0")
 def fueltype_to_abbrev():
     """
     Return the fueltype-specific abbreviation.
@@ -344,6 +347,7 @@ def fueltype_to_abbrev():
     return data
 
 
+@deprecated(deprecated_in="0.5.0", removed_in="0.6.0")
 def timestype_to_life():
     """
     Returns the timestype-specific technical lifetime.

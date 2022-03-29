@@ -16,6 +16,24 @@ This release contains many breaking changes. Due to time-constraints we cannot e
   * a section ``clean_name`` was added. This section contains the regular expressions and lists of words that are used to clean the names of the plants.
 In order to ensure compatibility with the new code, please delete these sections in your custom config. 
 
+**Deprecations**
+
+* The ``CARMA`` dataset was deprecated as the data is not publicly available anymore.
+* The ``IWPDCY`` dataset was deprecated in the favor of the `JRC` data.
+* The ``WEPP`` dataset was deprecated due to restrictive license.
+* The ``UBA`` dataset was deprecated in the favor of the ``OPSD`` data.
+* The ``BENTZA`` dataset was deprecated in the favor of the ``OPSD`` data.
+* The ``IRENA_stats`` dataset was deprecated as the data is not publicly available anymore.
+* The following functions were deprecated and will be removed in ``v0.6``:
+  * ``powerplantmatching.export.to_TIMES``
+  * ``powerplantmatching.export.store_open_dataset``
+  * ``powerplantmatching.export.fueltype_to_abbrev` `
+  * ``powerplantmatching.heuristics.set_denmark_region_id``
+  * ``powerplantmatching.heuristics.remove_oversea_areas``
+  * ``powerplantmatching.heuristics.set_known_retire_years``
+
+
+
 **Non-Breaking Code Changes**
 
 * The `BEYOND COAL <https://beyond-coal.eu/coal-exit-tracker/>`_ data is now available as an data source. 
@@ -24,9 +42,11 @@ In order to ensure compatibility with the new code, please delete these sections
 
 **Breaking Code Changes:**
 
+* The argument `rawDE` and `rawEU` in ``powerplantmatching.data.OPSD`` was deprecated in the favor of `raw`. If ``True`` the function returns a dictionary with the raw datasets.
 * All keyword arguments of the data functions in ``powerplantmatching.data`` were sorted according to ``raw``, ``update``, ``config``. This lead to some breaking changes of the arguments order.
 * The Fueltype `Other` was replaced by NaN. 
-
+* The `GEO` data now returns a dataset containing power plant units.  
+* The ``ESE`` dataset was removed due the hosting website taken down. 
 
 Version 0.4.6 (25.11.2020)
 --------------------------
