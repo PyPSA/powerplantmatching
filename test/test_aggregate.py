@@ -11,5 +11,5 @@ def test_aggregate():
     for source in sources:
         df = getattr(data, source)().sort_values("Name").head(100)
         aggregated = df.powerplant.aggregate_units()
-        if config[source].get("aggregated_units", False):
-            assert len(aggregated) == len(df)
+        if not config[source].get("aggregated_units", False):
+            assert len(aggregated) < len(df)

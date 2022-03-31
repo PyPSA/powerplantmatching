@@ -78,24 +78,24 @@ def BEYONDCOAL(raw=False, update=False, config=None):
     if raw:
         return df
 
+    RENAME_COLUMNS = {
+        "Plant name": "Name",
+        "Fuel type": "Fueltype",
+        "Latitude": "lat",
+        "Longitude": "lon",
+        "Commissioning year of first unit": "DateIn",
+        "(Announced) Retirement year of last unit": "DateOut",
+        "Coal capacity open": "Capacity",
+        "Plant status\n(gross)": "status",
+        "EBC plant ID": "projectID",
+    }
+
     phaseout_col = "Covered by country phase-out? [if yes: country phase-out year]"
 
     df = (
         df["Plant Data"]
         .droplevel(1, axis=1)
-        .rename(
-            columns={
-                "Plant name": "Name",
-                "Fuel type": "Fueltype",
-                "Latitude": "lat",
-                "Longitude": "lon",
-                "Commissioning year of first unit": "DateIn",
-                "(Announced) Retirement year of last unit": "DateOut",
-                "Coal capacity open": "Capacity",
-                "Plant status\n(gross)": "status",
-                "EBC plant ID": "projectID",
-            }
-        )
+        .rename(columns=RENAME_COLUMNS)
         .query('status != "Cancelled"')
         .assign(
             DateOut=lambda df: df.DateOut.fillna(df[phaseout_col]).where(
@@ -104,6 +104,7 @@ def BEYONDCOAL(raw=False, update=False, config=None):
             projectID=lambda df: "BEYOND-" + df.projectID,
             Fueltype=lambda df: df.Fueltype.str.title().replace("Unknown", "Other"),
             Set="PP",
+            Technology=np.nan,
         )
         .pipe(scale_to_net_capacities)
         .pipe(clean_name)
@@ -566,17 +567,50 @@ def GPD(raw=False, update=False, config=None, filter_other_dbs=True):
     )
 
 
-# def WIKIPEDIA(raw=False):
-#    from bs4 import BeautifulSoup
-#
-#    url = 'https://en.wikipedia.org/wiki/List_of_power_stations_in_Germany'
-#
-#    dfs = pd.read_html(url, attrs={"class": ["wikitable","wikitable sortable"]})
-#    soup = BeautifulSoup(requests.get(url).text)
-#    all_headers = [h.text for h in soup.find_all("h2")]
-#    headers = [header[:-6] for header in all_headers if header[-6:] == '[edit]']
-#    headers = headers[:len(dfs)]
-#    df = pd.concat(dfs, keys=headers, axis=0, sort=True)
+def WIKIPEDIA(raw=False, update=False, config=None):
+    """
+    Importer for the WIKIPEDIA nuclear power plant database.
+
+    Parameters
+    ----------
+    raw : boolean, default False
+        Whether to return the original dataset
+    update: bool, default False
+        Whether to update the data from the url.
+    config : dict, default None
+        Add custom specific configuration,
+        e.g. powerplantmatching.config.get_config(target_countries='Italy'),
+        defaults to powerplantmatching.config.get_config()
+    """
+
+    config = get_config() if config is None else config
+
+    fn = get_raw_file("WIKIPEDIA", update=update, config=config)
+    df = pd.read_csv(fn, index_col=0)
+
+    if raw:
+        return df
+
+    RENAME_COLUMNS = {
+        "Net performance MW": "Capacity",
+        "country": "Country",
+        "decommission_year": "DateOut",
+        "commission_year": "DateIn",
+    }
+
+    df = (
+        df.rename(columns=RENAME_COLUMNS)
+        .pipe(clean_name)
+        .query("Name != ''")
+        .assign(
+            Fueltype="Nuclear",
+            Set="PP",
+            projectID=lambda df: "WIKIPEDIA-" + df.index.astype(str),
+        )
+        .pipe(set_column_name, "WIKIPEDIA")
+        .pipe(config_filter, config=config)
+    )
+    return df
 
 
 def ENTSOE(raw=False, update=False, config=None, entsoe_token=None):

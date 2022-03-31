@@ -11,6 +11,7 @@ matching_sources:
   - JRC
   - OPSD
   - BEYONDCOAL
+  - WIKIPEDIA
 
 fully_included_sources:
   - OPSD: Country not in ['Switzerland']
