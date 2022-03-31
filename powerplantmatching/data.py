@@ -99,8 +99,8 @@ def BEYONDCOAL(raw=False, update=False, config=None):
         )
         .query('status != "Cancelled"')
         .assign(
-            DateOut=lambda df: df.DateOut.fillna(df[phaseout_col]).replace(
-                {8888: np.nan}
+            DateOut=lambda df: df.DateOut.fillna(df[phaseout_col]).where(
+                lambda ds: ds <= 8000
             ),
             projectID=lambda df: "BEYOND-" + df.projectID,
             Fueltype=lambda df: df.Fueltype.str.title().replace("Unknown", "Other"),
@@ -115,7 +115,7 @@ def BEYONDCOAL(raw=False, update=False, config=None):
 def OPSD(
     raw=False,
     update=False,
-    statusDE=["operating", "reserve", "special_case", "shutdown_temporary"],
+    statusDE=None,
     config=None,
 ):
     """
@@ -148,21 +148,26 @@ def OPSD(
         "Lon": "lon",
         "Energy_Source": "Fueltype",
         "Commissioned": "DateIn",
-        "Efficiency_Source": "Efficiency",
+        "Retrofit": "DateRetrofit",
+        "Shutdown": "DateOut",
+        "Efficiency_Estimate": "Efficiency",
         "Eic_Code": "EIC",
+        "Chp": "Set",
     }
 
     DE_RENAME_COLUMNS = {
         "Lat": "lat",
         "Lon": "lon",
         "Energy_Source": "Fueltype",
-        "Type": "Set",
+        # "Type": "Set",
         "Country_Code": "Country",
         "Capacity_Net_Bnetza": "Capacity",
         "Commissioned": "DateIn",
+        "Retrofit": "DateRetrofit",
         "Shutdown": "DateOut",
-        "Efficiency_Source": "Efficiency",
+        "Efficiency_Estimate": "Efficiency",
         "Eic_Code_Plant": "EIC",
+        "Chp": "Set",
         "Id": "projectID",
     }
 
@@ -173,6 +178,7 @@ def OPSD(
         .assign(
             projectID=lambda s: "OEU" + s.index.astype(str),
             Fueltype=lambda d: d.Fueltype.fillna(d.Energy_Source_Level_1),
+            Set=lambda df: np.where(df.Set.isin(["yes", "Yes"]), "CHP", "PP"),
         )
         .reindex(columns=config["target_columns"])
     )
@@ -183,7 +189,8 @@ def OPSD(
         .assign(
             Name=lambda d: d.Name_Bnetza.fillna(d.Name_Uba),
             Fueltype=lambda d: d.Fueltype.fillna(d.Energy_Source_Level_1),
-            DateRetrofit=lambda d: d.Retrofit.fillna(d.DateIn),
+            DateRetrofit=lambda d: d.DateRetrofit.fillna(d.DateIn),
+            Set=lambda df: np.where(df.Set.isin(["yes", "Yes"]), "CHP", "PP"),
         )
     )
     if statusDE is not None:
@@ -277,7 +284,7 @@ def GEO(raw=False, update=False, config=None):
     ppl = gather_specifications(ppl, parse_columns=cols)
     ppl = clean_name(ppl).query("Name != ''")
 
-    res = units.join(ppl, "projectID", rsuffix="_ppl")
+    res = units.join(ppl.set_index("projectID"), "projectID", rsuffix="_ppl")
     res.DateIn.fillna(res.DateIn_ppl, inplace=True)
     not_included_ppl = ppl.query("projectID not in @res.projectID")
     res = pd.concat([res, not_included_ppl])
@@ -452,7 +459,6 @@ def IWPDCY(config=None):
 
 def Capacity_stats(
     raw=False,
-    level=2,
     config=None,
     update=False,
     source="ENTSO-E Transparency Platform",

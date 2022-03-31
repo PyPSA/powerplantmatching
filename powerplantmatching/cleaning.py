@@ -55,7 +55,7 @@ AGGREGATION_FUNCTIONS = {
     "DateMothball": "min",
     "DateOut": "min",
     "File": mode,
-    "projectID": list,
+    "projectID": set,
     "EIC": set,
     "Duration": "sum",  # note this is weighted sum
     "Volume_Mm3": "sum",
@@ -426,12 +426,12 @@ def aggregate_units(
         ds_name = dataset_name
 
     cols = config["target_columns"]
-    weighted_cols = {"Efficiency", "Duration"} & set(cols)
+    weighted_cols = list({"Efficiency", "Duration"} & set(cols))
     str_cols = {"Name", "Country", "Fueltype", "Technology", "Set"} & set(cols)
     props_for_groups = {k: v for k, v in AGGREGATION_FUNCTIONS.items() if k in cols}
 
     df = (
-        df.assign(**(df[weighted_cols] * df.Capacity))
+        df.assign(**(df[weighted_cols].mul(df.Capacity, axis=0)))
         .assign(lat=df.lat.astype(float), lon=df.lon.astype(float))
         .assign(**df[str_cols].fillna("").astype(str))
     )
@@ -471,7 +471,7 @@ def aggregate_units(
         df = df.assign(EIC=df["EIC"].apply(list))
 
     df = (
-        df.assign(**df[weighted_cols].div(df["Capacity"]))
+        df.assign(**df[weighted_cols].div(df["Capacity"], axis=0))
         .reset_index(drop=True)
         .pipe(clean_name)
         .reindex(columns=cols)

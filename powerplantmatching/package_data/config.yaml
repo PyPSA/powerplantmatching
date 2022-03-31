@@ -31,6 +31,7 @@ BNETZA:
   fn: Kraftwerksliste_2017_2.xlsx
   url: https://www.bundesnetzagentur.de/SharedDocs/Downloads/DE/Sachgebiete/Energie/Unternehmen_Institutionen/Versorgungssicherheit/Erzeugungskapazitaeten/Kraftwerksliste/Kraftwerksliste_2019_1.xlsx;jsessionid=17E419F28D025C7DD9FC6E2BEB3D088F?__blob=publicationFile&v=2
 BEYONDCOAL:
+  aggregated_units: true
   reliability_score: 6
   fn: Europe_Beyond_Coal-European_Coal_Database_hc5n.xlsx
   url: https://beyond-coal.eu/wp-content/uploads/2021/07/2021-04-20_Europe_Beyond_Coal-European_Coal_Database_hc5n.xlsx
@@ -313,10 +314,10 @@ fuel_to_color:
   Offshore: cornflowerblue
   Onshore: darkblue
   Wind: steelblue
-  Bioenergy: g
+  Bioenergy: forestgreen
   Natural Gas: red
   CCGT: red
-  Coal: k
+  Coal: black
   Hard Coal: dimgray
   Oil: darkgreen
   Other: silver
