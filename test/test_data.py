@@ -34,7 +34,9 @@ def test_data_request_processed(source):
     func = getattr(data, source)
     df = func()
     assert len(df)
+    assert df.columns.to_list() == config["target_columns"]
 
 
-def test_powerplants():
-    pm.powerplants(from_url=True)
+# Enable after release of v0.5.0
+# def test_powerplants():
+#     pm.powerplants(from_url=True)

@@ -31,6 +31,7 @@ BNETZA:
   fn: Kraftwerksliste_2017_2.xlsx
   url: https://www.bundesnetzagentur.de/SharedDocs/Downloads/DE/Sachgebiete/Energie/Unternehmen_Institutionen/Versorgungssicherheit/Erzeugungskapazitaeten/Kraftwerksliste/Kraftwerksliste_2019_1.xlsx;jsessionid=17E419F28D025C7DD9FC6E2BEB3D088F?__blob=publicationFile&v=2
 BEYONDCOAL:
+  net_capacity: false
   aggregated_units: true
   reliability_score: 6
   fn: Europe_Beyond_Coal-European_Coal_Database_hc5n.xlsx
@@ -45,7 +46,7 @@ ENTSOE:
   url: https://vfs.fias.science/f/ebbdf6ba8c/?raw=1
   fn: entsoe_powerplants.csv
 JRC:
-  reliability_score: 6
+  reliability_score: 4
   fn: jrc-hydro-power-database-10.zip
   url: https://github.com/energy-modelling-toolkit/hydro-power-database/archive/refs/tags/v10.zip
 GEO:
@@ -63,6 +64,10 @@ GPD:
   fn: globalpowerplantdatabasev120.zip
   #if outdated, look at http://datasets.wri.org/dataset/globalpowerplantdatabase
   url: https://wri-dataportal-prod.s3.amazonaws.com/manual/global_power_plant_database_v_1_3.zip
+WIKIPEDIA:
+  reliability_score: 4
+  url: https://vfs.fias.science/f/c49203915f/?raw=1
+  fn: nuclear_plants_from_wikipedia.csv
 IWPDCY:
   aggregated_units: true
   reliability_score: 3
@@ -182,7 +187,7 @@ target_fueltypes:
   Other: ".*"
   Bioenergy: [biological, biogas, bioenergy, agricultural, wood]
   Nuclear: [nuclear]
-  Natural Gas: [ccgt, gas, natural gas, ocgt, lng]
+  Natural Gas: [ccgt, gas, natural gas, ocgt, lng, combined cycle]
   Hydro:
     [
       run-off,
@@ -239,10 +244,11 @@ target_technologies:
   CSP: ""
 clean_name:
   remove_common_words: true # remove words which appear more that 20 times in all entries
+  remove_duplicated_words: true
   replace:
     " ": "[^a-zA-Z]" # non-alphabetical symbols
     "":
-    # This should be a list, if remove_common_words is true.
+      # This should be a list, if remove_common_words is true.
       [
         I,
         II,
@@ -260,29 +266,11 @@ clean_name:
         parque,
         grupo,
         project,
+        hydroelectric,
+        power,
+        plant,
       ]
     "ss": "ß"
-
-# Allowed countries for matches of only CARMA and GEO
-CARMA_GEO_countries:
-  - Austria
-  - Belgium
-  - Bulgaria
-  - Czech Republic
-  - Croatia
-  - Denmark
-  - Estonia
-  - France
-  - Germany
-  - Ireland
-  - Italy
-  - Luxembourg
-  - Netherlands
-  - Romania
-  - Slovakia
-  - Sweden
-  - Ukraine
-  - Moldova
 
 # heuristic config
 fuel_to_lifetime:

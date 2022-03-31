@@ -77,7 +77,7 @@ def collect(
                 config=config,
             )
         else:
-            return df.assign(projectID=df.projectID.map(lambda x: [x]))
+            return df.assign(projectID=df.projectID.map(lambda x: {x}))
 
     # Deal with the case that only one dataset is requested
     if isinstance(datasets, str):

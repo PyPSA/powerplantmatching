@@ -87,7 +87,6 @@ def extend_by_non_matched(
         extend_by.query(query, inplace=True)
     extend_by = extend_by.loc[~extend_by.projectID.isin(included_ids)]
     if aggregate_added_data and not extend_by.empty:
-        aggkwargs.update({"save_aggregation": False})
         extend_by = aggregate_units(
             extend_by, dataset_name=label, config=config, **aggkwargs
         )
@@ -497,7 +496,7 @@ def remove_oversea_areas(df, lat=[36, 72], lon=[-10.6, 31]):
 
 def gross_to_net_factors(reference="opsd", aggfunc="median", return_entire_data=False):
     """ """
-    from .cleaning import clean_technology
+    from .cleaning import gather_technology_info
 
     if reference == "opsd":
         from .data import OPSD
@@ -510,7 +509,7 @@ def gross_to_net_factors(reference="opsd", aggfunc="median", return_entire_data=
     if return_entire_data:
         return df
     else:
-        df.energy_source_level_2.fillna(value=df.fuel, inplace=True)
+        df.energy_source_level_2.fillna(value=df.energy_source, inplace=True)
         df.replace(
             dict(
                 energy_source_level_2={
@@ -528,7 +527,8 @@ def gross_to_net_factors(reference="opsd", aggfunc="median", return_entire_data=
             inplace=True,
         )
         df.rename(columns={"technology": "Technology"}, inplace=True)
-        df = clean_technology(df).assign(
+        df = gather_technology_info(df, ["Technology", "energy_source_level_2"])
+        df = df.assign(
             energy_source_level_2=lambda df: df.energy_source_level_2.str.title()
         )
         ratios = df.groupby(["energy_source_level_2", "Technology"]).ratio.mean()

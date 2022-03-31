@@ -16,7 +16,7 @@ TEST_DATA = {
         "an hydro powerplant",
         " another    powerplant with whitespaces",
         " Power II coalition",
-        " Kraftwerk 'Besonders'  2 CHP",
+        " Kraftwerk Besonders besonders '2' CHP",
     ],
     "Fueltype": [
         "",
@@ -83,5 +83,5 @@ def test_clean_name(data):
     assert res.Name[0] == "Powerplant"
     assert res.Name[1] == "An Hydro Powerplant"
     assert res.Name[2] == "Another Powerplant With Whitespaces"
-    assert res.Name[3] == "Power Coalition"
+    assert res.Name[3] == "Coalition"
     assert res.Name[4] == "Kraftwerk Besonders Chp"

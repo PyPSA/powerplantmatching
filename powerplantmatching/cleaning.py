@@ -21,6 +21,7 @@ from __future__ import absolute_import, print_function
 
 import logging
 import os
+import re
 
 import networkx as nx
 import numpy as np
@@ -105,6 +106,8 @@ def clean_name(df, config=None):
             raise ValueError(f"Pattern must be string or list, not {type(pattern)}")
         name = name.str.replace(pattern, key, regex=True)
 
+    if config["clean_name"]["remove_duplicated_words"]:
+        name = name.str.replace(r"\b(\w+)(?:\W\1\b)+", r"\1", regex=True, case=False)
     name = name.str.strip().str.title().str.replace(r" +", " ", regex=True)
 
     return df.assign(Name=name).sort_values("Name")
@@ -434,10 +437,11 @@ def aggregate_units(
     str_cols = list({"Name", "Country", "Fueltype", "Technology", "Set"} & set(cols))
     props_for_groups = {k: v for k, v in AGGREGATION_FUNCTIONS.items() if k in cols}
 
-    df = (
-        df.assign(**(df[weighted_cols].mul(df.Capacity, axis=0)))
-        .assign(lat=df.lat.astype(float), lon=df.lon.astype(float))
-        .assign(**df[str_cols].fillna("").astype(str))
+    df = df.assign(
+        lat=df.lat.astype(float),
+        lon=df.lon.astype(float),
+        **df[weighted_cols].mul(df.Capacity, axis=0),
+        **df[str_cols].fillna("").astype(str),
     )
 
     if pre_clean_name:
@@ -450,12 +454,10 @@ def aggregate_units(
         duplicates = pd.concat([duke(df.query("Country == @c")) for c in countries])
     else:
         duplicates = duke(df)
+
     df = cliques(df, duplicates)
     df = df.groupby("grouped").agg(props_for_groups)
     df = df.replace("nan", np.nan)
-
-    if "EIC" in df:
-        df = df.assign(EIC=df["EIC"].apply(list))
 
     df = (
         df.assign(**df[weighted_cols].div(df["Capacity"], axis=0))

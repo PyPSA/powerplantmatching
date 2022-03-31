@@ -34,7 +34,6 @@ from deprecation import deprecated
 
 from .cleaning import (
     clean_name,
-    clean_technology,
     gather_fueltype_info,
     gather_set_info,
     gather_specifications,
@@ -106,6 +105,9 @@ def BEYONDCOAL(raw=False, update=False, config=None):
             Fueltype=lambda df: df.Fueltype.str.title().replace("Unknown", "Other"),
             Set="PP",
         )
+        .pipe(scale_to_net_capacities)
+        .pipe(clean_name)
+        .query("Name != ''")
         .pipe(config_filter, name="BEYONDCOAL", config=config)
         .pipe(set_column_name, "BEYONDCOAL")
     )
@@ -176,7 +178,7 @@ def OPSD(
         .rename(columns=EU_RENAME_COLUMNS)
         .eval("DateRetrofit = DateIn")
         .assign(
-            projectID=lambda s: "OEU" + s.index.astype(str),
+            projectID=lambda s: "OEU-" + s.index.astype(str),
             Fueltype=lambda d: d.Fueltype.fillna(d.Energy_Source_Level_1),
             Set=lambda df: np.where(df.Set.isin(["yes", "Yes"]), "CHP", "PP"),
         )
@@ -287,9 +289,10 @@ def GEO(raw=False, update=False, config=None):
     res = units.join(ppl.set_index("projectID"), "projectID", rsuffix="_ppl")
     res.DateIn.fillna(res.DateIn_ppl, inplace=True)
     not_included_ppl = ppl.query("projectID not in @res.projectID")
-    res = pd.concat([res, not_included_ppl])
+    res = pd.concat([res, not_included_ppl]).pipe(set_column_name, "GEO")
+    res = scale_to_net_capacities(res)
     res = config_filter(res, "GEO")
-    res["projectID"] = "GEO" + res.projectID.astype(str)
+    res["projectID"] = "GEO-" + res.projectID.astype(str)
 
     return res
 
@@ -334,7 +337,7 @@ def CARMA(raw=False, update=False, config=None):
                 "plant.id": "projectID",
             }
         )
-        .assign(projectID=lambda df: "CARMA" + df.projectID.astype(str))
+        .assign(projectID=lambda df: "CARMA-" + df.projectID.astype(str))
         .loc[lambda df: df.Country.isin(config["target_countries"])]
         .replace(
             dict(
@@ -422,6 +425,9 @@ def JRC(raw=False, update=False, config=None):
         .drop(columns=["pypsa_id", "GEO"])
         .assign(Set="Store", Fueltype="Hydro")
         .powerplant.convert_alpha2_to_country()
+        .pipe(clean_name)
+        .query("Name != ''")
+        .pipe(set_column_name, "JRC")
         .pipe(config_filter)
     )
     return df
@@ -448,7 +454,9 @@ def IWPDCY(config=None):
 
     return (
         pd.read_csv(config["IWPDCY"]["fn"], encoding="utf-8", index_col="id")
-        .assign(File="IWPDCY.csv", projectID=lambda df: "IWPDCY" + df.index.astype(str))
+        .assign(
+            File="IWPDCY.csv", projectID=lambda df: "IWPDCY-" + df.index.astype(str)
+        )
         .dropna(subset=["Capacity"])
         .pipe(set_column_name, "IWPDCY")
         .pipe(config_filter, name="IWPDY", config=config)
