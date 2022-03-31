@@ -41,8 +41,6 @@ logger = logging.getLogger(__name__)
 def collect(
     datasets,
     update=False,
-    use_saved_aggregation=True,
-    use_saved_matches=True,
     reduced=True,
     config=None,
     **dukeargs,
@@ -57,12 +55,6 @@ def collect(
         list containing the dataset identifiers as str, or single str
     update : bool
         Do an horizontal update (True) or read from the cache file (False)
-    use_saved_aggregation : bool
-        Aggregate units based on cached aggregation group files (True)
-        or to do an vertical update (False)
-    use_saved_matches : bool
-        Match datasets based on cached matched pair files (True)
-        or to do an horizontal matching (False)
     reduced : bool
         Switch as to return the reduced (True) or matched (False) dataset.
     **dukeargs : keyword-args for duke
@@ -81,7 +73,6 @@ def collect(
         if not conf.get("aggregated_units", False):
             return aggregate_units(
                 df,
-                use_saved_aggregation=use_saved_aggregation,
                 dataset_name=name,
                 config=config,
             )
@@ -112,7 +103,6 @@ def collect(
         matched = combine_multiple_datasets(
             dfs,
             datasets,
-            use_saved_matches=use_saved_matches,
             config=config,
             **dukeargs,
         )
@@ -147,12 +137,11 @@ def Collection(**kwargs):
 
 def matched_data(
     config=None,
-    stored=True,
     update=False,
-    update_all=False,
     from_url=False,
     extend_by_vres=False,
-    extendby_kwargs={"use_saved_aggregation": True},
+    extendby_kwargs={},
+    extend_by_kwargs={},
     **collection_kwargs,
 ):
     """
@@ -164,17 +153,9 @@ def matched_data(
 
     Parameters
     ----------
-    stored : Boolean, default True
-            Whether to use the stored matched_data.csv file in data/out/default
-            If False, the matched data is taken from collect() and
-            extended afterwards. To update the whole matching, please set
-            stored=False and update=True.
     update : Boolean, default False
             Whether to rerun the matching process. Overrides stored to False
             if True.
-    update_all : Boolean, default False
-            Whether to rerun the matching process and aggregation process.
-            Overrides stored to False if True.
     from_url: Boolean, default False
             Whether to parse and store the already build data from the repo
             website.
@@ -184,13 +165,11 @@ def matched_data(
     extend_by_vres : Boolean, default False
             Whether extend the dataset by variable renewable energy sources
             given by powerplantmatching.data.OPSD_VRE()
-    extendby_kwargs : Dict, default {'use_saved_aggregation': True}
+    extendby_kwargs : Dict,
             Dict of keywordarguments passed to powerplantmatchting.
             heuristics.extend_by_non_matched
     **collection_kwargs : kwargs
             Arguments passed to powerplantmatching.collection.Collection.
-            Typical arguments are update, use_saved_aggregation,
-            use_saved_matches.
 
     """
     from . import __version__
@@ -198,12 +177,17 @@ def matched_data(
     if config is None:
         config = get_config()
 
-    if update_all:
-        collection_kwargs["use_saved_aggregation"] = False
-        collection_kwargs["use_saved_matches"] = False
-        update = True
-    if update:
-        stored = False
+    deprecated_args = {"update_all", "stored"}
+    used_deprecated_args = deprecated_args.intersection(collection_kwargs.keys())
+    if used_deprecated_args:
+        msg = "The following arguments were deprecated and are being ignored: "
+        logger.warn(msg + f"{used_deprecated_args}")
+    if extendby_kwargs:
+        logger.warn(
+            DeprecationWarning,
+            "`extendby_kwargs` is deprecated in the favor of extend_by_kwargs",
+        )
+        extend_by_kwargs.update(extendby_kwargs)
 
     collection_kwargs.setdefault("update", update)
 
@@ -227,7 +211,7 @@ def matched_data(
         df.to_csv(fn)
         return df
 
-    if stored and os.path.exists(fn):
+    if not update and os.path.exists(fn):
         df = (
             pd.read_csv(fn, index_col=0, header=header)
             .pipe(projectID_to_dict)
@@ -248,9 +232,9 @@ def matched_data(
         for source in config["fully_included_sources"]:
             source = to_dict_if_string(source)
             (name,) = list(source)
-            extendby_kwargs.update({"query": source[name]})
+            extend_by_kwargs.update({"query": source[name]})
             matched = extend_by_non_matched(
-                matched, name, config=config, **extendby_kwargs
+                matched, name, config=config, **extend_by_kwargs
             )
 
     matched.to_csv(fn, index_label="id", encoding="utf-8")

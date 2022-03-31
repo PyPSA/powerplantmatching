@@ -25,6 +25,7 @@ import os
 import networkx as nx
 import numpy as np
 import pandas as pd
+import unidecode
 from deprecation import deprecated
 
 from .core import _data_out, get_config, get_obj_if_Acc
@@ -87,7 +88,7 @@ def clean_name(df, config=None):
     if config is None:
         config = get_config()
 
-    name = df.Name.astype(str).copy()
+    name = df.Name.astype(str).copy().apply(unidecode.unidecode)
 
     replace = config["clean_name"]["replace"]
     replace.setdefault("", [])
@@ -388,11 +389,10 @@ def cliques(df, dataduplicates):
 def aggregate_units(
     df,
     dataset_name=None,
-    pre_clean_name=True,
-    save_aggregation=True,
+    pre_clean_name=False,
     country_wise=True,
-    use_saved_aggregation=False,
     config=None,
+    **kwargs,
 ):
     """
     Vertical cleaning of the database. Cleans the "Name"-column, sums
@@ -408,17 +408,21 @@ def aggregate_units(
         to True.
     pre_clean_name : Boolean, default True
         Whether to clean the 'Name'-column before aggregating.
-    use_saved_aggregation : bool (default False):
-        Whether to use the automatically saved aggregation file, which
-        is stored in data/out/default/aggregations/aggregation_groups_XX.csv
-        with XX being the name for the dataset. This saves time if you
-        want to have aggregated powerplants without running the
-        aggregation algorithm again
+    country_wise : Boolean, default True
+        Whether to aggregate only entries with a identical country.
     """
     df = get_obj_if_Acc(df)
 
     if config is None:
         config = get_config()
+
+    deprecated_args = {"use_saved_aggregation", "save_aggregation"}
+    used_deprecated_args = deprecated_args.intersection(kwargs)
+    if used_deprecated_args:
+        for arg in used_deprecated_args:
+            kwargs.pop(arg)
+        msg = "The following arguments were deprecated and are being ignored: "
+        logger.warn(msg + f"{used_deprecated_args}")
 
     if dataset_name is None:
         ds_name = get_name(df)
@@ -427,7 +431,7 @@ def aggregate_units(
 
     cols = config["target_columns"]
     weighted_cols = list({"Efficiency", "Duration"} & set(cols))
-    str_cols = {"Name", "Country", "Fueltype", "Technology", "Set"} & set(cols)
+    str_cols = list({"Name", "Country", "Fueltype", "Technology", "Set"} & set(cols))
     props_for_groups = {k: v for k, v in AGGREGATION_FUNCTIONS.items() if k in cols}
 
     df = (
@@ -439,31 +443,14 @@ def aggregate_units(
     if pre_clean_name:
         df = clean_name(df)
 
-    logger.info(f"Aggregating blocks to entire units in '{ds_name}'.")
-    path_name = _data_out(f"aggregations/aggregation_groups_{ds_name}.csv", config)
+    logger.info(f"Aggregating blocks in data source '{ds_name}'.")
 
-    if use_saved_aggregation & save_aggregation:
-        if os.path.exists(path_name):
-            logger.info(f"Using saved aggregation groups for dataset '{ds_name}'")
-            groups = pd.read_csv(path_name, header=None, index_col=0)
-            groups = groups.reindex(index=df.index)
-            df = df.assign(grouped=groups.values)
-        else:
-            if "grouped" in df:
-                df.drop("grouped", axis=1, inplace=True)
+    if country_wise:
+        countries = df.Country.unique()
+        duplicates = pd.concat([duke(df.query("Country == @c")) for c in countries])
     else:
-        logger.info(f"Not using saved aggregation groups for dataset '{ds_name}'.")
-
-    if "grouped" not in df:
-        if country_wise:
-            countries = df.Country.unique()
-            duplicates = pd.concat([duke(df.query("Country == @c")) for c in countries])
-        else:
-            duplicates = duke(df)
-        df = cliques(df, duplicates)
-        if save_aggregation:
-            df.grouped.to_csv(path_name, header=False)
-
+        duplicates = duke(df)
+    df = cliques(df, duplicates)
     df = df.groupby("grouped").agg(props_for_groups)
     df = df.replace("nan", np.nan)
 

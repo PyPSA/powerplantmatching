@@ -51,9 +51,7 @@ def best_matches(links):
     )
 
 
-def compare_two_datasets(
-    dfs, labels, use_saved_matches=False, country_wise=True, config=None, **dukeargs
-):
+def compare_two_datasets(dfs, labels, country_wise=True, config=None, **dukeargs):
     """
     Duke-based horizontal match of two databases. Returns the matched
     dataframe including only the matched entries in a multi-indexed
@@ -79,21 +77,17 @@ def compare_two_datasets(
     if config is None:
         config = get_config()
 
+    deprecated_args = {"use_saved_matches", "use_saved_aggregation"}
+    used_deprecated_args = deprecated_args.intersection(dukeargs)
+    if used_deprecated_args:
+        for arg in used_deprecated_args:
+            dukeargs.pop(arg)
+        msg = "The following arguments were deprecated and are being ignored: "
+        logger.warn(msg + f"{used_deprecated_args}")
+
     dfs = list(map(read_csv_if_string, dfs))
     if not ("singlematch" in dukeargs):
         dukeargs["singlematch"] = True
-    saving_path = _data_out(
-        "matches/matches_{}_{}.csv".format(*np.sort(labels)), config=config
-    )
-    if use_saved_matches:
-        if os.path.exists(saving_path):
-            logger.info("Reading saved matches for dfs {} and {}".format(*labels))
-            return pd.read_csv(saving_path, index_col=0)
-        else:
-            logger.warning(
-                "Non-existing saved matches for dataset '{}', '{}'"
-                " continuing by matching again".format(*labels)
-            )
 
     def country_link(dfs, country):
         # country_selector for both dataframes
@@ -112,7 +106,6 @@ def compare_two_datasets(
     else:
         links = duke(dfs, labels=labels, **dukeargs)
     matches = best_matches(links)
-    matches.to_csv(saving_path)
     return matches
 
 
@@ -192,14 +185,8 @@ def link_multiple_datasets(
     combs = list(combinations(range(len(labels)), 2))
 
     def comp_dfs(dfs_lbs):
-        logger.info("Comparing {0} with {1}".format(*dfs_lbs[2:]))
-        return compare_two_datasets(
-            dfs_lbs[:2],
-            dfs_lbs[2:],
-            use_saved_matches=use_saved_matches,
-            config=config,
-            **dukeargs
-        )
+        logger.info("Comparing data sources `{0}` and `{1}`".format(*dfs_lbs[2:]))
+        return compare_two_datasets(dfs_lbs[:2], dfs_lbs[2:], config=config, **dukeargs)
 
     mapargs = [[dfs[c], dfs[d], labels[c], labels[d]] for c, d in combs]
     all_matches = parmap(comp_dfs, mapargs)
@@ -207,9 +194,7 @@ def link_multiple_datasets(
     return cross_matches(all_matches, labels=labels)
 
 
-def combine_multiple_datasets(
-    datasets, labels=None, use_saved_matches=False, config=None, **dukeargs
-):
+def combine_multiple_datasets(datasets, labels=None, config=None, **dukeargs):
     """
     Duke-based horizontal match of multiple databases. Returns the
     matched dataframe including only the matched entries in a
@@ -256,9 +241,7 @@ def combine_multiple_datasets(
             .reset_index(drop=True)
         )
 
-    crossmatches = link_multiple_datasets(
-        datasets, labels, use_saved_matches=use_saved_matches, config=config, **dukeargs
-    )
+    crossmatches = link_multiple_datasets(datasets, labels, config=config, **dukeargs)
     return combined_dataframe(crossmatches, datasets, config).reindex(
         columns=config["target_columns"], level=0
     )

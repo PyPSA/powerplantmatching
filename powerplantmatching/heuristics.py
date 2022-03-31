@@ -71,9 +71,11 @@ def extend_by_non_matched(
     label = get_name(extend_by) if label is None else label
 
     if df.columns.nlevels > 1:
-        included_ids = df["projectID", label].dropna().sum()
+        included_ids = df["projectID", label].dropna().apply(list).sum()
     else:
-        included_ids = df.projectID.dropna().map(lambda d: d.get(label)).dropna().sum()
+        included_ids = (
+            df.projectID.dropna().map(lambda d: d.get(label)).dropna().apply(list).sum()
+        )
     if included_ids == 0:
         logger.warning(
             f"{label} not existent in the matched date, extending"
@@ -84,7 +86,7 @@ def extend_by_non_matched(
     if query is not None:
         extend_by.query(query, inplace=True)
     extend_by = extend_by.loc[~extend_by.projectID.isin(included_ids)]
-    if aggregate_added_data:
+    if aggregate_added_data and not extend_by.empty:
         aggkwargs.update({"save_aggregation": False})
         extend_by = aggregate_units(
             extend_by, dataset_name=label, config=config, **aggkwargs
@@ -106,7 +108,7 @@ def extend_by_non_matched(
             ignore_index=True,
         )
     else:
-        return df.append(extend_by.reindex(columns=df.columns), ignore_index=True)
+        return pd.concat([df, extend_by.reindex(columns=df.columns)], ignore_index=True)
 
 
 def rescale_capacities_to_country_totals(df, fueltypes=None):
