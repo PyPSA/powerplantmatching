@@ -222,7 +222,6 @@ def country_totals_hbar(
 
 def factor_comparison(dfs, keys=None, figsize=(12, 9)):
     with sns.axes_style("whitegrid"):
-        dfs = [set_uncommon_fueltypes_to_other(df) for df in dfs]
         compare = lookup(dfs, keys=keys, exclude=["Solar", "Wind"]).fillna(0.0)
         compare = (
             compare.append(

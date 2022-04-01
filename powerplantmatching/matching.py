@@ -46,6 +46,8 @@ def best_matches(links):
         Links as returned by duke
     """
     labels = links.columns.difference({"scores"})
+    if links.empty:
+        return pd.DataFrame(columns=labels)
     return links.groupby(links.iloc[:, 1], as_index=False, sort=False).apply(
         lambda x: x.loc[x.scores.idxmax(), labels]
     )
@@ -272,8 +274,9 @@ def reduce_matched_dataframe(df, show_orig_names=False, config=None):
     props_for_groups = {col: "first" for col in cols}
     props_for_groups.update(
         {
-            "YearCommisisoned": "min",
+            "DataIn": "min",
             "DateRetrofit": "max",
+            "DataOut": "max",
             "projectID": lambda x: dict(x.droplevel(0).dropna()),
             "eic_code": "unique",
         }

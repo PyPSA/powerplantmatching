@@ -400,19 +400,20 @@ def JRC(raw=False, update=False, config=None):
     if raw:
         return df
 
+    RENAME_COLUMNS = {
+        "id": "projectID",
+        "name": "Name",
+        "installed_capacity_MW": "Capacity",
+        "country_code": "Country",
+        "type": "Technology",
+        "dam_height_m": "DamHeight_m",
+        "volume_Mm3": "Volume_Mm3",
+        "storage_capacity_MWh": "StorageCapacity_MWh",
+    }
+
     df = (
-        df.rename(
-            columns={
-                "id": "projectID",
-                "name": "Name",
-                "installed_capacity_MW": "Capacity",
-                "country_code": "Country",
-                "type": "Technology",
-                "dam_height_m": "DamHeight_m",
-                "volume_Mm3": "Volume_Mm3",
-                "storage_capacity_MWh": "StorageCapacity_MWh",
-            }
-        )
+        df.rename(columns=RENAME_COLUMNS)
+        .assign(projectID=lambda df: "JRC-" + df.projectID.astype(str))
         .eval("Duration = StorageCapacity_MWh / Capacity")
         .replace(
             dict(
@@ -470,8 +471,8 @@ def Capacity_stats(
     raw=False,
     config=None,
     update=False,
-    source="ENTSO-E Transparency Platform",
-    year=2019,
+    source="ENTSO-E SOAF",
+    year=2015,
 ):
     """
     Standardize the aggregated capacity statistics provided by the ENTSO-E.
@@ -499,9 +500,14 @@ def Capacity_stats(
     if raw:
         return df
 
+    if source:
+        df = df.query("source == @source")
+    else:
+        source = "Capacity statistics"
+
     fueltypes = config["target_fueltypes"]
     df = (
-        df.query("source == @source & year == @year")
+        df.query("year == @year")
         .rename(columns={"technology": "Fueltype"})
         .rename(columns=str.title)
         .powerplant.convert_alpha2_to_country()

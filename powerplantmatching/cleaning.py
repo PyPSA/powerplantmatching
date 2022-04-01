@@ -57,8 +57,8 @@ AGGREGATION_FUNCTIONS = {
     "DateMothball": "min",
     "DateOut": "min",
     "File": mode,
-    "projectID": set,
-    "EIC": set,
+    "projectID": "unique",
+    "EIC": "unique",
     "Duration": "sum",  # note this is weighted sum
     "Volume_Mm3": "sum",
     "DamHeight_m": "sum",
@@ -457,7 +457,7 @@ def aggregate_units(
 
     df = cliques(df, duplicates)
     df = df.groupby("grouped").agg(props_for_groups)
-    df = df.replace("nan", np.nan)
+    df[str_cols] = df[str_cols].replace("", np.nan)
 
     df = (
         df.assign(**df[weighted_cols].div(df["Capacity"], axis=0))
