@@ -84,18 +84,10 @@ celerybeat-schedule
 venv/
 ENV/
 
-# Spyder project settings
-.spyderproject
-.spyproject/
-
 # Rope project settings
 .ropeproject
-matching_analysis/*.png
-!matching_analysis/factor_plot_Matched Data.png
+matching_analysis/figures/
 
-
-Changelog.md
-matching_analysis/german_postcode_map.py
 doc/_build
-.vscode
 doc/api
+.vscode
