@@ -65,34 +65,17 @@ def extend_by_non_matched(
     if config is None:
         config = get_config()
 
-    if isinstance(extend_by, str):
-        label = extend_by
-        extend_by = getattr(data, extend_by)()
-    label = get_name(extend_by) if label is None else label
-
-    if df.columns.nlevels > 1:
-        included_ids = df["projectID", label].dropna().apply(list).sum()
-    else:
-        included_ids = (
-            df.projectID.dropna().map(lambda d: d.get(label)).dropna().apply(list).sum()
-        )
-    if included_ids == 0:
-        logger.warning(
-            f"{label} not existent in the matched date, extending"
-            " by all data entries."
-        )
-        included_ids = []
-
     if query is not None:
         extend_by.query(query, inplace=True)
-    extend_by = extend_by.loc[~extend_by.projectID.isin(included_ids)]
+
+    is_included = is_included_in_matched(extend_by, df, label=label)
+    extend_by = extend_by[~is_included]
+
     if aggregate_added_data and not extend_by.empty:
         extend_by = aggregate_units(
             extend_by, dataset_name=label, config=config, **aggkwargs
         )
-        extend_by = extend_by.assign(
-            projectID=extend_by.projectID.map(lambda x: {label: x})
-        )
+        extend_by["projectID"] = extend_by.projectID.map(lambda x: {label: x})
     else:
         extend_by = extend_by.assign(
             projectID=extend_by.projectID.map(lambda x: {label: [x]})
@@ -108,6 +91,47 @@ def extend_by_non_matched(
         )
     else:
         return pd.concat([df, extend_by.reindex(columns=df.columns)], ignore_index=True)
+
+
+def is_included_in_matched(df, matched, label=None):
+    """
+    Checks if a given dataframe is included in a matched dataframe.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        The dataframe to be checked
+    matched : pd.DataFrame
+        The matched dataframe
+
+    Returns
+    -------
+    bool
+        True if all dataframes are included in the matched dataframe, False
+        otherwise
+    """
+    df = get_obj_if_Acc(df)
+
+    if isinstance(df.projectID.iat[0], np.ndarray):
+        raise TypeError(
+            "`projectID` contains multiple values per row. This is likely "
+            "because the powerplants are already aggregated, please use a "
+            "non-aggregated dataset."
+        )
+
+    if label is None:
+        label = df.powerplant.get_name()
+    assert label is not None, "No label given"
+
+    if matched.columns.nlevels > 1:
+        included_ids = matched["projectID", label].dropna().apply(list).sum()
+    else:
+        get = lambda d: d.get(label)
+        included_ids = matched.projectID.map(get).dropna().apply(list).sum()
+    if included_ids == 0:
+        included_ids = []
+
+    return df.projectID.isin(included_ids)
 
 
 def rescale_capacities_to_country_totals(df, fueltypes=None):
