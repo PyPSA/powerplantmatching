@@ -14,6 +14,9 @@ from powerplantmatching import data
 config = pm.get_config()
 sources = config["matching_sources"]
 
+if not config["entsoe_token"] and "ENTSOE" in sources:
+    sources.remove("ENTSOE")
+
 
 @pytest.mark.parametrize("source", sources)
 def test_data_request_raw(source):

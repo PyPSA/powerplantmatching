@@ -217,11 +217,6 @@ def gather_specifications(
     return df.assign(**cols)
 
 
-@deprecated(
-    deprecated_in="0.5",
-    removed_in="0.6",
-    details="Use `gather_specifications` instead.",
-)
 def gather_fueltype_info(
     df, search_col=["Name", "Fueltype", "Technology"], config=None
 ):
@@ -285,11 +280,6 @@ def gather_technology_info(
     return df.assign(Technology=technology)
 
 
-@deprecated(
-    deprecated_in="0.5",
-    removed_in="0.6",
-    details="Use `gather_specifications` instead.",
-)
 def gather_set_info(df, search_col=["Name", "Fueltype", "Technology"], config=None):
     """
     Parses in a set of columns for distinct Set specifications.
