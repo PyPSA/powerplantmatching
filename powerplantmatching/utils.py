@@ -113,22 +113,29 @@ def config_filter(df, name=None, config=None):
 
     if config is None:
         config = get_config()
-    # individual filter from config.yaml
-    if name is not None:
-        queries = {
-            k: v
-            for source in config["matching_sources"]
-            for k, v in to_dict_if_string(source).items()
-        }
-        if name in queries and queries[name] is not None:
-            df = df.query(queries[name])
+
+    name = df.powerplant.get_name()
+
     countries = config["target_countries"]
     fueltypes = config["target_fueltypes"]
-    return (
-        df.query("Country in @countries and Fueltype in @fueltypes")
-        .reindex(columns=config["target_columns"])
-        .reset_index(drop=True)
-    )
+    cols = config["target_columns"]
+
+    target_query = "Country in @countries and Fueltype in @fueltypes"
+
+    main_query = config.get("main_query", "")
+
+    # individual filter from config.yaml
+    queries = {}
+    for source in config["matching_sources"]:
+        if isinstance(source, dict):
+            queries.update(source)
+        else:
+            queries[source] = ""
+    ds_query = queries.get(name, "")
+
+    query = " and ".join([q for q in [target_query, main_query, ds_query] if q])
+
+    return df.reindex(columns=cols).query(query).reset_index(drop=True)
 
 
 def correct_manually(df, name, config=None):
@@ -239,10 +246,7 @@ def get_name(df):
     Helper function to associate dataframe with a name. This is done with the
     columns-axis name, as pd.DataFrame do not have a name attribute.
     """
-    if df.columns.name is None:
-        return "unnamed data"
-    else:
-        return df.columns.name
+    return df.columns.name
 
 
 def to_list_if_other(obj):

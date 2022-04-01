@@ -65,6 +65,10 @@ def extend_by_non_matched(
     if config is None:
         config = get_config()
 
+    if isinstance(extend_by, str):
+        label = extend_by
+        extend_by = getattr(data, extend_by)(config=config)
+
     if query is not None:
         extend_by.query(query, inplace=True)
 

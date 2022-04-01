@@ -67,15 +67,11 @@ def collect(
 
     def df_by_name(name):
         conf = config[name]
-
         get_df = getattr(data, name)
         df = get_df(config=config)
+
         if not conf.get("aggregated_units", False):
-            return aggregate_units(
-                df,
-                dataset_name=name,
-                config=config,
-            )
+            return aggregate_units(df, dataset_name=name, config=config)
         else:
             return df.assign(projectID=df.projectID.map(lambda x: {x}))
 
@@ -84,7 +80,7 @@ def collect(
         return df_by_name(datasets)
 
     datasets = sorted(datasets)
-    logger.info("Collect combined dataset for {}".format(", ".join(datasets)))
+    logger.info("Create combined dataset for {}".format(", ".join(datasets)))
     outfn_matched = _data_out(
         "Matched_{}.csv".format("_".join(map(str.upper, datasets))), config=config
     )
@@ -96,16 +92,10 @@ def collect(
     if not update and not os.path.exists(outfn_reduced if reduced else outfn_matched):
         logger.warning("Forcing update since the cache file is missing")
         update = True
-        use_saved_aggregation = True
 
     if update:
         dfs = parmap(df_by_name, datasets)
-        matched = combine_multiple_datasets(
-            dfs,
-            datasets,
-            config=config,
-            **dukeargs,
-        )
+        matched = combine_multiple_datasets(dfs, datasets, config=config, **dukeargs)
         (
             matched.assign(projectID=lambda df: df.projectID.astype(str)).to_csv(
                 outfn_matched, index_label="id"

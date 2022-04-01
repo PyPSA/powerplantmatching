@@ -3,8 +3,17 @@ entsoe_token:
 google_api_key:
 opsd_vres_base_year: 2020
 
-#matching config
+
+# ---------------------------------------------------------------------------- #
+#                                Matching Config                               #
+# ---------------------------------------------------------------------------- #
+
+# This query is applied to all input data
+main_query: lat == lat and lon == lon and (DateOut >= 2018 or DateOut != DateOut)
+
 matching_sources:
+  # make individual queries for the datasets as done in `fully_included_sources`
+  # queries are added with a `and` operator
   - ENTSOE
   - GEO
   - GPD
@@ -19,14 +28,18 @@ fully_included_sources:
   - ENTSOE: Country not in ['Spain', 'Switzerland', 'United Kingdom']
   - GEO: Country == 'Czech Republic' and Fueltype == 'Lignite'
 
-parallel_duke_processes: false
-process_limit: 2
-remove_missing_coords: true
 
-#already build data
+parallel_duke_processes: true
+process_limit: 4
+
+# Ready to use data
 matched_data_url: https://raw.githubusercontent.com/FRESNA/powerplantmatching/tree/{tag}/powerplants.csv
 
-#data config
+# ---------------------------------------------------------------------------- #
+#                                  Data Config                                 #
+# ---------------------------------------------------------------------------- #
+
+
 BNETZA:
   reliability_score: 3
   fn: Kraftwerksliste_2017_2.xlsx
