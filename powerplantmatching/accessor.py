@@ -39,7 +39,7 @@ class PowerPlantAccessor:
         fill_missing_commyears,
         fill_missing_decommyears,
         fill_missing_duration,
-        is_included_in_matched,
+        isin,
         rescale_capacities_to_country_totals,
         scale_to_net_capacities,
     )

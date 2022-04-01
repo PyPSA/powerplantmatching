@@ -34,11 +34,16 @@ In order to ensure compatibility with the new code, please delete these sections
 * The argument ``extendby_kwargs`` in the function ``powerplantmatching.collection.matched_data`` was deprecated in the favor of ``extend_by_kwargs``.
 
 
-**Non-Breaking Code Changes**
+**New Features**
 
 * The `BEYOND COAL <https://beyond-coal.eu/coal-exit-tracker/>`_ data is now available as an data source. 
+* A new dataset ``WIKIPEDIA`` on nuclear powerplants in europe from wikipedia was added. 
+* The ``GEO`` dataset returns powerplant blocks instead of whole plants. 
 * All scripts were aligned with the ``black`` coding style.
 * A documentation on readthedocs was added.
+* The config has now a key `main_query` which is applied to all datasets. 
+* A CI was added. 
+* A new function ``powerplantmatching.heuristics.isin`` was added. It checks which data entries of a non-matched dataset is included in a matched dataset.
 
 **Breaking Code Changes:**
 

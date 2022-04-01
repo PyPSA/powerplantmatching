@@ -72,7 +72,7 @@ def extend_by_non_matched(
     if query is not None:
         extend_by.query(query, inplace=True)
 
-    is_included = is_included_in_matched(extend_by, df, label=label)
+    is_included = isin(extend_by, df, label=label)
     extend_by = extend_by[~is_included]
 
     if aggregate_added_data and not extend_by.empty:
@@ -97,7 +97,7 @@ def extend_by_non_matched(
         return pd.concat([df, extend_by.reindex(columns=df.columns)], ignore_index=True)
 
 
-def is_included_in_matched(df, matched, label=None):
+def isin(df, matched, label=None):
     """
     Checks if a given dataframe is included in a matched dataframe.
 
