@@ -31,8 +31,11 @@ import requests
 import six
 from deprecation import deprecated
 
+import country_converter as coco
+
 from .core import _data_in, _package_data, get_config, get_obj_if_Acc, logger
 
+cc = coco.CountryConverter()
 
 def lookup(df, keys=None, by="Country, Fueltype", exclude=None, unit="MW"):
     """
@@ -399,14 +402,20 @@ def convert_alpha2_to_country(df):
     )
 
 
+def convert_to_short_name(df):
+    df = get_obj_if_Acc(df)
+    countries = df.Country.unique()
+    short_name = dict(zip(countries, cc.convert(countries, to='name_short', not_found=None)))
+
+    return df.assign(Country=df.Country.replace(short_name))
+
+
 def convert_country_to_alpha2(df):
     df = get_obj_if_Acc(df)
-    alpha2 = df.Country.map(country_map.set_index("name")["alpha_2"]).fillna(
-        country_map.dropna(subset=["official_name"]).set_index("official_name")[
-            "alpha_2"
-        ]
-    )
-    return df.assign(Country=alpha2)
+    countries = df.Country.unique()
+    iso2 = dict(zip(countries, cc.convert(countries, to='iso2', not_found=None)))
+
+    return df.assign(Country=df.Country.replace(iso2))
 
 
 def breakdown_matches(df):

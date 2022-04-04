@@ -50,6 +50,11 @@ BEYONDCOAL:
   reliability_score: 6
   fn: Europe_Beyond_Coal-European_Coal_Database_hc5n.xlsx
   url: https://beyond-coal.eu/wp-content/uploads/2021/07/2021-04-20_Europe_Beyond_Coal-European_Coal_Database_hc5n.xlsx
+IRENA:
+  net_capacity: true
+  aggregated_units: true
+  fn: IRENASTAT_capacities_2000-2020.csv
+  url: https://zenodo.org/record/6412255/files/IRENASTAT_capacities_2000-2020.csv
 CARMA:
   net_capacity: false
   reliability_score: 1

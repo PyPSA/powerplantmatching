@@ -26,6 +26,7 @@ setup(
         "pandas>=0.24.0",
         "networkx>=1.10",
         "pycountry",
+        "country_converter",
         "xlrd",
         "seaborn",
         "pyyaml >=5.1.0",
