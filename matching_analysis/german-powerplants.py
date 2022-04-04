@@ -1,3 +1,5 @@
+import copy
+
 import cartopy.crs as ccrs
 import hvplot
 import hvplot.pandas  # noqa
@@ -11,14 +13,30 @@ from xarray import align
 
 import powerplantmatching as pm
 
-matched = pm.powerplants()
-matched = matched[matched.lat.notnull()]
-matched.DateIn.fillna(1, inplace=True)
-matched.DateOut.fillna(9999, inplace=True)
-de2020 = matched.query("DateIn <= 2020 and DateOut >= 2020 and Country == 'Germany'")
-de2030 = matched.query("DateIn <= 2030 and DateOut >= 2030 and Country == 'Germany'")
+config = pm.get_config()
 
-for (label, df) in [("DE-2020", de2020), ("DE-2030", de2030)]:
+query = (
+    "(DateOut >= {year} or DateOut != DateOut) and "
+    "(DateIn <= {year} or DateIn != DateIn) and "
+    "Country == 'Germany'"
+)
+
+config_de2020 = copy.copy(config)
+config_de2020["main_query"] = query.format(year=2019)
+config_de2020["hash"] = "DE-2020"
+
+config_de2030 = copy.copy(config)
+config_de2030["main_query"] = query.format(year=2030)
+config_de2030["matching_sources"].remove("WIKIPEDIA")
+config_de2030["hash"] = "DE-2030"
+
+
+for config in [config_de2020, config_de2030]:
+
+    label = config["hash"]
+
+    df = pm.powerplants(config=config)
+    df = df[df.lat.notnull()]
 
     grouped = (
         df.groupby(["Fueltype", "Country"])
@@ -70,4 +88,4 @@ for (label, df) in [("DE-2020", de2020), ("DE-2030", de2030)]:
 
     plot = map + bars
 
-    hvplot.save(plot, "figures/" / label + ".html")
+    hvplot.save(plot, "figures/" + label + ".html")
