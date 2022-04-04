@@ -32,7 +32,7 @@ fully_included_sources:
 
 parallel_duke_processes: false
 process_limit: 4
-matched_data_url: https://raw.githubusercontent.com/FRESNA/powerplantmatching/tree/{tag}/powerplants.csv
+matched_data_url: https://raw.githubusercontent.com/FRESNA/powerplantmatching/{tag}/powerplants.csv
 
 # ---------------------------------------------------------------------------- #
 #                                  Data Source Config                          #
@@ -155,7 +155,6 @@ target_columns:
   - StorageCapacity_MWh
   - DateIn
   - DateRetrofit
-  - DateMothball
   - DateOut
   - lat
   - lon
