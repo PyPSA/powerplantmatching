@@ -4,6 +4,7 @@ channels:
   - defaults
 dependencies:
   - cartopy
+  - country_converter
   - geopy
   - ipython
   - matplotlib

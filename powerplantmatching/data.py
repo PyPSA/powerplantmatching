@@ -43,6 +43,7 @@ from .core import _data_in, _package_data, get_config
 from .heuristics import scale_to_net_capacities
 from .utils import (
     config_filter,
+    convert_to_short_name,
     correct_manually,
     fill_geoposition,
     get_raw_file,
@@ -1393,12 +1394,16 @@ def OPSD_VRE_country(country, raw=False, update=False, config=None):
     )
 
 
-def IRENA_stats(config=None):
+def IRENASTAT(raw=False, update=False, config=None):
     """
-    Reads the IRENA Capacity Statistics 2017 Database
+    Importer for the IRENASTAT renewable capacity statistics.
 
     Parameters
     ----------
+    raw : boolean, default False
+        Whether to return the original dataset
+    update: bool, default False
+        Whether to update the data from the url.
     config : dict, default None
         Add custom specific configuration,
         e.g. powerplantmatching.config.get_config(target_countries='Italy'),
@@ -1407,55 +1412,64 @@ def IRENA_stats(config=None):
     if config is None:
         config = get_config()
 
-    # Read the raw dataset
-    df = pd.read_csv(_data_in("IRENA_CapacityStatistics2017.csv"), encoding="utf-8")
-    # "Unpivot"
-    df = pd.melt(
-        df,
-        id_vars=["Indicator", "Technology", "Country"],
-        var_name="Year",
-        value_vars=[str(i) for i in range(2000, 2017, 1)],
-        value_name="Capacity",
-    )
-    # Drop empty
-    df.dropna(axis=0, subset=["Capacity"], inplace=True)
-    # Drop generations
-    df = df[df.Indicator == "Electricity capacity (MW)"]
-    df.drop("Indicator", axis=1, inplace=True)
-    # Drop countries out of scope
-    df.Country.replace(
-        {"Czechia": "Czech Republic", "UK": "United Kingdom"}, inplace=True
-    )
-    df = df.loc[lambda df: df.Country.isin(config["target_countries"])]
-    # Convert to numeric
-    df.Year = df.Year.astype(int)
-    df.Capacity = df.Capacity.str.strip().str.replace(" ", "").astype(float)
-    # Handle Fueltypes and Technologies
-    d = {
-        "Bagasse": "Bioenergy",
-        "Biogas": "Bioenergy",
-        "Concentrated solar power": "Solar",
-        "Geothermal": "Geothermal",
-        "Hydro 1-10 MW": "Hydro",
-        "Hydro 10+ MW": "Hydro",
-        "Hydro <1 MW": "Hydro",
-        "Liquid biofuels": "Bioenergy",
-        "Marine": "Hydro",
-        "Mixed and pumped storage": "Hydro",
-        "Offshore wind energy": "Wind",
-        "Onshore wind energy": "Wind",
-        "Other solid biofuels": "Bioenergy",
-        "Renewable municipal waste": "Waste",
-        "Solar photovoltaic": "Solar",
+    fn = get_raw_file("IRENA", update=update, config=config)
+
+    df = pd.read_csv(fn, comment="#")
+
+    if raw:
+        return df
+
+    RENAME_COLUMNS = {
+        "Installed electricity capacity by country/area (MW)": "Capacity",
+        "Country/area": "Country",
+        "Grid connection": "Grid",
     }
-    df.loc[:, "Fueltype"] = df.Technology.map(d)
-    #    df = df.loc[lambda df: df.Fueltype.isin(config['target_fueltypes'])]
-    d = {
+    df.rename(columns=RENAME_COLUMNS, inplace=True)
+
+    # Consistent country names for dataset
+    df = convert_to_short_name(df)
+
+    df.dropna(subset="Capacity", inplace=True)
+
+    fueltype_dict = {
+        "On-grid Solar photovoltaic": "Solar",
+        "Off-grid Solar photovoltaic": "Solar",
+        "Concentrated solar power": "Solar",
+        "Onshore wind energy": "Wind",
+        "Offshore wind energy": "Wind",
+        "Renewable hydropower": "Hydro",
+        "Mixed Hydro Plants": "Hydro",
+        "Pumped storage": "Hydro",
+        "Solid biofuels": "Bioenergy",
+        "Renewable municipal waste": "Waste",
+        "Liquid biofuels": "Bioenergy",
+        "Biogas": "Bioenergy",
+        "Geothermal energy": "Geothermal",
+        "Marine energy": "Marine",
+        "Fossil fuels": "Other",
+        "Coal and peat": "Hard Coal",
+        "Oil": "Oil",
+        "Natural gas": "Natural Gas",
+        "Nuclear": "Nuclear",
+        "Fossil fuels n.e.s.": "Other",
+        "Other non-renewable energy": "Other",
+    }
+
+    technology_dict = {
+        "On-grid Solar photovoltaic": "PV",
+        "Off-grid Solar photovoltaic": "PV",
         "Concentrated solar power": "CSP",
-        "Solar photovoltaic": "PV",
         "Onshore wind energy": "Onshore",
         "Offshore wind energy": "Offshore",
+        "Pumped storage": "Pumped Storage",
+        "Geothermal energy": "Geothermal",
+        "Marine energy": "Marine",
     }
-    df.Technology.replace(d, inplace=True)
-    df.loc[:, "Set"] = "PP"
-    return df.reset_index(drop=True).pipe(set_column_name, "IRENA Statistics")
+
+    df["Fueltype"] = df.Technology.map(fueltype_dict)
+    df.Technology.replace(technology_dict, inplace=True)
+
+    l = list(set(df.columns).difference(set(["Capacity"])))
+    df = df.groupby(l, as_index=False, dropna=True).sum()
+
+    return df
