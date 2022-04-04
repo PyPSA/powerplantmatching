@@ -4,6 +4,10 @@ History of Changes
 Upcoming Release
 ----------------
 
+Version 0.5 (04.04.2022)
+------------------------
+
+
 This release contains many breaking changes. Due to time-constraints we cannot ensure a smooth transition to the new release. If you are using a custom config file (e.g. ``~/powerplantmatching_config.yaml``) please be aware of the following config changes: 
 
 **Configuration Changes**
