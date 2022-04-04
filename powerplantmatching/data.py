@@ -109,8 +109,8 @@ def BEYONDCOAL(raw=False, update=False, config=None):
         .pipe(scale_to_net_capacities)
         .pipe(clean_name)
         .query("Name != ''")
-        .pipe(config_filter, name="BEYONDCOAL", config=config)
         .pipe(set_column_name, "BEYONDCOAL")
+        .pipe(config_filter, config)
     )
     return df
 
@@ -213,7 +213,7 @@ def OPSD(
         .dropna(subset=["Capacity"])
         .powerplant.convert_alpha2_to_country()
         .pipe(set_column_name, "OPSD")
-        .pipe(config_filter, name="OPSD", config=config)
+        .pipe(config_filter, config)
     )
 
 
@@ -292,7 +292,8 @@ def GEO(raw=False, update=False, config=None):
     not_included_ppl = ppl.query("projectID not in @res.projectID")
     res = pd.concat([res, not_included_ppl]).pipe(set_column_name, "GEO")
     res = scale_to_net_capacities(res)
-    res = config_filter(res, "GEO")
+    res = set_column_name(res, "GEO")
+    res = config_filter(res, config)
     res["projectID"] = "GEO-" + res.projectID.astype(str)
 
     return res
@@ -365,7 +366,7 @@ def CARMA(raw=False, update=False, config=None):
         .query("Name != ''")
         .pipe(set_column_name, "CARMA")
         .drop_duplicates()
-        .pipe(config_filter, name="CARMA", config=config)
+        .pipe(config_filter, config)
         .pipe(scale_to_net_capacities, not config["CARMA"]["net_capacity"])
     )
 
@@ -430,7 +431,7 @@ def JRC(raw=False, update=False, config=None):
         .pipe(clean_name)
         .query("Name != ''")
         .pipe(set_column_name, "JRC")
-        .pipe(config_filter)
+        .pipe(config_filter, config)
     )
     return df
 
@@ -461,7 +462,7 @@ def IWPDCY(config=None):
         )
         .dropna(subset=["Capacity"])
         .pipe(set_column_name, "IWPDCY")
-        .pipe(config_filter, name="IWPDY", config=config)
+        .pipe(config_filter, config)
         .pipe(gather_set_info)
         .pipe(correct_manually, "IWPDCY", config=config)
     )
@@ -568,7 +569,7 @@ def GPD(raw=False, update=False, config=None, filter_other_dbs=True):
         .pipe(clean_name)
         .query("Name != ''")
         .pipe(set_column_name, "GPD")
-        .pipe(config_filter, name="GPD", config=config)
+        .pipe(config_filter, config)
         .pipe(gather_technology_info, config=config)
     )
 
@@ -614,7 +615,7 @@ def WIKIPEDIA(raw=False, update=False, config=None):
             projectID=lambda df: "WIKIPEDIA-" + df.index.astype(str),
         )
         .pipe(set_column_name, "WIKIPEDIA")
-        .pipe(config_filter, config=config)
+        .pipe(config_filter, config)
     )
     return df
 
@@ -725,7 +726,7 @@ def ENTSOE(raw=False, update=False, config=None, entsoe_token=None):
         .pipe(clean_name)
         .query("Name != ''")
         .pipe(set_column_name, "ENTSOE")
-        .pipe(config_filter, name="ENTSOE", config=config)
+        .pipe(config_filter, config)
     )
 
 
@@ -1007,7 +1008,7 @@ def WEPP(raw=False, config=None):
     wepp.datasetID = "WEPP"
     return (
         wepp.pipe(set_column_name, "WEPP")
-        .pipe(config_filter, name="WEPP", config=config)
+        .pipe(config_filter, config)
         .pipe(scale_to_net_capacities, (not config["WEPP"]["net_capacity"]))
         .pipe(correct_manually, "WEPP", config=config)
     )
@@ -1131,10 +1132,9 @@ def UBA(
     if prune_solar:
         uba = uba.loc[lambda x: x.Fueltype != "Solar"]
     return (
-        uba.pipe(set_column_name, "UBA").pipe(
-            scale_to_net_capacities, not config["UBA"]["net_capacity"]
-        )
-        # .pipe(config_filter, name='UBA', config=config)
+        uba.pipe(set_column_name, "UBA")
+        .pipe(scale_to_net_capacities, not config["UBA"]["net_capacity"])
+        .pipe(config_filter, config)
         # .pipe(correct_manually, 'UBA', config=config)
     )
 
@@ -1344,7 +1344,7 @@ def OPSD_VRE(raw=False, update=False, config=None):
         .assign(DateIn=lambda df: df.commissioning_date.str[:4].astype(float), Set="PP")
         .powerplant.convert_alpha2_to_country()
         .pipe(set_column_name, "OPSD_VRE")
-        .pipe(config_filter, config=config)
+        .pipe(config_filter, config)
         .drop("Name", axis=1)
     )
 
@@ -1387,7 +1387,8 @@ def OPSD_VRE_country(country, raw=False, update=False, config=None):
         # there is a problem with GB in line 1651 (version 20/08/20)
         .assign(Capacity=lambda df: pd.to_numeric(df.Capacity, "coerce"))
         .powerplant.convert_alpha2_to_country()
-        .pipe(config_filter, config=config)
+        .piper(set_column_name, f"OPSD_VRE_{country}")
+        .pipe(config_filter, config)
         .drop("Name", axis=1)
     )
 

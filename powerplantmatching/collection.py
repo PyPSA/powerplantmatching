@@ -81,13 +81,12 @@ def collect(
 
     datasets = sorted(datasets)
     logger.info("Create combined dataset for {}".format(", ".join(datasets)))
-    outfn_matched = _data_out(
-        "Matched_{}.csv".format("_".join(map(str.upper, datasets))), config=config
-    )
-    outfn_reduced = _data_out(
-        "Matched_{}_reduced.csv".format("_".join(map(str.upper, datasets))),
-        config=config,
-    )
+
+    fn = "_".join(map(str.upper, datasets))
+    outfn_matched = _data_out(f"Matched_{fn}.csv", config)
+
+    fn = "_".join(map(str.upper, datasets))
+    outfn_reduced = _data_out(f"Matched_{fn}_reduced.csv", config)
 
     if not update and not os.path.exists(outfn_reduced if reduced else outfn_matched):
         logger.warning("Forcing update since the cache file is missing")
@@ -182,14 +181,14 @@ def matched_data(
     collection_kwargs.setdefault("update", update)
 
     if collection_kwargs.get("reduced", True):
-        fn = _data_out("matched_data_red.csv")
+        fn = _data_out("matched_data_red.csv", config)
         header = 0
     else:
-        fn = _data_out("matched_data.csv")
+        fn = _data_out("matched_data.csv", config)
         header = [0, 1]
 
     if from_url:
-        fn = _data_out("matched_data_red.csv")
+        fn = _data_out("matched_data_red.csv", config)
         url = config["matched_data_url"].format(tag="v" + __version__)
         logger.info(f"Retrieving data from {url}")
         df = (
@@ -216,7 +215,7 @@ def matched_data(
     matching_sources = [
         list(to_dict_if_string(a))[0] for a in config["matching_sources"]
     ]
-    matched = collect(matching_sources, **collection_kwargs)
+    matched = collect(matching_sources, config=config, **collection_kwargs)
 
     if isinstance(config["fully_included_sources"], list):
         for source in config["fully_included_sources"]:

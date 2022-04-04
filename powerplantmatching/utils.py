@@ -95,7 +95,7 @@ def get_raw_file(name, update=False, config=None, skip_retrieve=False):
     return path
 
 
-def config_filter(df, name=None, config=None):
+def config_filter(df, config):
     """
     Convenience function to filter data source according to the config.yaml
     file. Individual query filters are applied if argument 'name' is given.
@@ -111,10 +111,8 @@ def config_filter(df, name=None, config=None):
     """
     df = get_obj_if_Acc(df)
 
-    if config is None:
-        config = get_config()
-
     name = df.powerplant.get_name()
+    assert name is not None, "No name given for data source"
 
     countries = config["target_countries"]
     fueltypes = config["target_fueltypes"]

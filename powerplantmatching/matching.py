@@ -28,7 +28,7 @@ import numpy as np
 import pandas as pd
 
 from .cleaning import clean_technology
-from .core import _data_out, get_config, get_obj_if_Acc
+from .core import get_config, get_obj_if_Acc
 from .duke import duke
 from .utils import get_name, parmap, read_csv_if_string
 
@@ -46,8 +46,6 @@ def best_matches(links):
         Links as returned by duke
     """
     labels = links.columns.difference({"scores"})
-    if links.empty:
-        return pd.DataFrame(columns=labels)
     return links.groupby(links.iloc[:, 1], as_index=False, sort=False).apply(
         lambda x: x.loc[x.scores.idxmax(), labels]
     )
@@ -107,7 +105,12 @@ def compare_two_datasets(dfs, labels, country_wise=True, config=None, **dukeargs
         links = pd.concat([country_link(dfs, c) for c in countries])
     else:
         links = duke(dfs, labels=labels, **dukeargs)
-    matches = best_matches(links)
+
+    if links.empty:
+        matches = pd.DataFrame(columns=labels)
+    else:
+        matches = best_matches(links)
+
     return matches
 
 
@@ -137,6 +140,12 @@ def cross_matches(sets_of_pairs, labels=None):
         base = [m.set_index(i) for m in m_all if i in m]
         match_base = pd.concat(base, axis=1).reset_index()
         matches = pd.concat([matches, match_base], sort=True)
+
+    assert not matches.empty, "No matches found"
+
+    if matches.isnull().all().any():
+        cols = ", ".join(matches.columns[matches.isnull().all()])
+        raise ValueError(f"No matches found for data source {cols}")
 
     matches = matches.drop_duplicates().reset_index(drop=True)
     for i in labels:
@@ -278,7 +287,7 @@ def reduce_matched_dataframe(df, show_orig_names=False, config=None):
             "DateRetrofit": "max",
             "DataOut": "max",
             "projectID": lambda x: dict(x.droplevel(0).dropna()),
-            "eic_code": "unique",
+            "eic_code": set,
         }
     )
     props_for_groups = pd.Series(props_for_groups)[cols].to_dict()

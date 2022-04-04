@@ -39,16 +39,17 @@ def _data_in(fn):
     return join(package_config["data_dir"], "data", "in", fn)
 
 
-def _data_out(fn, config=None):
+def _data_out(fn, config):
     if config is None:
-        return join(package_config["data_dir"], "data", "out", "default", fn)
+        directory = join(package_config["data_dir"], "data", "out", "default")
     else:
-        return join(package_config["data_dir"], "data", "out", config["hash"], fn)
+        directory = join(package_config["data_dir"], "data", "out", config["hash"])
+    makedirs(directory, exist_ok=True)
+    return join(directory, fn)
 
 
 del _data_dir
 del _writable_dir
-
 
 if not exists(_data_in(".")):
     makedirs(_data_in("."))
@@ -113,16 +114,16 @@ def get_config(filename=None, **overrides):
     else:
         config["hash"] = encodebytes(sha1digest).decode("ascii")[2:12]
 
-    if not isdir(_data_out(".", config=config)):
-        makedirs(abspath(_data_out(".", config=config)))
-        makedirs(abspath(_data_out("matches", config=config)))
-        makedirs(abspath(_data_out("aggregations", config=config)))
+    if not isdir(_data_out(".", config)):
+        makedirs(abspath(_data_out(".", config)))
+        makedirs(abspath(_data_out("matches", config)))
+        makedirs(abspath(_data_out("aggregations", config)))
         info(
             "Outputs for this configuration will be saved under {}".format(
-                abspath(_data_out(".", config=config))
+                abspath(_data_out(".", config))
             )
         )
-        with open(_data_out("config.yaml", config=config), "w") as file:
+        with open(_data_out("config.yaml", config), "w") as file:
             yaml.dump(config, file, default_flow_style=False)
 
     changed_cols = ["target_fueltypes", "target_technologies", "target_sets"]

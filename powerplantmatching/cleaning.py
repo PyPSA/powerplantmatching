@@ -29,7 +29,7 @@ import pandas as pd
 import unidecode
 from deprecation import deprecated
 
-from .core import _data_out, get_config, get_obj_if_Acc
+from .core import get_config, get_obj_if_Acc
 from .duke import duke
 from .utils import get_name, set_column_name
 
@@ -57,8 +57,8 @@ AGGREGATION_FUNCTIONS = {
     "DateMothball": "min",
     "DateOut": "min",
     "File": mode,
-    "projectID": "unique",
-    "EIC": "unique",
+    "projectID": set,
+    "EIC": set,
     "Duration": "sum",  # note this is weighted sum
     "Volume_Mm3": "sum",
     "DamHeight_m": "sum",
@@ -404,11 +404,6 @@ def aggregate_units(
     country_wise : Boolean, default True
         Whether to aggregate only entries with a identical country.
     """
-    df = get_obj_if_Acc(df)
-
-    if config is None:
-        config = get_config()
-
     deprecated_args = {"use_saved_aggregation", "save_aggregation"}
     used_deprecated_args = deprecated_args.intersection(kwargs)
     if used_deprecated_args:
@@ -417,10 +412,18 @@ def aggregate_units(
         msg = "The following arguments were deprecated and are being ignored: "
         logger.warn(msg + f"{used_deprecated_args}")
 
+    df = get_obj_if_Acc(df)
+
+    if config is None:
+        config = get_config()
+
     if dataset_name is None:
         ds_name = get_name(df)
     else:
         ds_name = dataset_name
+
+    if df.empty:
+        return df.pipe(set_column_name, ds_name)
 
     cols = config["target_columns"]
     weighted_cols = list({"Efficiency", "Duration"} & set(cols))

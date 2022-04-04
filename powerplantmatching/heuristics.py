@@ -72,6 +72,10 @@ def extend_by_non_matched(
     if query is not None:
         extend_by.query(query, inplace=True)
 
+    # Fully included queries might lead to disjunct datasets
+    if extend_by.empty:
+        return df
+
     is_included = isin(extend_by, df, label=label)
     extend_by = extend_by[~is_included]
 
@@ -116,7 +120,7 @@ def isin(df, matched, label=None):
     """
     df = get_obj_if_Acc(df)
 
-    if isinstance(df.projectID.iat[0], np.ndarray):
+    if not isinstance(df.projectID.iat[0], str):
         raise TypeError(
             "`projectID` contains multiple values per row. This is likely "
             "because the powerplants are already aggregated, please use a "

@@ -30,7 +30,7 @@ fully_included_sources:
   - ENTSOE: Country not in ['Spain', 'Switzerland', 'United Kingdom']
   - GEO: Country == 'Czech Republic' and Fueltype == 'Lignite'
 
-parallel_duke_processes: true
+parallel_duke_processes: false
 process_limit: 4
 matched_data_url: https://raw.githubusercontent.com/FRESNA/powerplantmatching/tree/{tag}/powerplants.csv
 
@@ -329,7 +329,7 @@ fuel_to_color:
   CCGT: red
   Coal: black
   Hard Coal: dimgray
-  Oil: darkgreen
+  Oil: black
   Other: silver
   Waste: grey
   Geothermal: orange
