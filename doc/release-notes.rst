@@ -4,6 +4,10 @@ History of Changes
 Version 0.5.1 (04.04.2022)
 -------------------------
 
+**New Features**
+
+* The `IRENASTATS <https://pxweb.irena.org/pxweb/en/IRENASTAT>`_ data is now available containing powerplant capacities for all countries from 2000 to 2020.
+
 **Bug fix**
 
 * The url of the ``powerplants`` function was fixed. 
@@ -13,6 +17,7 @@ Version 0.5.1 (04.04.2022)
 
 * The removal of the column ``DateMothBall`` was caught up on. 
 * The manual corrections were reactivated.
+* Improved country code and name conversion by using ``country_converter``.
 
 
 Version 0.5 (04.04.2022)
