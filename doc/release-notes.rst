@@ -1,8 +1,19 @@
 History of Changes
 ==================
 
-Upcoming Release
-----------------
+Version 0.5.1 (04.04.2022)
+-------------------------
+
+**Bug fix**
+
+* The url of the ``powerplants`` function was fixed. 
+
+
+**Other**
+
+* The removal of the column ``DateMothBall`` was caught up on. 
+* The manual corrections were reactivated.
+
 
 Version 0.5 (04.04.2022)
 ------------------------
