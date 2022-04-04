@@ -43,11 +43,11 @@ from .core import _data_in, _package_data, get_config
 from .heuristics import scale_to_net_capacities
 from .utils import (
     config_filter,
+    convert_to_short_name,
     correct_manually,
     fill_geoposition,
     get_raw_file,
     set_column_name,
-    convert_to_short_name,
 )
 
 logger = logging.getLogger(__name__)
@@ -1432,38 +1432,38 @@ def IRENASTAT(raw=False, update=False, config=None):
     df.dropna(subset="Capacity", inplace=True)
 
     fueltype_dict = {
-        'On-grid Solar photovoltaic': "Solar",
-        'Off-grid Solar photovoltaic': "Solar",
-        'Concentrated solar power': "Solar",
-        'Onshore wind energy': "Wind",
-        'Offshore wind energy': "Wind",
-        'Renewable hydropower': "Hydro",
-        'Mixed Hydro Plants': "Hydro",
-        'Pumped storage': "Hydro",
-        'Solid biofuels': "Bioenergy",
-        'Renewable municipal waste': "Waste",
-        'Liquid biofuels': "Bioenergy",
-        'Biogas': "Bioenergy",
-        'Geothermal energy': "Geothermal",
-        'Marine energy': "Marine",
-        'Fossil fuels': "Other",
-        'Coal and peat': "Hard Coal",
-        'Oil': "Oil",
-        'Natural gas': "Natural Gas",
-        'Nuclear': "Nuclear",
-        'Fossil fuels n.e.s.': "Other",
-        'Other non-renewable energy': "Other",
+        "On-grid Solar photovoltaic": "Solar",
+        "Off-grid Solar photovoltaic": "Solar",
+        "Concentrated solar power": "Solar",
+        "Onshore wind energy": "Wind",
+        "Offshore wind energy": "Wind",
+        "Renewable hydropower": "Hydro",
+        "Mixed Hydro Plants": "Hydro",
+        "Pumped storage": "Hydro",
+        "Solid biofuels": "Bioenergy",
+        "Renewable municipal waste": "Waste",
+        "Liquid biofuels": "Bioenergy",
+        "Biogas": "Bioenergy",
+        "Geothermal energy": "Geothermal",
+        "Marine energy": "Marine",
+        "Fossil fuels": "Other",
+        "Coal and peat": "Hard Coal",
+        "Oil": "Oil",
+        "Natural gas": "Natural Gas",
+        "Nuclear": "Nuclear",
+        "Fossil fuels n.e.s.": "Other",
+        "Other non-renewable energy": "Other",
     }
 
     technology_dict = {
-        'On-grid Solar photovoltaic': "PV",
-        'Off-grid Solar photovoltaic': "PV",
-        'Concentrated solar power': "CSP",
-        'Onshore wind energy': "Onshore",
-        'Offshore wind energy': "Offshore",
-        'Pumped storage': "Pumped Storage",
-        'Geothermal energy': "Geothermal",
-        'Marine energy': "Marine",
+        "On-grid Solar photovoltaic": "PV",
+        "Off-grid Solar photovoltaic": "PV",
+        "Concentrated solar power": "CSP",
+        "Onshore wind energy": "Onshore",
+        "Offshore wind energy": "Offshore",
+        "Pumped storage": "Pumped Storage",
+        "Geothermal energy": "Geothermal",
+        "Marine energy": "Marine",
     }
 
     df["Fueltype"] = df.Technology.map(fueltype_dict)
