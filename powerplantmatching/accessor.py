@@ -36,7 +36,9 @@ class PowerPlantAccessor:
     from .heuristics import (
         extend_by_non_matched,
         extend_by_VRE,
+        fill_missing_commissioning_years,
         fill_missing_commyears,
+        fill_missing_decommissioning_years,
         fill_missing_decommyears,
         fill_missing_duration,
         isin,
