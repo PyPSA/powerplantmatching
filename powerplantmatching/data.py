@@ -1393,11 +1393,6 @@ def OPSD_VRE_country(country, raw=False, update=False, config=None):
     )
 
 
-@deprecated(
-    deprecated_in="0.5.0",
-    removed_in="0.6.0",
-    details="Removed since data is not publicly available anymore",
-)
 def IRENA_stats(config=None):
     """
     Reads the IRENA Capacity Statistics 2017 Database
