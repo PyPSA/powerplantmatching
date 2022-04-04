@@ -109,7 +109,7 @@ Please, before starting, make sure that you’ve installed
     """
 
     config = get_config() if config is None else config
-    df = parse_if_not_stored('FOO', config=config)
+    df = pd.read_csv(get_raw_file("FOO"))
     if raw:
         return foo
     df = (df

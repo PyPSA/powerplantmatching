@@ -136,6 +136,8 @@ def config_filter(df, config):
 
     query = " and ".join([q for q in [target_query, main_query, ds_query] if q])
 
+    df = correct_manually(df, name, config=config)
+
     return df.reindex(columns=cols).query(query).reset_index(drop=True)
 
 
@@ -168,7 +170,7 @@ def correct_manually(df, name, config=None):
 
     df = df.set_index("projectID").copy()
     df.update(corrections)
-    return df.reset_index().reindex(columns=config["target_columns"])
+    return df.reset_index()
 
 
 def set_uncommon_fueltypes_to_other(df, fillna_other=True, config=None, **kwargs):

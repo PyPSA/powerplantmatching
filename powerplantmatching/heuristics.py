@@ -262,7 +262,7 @@ def fill_missing_decommissioning_years(df, config=None):
     Function which sets/fills a column 'DateOut' with roughly
     estimated values for decommissioning years, based on the estimated lifetimes
     per `Fueltype` given in the config and corresponding commissioning years.
-    Note that the latter is filled up using `fill_missing_commyears`.
+    Note that the latter is filled up using `fill_missing_commissioning_years`.
     """
     df = get_obj_if_Acc(df)
     if config is None:
@@ -270,7 +270,7 @@ def fill_missing_decommissioning_years(df, config=None):
     if "DateOut" not in df:
         df = df.reindex(columns=list(df.columns) + ["DateOut"])
     lifetime = df.Fueltype.map(config["fuel_to_lifetime"])
-    df = fill_missing_commyears(df)
+    df = fill_missing_commissioning_years(df)
     df["DateOut"] = df.DateOut.fillna(
         df[["DateIn", "DateRetrofit"]].max(1) + lifetime
     ).astype(int)
@@ -320,7 +320,7 @@ def aggregate_VRE_by_commissioning_year(df, target_fueltypes=None, agg_geo_by=No
     if target_fueltypes is None:
         target_fueltypes = ["Wind", "Solar", "Bioenergy"]
     df = df[df.Fueltype.isin(target_fueltypes)]
-    df = fill_missing_commyears(df)
+    df = fill_missing_commissioning_years(df)
     df.Technology.fillna("-", inplace=True)
     df = (
         df.groupby(["Country", "DateIn", "Fueltype", "Technology"])
@@ -337,8 +337,8 @@ def aggregate_VRE_by_commissioning_year(df, target_fueltypes=None, agg_geo_by=No
     removed_in="0.6.0",
     details="This function was renamed to `fill_missing_commissioning_years`",
 )
-def fill_missing_commyears(df, config=None):
-    return fill_missing_commissioning_years(df, config=config)
+def fill_missing_commyears(df):
+    return fill_missing_commissioning_years(df)
 
 
 @deprecated(
