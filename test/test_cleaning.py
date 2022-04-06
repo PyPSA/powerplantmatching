@@ -84,4 +84,4 @@ def test_clean_name(data):
     assert res.Name[1] == "An Hydro Powerplant"
     assert res.Name[2] == "Another Powerplant With Whitespaces"
     assert res.Name[3] == "Coalition"
-    assert res.Name[4] == "Kraftwerk Besonders Chp"
+    assert res.Name[4] == "Besonders Chp"
