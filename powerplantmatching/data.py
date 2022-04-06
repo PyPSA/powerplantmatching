@@ -210,11 +210,11 @@ def OPSD(
             regex=True,
         )
         .pipe(gather_specifications, config=config)
-        .pipe(fill_geoposition, **fill_geoposition_kwargs)
         .pipe(clean_name)
         .query("Name != ''")
         .dropna(subset=["Capacity"])
         .powerplant.convert_alpha2_to_country()
+        .pipe(fill_geoposition, **fill_geoposition_kwargs)
         .pipe(set_column_name, "OPSD")
         .pipe(config_filter, config)
     )

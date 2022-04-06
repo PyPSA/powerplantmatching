@@ -25,7 +25,7 @@ matching_sources:
 
 fully_included_sources:
   # Make individual queries for the datasets
-  - ENTSOE
+  - ENTSOE: Country not in ['Switzerland']
   # - OPSD: Country not in ['Switzerland']
   # - JRC: Country not in ['Switzerland']
   # - GEO: Country == 'Czech Republic' and Fueltype == 'Lignite'
@@ -210,7 +210,7 @@ target_fueltypes:
   # given by the list. An empty string results in a regex expression containing only the key.
   # Parsed of representatives at the top may be overwritten by representatives further below.
   Other: ".*"
-  Bioenergy: [biological, biogas, bioenergy, agricultural, wood]
+  Bioenergy: [biological, biogas, bioenergy, agricultural, wood, biomass]
   Nuclear: [nuclear]
   Natural Gas: [ccgt, gas, natural gas, ocgt, lng, combined cycle, fossil gas, mixed fossil fuels]
   Hydro:
@@ -224,8 +224,8 @@ target_fueltypes:
       hydroelectric,
       wasserkraft,
     ]
-  Hard Coal: [coal, coke, peat]
-  Lignite: [brown coal, lignite]
+  Hard Coal: [coal, coke]
+  Lignite: [brown coal, lignite, peat]
   Oil: [oil, diesel]
   Geothermal: ""
   Solar: ""
