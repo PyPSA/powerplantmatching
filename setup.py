@@ -37,6 +37,7 @@ setup(
         "unidecode",
         "entsoe-py >=0.3.1",
         "deprecation",
+        "tqdm",
         "openpyxl",
     ],
     extras_require={

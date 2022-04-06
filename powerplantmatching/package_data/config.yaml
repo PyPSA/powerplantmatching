@@ -10,7 +10,7 @@ google_api_key:
 
 # This query is applied to all input data
 # Note: querying "key == key" filters out nan values
-main_query: (DateOut >= 2018 or DateOut != DateOut)
+main_query: (DateOut >= 2020 or DateOut != DateOut)
 
 matching_sources:
   # Make individual queries for the datasets as done in `fully_included_sources`
@@ -25,10 +25,10 @@ matching_sources:
 
 fully_included_sources:
   # Make individual queries for the datasets
-  - OPSD: Country not in ['Switzerland']
-  - JRC: Country not in ['Switzerland']
-  - ENTSOE: Country not in ['Spain', 'Switzerland', 'United Kingdom']
-  - GEO: Country == 'Czech Republic' and Fueltype == 'Lignite'
+  - ENTSOE
+  # - OPSD: Country not in ['Switzerland']
+  # - JRC: Country not in ['Switzerland']
+  # - GEO: Country == 'Czech Republic' and Fueltype == 'Lignite'
 
 parallel_duke_processes: false
 process_limit: 4
@@ -61,9 +61,12 @@ CARMA:
   url: https://vfs.fias.science/f/e1d9d9d587/?raw=1
   fn: Full_CARMA_2009_Dataset_1.csv
 ENTSOE:
-  reliability_score: 4
+  reliability_score: 5
   url: https://vfs.fias.science/f/ebbdf6ba8c/?raw=1
   fn: entsoe_powerplants.csv
+ENTSOE-EIC:
+  url: https://eepublicdownloads.entsoe.eu/eic-codes-csv/W_eiccodes.csv
+  fn: entsoe_eic_codes.csv
 JRC:
   reliability_score: 4
   fn: jrc-hydro-power-database-10.zip
@@ -209,7 +212,7 @@ target_fueltypes:
   Other: ".*"
   Bioenergy: [biological, biogas, bioenergy, agricultural, wood]
   Nuclear: [nuclear]
-  Natural Gas: [ccgt, gas, natural gas, ocgt, lng, combined cycle]
+  Natural Gas: [ccgt, gas, natural gas, ocgt, lng, combined cycle, fossil gas, mixed fossil fuels]
   Hydro:
     [
       run-off,
@@ -265,7 +268,7 @@ target_technologies:
   PV: [pv, photo-voltaic, photo voltaic]
   CSP: ""
 clean_name:
-  remove_common_words: true # remove words which appear more that 20 times in all entries
+  remove_common_words: false # remove words which appear more that 20 times in all entries
   remove_duplicated_words: true
   replace:
     " ": "[^a-zA-Z]" # non-alphabetical symbols
@@ -283,14 +286,34 @@ clean_name:
         IX,
         X,
         XI,
-        plant,
-        station,
         parque,
         grupo,
-        project,
-        hydroelectric,
+        station,
         power,
         plant,
+        unit,
+        kraftwerk,
+        kw,
+        heizkraftwerk,
+        eolico,
+        project,
+        hydroelectric,
+        pumped,
+        storage, 
+        france, 
+        austria, 
+        sweden, 
+        serbia,
+        switzerland,
+        slovakia,
+        croatia,
+        poland, 
+        slovenia,
+        portugal,
+        bosnia,
+        and,
+        herzegovina,
+        \w, #remove single letters
       ]
     "ss": "ß"
 

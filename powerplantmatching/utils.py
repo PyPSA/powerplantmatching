@@ -31,6 +31,7 @@ import pycountry as pyc
 import requests
 import six
 from deprecation import deprecated
+from tqdm import tqdm
 
 from .core import _data_in, _package_data, get_config, get_obj_if_Acc, logger
 
@@ -389,24 +390,20 @@ def country_alpha2(country):
         return ""
     try:
         return pyc.countries.get(name=country).alpha_2
-    except KeyError:
+    except (KeyError, AttributeError):
         return ""
 
 
 def convert_alpha2_to_country(df):
     df = get_obj_if_Acc(df)
-    dic = {
-        "EL": "GR",  # needed, as some datasets use for Greece and United K.
-        "UK": "GB",
-    }  # codes that are not conform to ISO 3166-1 alpha2.
-    return df.assign(
-        Country=df.Country.replace(dic).map(country_map.set_index("alpha_2")["name"])
-    )
+    # codes that are not conform to ISO 3166-1 alpha2.
+    dic = {"EL": "GR", "UK": "GB"}
+    return convert_to_short_name(df.assign(Country=df.Country.replace(dic)))
 
 
 def convert_to_short_name(df):
     df = get_obj_if_Acc(df)
-    countries = df.Country.unique()
+    countries = df.Country.dropna().unique()
     short_name = dict(
         zip(countries, cc.convert(countries, to="name_short", not_found=None))
     )
@@ -416,10 +413,10 @@ def convert_to_short_name(df):
 
 def convert_country_to_alpha2(df):
     df = get_obj_if_Acc(df)
-    countries = df.Country.unique()
+    countries = df.Country.dropna().unique()
     iso2 = dict(zip(countries, cc.convert(countries, to="iso2", not_found=None)))
 
-    return df.assign(Country=df.Country.replace(iso2))
+    return df.assign(Country=df.Country.replace(iso2).where(lambda ds: ds != "nan"))
 
 
 def breakdown_matches(df):
@@ -569,6 +566,7 @@ def parse_Geoposition(
         )
     except geopy.exc.GeocoderQueryError as e:
         logger.warn(e)
+        gdata = None
 
     if gdata is not None:
         return pd.Series(
@@ -581,7 +579,12 @@ def parse_Geoposition(
         )
 
 
-def fill_geoposition(df, use_saved_locations=False, saved_only=False):
+def fill_geoposition(
+    df,
+    use_saved_locations=True,
+    saved_only=True,
+    config=None,
+):
     """
     Fill missing 'lat' and 'lon' values. Uses geoparsing with the value given
     in 'Name', limits the search through value in 'Country'.
@@ -597,7 +600,10 @@ def fill_geoposition(df, use_saved_locations=False, saved_only=False):
     """
     df = get_obj_if_Acc(df)
 
-    if use_saved_locations and get_config()["google_api_key"] is None:
+    if config is None:
+        config = get_config()
+
+    if use_saved_locations and config["google_api_key"] is None:
         logger.warning(
             "Geoparsing not possible as no google api key was "
             "found, please add the key to your config.yaml if you "
@@ -606,6 +612,7 @@ def fill_geoposition(df, use_saved_locations=False, saved_only=False):
 
     if use_saved_locations:
         locs = pd.read_csv(_package_data("parsed_locations.csv"), index_col=[0, 1])
+        locs = locs[~locs.index.duplicated()]
         df = df.where(
             df[["lat", "lon"]].notnull().all(1),
             df.drop(columns=["lat", "lon"]).join(locs, on=["Name", "Country"]),
@@ -613,15 +620,25 @@ def fill_geoposition(df, use_saved_locations=False, saved_only=False):
     if saved_only:
         return df
 
-    logger.info("Parse geopositions for missing lat/lon values")
-    missing = df.lat.isnull()
-    geodata = df[missing].apply(
-        lambda ds: parse_Geoposition(ds["Name"], country=ds["Country"]), axis=1
-    )
+    logger.info("Parse geopositions for missing `lat` and `lon` values")
+    missing = df[df.lat.isnull()].copy()
+
+    if "postalcode" not in missing.columns:
+        missing["postalcode"] = ""
+
+    cols = ["Name", "Country", "lat", "lon"]
+    geodata = pd.DataFrame(index=missing.index, columns=cols)
+    for i in tqdm(missing.index):
+        geodata.loc[i, :] = parse_Geoposition(
+            location=missing.at[i, "Name"],
+            zipcode=missing.at[i, "postalcode"],
+            country=missing.at[i, "Country"],
+        )
+
     geodata.drop_duplicates(subset=["Name", "Country"]).set_index(
         ["Name", "Country"]
     ).to_csv(_package_data("parsed_locations.csv"), mode="a", header=False)
 
-    df.loc[missing, ["lat", "lon"]] = geodata
+    df.loc[geodata.index, ["lat", "lon"]] = geodata
 
-    return df.reindex(columns=df.columns)
+    return df
