@@ -26,10 +26,10 @@ matching_sources:
 fully_included_sources:
   # Make individual queries for the datasets
   - BEYONDCOAL
-  - OPSD: Country not in ['Switzerland', 'Spain', 'United Kingdom']
+  - OPSD: Country not in ['Switzerland', 'United Kingdom', 'Italy']
   - JRC: Country not in ['Switzerland', 'Albania', 'Austria', 'Romania']
-  - ENTSOE: Country not in ['Switzerland', 'Ireland', 'Albania', 'Greece', 'United Kingdom']
-  # - GEO: Country == 'Czech Republic' and Fueltype == 'Lignite'
+  - ENTSOE: Country not in ['Switzerland', 'Ireland', 'Albania', 'Greece', 'United Kingdom', 'Spain']
+  - GPD: Country in ['Spain']
   - GPD: Country in ['Finland', 'Spain']
 
 parallel_duke_processes: false
