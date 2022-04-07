@@ -292,15 +292,17 @@ def reduce_matched_dataframe(df, show_orig_names=False, config=None):
     )
     props_for_groups = pd.Series(props_for_groups)[cols].to_dict()
 
-    # set low priority on Fueltype 'Other'
+    # set low priority on Fueltype 'Other' and Set 'PP'
     # turn it since aggregating only possible for axis=0
     sdf = (
-        df.replace({"Fueltype": {"Other": np.nan}})
+        df.assign(Set=lambda df: df.Set.where(df.Set != "PP"))
+        .assign(Fueltype=lambda df: df.Fueltype.where(df.Set != "Other"))
         .stack(1)
         .reindex(rel_scores.index, level=1)
         .groupby(level=0)
         .agg(props_for_groups)
-        .replace({"Fueltype": {np.nan: "Other"}})
+        .assign(Set=lambda df: df.Set.fillna("PP"))
+        .assign(Fueltype=lambda df: df.Fueltype.fillna("Other"))
     )
 
     if show_orig_names:

@@ -28,7 +28,7 @@ fully_included_sources:
   - BEYONDCOAL
   - OPSD: Country not in ['Switzerland', 'Spain', 'United Kingdom']
   - JRC: Country not in ['Switzerland', 'Albania', 'Austria', 'Romania']
-  - ENTSOE: Country not in ['Switzerland', 'Ireland', 'Albania', 'Greece', 'United Kingdom', 'Spain']
+  - ENTSOE: Country not in ['Switzerland', 'Ireland', 'Albania', 'Greece', 'United Kingdom']
   # - GEO: Country == 'Czech Republic' and Fueltype == 'Lignite'
   - GPD: Country in ['Finland', 'Spain']
 
@@ -253,7 +253,10 @@ target_sets:
   CHP:
     [
       heizkraftwerk,
-      hkwc,
+      hkw,
+      kwk,
+      fhkw,
+      gud,
       hp,
       bhkw,
       cogeneration,

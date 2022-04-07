@@ -183,7 +183,8 @@ def OPSD(
             Name=lambda df: df.Name.str.replace("\x96", " "),  # for geoparsing
             projectID=lambda s: "OEU-" + s.index.astype(str),
             Fueltype=lambda d: d.Fueltype.fillna(d.Energy_Source_Level_1),
-            Set=lambda df: np.where(df.Set.isin(["yes", "Yes"]), "CHP", "PP"),
+            # We don't want to include this as this is overestimating CHP capacities
+            # Set=lambda df: np.where(df.Set.isin(["yes", "Yes"]), "CHP", "PP"),
         )
         .reindex(columns=config["target_columns"])
     )
@@ -195,7 +196,8 @@ def OPSD(
             Name=lambda d: d.Name_Bnetza.fillna(d.Name_Uba),
             Fueltype=lambda d: d.Fueltype.fillna(d.Energy_Source_Level_1),
             DateRetrofit=lambda d: d.DateRetrofit.fillna(d.DateIn),
-            Set=lambda df: np.where(df.Set.isin(["yes", "Yes"]), "CHP", "PP"),
+            # We don't want to include this as this is overestimating CHP capacities
+            # Set=lambda df: np.where(df.Set.isin(["yes", "Yes"]), "CHP", "PP"),
         )
     )
     if statusDE is not None:
@@ -428,8 +430,11 @@ def JRC(raw=False, update=False, config=None):
                 }
             )
         )
+        .assign(
+            Set=lambda df: np.where(df.Technology == "Run-Of-River", "PP", "Store"),
+            Fueltype="Hydro",
+        )
         .drop(columns=["pypsa_id", "GEO"])
-        .assign(Set="Store", Fueltype="Hydro")
         .powerplant.convert_alpha2_to_country()
         .pipe(clean_name)
         .query("Name != ''")
