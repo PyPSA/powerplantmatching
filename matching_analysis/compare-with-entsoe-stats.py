@@ -45,9 +45,7 @@ stats.loc["AT", "Hydro"] = 14600
 
 totals = powerplants.powerplant.lookup().fillna(0)
 
-sources = [
-    s if isinstance(s, str) else list(s).pop() for s in config["matching_sources"]
-]
+sources = [s if isinstance(s, str) else list(s)[0] for s in config["matching_sources"]]
 dbs = {
     s.title(): getattr(pm.data, s)()
     .powerplant.convert_country_to_alpha2()
