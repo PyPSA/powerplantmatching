@@ -1,6 +1,6 @@
- # ---------------------------------------------------------------------------- #
- #                                   IO Config                                  #
- # ---------------------------------------------------------------------------- #
+# ---------------------------------------------------------------------------- #
+#                                   IO Config                                  #
+# ---------------------------------------------------------------------------- #
 entsoe_token:
 google_api_key:
 
@@ -19,16 +19,18 @@ matching_sources:
   - GEO
   - GPD
   - JRC
-  - OPSD
+  - OPSD: Fueltype != "Hard Coal" and Country != "Spain"
   - BEYONDCOAL
   - WIKIPEDIA
 
 fully_included_sources:
   # Make individual queries for the datasets
-  - ENTSOE: Country not in ['Switzerland']
-  # - OPSD: Country not in ['Switzerland']
-  # - JRC: Country not in ['Switzerland']
+  - BEYONDCOAL
+  - OPSD: Country not in ['Switzerland', 'Spain', 'United Kingdom']
+  - JRC: Country not in ['Switzerland', 'Albania', 'Austria', 'Romania']
+  - ENTSOE: Country not in ['Switzerland', 'Ireland', 'Albania', 'Greece', 'United Kingdom', 'Spain']
   # - GEO: Country == 'Czech Republic' and Fueltype == 'Lignite'
+  - GPD: Country in ['Finland', 'Spain']
 
 parallel_duke_processes: false
 process_limit: 4
@@ -212,7 +214,17 @@ target_fueltypes:
   Other: ".*"
   Bioenergy: [biological, biogas, bioenergy, agricultural, wood, biomass]
   Nuclear: [nuclear]
-  Natural Gas: [ccgt, gas, natural gas, ocgt, lng, combined cycle, fossil gas, mixed fossil fuels]
+  Natural Gas:
+    [
+      ccgt,
+      gas,
+      natural gas,
+      ocgt,
+      lng,
+      combined cycle,
+      fossil gas,
+      mixed fossil fuels,
+    ]
   Hydro:
     [
       run-off,
@@ -299,15 +311,15 @@ clean_name:
         project,
         hydroelectric,
         pumped,
-        storage, 
-        france, 
-        austria, 
-        sweden, 
+        storage,
+        france,
+        austria,
+        sweden,
         serbia,
         switzerland,
         slovakia,
         croatia,
-        poland, 
+        poland,
         slovenia,
         portugal,
         bosnia,
