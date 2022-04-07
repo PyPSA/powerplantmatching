@@ -1,6 +1,13 @@
 History of Changes
 ==================
 
+Version 0.5.2 (07.04.2022)
+-------------------------
+
+* The overall config setting was fine-tuned in order to improve the matching results. 
+* New scripts were added to the folder `matching_analysis`
+
+
 Version 0.5.1 (04.04.2022)
 -------------------------
 
