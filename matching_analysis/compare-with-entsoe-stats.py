@@ -12,7 +12,7 @@ from powerplantmatching.cleaning import gather_fueltype_info
 warnings.simplefilter(action="ignore", category=FutureWarning)
 
 config = pm.get_config()
-powerplants = pm.powerplants(update=True)
+powerplants = pm.powerplants(update=False)
 powerplants = powerplants.powerplant.convert_country_to_alpha2()
 powerplants = powerplants[powerplants.lat.notnull()]
 
@@ -47,7 +47,7 @@ totals = powerplants.powerplant.lookup().fillna(0)
 
 sources = [s if isinstance(s, str) else list(s)[0] for s in config["matching_sources"]]
 dbs = {
-    s.title(): getattr(pm.data, s)()
+    s.title(): getattr(pm.data, s)()[lambda df: df.lat.notnull()]
     .powerplant.convert_country_to_alpha2()
     .powerplant.lookup()
     .fillna(0)
