@@ -1415,7 +1415,6 @@ def OPSD_VRE(raw=False, update=False, config=None):
         .powerplant.convert_alpha2_to_country()
         .pipe(set_column_name, "OPSD_VRE")
         .pipe(config_filter, config)
-        .drop("Name", axis=1)
     )
 
 
@@ -1459,7 +1458,6 @@ def OPSD_VRE_country(country, raw=False, update=False, config=None):
         .powerplant.convert_alpha2_to_country()
         .pipe(set_column_name, f"OPSD_VRE_{country}")
         # .pipe(config_filter, config)
-        .drop("Name", axis=1)
     )
 
 
