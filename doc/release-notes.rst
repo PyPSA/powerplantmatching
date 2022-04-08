@@ -1,6 +1,11 @@
 History of Changes
 ==================
 
+Version 0.5.3 (08.04.2022)
+-------------------------
+
+* Bug fix for renewable power plants from OPSD
+
 Version 0.5.2 (07.04.2022)
 -------------------------
 
