@@ -40,6 +40,18 @@ def test_data_request_processed(source):
     assert df.columns.to_list() == config["target_columns"]
 
 
+def test_OPSD_VRE():
+    df = pm.data.OPSD_VRE().empty
+    assert not df.empty
+    assert df.Capacity.sum() > 0
+
+
+def test_OPSD_VRE():
+    df = pm.data.OPSD_VRE_country("DE")
+    assert not df.empty
+    assert df.Capacity.sum() > 0
+
+
 # Enable after release of v0.5.0
 # def test_powerplants():
 #     pm.powerplants(from_url=True)
