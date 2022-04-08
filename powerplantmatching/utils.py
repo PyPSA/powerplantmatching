@@ -31,6 +31,7 @@ import pycountry as pyc
 import requests
 import six
 from deprecation import deprecated
+from numpy import atleast_1d
 from tqdm import tqdm
 
 from .core import _data_in, _package_data, get_config, get_obj_if_Acc, logger
@@ -404,9 +405,9 @@ def convert_alpha2_to_country(df):
 def convert_to_short_name(df):
     df = get_obj_if_Acc(df)
     countries = df.Country.dropna().unique()
-    short_name = dict(
-        zip(countries, cc.convert(countries, to="name_short", not_found=None))
-    )
+
+    kwargs = dict(to="name_short", not_found=None)
+    short_name = dict(zip(countries, atleast_1d(cc.convert(countries, **kwargs))))
 
     return df.assign(Country=df.Country.replace(short_name))
 
@@ -414,7 +415,8 @@ def convert_to_short_name(df):
 def convert_country_to_alpha2(df):
     df = get_obj_if_Acc(df)
     countries = df.Country.dropna().unique()
-    iso2 = dict(zip(countries, cc.convert(countries, to="iso2", not_found=None)))
+    kwargs = dict(to="iso2", not_found=None)
+    iso2 = dict(zip(countries, atleast_1d(cc.convert(countries, **kwargs))))
 
     return df.assign(Country=df.Country.replace(iso2).where(lambda ds: ds != "nan"))
 

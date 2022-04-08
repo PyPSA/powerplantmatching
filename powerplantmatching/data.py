@@ -1450,7 +1450,6 @@ def OPSD_VRE_country(country, raw=False, update=False, config=None):
             columns={
                 "energy_source_level_2": "Fueltype",
                 "technology": "Technology",
-                "data_source": "file",
                 "electrical_capacity": "Capacity",
                 "municipality": "Name",
             }
@@ -1458,8 +1457,8 @@ def OPSD_VRE_country(country, raw=False, update=False, config=None):
         # there is a problem with GB in line 1651 (version 20/08/20)
         .assign(Capacity=lambda df: pd.to_numeric(df.Capacity, "coerce"))
         .powerplant.convert_alpha2_to_country()
-        .piper(set_column_name, f"OPSD_VRE_{country}")
-        .pipe(config_filter, config)
+        .pipe(set_column_name, f"OPSD_VRE_{country}")
+        # .pipe(config_filter, config)
         .drop("Name", axis=1)
     )
 
