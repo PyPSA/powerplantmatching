@@ -1394,7 +1394,8 @@ def OPSD_VRE(raw=False, update=False, config=None):
     """
     config = get_config() if config is None else config
 
-    df = pd.read_csv(get_raw_file("OPSD_VRE"), index_col=0, low_memory=False)
+    fn = get_raw_file("OPSD_VRE", update=update, config=config)
+    df = pd.read_csv(fn, low_memory=False)
 
     if raw:
         return df
@@ -1437,7 +1438,8 @@ def OPSD_VRE_country(country, raw=False, update=False, config=None):
     config = get_config() if config is None else config
 
     # there is a problem with GB in line 1651 (version 20/08/20) use low_memory
-    df = pd.read_csv(get_raw_file(f"OPSD_VRE_{country}"), low_memory=False)
+    fn = get_raw_file(f"OPSD_VRE_{country}", update=update, config=config)
+    df = pd.read_csv(fn, low_memory=False)
 
     if raw:
         return df
