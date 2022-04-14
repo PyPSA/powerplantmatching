@@ -1500,16 +1500,21 @@ def GEM_GGPT(raw=False,update=False,config=None):
     }
     
     technology_dict = {
-        "GT":"Steam Turbine", # Or Gas Turbine? Check with Fabian
+        "GT":"Steam Turbine", 
         "CC":"CCGT",
-        "GT/IC":"Steam Turbine",# Or Gas Turbine? Check with Fabian
-        "ICCC":" Gas- and fuel oil-fired combined cycle", #check this with Fabian
-        "ISCC":"Integrated Solar and Combined Cycle", # Check with Fabian
+        "GT/IC":"Steam Turbine",
+        "ICCC":"CCGT", 
+        "ISCC":"CCGT",
         "ST":"Steam Turbine"
             }
 
     df.rename(columns=RENAME_COLUMNS, inplace=True)
     
+    # Consistent country names for dataset
+
+    df = convert_to_short_name(df)
     df.dropna(subset="Capacity", inplace=True)
 
+    df["Fueltype"] = "Natural Gas"
+    df.Technology.replace(technology_dict, inplace=True)
     return df
