@@ -32,12 +32,23 @@ import pycountry
 import requests
 from deprecation import deprecated
 
-from .cleaning import (clean_name, gather_fueltype_info, gather_set_info,
-                       gather_specifications, gather_technology_info)
+from .cleaning import (
+    clean_name,
+    gather_fueltype_info,
+    gather_set_info,
+    gather_specifications,
+    gather_technology_info,
+)
 from .core import _data_in, _package_data, get_config
 from .heuristics import scale_to_net_capacities
-from .utils import (config_filter, convert_to_short_name, correct_manually,
-                    fill_geoposition, get_raw_file, set_column_name)
+from .utils import (
+    config_filter,
+    convert_to_short_name,
+    correct_manually,
+    fill_geoposition,
+    get_raw_file,
+    set_column_name,
+)
 
 logger = logging.getLogger(__name__)
 cget = pycountry.countries.get
@@ -1464,7 +1475,7 @@ def IRENASTAT(raw=False, update=False, config=None):
     return df
 
 
-def GEM_GGPT(raw=False,update=False,config=None):
+def GEM_GGPT(raw=False, update=False, config=None):
     """
     Importer for the GEM_GPPT gas powerplant tracker.
 
@@ -1479,37 +1490,36 @@ def GEM_GGPT(raw=False,update=False,config=None):
         e.g. powerplantmatching.config.get_config(target_countries='Italy'),
         defaults to powerplantmatching.config.get_config()
     """
-    if config is None: 
+    if config is None:
         config = get_config()
 
-        fn = get_raw_file("GEM_GGPT",update=update,config=config)
+        fn = get_raw_file("GEM_GGPT", update=update, config=config)
         df = pd.read_csv(fn, comment="#")
     if raw:
         return df
-    
+
     RENAME_COLUMNS = {
-        
         "Country/area": "Country",
-        "name":"Name",
-        "Fuel":"Fueltype",
+        "name": "Name",
+        "Fuel": "Fueltype",
         "Capacity elec. (MW)": "Capacity",
         "Latitude": "lat",
         "Longitude": "lon",
         "Start year": "DateIn",
-        "Retired year": "DateOut"
+        "Retired year": "DateOut",
     }
-    
+
     technology_dict = {
-        "GT":"Steam Turbine", 
-        "CC":"CCGT",
-        "GT/IC":"Steam Turbine",
-        "ICCC":"CCGT", 
-        "ISCC":"CCGT",
-        "ST":"Steam Turbine"
-            }
+        "GT": "Steam Turbine",
+        "CC": "CCGT",
+        "GT/IC": "Steam Turbine",
+        "ICCC": "CCGT",
+        "ISCC": "CCGT",
+        "ST": "Steam Turbine",
+    }
 
     df.rename(columns=RENAME_COLUMNS, inplace=True)
-    
+
     # Consistent country names for dataset
 
     df = convert_to_short_name(df)
