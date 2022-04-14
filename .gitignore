@@ -91,3 +91,4 @@ matching_analysis/figures/
 doc/_build
 doc/api
 .vscode
+test.ipynb
