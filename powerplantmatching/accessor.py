@@ -51,6 +51,7 @@ class PowerPlantAccessor:
         breakdown_matches,
         convert_alpha2_to_country,
         convert_country_to_alpha2,
+        convert_to_short_name,
         fill_geoposition,
         lookup,
         select_by_projectID,

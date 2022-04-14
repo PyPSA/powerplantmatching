@@ -117,10 +117,7 @@ def BEYONDCOAL(raw=False, update=False, config=None):
 
 
 def OPSD(
-    raw=False,
-    update=False,
-    statusDE=None,
-    config=None,
+    raw=False, update=False, statusDE=None, config=None, **fill_geoposition_kwargs
 ):
     """
     Importer for the OPSD (Open Power Systems Data) database.
@@ -138,6 +135,8 @@ def OPSD(
         Add custom specific configuration,
         e.g. powerplantmatching.config.get_config(target_countries='Italy'),
         defaults to powerplantmatching.config.get_config()
+    fill_geoposition_kwargs:
+        Keyword arguments for fill_geoposition.
     """
     config = get_config() if config is None else config
 
@@ -179,10 +178,13 @@ def OPSD(
         opsd_EU.rename(columns=str.title)
         .rename(columns=EU_RENAME_COLUMNS)
         .eval("DateRetrofit = DateIn")
+        .query("Country != 'DE'")
         .assign(
+            Name=lambda df: df.Name.str.replace("\x96", " "),  # for geoparsing
             projectID=lambda s: "OEU-" + s.index.astype(str),
             Fueltype=lambda d: d.Fueltype.fillna(d.Energy_Source_Level_1),
-            Set=lambda df: np.where(df.Set.isin(["yes", "Yes"]), "CHP", "PP"),
+            # We don't want to include this as this is overestimating CHP capacities
+            # Set=lambda df: np.where(df.Set.isin(["yes", "Yes"]), "CHP", "PP"),
         )
         .reindex(columns=config["target_columns"])
     )
@@ -194,7 +196,8 @@ def OPSD(
             Name=lambda d: d.Name_Bnetza.fillna(d.Name_Uba),
             Fueltype=lambda d: d.Fueltype.fillna(d.Energy_Source_Level_1),
             DateRetrofit=lambda d: d.DateRetrofit.fillna(d.DateIn),
-            Set=lambda df: np.where(df.Set.isin(["yes", "Yes"]), "CHP", "PP"),
+            # We don't want to include this as this is overestimating CHP capacities
+            # Set=lambda df: np.where(df.Set.isin(["yes", "Yes"]), "CHP", "PP"),
         )
     )
     if statusDE is not None:
@@ -213,6 +216,7 @@ def OPSD(
         .query("Name != ''")
         .dropna(subset=["Capacity"])
         .powerplant.convert_alpha2_to_country()
+        .pipe(fill_geoposition, **fill_geoposition_kwargs)
         .pipe(set_column_name, "OPSD")
         .pipe(config_filter, config)
     )
@@ -426,8 +430,11 @@ def JRC(raw=False, update=False, config=None):
                 }
             )
         )
+        .assign(
+            Set=lambda df: np.where(df.Technology == "Run-Of-River", "PP", "Store"),
+            Fueltype="Hydro",
+        )
         .drop(columns=["pypsa_id", "GEO"])
-        .assign(Set="Store", Fueltype="Hydro")
         .powerplant.convert_alpha2_to_country()
         .pipe(clean_name)
         .query("Name != ''")
@@ -614,6 +621,8 @@ def WIKIPEDIA(raw=False, update=False, config=None):
             Fueltype="Nuclear",
             Set="PP",
             projectID=lambda df: "WIKIPEDIA-" + df.index.astype(str),
+            # plants which are not yet built are set to 2027
+            DateIn=lambda df: df.DateIn.where(df.DateOut != 2051, 2027),
         )
         .pipe(set_column_name, "WIKIPEDIA")
         .pipe(config_filter, config)
@@ -621,7 +630,9 @@ def WIKIPEDIA(raw=False, update=False, config=None):
     return df
 
 
-def ENTSOE(raw=False, update=False, config=None, entsoe_token=None):
+def ENTSOE(
+    raw=False, update=False, config=None, entsoe_token=None, **fill_geoposition_kwargs
+):
     """
     Importer for the list of installed generators provided by the ENTSO-E
     Transparency Project. Geographical information is not given.
@@ -643,6 +654,8 @@ def ENTSOE(raw=False, update=False, config=None, entsoe_token=None):
         defaults to powerplantmatching.config.get_config()
     entsoe_token: String
         Security token of the ENTSO-E Transparency platform
+    fill_geoposition_kwargs: 
+        Keyword arguments passed to `fill_geoposition`.
 
     Note: For obtaining a security token refer to section 2 of the
     RESTful API documentation of the ENTSOE-E Transparency platform
@@ -712,22 +725,77 @@ def ENTSOE(raw=False, update=False, config=None, entsoe_token=None):
         .rename(columns=RENAME_COLUMNS)
         .drop_duplicates("projectID")
         .assign(
+            Name=lambda df: df.Name.str.replace("_", " "),  # for geoparsing
             EIC=lambda df: df.projectID,
             Country=lambda df: df.projectID.str[:2].map(COUNTRY_MAP),
             Capacity=lambda df: pd.to_numeric(df.Capacity),
-            lon=np.nan,
-            lat=np.nan,
             Technology=np.nan,
             Set=np.nan,
+            lat=np.nan,
+            lon=np.nan,
         )
         .powerplant.convert_alpha2_to_country()
-        .pipe(fill_geoposition, use_saved_locations=True, saved_only=True)
+        .pipe(fill_geoposition, **fill_geoposition_kwargs)
         .query("Capacity > 0")
         .pipe(gather_specifications, config=config)
         .pipe(clean_name)
         .query("Name != ''")
         .pipe(set_column_name, "ENTSOE")
         .pipe(config_filter, config)
+    )
+
+
+def ENTSOE_EIC(raw=False, update=False, config=None, entsoe_token=None):
+    """
+    Importer for the meta data given for each ENTSOE entry.
+
+    This data serves to fill up geographical information.
+    If update=True an internet connection is required.
+
+    Parameters
+    ----------
+    raw : Boolean, default False
+        Whether to return the original dataset
+    update: bool, default False
+        Whether to update the data from the url.
+    config : dict, default None
+        Add custom specific configuration,
+        e.g. powerplantmatching.config.get_config(target_countries='Italy'),
+        defaults to powerplantmatching.config.get_config()
+    entsoe_token: String
+        Security token of the ENTSO-E Transparency platform
+
+    Note: For obtaining a security token refer to section 2 of the
+    RESTful API documentation of the ENTSOE-E Transparency platform
+    https://transparency.entsoe.eu/content/static_content/Static%20content/
+    web%20api/Guide.html#_authentication_and_authorisation. Please save the
+    token in your config.yaml file (key 'entsoe_token').
+    """
+    config = get_config() if config is None else config
+
+    RENAME_COLS = {
+        "EicCode": "projectID",
+        "EicLongName": "Name",
+        "MarketParticipantPostalCode": "postalcode",
+        "MarketParticipantIsoCountryCode": "Country",
+    }
+
+    fn = get_raw_file("ENTSOE-EIC", update=update, config=config)
+    df = pd.read_csv(fn, sep=";", on_bad_lines="skip")
+
+    if raw:
+        return df
+
+    # Maybe use this to get additional data on ENTSOE power plants, like postal codes
+    # entsoe_eic = ENTSOE_EIC(update=update).set_index("projectID").drop_duplicates()
+    # index = df.index.drop_duplicates()
+    # postalcode = entsoe_eic.postalcode.reindex(index, fill_value="")
+
+    return (
+        df.rename(columns=RENAME_COLS)
+        .powerplant.convert_to_short_name()
+        .pipe(set_column_name, "ENTSOE-EIC")
+        .assign(lat=np.nan, lon=np.nan)
     )
 
 
@@ -1326,7 +1394,8 @@ def OPSD_VRE(raw=False, update=False, config=None):
     """
     config = get_config() if config is None else config
 
-    df = pd.read_csv(get_raw_file("OPSD_VRE"), index_col=0, low_memory=False)
+    fn = get_raw_file("OPSD_VRE", update=update, config=config)
+    df = pd.read_csv(fn, low_memory=False)
 
     if raw:
         return df
@@ -1346,7 +1415,6 @@ def OPSD_VRE(raw=False, update=False, config=None):
         .powerplant.convert_alpha2_to_country()
         .pipe(set_column_name, "OPSD_VRE")
         .pipe(config_filter, config)
-        .drop("Name", axis=1)
     )
 
 
@@ -1369,7 +1437,8 @@ def OPSD_VRE_country(country, raw=False, update=False, config=None):
     config = get_config() if config is None else config
 
     # there is a problem with GB in line 1651 (version 20/08/20) use low_memory
-    df = pd.read_csv(get_raw_file(f"OPSD_VRE_{country}"), low_memory=False)
+    fn = get_raw_file(f"OPSD_VRE_{country}", update=update, config=config)
+    df = pd.read_csv(fn, low_memory=False)
 
     if raw:
         return df
@@ -1380,7 +1449,6 @@ def OPSD_VRE_country(country, raw=False, update=False, config=None):
             columns={
                 "energy_source_level_2": "Fueltype",
                 "technology": "Technology",
-                "data_source": "file",
                 "electrical_capacity": "Capacity",
                 "municipality": "Name",
             }
@@ -1388,9 +1456,8 @@ def OPSD_VRE_country(country, raw=False, update=False, config=None):
         # there is a problem with GB in line 1651 (version 20/08/20)
         .assign(Capacity=lambda df: pd.to_numeric(df.Capacity, "coerce"))
         .powerplant.convert_alpha2_to_country()
-        .piper(set_column_name, f"OPSD_VRE_{country}")
-        .pipe(config_filter, config)
-        .drop("Name", axis=1)
+        .pipe(set_column_name, f"OPSD_VRE_{country}")
+        # .pipe(config_filter, config)
     )
 
 

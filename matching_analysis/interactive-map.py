@@ -8,7 +8,7 @@ from xarray import align
 
 import powerplantmatching as pm
 
-df = pm.powerplants()
+df = pm.data.ENTSOE()
 df = df[df.lat.notnull()]
 
 grouped = (
@@ -41,7 +41,7 @@ map = df.hvplot.points(
     xaxis=None,
     yaxis=None,
     title="",
-    features={"rivers": "10m", "lakes": "10m"},
+    # features={"rivers": "10m", "lakes": "10m"},
 )
 
 hvplot.save(map, "figures/powerplant-map.html")

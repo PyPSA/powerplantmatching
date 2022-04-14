@@ -12,7 +12,7 @@ import powerplantmatching as pm
 from powerplantmatching import data
 
 config = pm.get_config()
-sources = config["matching_sources"]
+sources = [s if isinstance(s, str) else list(s)[0] for s in config["matching_sources"]]
 
 if not config["entsoe_token"] and "ENTSOE" in sources:
     sources.remove("ENTSOE")
@@ -38,6 +38,18 @@ def test_data_request_processed(source):
     df = func()
     assert len(df)
     assert df.columns.to_list() == config["target_columns"]
+
+
+def test_OPSD_VRE():
+    df = pm.data.OPSD_VRE().empty
+    assert not df.empty
+    assert df.Capacity.sum() > 0
+
+
+def test_OPSD_VRE():
+    df = pm.data.OPSD_VRE_country("DE")
+    assert not df.empty
+    assert df.Capacity.sum() > 0
 
 
 # Enable after release of v0.5.0

@@ -4,7 +4,7 @@ import powerplantmatching as pm
 from powerplantmatching import data
 
 config = pm.get_config()
-sources = config["matching_sources"]
+sources = [s if isinstance(s, str) else list(s)[0] for s in config["matching_sources"]]
 
 if not config["entsoe_token"] and "ENTSOE" in sources:
     sources.remove("ENTSOE")

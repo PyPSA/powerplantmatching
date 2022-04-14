@@ -9,7 +9,7 @@ with open("README.md", encoding="utf-8") as f:
 
 setup(
     name="powerplantmatching",
-    version="0.5.1",
+    version="0.5.3",
     author="Fabian Hofmann (FIAS), Jonas Hoersch (KIT), Fabian Gotzens (FZ Jülich)",
     author_email="hofmann@fias.uni-frankfurt.de",
     description="Toolset for generating and managing Power Plant Data",
@@ -37,6 +37,7 @@ setup(
         "unidecode",
         "entsoe-py >=0.3.1",
         "deprecation",
+        "tqdm",
         "openpyxl",
     ],
     extras_require={
