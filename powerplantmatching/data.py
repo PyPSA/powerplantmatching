@@ -109,7 +109,6 @@ def BEYONDCOAL(raw=False, update=False, config=None):
         )
         .pipe(scale_to_net_capacities)
         .pipe(clean_name)
-        .query("Name != ''")
         .pipe(set_column_name, "BEYONDCOAL")
         .pipe(config_filter, config)
     )
@@ -213,10 +212,9 @@ def OPSD(
         )
         .pipe(gather_specifications, config=config)
         .pipe(clean_name)
-        .query("Name != ''")
         .dropna(subset=["Capacity"])
         .powerplant.convert_alpha2_to_country()
-        .pipe(fill_geoposition, **fill_geoposition_kwargs)
+        # .pipe(fill_geoposition, **fill_geoposition_kwargs)
         .pipe(set_column_name, "OPSD")
         .pipe(config_filter, config)
     )
@@ -290,7 +288,7 @@ def GEO(raw=False, update=False, config=None):
         "FuelClassification2",
     ]
     ppl = gather_specifications(ppl, parse_columns=cols)
-    ppl = clean_name(ppl).query("Name != ''")
+    ppl = clean_name(ppl)
 
     res = units.join(ppl.set_index("projectID"), "projectID", rsuffix="_ppl")
     res.DateIn.fillna(res.DateIn_ppl, inplace=True)
@@ -368,7 +366,6 @@ def CARMA(raw=False, update=False, config=None):
         )
         .pipe(gather_specifications, config=config)
         .pipe(clean_name)
-        .query("Name != ''")
         .pipe(set_column_name, "CARMA")
         .drop_duplicates()
         .pipe(config_filter, config)
@@ -437,7 +434,6 @@ def JRC(raw=False, update=False, config=None):
         .drop(columns=["pypsa_id", "GEO"])
         .powerplant.convert_alpha2_to_country()
         .pipe(clean_name)
-        .query("Name != ''")
         .pipe(set_column_name, "JRC")
         .pipe(config_filter, config)
     )
@@ -575,7 +571,6 @@ def GPD(raw=False, update=False, config=None, filter_other_dbs=True):
         .rename(columns=RENAME_COLS)
         .pipe(gather_specifications, parse_columns=["Name", "Fueltype"], config=config)
         .pipe(clean_name)
-        .query("Name != ''")
         .pipe(set_column_name, "GPD")
         .pipe(config_filter, config)
         .pipe(gather_technology_info, config=config)
@@ -616,7 +611,6 @@ def WIKIPEDIA(raw=False, update=False, config=None):
     df = (
         df.rename(columns=RENAME_COLUMNS)
         .pipe(clean_name)
-        .query("Name != ''")
         .assign(
             Fueltype="Nuclear",
             Set="PP",
@@ -735,11 +729,10 @@ def ENTSOE(
             lon=np.nan,
         )
         .powerplant.convert_alpha2_to_country()
-        .pipe(fill_geoposition, **fill_geoposition_kwargs)
+        # .pipe(fill_geoposition, **fill_geoposition_kwargs)
         .query("Capacity > 0")
         .pipe(gather_specifications, config=config)
         .pipe(clean_name)
-        .query("Name != ''")
         .pipe(set_column_name, "ENTSOE")
         .pipe(config_filter, config)
     )
@@ -1457,7 +1450,7 @@ def OPSD_VRE_country(country, raw=False, update=False, config=None):
         .assign(Capacity=lambda df: pd.to_numeric(df.Capacity, "coerce"))
         .powerplant.convert_alpha2_to_country()
         .pipe(set_column_name, f"OPSD_VRE_{country}")
-        # .pipe(config_filter, config)
+        .pipe(config_filter, config)
     )
 
 

@@ -10,7 +10,7 @@ google_api_key:
 
 # This query is applied to all input data
 # Note: querying "key == key" filters out nan values
-main_query: (DateOut >= 2020 or DateOut != DateOut)
+main_query: "Name != '' and (DateOut >= 2020 or DateOut != DateOut)"
 
 matching_sources:
   # Make individual queries for the datasets as done in `fully_included_sources`
@@ -19,18 +19,18 @@ matching_sources:
   - GEO
   - GPD
   - JRC
-  - OPSD: Fueltype != "Hard Coal" and Country != "Spain"
+  - OPSD: Country != "Spain" and Fueltype != 'Hard Coal'
   - BEYONDCOAL
   - WIKIPEDIA
 
 fully_included_sources:
   # Make individual queries for the datasets
   - BEYONDCOAL
-  - OPSD: Country not in ['Switzerland', 'United Kingdom', 'Italy']
-  - JRC: Country not in ['Switzerland', 'Albania', 'Austria', 'Romania']
-  - ENTSOE: Country not in ['Switzerland', 'Ireland', 'Albania', 'Greece', 'United Kingdom', 'Spain']
-  - GPD: Country in ['Spain']
+  - OPSD: Country not in ['Switzerland', 'Italy', 'Spain', 'Norway', 'Austria']
+  - JRC: Country not in ['Switzerland', 'Albania', 'United Kingdom', 'Norway']
+  - ENTSOE: Country not in ['Switzerland', 'Ireland', 'Albania', 'Greece', 'Czech Republic', 'Bulgaria', 'United Kingdom', 'Italy', 'Serbia'] and (Country != 'Spain' and Fueltype != 'Hydro')
   - GPD: Country in ['Finland', 'Spain']
+  - GEO: (Country == 'Spain' and Fueltype == 'Natural Gas')
 
 parallel_duke_processes: false
 process_limit: 4
@@ -159,15 +159,15 @@ target_columns:
   - Country
   - Capacity
   - Efficiency
-  - Duration
-  - Volume_Mm3
-  - DamHeight_m
-  - StorageCapacity_MWh
   - DateIn
   - DateRetrofit
   - DateOut
   - lat
   - lon
+  - Duration
+  - Volume_Mm3
+  - DamHeight_m
+  - StorageCapacity_MWh
   - EIC
   - projectID
 target_countries:
@@ -309,6 +309,9 @@ clean_name:
         unit,
         kraftwerk,
         kw,
+        hkw,
+        nuclear,
+        thermal,
         heizkraftwerk,
         eolico,
         project,
@@ -319,6 +322,7 @@ clean_name:
         austria,
         sweden,
         serbia,
+        ukraine,
         switzerland,
         slovakia,
         croatia,

@@ -42,7 +42,7 @@
     <property>
       <name>CAPACITY</name> 
       <comparator>no.priv.garshol.duke.comparators.NumericComparator</comparator>
-      <low>0.2</low>
+      <low>0.3</low>
       <high>0.75</high>
     </property> 
     <property>
