@@ -146,6 +146,11 @@ WEPP:
   reliability_score: 4
   fn: platts_wepp.csv
 
+GEM_GGPT:
+  net_capacity: false
+  reliability_score: 5
+  url: https://greeninfo-network.github.io/global-gas-plant-tracker/data/data.csv
+
 # ---------------------------------------------------------------------------- #
 #                             Data Structure Config                            #
 # ---------------------------------------------------------------------------- #

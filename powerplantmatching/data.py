@@ -1533,3 +1533,58 @@ def IRENASTAT(raw=False, update=False, config=None):
     df = df.groupby(l, as_index=False, dropna=True).sum()
 
     return df
+
+
+def GEM_GGPT(raw=False, update=False, config=None):
+    """
+    Importer for the GEM_GPPT gas powerplant tracker.
+
+    Parameters
+    ----------
+    raw : boolean, default False
+        Whether to return the original dataset
+    update: bool, default False
+        Whether to update the data from the url.
+    config : dict, default None
+        Add custom specific configuration,
+        e.g. powerplantmatching.config.get_config(target_countries='Italy'),
+        defaults to powerplantmatching.config.get_config()
+    """
+    if config is None:
+        config = get_config()
+
+        fn = get_raw_file("GEM_GGPT", update=update, config=config)
+        df = pd.read_csv(fn, comment="#")
+    if raw:
+        return df
+
+    RENAME_COLUMNS = {
+        "Country/area": "Country",
+        "name": "Name",
+        "Fuel": "Fueltype",
+        "Capacity elec. (MW)": "Capacity",
+        "Latitude": "lat",
+        "Longitude": "lon",
+        "Start year": "DateIn",
+        "Retired year": "DateOut",
+    }
+
+    technology_dict = {
+        "GT": "Steam Turbine",
+        "CC": "CCGT",
+        "GT/IC": "Steam Turbine",
+        "ICCC": "CCGT",
+        "ISCC": "CCGT",
+        "ST": "Steam Turbine",
+    }
+
+    df.rename(columns=RENAME_COLUMNS, inplace=True)
+
+    # Consistent country names for dataset
+
+    df = convert_to_short_name(df)
+    df.dropna(subset="Capacity", inplace=True)
+
+    df["Fueltype"] = "Natural Gas"
+    df.Technology.replace(technology_dict, inplace=True)
+    return df
