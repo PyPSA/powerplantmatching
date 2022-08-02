@@ -11,7 +11,7 @@ from powerplantmatching.cleaning import gather_fueltype_info
 
 warnings.simplefilter(action="ignore", category=FutureWarning)
 
-UPDATE = True
+UPDATE = False
 
 
 config = pm.get_config()
