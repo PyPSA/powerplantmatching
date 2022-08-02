@@ -5,6 +5,8 @@
 A toolset for cleaning, standardizing and combining multiple power
 plant databases.
 
+You can directly [download the current version of the data](https://downgit.github.io/#/home?url=https://github.com/PyPSA/powerplantmatching/blob/master/powerplants.csv) as a CSV file.
+
 This package provides ready-to-use power plant data for the European power system.
 Starting from openly available power plant datasets, the package cleans, standardizes
 and merges the input data to create a new combining dataset, which includes all the important information.
@@ -12,15 +14,11 @@ The package allows to easily update the combined data as soon as new input datas
 
 ![Map of power plants in Europe](https://user-images.githubusercontent.com/19226431/46086361-36a13080-c1a8-11e8-82ed-9f04167273e5.png)
 
-powerplantmatching was initially developed by the
+Initially, powerplantmatching was initially developed by the
 [Renewable Energy Group](https://fias.uni-frankfurt.de/physics/schramm/complex-renewable-energy-networks/)
-at [FIAS](https://fias.uni-frankfurt.de/) to build power plant data
+at [FIAS](https://fias.uni-frankfurt.de/) and is now maintained by the [Digital Transformation in Energy Systems Group](https://tub-ensys.github.io/) at the Technical University of Berlin to build power plant data
 inputs to [PyPSA](http://www.pypsa.org/)-based models for carrying
-out simulations for the [CoNDyNet project](http://condynet.de/),
-financed by the
-[German Federal Ministry for Education and Research (BMBF)](https://www.bmbf.de/en/)
-as part of the
-[Stromnetze Research Initiative](http://forschung-stromnetze.info/projekte/grundlagen-und-konzepte-fuer-effiziente-dezentrale-stromnetze/).
+out simulations.
 
 ### Main Features
 
@@ -78,18 +76,9 @@ and/or the current release stored on Zenodo with a release-specific DOI:
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3358985.svg)](https://zenodo.org/record/3358985#.XURat99fjRY)
 
-## Acknowledgements
-
-The development of powerplantmatching was helped considerably by
-in-depth discussions and exchanges of ideas and code with
-
-- Tom Brown from Karlsruhe Institute for Technology
-- Chris Davis from University of Groningen and
-- Johannes Friedrich, Roman Hennig and Colin McCormick of the World Resources Institute
-
 ## Licence
 
-Copyright 2018-2020 Fabian Gotzens (FZ Jülich), Jonas Hörsch (KIT), Fabian Hofmann (FIAS)
+Copyright 2018-2022 Fabian Hofmann (EnSys TU Berlin), Fabian Gotzens (FZ Jülich), Jonas Hörsch (KIT), 
 
 powerplantmatching is released as free software under the
 [GPLv3](http://www.gnu.org/licenses/gpl-3.0.en.html), see
