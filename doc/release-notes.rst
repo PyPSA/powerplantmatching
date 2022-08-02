@@ -1,12 +1,17 @@
 History of Changes
 ==================
 
-Version 0.5.4 (09.06.2022)
+
+Version 0.5.4 (02.08.2022)
 -------------------------
 
 **New Features**
 
 * The `GEM_GGPT <https://globalenergymonitor.org/projects/global-gas-plant-tracker/>`_ data containing global gas power plant data for all countries is now available.
+
+**Bug fixes**
+
+* Fix capacity-weighted mean calculation of efficiencies. The previous implementation lead to underestimated efficiencies for power plants consisting of multiple power units.
 
 Version 0.5.3 (08.04.2022)
 -------------------------
