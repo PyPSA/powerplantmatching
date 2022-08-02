@@ -5,12 +5,12 @@
 A toolset for cleaning, standardizing and combining multiple power
 plant databases.
 
-You can directly [download the current version of the data](https://downgit.github.io/#/home?url=https://github.com/PyPSA/powerplantmatching/blob/master/powerplants.csv) as a CSV file.
-
 This package provides ready-to-use power plant data for the European power system.
 Starting from openly available power plant datasets, the package cleans, standardizes
 and merges the input data to create a new combining dataset, which includes all the important information.
 The package allows to easily update the combined data as soon as new input datasets are released.
+
+You can directly [download the current version of the data](https://downgit.github.io/#/home?url=https://github.com/PyPSA/powerplantmatching/blob/master/powerplants.csv) as a CSV file.
 
 ![Map of power plants in Europe](https://user-images.githubusercontent.com/19226431/46086361-36a13080-c1a8-11e8-82ed-9f04167273e5.png)
 
@@ -78,7 +78,7 @@ and/or the current release stored on Zenodo with a release-specific DOI:
 
 ## Licence
 
-Copyright 2018-2022 Fabian Hofmann (EnSys TU Berlin), Fabian Gotzens (FZ Jülich), Jonas Hörsch (KIT), 
+Copyright 2018-2022 Fabian Hofmann (EnSys TU Berlin), Fabian Gotzens (FZ Jülich), Jonas Hörsch (KIT),
 
 powerplantmatching is released as free software under the
 [GPLv3](http://www.gnu.org/licenses/gpl-3.0.en.html), see
