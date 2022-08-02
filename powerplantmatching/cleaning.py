@@ -63,7 +63,7 @@ AGGREGATION_FUNCTIONS = {
     "Volume_Mm3": "sum",
     "DamHeight_m": "sum",
     "StorageCapacity_MWh": "sum",
-    "Efficiency": "mean",  # note this is weighted mean
+    "Efficiency": "sum",  # note this is weighted mean
 }
 
 
@@ -436,7 +436,6 @@ def aggregate_units(
         **df[weighted_cols].mul(df.Capacity, axis=0),
         **df[str_cols].fillna("").astype(str),
     )
-
     if pre_clean_name:
         df = clean_name(df)
 
@@ -453,7 +452,9 @@ def aggregate_units(
     df[str_cols] = df[str_cols].replace("", np.nan)
 
     df = (
-        df.assign(**df[weighted_cols].div(df["Capacity"], axis=0))
+        df.assign(
+            **df[weighted_cols].div(df["Capacity"], axis=0).where(lambda df: df != 0)
+        )
         .reset_index(drop=True)
         .pipe(clean_name)
         .reindex(columns=cols)
