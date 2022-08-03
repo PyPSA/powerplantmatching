@@ -43,9 +43,9 @@ matched_data_url: https://raw.githubusercontent.com/FRESNA/powerplantmatching/{t
 opsd_vres_base_year: 2020
 
 BNETZA:
-  reliability_score: 3
-  fn: Kraftwerksliste_2017_2.xlsx
-  url: https://www.bundesnetzagentur.de/SharedDocs/Downloads/DE/Sachgebiete/Energie/Unternehmen_Institutionen/Versorgungssicherheit/Erzeugungskapazitaeten/Kraftwerksliste/Kraftwerksliste_2019_1.xlsx;jsessionid=17E419F28D025C7DD9FC6E2BEB3D088F?__blob=publicationFile&v=2
+  reliability_score: 5
+  fn: Kraftwerksliste_2022.xlsx
+  url: https://www.bundesnetzagentur.de/SharedDocs/Downloads/DE/Sachgebiete/Energie/Unternehmen_Institutionen/Versorgungssicherheit/Erzeugungskapazitaeten/Kraftwerksliste/Kraftwerksliste_CSV.csv?__blob=publicationFile&v=24
 BEYONDCOAL:
   net_capacity: false
   aggregated_units: true
