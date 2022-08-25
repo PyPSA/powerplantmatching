@@ -1600,3 +1600,134 @@ def GEM_GGPT(raw=False, update=False, config=None):
     df["Fueltype"] = "Natural Gas"
     df.Technology.replace(technology_dict, inplace=True)
     return df
+
+
+def EEA(raw=False, update=False, config=None):
+    if config is None:
+        config = get_config()
+
+    fn = get_raw_file("EEA", update=update, config=config)
+
+    with ZipFile(fn, "r") as file:
+        directory = file.namelist()[0]
+        key = directory + "F5_2_Detailed emissions and energy input from LCP.csv"
+        df = pd.read_csv(file.open(key))
+
+    if raw:
+        return df
+
+    RENAME_COLUMNS = {'countryName': 'Country',
+                      'installationPartName': 'Name',
+                      'Longitude': 'lon',
+                      'Latitude': 'lat',
+                      'feature': 'Fueltype',
+                      'featureValue': 'value',
+                      'reportingYear': 'year'}
+    df = df.rename(columns=RENAME_COLUMNS)
+
+    replace_fuel_types = {'NaturalGas': 'Natural Gas',
+                          'LiquidFuels': 'Oil',
+                          'OtherGases': 'Other',
+                          'Biomass': 'Bioenergy',
+                          'Coal': 'Hard Coal',
+                          'Lignite': 'Lignite',
+                          'OtherSolidFuels': 'Other',
+                          'Peat': 'Lignite'}
+    df.Fueltype = df.Fueltype.replace(replace_fuel_types)
+
+    df['Capacity'] = 1.
+    df['Technology'] = 'Generator'
+    df['lon'] = np.nan
+    df['lat'] = np.nan
+    df.columns.name = 'eea'
+
+    return df.query("year == 2019").query("featureType == 'fuel'").query("value > 0")
+
+
+def ENTSOE_generation(raw=False, update=False, config=None):
+
+    if config is None:
+        config = get_config()
+
+    def retrieve_data(token):
+        client = entsoe.EntsoePandasClient(api_key=token)
+
+        start = pd.Timestamp("20190101", tz="Europe/Brussels")
+        end = pd.Timestamp("20200101", tz="Europe/Brussels")
+
+        not_retrieved = []
+        retrieved_areas = []
+        dfs = []
+        for area in entsoe.mappings.Area:
+            kwargs = dict(start=start, end=end)
+            try:
+                dfs.append(
+                    client.query_generation_per_plant(
+                        area.name, **kwargs
+                    )
+                )
+                retrieved_areas.append(area)
+            except:
+                not_retrieved.append(area.name)
+                pass
+
+        if not_retrieved:
+            logger.warning(
+                f"Data for area(s) {', '.join(not_retrieved)} could not be retrieved."
+            )
+
+        timesteps = pd.date_range(start, end, freq='h')[:-1]
+        dfs = [pd.concat([dfs[i].resample('h').mean().reindex(timesteps)], keys=[retrieved_areas[i]], axis=1).sum() for
+                i in range(len(dfs))]
+
+        return pd.concat(dfs)
+
+    path = get_raw_file("ENTSOE_generation", config=config, skip_retrieve=True)
+
+    if os.path.exists(path) and not update:
+        df = pd.read_csv(path, index_col=0)
+    else:
+        token = config.get("entsoe_token")
+        if token is not None:
+            df = retrieve_data(token)
+
+            if raw:
+                return df
+
+            df = df.reset_index()
+            df.columns = ['Country', 'Name', 'Fueltype', 'value']
+
+            df['Capacity'] = 1.
+            df['Technology'] = 'Generator'
+            df['lon'] = np.nan
+            df['lat'] = np.nan
+            df.columns.name = 'entsoe_generation'
+
+            replace_fuel_types = {'Fossil Gas': 'Natural Gas',
+                                  'Fossil Oil': 'Oil',
+                                  'Fossil Oil shale': 'Oil',
+                                  'Biomass': 'Bioenergy',
+                                  'Fossil Coal-derived gas': 'Hard Coal',
+                                  'Fossil Hard coal': 'Hard Coal',
+                                  'Fossil Brown coal/Lignite': 'Lignite',
+                                  'Other': 'Other',
+                                  'Fossil Peat': 'Lignite'}
+            df.Fueltype = df.Fueltype.replace(replace_fuel_types)
+
+            fuel_types = ['Natural Gas', 'Bioenergy', 'Oil', 'Lignite', 'Nuclear', 'Hard Coal', 'Other']
+            df = df[df.Fueltype.isin(fuel_types)]
+            df['Country'] = df.Country.map(lambda x: pycountry.countries.get(alpha_2=x).name)
+
+            df.to_csv(path)
+        else:
+            logger.info(
+                "No entsoe_token in config.yaml given, "
+                "falling back to stored version."
+            )
+            df = pd.read_csv(get_raw_file("ENTSOE_generation", update, config), index_col=0)
+
+    df.columns.name = 'entsoe_generation'
+
+    return df
+
+

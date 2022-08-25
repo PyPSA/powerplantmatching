@@ -145,6 +145,12 @@ WEPP:
   net_capacity: false
   reliability_score: 4
   fn: platts_wepp.csv
+EEA:
+  fn: lsdf.csv.zip
+  url: https://cmshare.eea.europa.eu/s/EW2xfFyBWJ3CM7W/download/User%20friendly%20CSV.zip
+ENTSOE_generation:
+  fn: entsoe_generation.csv
+  url: TO_BE_DEFINED
 
 GEM_GGPT:
   net_capacity: false

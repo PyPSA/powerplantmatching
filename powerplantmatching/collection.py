@@ -26,7 +26,8 @@ from deprecation import deprecated
 from .cleaning import aggregate_units
 from .core import _data_out, get_config
 from .heuristics import extend_by_non_matched, extend_by_VRE
-from .matching import combine_multiple_datasets, reduce_matched_dataframe
+from .matching import combine_multiple_datasets, reduce_matched_dataframe, link_multiple_datasets
+from .data import EEA, ENTSOE_generation
 from .utils import (
     parmap,
     projectID_to_dict,
@@ -124,6 +125,58 @@ def Collection(**kwargs):
     return collect(**kwargs)
 
 
+def extrapolate_efficiencies(powerplants, config=None, update=False):
+    from sklearn.linear_model import LinearRegression
+
+    eea = EEA(update=update, config=config)
+    entsoe = ENTSOE_generation(update=update, config=config)
+    matched = link_multiple_datasets([eea, entsoe, powerplants], ['eea', 'entsoe_generation', 'powerplants'],
+                                     config=config).dropna()
+
+    eea.loc[matched['eea'], 'matched'] = matched.set_index('eea')['entsoe_generation']
+    eea.loc[matched['eea'], 'matched'] = matched['eea'].tolist()
+    entsoe.loc[matched['entsoe_generation'], 'matched'] = matched.set_index('entsoe_generation')['eea']
+
+    merged = pd.merge(eea.loc[matched['eea']], entsoe.loc[matched['entsoe_generation']], on='matched')
+    merged['efficiency'] = merged['value_y'].multiply(0.0036).divide(merged['value_x'])
+    efficiencies_eea = merged[(merged.efficiency > 0.3) & (merged.efficiency < 0.65)].set_index('matched')['efficiency']
+    efficiencies_pm = matched.set_index('Matched Data')['eea'].map(efficiencies_eea).dropna()
+
+    df = powerplants.copy()
+    df.loc[efficiencies_pm.index, 'efficiency'] = efficiencies_pm
+
+    # filling missing commissioning years by fuel average
+    for fuel in ['Natural Gas', 'Hard Coal', 'Lignite']:
+        df.loc[df.Fueltype == fuel, 'DateIn'] = df.loc[df.Fueltype == fuel, 'DateIn'].fillna(
+            df.loc[df.Fueltype == fuel, 'DateIn'].mean().astype(int))
+
+        if fuel == 'Lignite':
+            efficiency = 'Efficiency'
+        else:
+            efficiency = 'efficiency'
+
+        dff = df.dropna(subset=[efficiency, 'DateIn'])
+
+        linear_regressor = LinearRegression()
+
+        def get_mask(fuel_):
+            if fuel_ == 'Natural Gas':
+                return (dff.Fueltype == fuel_) & (dff.DateIn > 1970)
+            else:
+                return dff.Fueltype == fuel_
+
+        X = dff.loc[get_mask(fuel), 'DateIn'].values.reshape(-1, 1)
+        Y = dff.loc[get_mask(fuel), efficiency].values.reshape(-1, 1)
+        linear_regressor.fit(X, Y)
+        index = df[(df.Fueltype == fuel) & (df[efficiency].isna())].index
+        df.loc[index, 'Efficiency'] = linear_regressor.predict(df.loc[index, 'DateIn'].values.reshape(-1, 1))
+        if fuel != 'Lignite':
+            index = df[(df.Fueltype == fuel) & (~df[efficiency].isna())].index
+            df.loc[index, 'Efficiency'] = df.loc[index, 'efficiency']
+
+    return df.drop('efficiency', axis=1)
+
+
 def matched_data(
     config=None,
     update=False,
@@ -131,6 +184,8 @@ def matched_data(
     extend_by_vres=False,
     extendby_kwargs={},
     extend_by_kwargs={},
+    with_efficiency=True,
+    update_eff=False,
     **collection_kwargs,
 ):
     """
@@ -196,6 +251,8 @@ def matched_data(
             .pipe(projectID_to_dict)
             .pipe(set_column_name, "Matched Data")
         )
+        if with_efficiency:
+            df = extrapolate_efficiencies(df, config, update_eff)
         logger.info(f"Store data at {fn}")
         df.to_csv(fn)
         return df
@@ -206,6 +263,8 @@ def matched_data(
             .pipe(projectID_to_dict)
             .pipe(set_column_name, "Matched Data")
         )
+        if with_efficiency:
+            df = extrapolate_efficiencies(df, config, update_eff)
         if extend_by_vres:
             return df.pipe(
                 extend_by_VRE, config=config, base_year=config["opsd_vres_base_year"]
@@ -232,4 +291,9 @@ def matched_data(
         matched = extend_by_VRE(
             matched, config=config, base_year=config["opsd_vres_base_year"]
         )
-    return matched.pipe(set_column_name, "Matched Data")
+    matched = matched.pipe(set_column_name, "Matched Data")
+
+    if with_efficiency:
+        matched = extrapolate_efficiencies(matched, config, update_eff)
+
+    return matched
