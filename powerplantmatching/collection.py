@@ -146,11 +146,11 @@ def extrapolate_efficiencies(powerplants, config=None, update=False):
     df.loc[efficiencies_pm.index, 'efficiency'] = efficiencies_pm
 
     # filling missing commissioning years by fuel average
-    for fuel in ['Natural Gas', 'Hard Coal', 'Lignite']:
+    for fuel in ['Natural Gas', 'Hard Coal', 'Lignite', 'Oil']:
         df.loc[df.Fueltype == fuel, 'DateIn'] = df.loc[df.Fueltype == fuel, 'DateIn'].fillna(
             df.loc[df.Fueltype == fuel, 'DateIn'].mean().astype(int))
 
-        if fuel == 'Lignite':
+        if fuel in ['Lignite', 'Oil']:
             efficiency = 'Efficiency'
         else:
             efficiency = 'efficiency'
@@ -170,7 +170,7 @@ def extrapolate_efficiencies(powerplants, config=None, update=False):
         linear_regressor.fit(X, Y)
         index = df[(df.Fueltype == fuel) & (df[efficiency].isna())].index
         df.loc[index, 'Efficiency'] = linear_regressor.predict(df.loc[index, 'DateIn'].values.reshape(-1, 1))
-        if fuel != 'Lignite':
+        if fuel not in ['Lignite', 'Oil']:
             index = df[(df.Fueltype == fuel) & (~df[efficiency].isna())].index
             df.loc[index, 'Efficiency'] = df.loc[index, 'efficiency']
 
