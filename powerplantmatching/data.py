@@ -1677,8 +1677,8 @@ def ENTSOE_generation(raw=False, update=False, config=None):
             )
 
         timesteps = pd.date_range(start, end, freq='h')[:-1]
-        dfs = [pd.concat([dfs[i].resample('h').mean().reindex(timesteps)], keys=[retrieved_areas[i]], axis=1).sum() for
-                i in range(len(dfs))]
+        dfs = [pd.concat([dfs[i].resample('h').mean().reindex(timesteps)], keys=[retrieved_areas[i][:2]], axis=1).sum()
+               for i in range(len(dfs))]
 
         return pd.concat(dfs)
 
