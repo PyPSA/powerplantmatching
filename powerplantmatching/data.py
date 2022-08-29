@@ -616,7 +616,7 @@ def WIKIPEDIA(raw=False, update=False, config=None):
             Set="PP",
             projectID=lambda df: "WIKIPEDIA-" + df.index.astype(str),
             # plants which are not yet built are set to 2027
-            DateIn=lambda df: df.DateIn.where(df.DateOut != 2051, 2027),
+            DateIn=lambda df: df.DateIn.where(~df.Status.str.contains("In Bau"), 2027),
         )
         .pipe(set_column_name, "WIKIPEDIA")
         .pipe(config_filter, config)
