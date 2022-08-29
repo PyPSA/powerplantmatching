@@ -264,7 +264,15 @@ def matched_data(
             .pipe(set_column_name, "Matched Data")
         )
         if with_efficiency:
-            df = extrapolate_efficiencies(df, config, update_eff)
+            fn_eff = _data_out("matched_data_eff.csv", config)
+            if os.path.exists(fn_eff):
+                df = (
+                    pd.read_csv(fn_eff, index_col=0, header=header)
+                        .pipe(projectID_to_dict)
+                        .pipe(set_column_name, "Matched Data")
+                )
+            else:
+                df = extrapolate_efficiencies(df, config, update_eff)
         if extend_by_vres:
             return df.pipe(
                 extend_by_VRE, config=config, base_year=config["opsd_vres_base_year"]
