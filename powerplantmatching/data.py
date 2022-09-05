@@ -414,6 +414,17 @@ def JRC(raw=False, update=False, config=None):
         "storage_capacity_MWh": "StorageCapacity_MWh",
     }
 
+    def set_large_spanish_stores_to_reservoirs(df):
+        """
+        Set large Spanish stores which are larger than 50GWh to reservoirs.
+
+        These should will all assumed to be reservoirs.
+        Used to fix https://github.com/PyPSA/powerplantmatching/issues/72"
+        """
+        where = (df.Country == "Spain") & (df.StorageCapacity_MWh > 50e3)
+        technology = np.where(where, "Reservoir", df.Technology)
+        return df.assign(Technology=technology)
+
     df = (
         df.rename(columns=RENAME_COLUMNS)
         .assign(projectID=lambda df: "JRC-" + df.projectID.astype(str))
@@ -434,6 +445,7 @@ def JRC(raw=False, update=False, config=None):
         .drop(columns=["pypsa_id", "GEO"])
         .powerplant.convert_alpha2_to_country()
         .pipe(clean_name)
+        .pipe(set_large_spanish_stores_to_reservoirs)
         .pipe(set_column_name, "JRC")
         .pipe(config_filter, config)
     )
@@ -648,7 +660,7 @@ def ENTSOE(
         defaults to powerplantmatching.config.get_config()
     entsoe_token: String
         Security token of the ENTSO-E Transparency platform
-    fill_geoposition_kwargs: 
+    fill_geoposition_kwargs:
         Keyword arguments passed to `fill_geoposition`.
 
     Note: For obtaining a security token refer to section 2 of the
