@@ -122,7 +122,9 @@ diff[diff.abs() > 2].plot.barh(ax=ax, zorder=3)
 ax.set_xlabel("Capacity difference (stats - ppm) [GW]")
 ax.grid(True, zorder=2)
 fig.tight_layout()
-fig.savefig("figures/capacity-diff-per-country-and-fueltype.png", dpi=150)
+fig.savefig(
+    "matching_analysis/figures/capacity-diff-per-country-and-fueltype.png", dpi=150
+)
 
 
 for c in in_compare.index.unique(0):
@@ -132,5 +134,5 @@ for c in in_compare.index.unique(0):
     ax.set_ylabel("Capacity [GW]")
     ax.set_title(cc.convert(c, to="name"))
     fig.tight_layout()
-    fig.savefig("figures/country-comparison/" + c + ".png", dpi=150)
+    fig.savefig("matching_analysis/figures/country-comparison/" + c + ".png", dpi=150)
     plt.close()

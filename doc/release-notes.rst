@@ -5,6 +5,9 @@ History of Changes
 Upcoming Version
 ----------------
 
+Version 0.5.5 (05.09.2022)
+-------------------------
+
 **Bug fixes**
 
 * Spanish hydro stores with an capacity larger than 50GWh in the `JRC` data base are assumed to be reservoirs even if stated differently.
