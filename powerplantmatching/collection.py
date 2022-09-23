@@ -184,7 +184,7 @@ def matched_data(
     extend_by_vres=False,
     extendby_kwargs={},
     extend_by_kwargs={},
-    with_efficiency=True,
+    with_efficiency=False,
     update_eff=False,
     **collection_kwargs,
 ):
