@@ -1547,7 +1547,7 @@ def IRENASTAT(raw=False, update=False, config=None):
     return df
 
 
-def GEM_GGPT(raw=False, update=False, config=None):
+def GEM_GGPT(raw=False, update=False, header=1, config=None):
     """
     Importer for the GEM_GPPT gas powerplant tracker.
 
@@ -1557,28 +1557,29 @@ def GEM_GGPT(raw=False, update=False, config=None):
         Whether to return the original dataset
     update: bool, default False
         Whether to update the data from the url.
+    header : int, Default 1
+        The zero-indexed row in which the column headings are found.
     config : dict, default None
         Add custom specific configuration,
         e.g. powerplantmatching.config.get_config(target_countries='Italy'),
         defaults to powerplantmatching.config.get_config()
     """
-    if config is None:
-        config = get_config()
+    config = get_config() if config is None else config
+    fn = get_raw_file("GEM_GGPT", update=update, config=config)
+    df = pd.read_excel(fn, sheet_name="Gas plants - data", header=header)
 
-        fn = get_raw_file("GEM_GGPT", update=update, config=config)
-        df = pd.read_csv(fn, comment="#")
     if raw:
         return df
 
     RENAME_COLUMNS = {
-        "Country/area": "Country",
-        "name": "Name",
+        "Plant name": "Name",
         "Fuel": "Fueltype",
         "Capacity elec. (MW)": "Capacity",
         "Latitude": "lat",
         "Longitude": "lon",
         "Start year": "DateIn",
         "Retired year": "DateOut",
+        "CHP": "Set",
     }
 
     technology_dict = {
@@ -1590,13 +1591,18 @@ def GEM_GGPT(raw=False, update=False, config=None):
         "ST": "Steam Turbine",
     }
 
+    set_dict = {
+        "Y": "True",
+        "N": "False",
+        "not found": "False", 
+    }
+
     df.rename(columns=RENAME_COLUMNS, inplace=True)
-
     # Consistent country names for dataset
-
     df = convert_to_short_name(df)
     df.dropna(subset="Capacity", inplace=True)
-
     df["Fueltype"] = "Natural Gas"
     df.Technology.replace(technology_dict, inplace=True)
+    df.Set.replace(set_dict, inplace=True)
+
     return df

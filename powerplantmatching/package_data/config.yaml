@@ -22,6 +22,7 @@ matching_sources:
   - OPSD: Country != "Spain" and Fueltype != 'Hard Coal'
   - BEYONDCOAL
   - WIKIPEDIA
+  - GEM_GGPT
 
 fully_included_sources:
   # Make individual queries for the datasets
@@ -145,11 +146,11 @@ WEPP:
   net_capacity: false
   reliability_score: 4
   fn: platts_wepp.csv
-
 GEM_GGPT:
   net_capacity: false
   reliability_score: 5
-  url: https://greeninfo-network.github.io/global-gas-plant-tracker/data/data.csv
+  fn: Global-Gas-Plant-Tracker-Aug-2022.xlsx
+  url: https://github.com/pz-max/gem-coal-n-gas/raw/main/Global-Gas-Plant-Tracker-Aug-2022.xlsx
 
 # ---------------------------------------------------------------------------- #
 #                             Data Structure Config                            #
