@@ -22,7 +22,6 @@ matching_sources:
   - OPSD: Country != "Spain" and Fueltype != 'Hard Coal'
   - BEYONDCOAL
   - WIKIPEDIA
-  - GEM_GGPT
 
 fully_included_sources:
   # Make individual queries for the datasets

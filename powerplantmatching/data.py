@@ -1592,17 +1592,22 @@ def GEM_GGPT(raw=False, update=False, header=1, config=None):
     }
 
     set_dict = {
-        "Y": "True",
-        "N": "False",
-        "not found": "False", 
+        "Y": "CHP",
+        "N": "PP",
+        "not found": "PP",
     }
 
-    df.rename(columns=RENAME_COLUMNS, inplace=True)
-    # Consistent country names for dataset
-    df = convert_to_short_name(df)
-    df.dropna(subset="Capacity", inplace=True)
+    df = (
+        df.rename(columns=RENAME_COLUMNS)
+        .pipe(clean_name)
+        .pipe(set_column_name, "GEM_GGPT")
+        .pipe(convert_to_short_name)
+    )
     df["Fueltype"] = "Natural Gas"
+    df["Duration"] = np.nan
+    df["Efficiency"] = np.nan
     df.Technology.replace(technology_dict, inplace=True)
     df.Set.replace(set_dict, inplace=True)
+    df = df[df.columns.intersection(config.get("target_columns"))]
 
     return df
