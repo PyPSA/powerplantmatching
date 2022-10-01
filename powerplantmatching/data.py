@@ -1547,7 +1547,7 @@ def IRENASTAT(raw=False, update=False, config=None):
     return df
 
 
-def GEM_GGPT(raw=False, update=False, header=1, config=None):
+def GEM_GGPT(raw=False, update=False, config=None):
     """
     Importer for the GEM_GPPT gas powerplant tracker.
 
@@ -1566,7 +1566,7 @@ def GEM_GGPT(raw=False, update=False, header=1, config=None):
     """
     config = get_config() if config is None else config
     fn = get_raw_file("GEM_GGPT", update=update, config=config)
-    df = pd.read_excel(fn, sheet_name="Gas plants - data", header=header)
+    df = pd.read_excel(fn, sheet_name="Gas plants - data")
 
     if raw:
         return df
