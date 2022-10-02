@@ -1557,8 +1557,6 @@ def GEM_GGPT(raw=False, update=False, config=None):
         Whether to return the original dataset
     update: bool, default False
         Whether to update the data from the url.
-    header : int, Default 1
-        The zero-indexed row in which the column headings are found.
     config : dict, default None
         Add custom specific configuration,
         e.g. powerplantmatching.config.get_config(target_countries='Italy'),
@@ -1603,6 +1601,12 @@ def GEM_GGPT(raw=False, update=False, config=None):
         .pipe(set_column_name, "GEM_GGPT")
         .pipe(convert_to_short_name)
     )
+    df.dropna(subset="Capacity", inplace=True)
+    df = df[
+        (df['Status'] == "operating") |
+        (df['Status'] == "mothballed") |
+        (df['Status'] == "construction") 
+    ]
     df["Fueltype"] = "Natural Gas"
     df["Duration"] = np.nan
     df["Efficiency"] = np.nan
