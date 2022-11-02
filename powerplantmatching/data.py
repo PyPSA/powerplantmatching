@@ -1602,7 +1602,7 @@ def GEM_GGPT(raw=False, update=False, config=None):
         .pipe(convert_to_short_name)
     )
     df.dropna(subset="Capacity", inplace=True)
-    df = df[df.Status.isin(["operating", "mothballed", "construction"])] 
+    df = df[df.Status.isin(["operating", "mothballed", "construction"])]
     df["Fueltype"] = "Natural Gas"
     df["Duration"] = np.nan
     df["Efficiency"] = np.nan

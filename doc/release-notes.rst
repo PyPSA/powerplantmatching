@@ -5,6 +5,11 @@ History of Changes
 Upcoming Version
 ----------------
 
+**Bug fixes**
+
+* Fix `GEM_GGPT <https://globalenergymonitor.org/projects/global-gas-plant-tracker/>`_ interface.
+
+
 Version 0.5.5 (05.09.2022)
 -------------------------
 
