@@ -150,7 +150,7 @@ GEM_GGPT:
   net_capacity: false
   reliability_score: 4
   fn: Global-Gas-Plant-Tracker-Aug-2022.xlsx
-  url: https://github.com/pz-max/gem-coal-n-gas/raw/main/Global-Gas-Plant-Tracker-Aug-2022.xlsx
+  url: https://github.com/pz-max/gem-powerplant-data/raw/main/Global-Gas-Plant-Tracker-Aug-2022.xlsx
 
 # ---------------------------------------------------------------------------- #
 #                             Data Structure Config                            #
