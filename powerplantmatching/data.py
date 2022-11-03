@@ -1562,23 +1562,22 @@ def GEM_GGPT(raw=False, update=False, config=None):
         e.g. powerplantmatching.config.get_config(target_countries='Italy'),
         defaults to powerplantmatching.config.get_config()
     """
-    if config is None:
-        config = get_config()
+    config = get_config() if config is None else config
+    fn = get_raw_file("GEM_GGPT", update=update, config=config)
+    df = pd.read_excel(fn, sheet_name="Gas plants - data")
 
-        fn = get_raw_file("GEM_GGPT", update=update, config=config)
-        df = pd.read_csv(fn, comment="#")
     if raw:
         return df
 
     RENAME_COLUMNS = {
-        "Country/area": "Country",
-        "name": "Name",
+        "Plant name": "Name",
         "Fuel": "Fueltype",
         "Capacity elec. (MW)": "Capacity",
         "Latitude": "lat",
         "Longitude": "lon",
         "Start year": "DateIn",
         "Retired year": "DateOut",
+        "CHP": "Set",
     }
 
     technology_dict = {
@@ -1590,13 +1589,25 @@ def GEM_GGPT(raw=False, update=False, config=None):
         "ST": "Steam Turbine",
     }
 
-    df.rename(columns=RENAME_COLUMNS, inplace=True)
+    set_dict = {
+        "Y": "CHP",
+        "N": "PP",
+        "not found": "PP",
+    }
 
-    # Consistent country names for dataset
-
-    df = convert_to_short_name(df)
+    df = (
+        df.rename(columns=RENAME_COLUMNS)
+        .pipe(clean_name)
+        .pipe(set_column_name, "GEM_GGPT")
+        .pipe(convert_to_short_name)
+    )
     df.dropna(subset="Capacity", inplace=True)
-
+    df = df[df.Status.isin(["operating", "mothballed", "construction"])]
     df["Fueltype"] = "Natural Gas"
+    df["Duration"] = np.nan
+    df["Efficiency"] = np.nan
     df.Technology.replace(technology_dict, inplace=True)
+    df.Set.replace(set_dict, inplace=True)
+    df = df[df.columns.intersection(config.get("target_columns"))]
+
     return df
