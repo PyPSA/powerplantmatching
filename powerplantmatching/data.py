@@ -116,7 +116,11 @@ def BEYONDCOAL(raw=False, update=False, config=None):
 
 
 def OPSD(
-    raw=False, update=False, statusDE=None, config=None, **fill_geoposition_kwargs
+    raw=False,
+    update=False,
+    statusDE=None,
+    config=None,
+    **fill_geoposition_kwargs,
 ):
     """
     Importer for the OPSD (Open Power Systems Data) database.
@@ -207,7 +211,10 @@ def OPSD(
     return (
         pd.concat([opsd_EU, opsd_DE], ignore_index=True)
         .replace(
-            {"Country": {"UK": "GB", "[ \t]+|[ \t]+$.": ""}, "Capacity": {0.0: np.nan}},
+            {
+                "Country": {"UK": "GB", "[ \t]+|[ \t]+$.": ""},
+                "Capacity": {0.0: np.nan},
+            },
             regex=True,
         )
         .pipe(gather_specifications, config=config)
@@ -474,7 +481,8 @@ def IWPDCY(config=None):
     return (
         pd.read_csv(config["IWPDCY"]["fn"], encoding="utf-8", index_col="id")
         .assign(
-            File="IWPDCY.csv", projectID=lambda df: "IWPDCY-" + df.index.astype(str)
+            File="IWPDCY.csv",
+            projectID=lambda df: "IWPDCY-" + df.index.astype(str),
         )
         .dropna(subset=["Capacity"])
         .pipe(set_column_name, "IWPDCY")
@@ -581,7 +589,11 @@ def GPD(raw=False, update=False, config=None, filter_other_dbs=True):
         .query("Country_Long in @countries &" " Source not in @other_dbs")
         .drop(columns="Country")
         .rename(columns=RENAME_COLS)
-        .pipe(gather_specifications, parse_columns=["Name", "Fueltype"], config=config)
+        .pipe(
+            gather_specifications,
+            parse_columns=["Name", "Fueltype"],
+            config=config,
+        )
         .pipe(clean_name)
         .pipe(set_column_name, "GPD")
         .pipe(config_filter, config)
@@ -637,7 +649,11 @@ def WIKIPEDIA(raw=False, update=False, config=None):
 
 
 def ENTSOE(
-    raw=False, update=False, config=None, entsoe_token=None, **fill_geoposition_kwargs
+    raw=False,
+    update=False,
+    config=None,
+    entsoe_token=None,
+    **fill_geoposition_kwargs,
 ):
     """
     Importer for the list of installed generators provided by the ENTSO-E
@@ -1000,7 +1016,11 @@ def WEPP(raw=False, config=None):
         wepp.Turbtype.str.contains("KAPLAN|BULB", case=False), "Technology"
     ] = "Run-Of-River"
     wepp.Technology = wepp.Technology.replace(
-        {"CONV/PS": "Pumped Storage", "CONV": "Reservoir", "PS": "Pumped Storage"}
+        {
+            "CONV/PS": "Pumped Storage",
+            "CONV": "Reservoir",
+            "PS": "Pumped Storage",
+        }
     )
     tech_st_pattern = [
         "ANTH",
@@ -1042,7 +1062,16 @@ def WEPP(raw=False, config=None):
         "IC/CP",
         "IC/GT",
     ]
-    ut_ocgt_pattern = ["GT", "GT/D", "GT/H", "GT/HY", "GT/IC", "GT/S", "GT/T", "GTC"]
+    ut_ocgt_pattern = [
+        "GT",
+        "GT/D",
+        "GT/H",
+        "GT/HY",
+        "GT/IC",
+        "GT/S",
+        "GT/T",
+        "GTC",
+    ]
     ut_st_pattern = ["ST", "ST/D"]
     ut_ic_pattern = ["IC", "IC/H"]
     wepp.loc[wepp.Utype.isin(ut_ccgt_pattern), "Technology"] = "CCGT"
@@ -1052,7 +1081,8 @@ def WEPP(raw=False, config=None):
     wepp.loc[wepp.Utype == "WTG", "Technology"] = "Onshore"
     wepp.loc[wepp.Utype == "WTG/O", "Technology"] = "Offshore"
     wepp.loc[
-        (wepp.Fueltype == "Solar") & (wepp.Utype.isin(ut_st_pattern)), "Technology"
+        (wepp.Fueltype == "Solar") & (wepp.Utype.isin(ut_st_pattern)),
+        "Technology",
     ] = "CSP"
     # Derive the SET column
     chp_pattern = [
@@ -1416,7 +1446,10 @@ def OPSD_VRE(raw=False, update=False, config=None):
                 "municipality": "Name",
             }
         )
-        .assign(DateIn=lambda df: df.commissioning_date.str[:4].astype(float), Set="PP")
+        .assign(
+            DateIn=lambda df: df.commissioning_date.str[:4].astype(float),
+            Set="PP",
+        )
         .powerplant.convert_alpha2_to_country()
         .pipe(set_column_name, "OPSD_VRE")
         .pipe(config_filter, config)
@@ -1600,14 +1633,17 @@ def GEM_GGPT(raw=False, update=False, config=None):
         .pipe(clean_name)
         .pipe(set_column_name, "GEM_GGPT")
         .pipe(convert_to_short_name)
+        .dropna(subset="Capacity")
+        .assign(Fueltype="Natural Gas")[
+            lambda df: df.Status.isin(["operating", "mothballed", "construction"])
+        ]
     )
-    df.dropna(subset="Capacity", inplace=True)
-    df = df[df.Status.isin(["operating", "mothballed", "construction"])]
-    df["Fueltype"] = "Natural Gas"
-    df["Duration"] = np.nan
-    df["Efficiency"] = np.nan
+    df["DateIn"] = pd.to_numeric(df.DateIn, errors="coerce")
+    df["lat"] = pd.to_numeric(df.lat, errors="coerce")
+    df["lon"] = pd.to_numeric(df.lon, errors="coerce")
     df.Technology.replace(technology_dict, inplace=True)
     df.Set.replace(set_dict, inplace=True)
     df = df[df.columns.intersection(config.get("target_columns"))]
+    df = df.pipe(config_filter, config)
 
     return df
