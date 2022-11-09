@@ -28,7 +28,7 @@ fully_included_sources:
   - BEYONDCOAL
   - OPSD: Country not in ['Switzerland', 'Italy', 'Spain', 'Norway', 'Austria']
   - JRC: Country not in ['Switzerland', 'Albania', 'United Kingdom', 'Norway']
-  - ENTSOE: Country not in ['Switzerland', 'Ireland', 'Albania', 'Greece', 'Czech Republic', 'Bulgaria', 'United Kingdom', 'Italy', 'Serbia'] and not (Country == 'Spain' and Fueltype == 'Hydro')
+  - ENTSOE: (Country not in ['Switzerland', 'Ireland', 'Albania', 'Greece', 'Czech Republic', 'Bulgaria', 'United Kingdom', 'Italy', 'Serbia'] and not (Country == 'Spain' and Fueltype == 'Hydro')) or (Fueltype == 'Geothermal')
   - GPD: Country in ['Finland', 'Spain']
   - GEO: (Country == 'Spain' and Fueltype == 'Natural Gas')
 
