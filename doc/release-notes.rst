@@ -11,7 +11,7 @@ Version 0.5.5 (05.09.2022)
 **Bug fixes**
 
 * Spanish hydro stores with an capacity larger than 50GWh in the `JRC` data base are assumed to be reservoirs even if stated differently.
-
+* add geolocations for Italian geothermal units and adjust filters in config.yaml to bring geothermal to powerplants.csv
 
 Version 0.5.4 (02.08.2022)
 -------------------------
