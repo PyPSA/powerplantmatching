@@ -43,6 +43,7 @@ def collect(
     update=False,
     reduced=True,
     config=None,
+    extend_config=None,
     **dukeargs,
 ):
     """
@@ -57,6 +58,11 @@ def collect(
         Do an horizontal update (True) or read from the cache file (False)
     reduced : bool
         Switch as to return the reduced (True) or matched (False) dataset.
+    config : dict
+        Configuration file of powerplantmatching
+    extend_config : dict
+        Configuration input dictionary to be merged into the default
+        configuration data
     **dukeargs : keyword-args for duke
     """
 
@@ -64,6 +70,9 @@ def collect(
 
     if config is None:
         config = get_config()
+    
+    if extend_config is not None:
+        config.update(extend_config)
 
     def df_by_name(name):
         conf = config[name]
