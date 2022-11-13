@@ -1647,3 +1647,27 @@ def GEM_GGPT(raw=False, update=False, config=None):
     df = df.pipe(config_filter, config)
 
     return df
+
+
+def EXTERNAL_DATABASE(config=None):
+    """
+    Importer for external custom databases.
+    Parameters
+    ----------
+    config : dict, default None
+        Add custom specific configuration,
+        e.g. powerplantmatching.config.get_config(target_countries='Italy'),
+        defaults to powerplantmatching.config.get_config()
+    """
+    if config is None:
+        return pd.DataFrame()
+    
+    df = pd.read_csv(
+        get_raw_file("EXTERNAL_DATABASE", update=True, config=config), low_memory=False
+    )
+    df = (df
+      .loc[lambda df: df.Country.isin(config['target_countries'])]
+      .pipe(set_column_name, 'EXTERNAL_DATABASE')
+      )
+
+    return 
