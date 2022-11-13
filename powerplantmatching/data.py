@@ -1663,7 +1663,8 @@ def EXTERNAL_DATABASE(config=None):
         return pd.DataFrame()
     
     df = pd.read_csv(
-        get_raw_file("EXTERNAL_DATABASE", update=True, config=config), low_memory=False
+        get_raw_file("EXTERNAL_DATABASE", update=True, config=config),
+        low_memory=False,
     )
     df = (df
       .loc[lambda df: df.Country.isin(config['target_countries'])]
