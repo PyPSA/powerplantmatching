@@ -1671,4 +1671,4 @@ def EXTERNAL_DATABASE(config=None):
       .pipe(set_column_name, 'EXTERNAL_DATABASE')
       )
 
-    return 
+    return df
