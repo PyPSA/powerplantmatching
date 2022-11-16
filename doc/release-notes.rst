@@ -7,7 +7,7 @@ Upcoming Version
 
 **New Features**
 
-* New `EXTERNAL_DATABASE` inferface to integrate additional custom data of raw data matching the powerplantmatching format.
+* New `EXTERNAL_DATABASE` interface to integrate additional custom data of raw data matching the powerplantmatching format.
 
 **Bug fixes**
 
