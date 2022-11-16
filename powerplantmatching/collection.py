@@ -70,7 +70,7 @@ def collect(
 
     if config is None:
         config = get_config()
-    
+
     if extend_config is not None:
         config.update(extend_config)
 
