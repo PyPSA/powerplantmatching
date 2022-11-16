@@ -5,6 +5,10 @@ History of Changes
 Upcoming Version
 ----------------
 
+**New Features**
+
+* New `EXTERNAL_DATABASE` inferface to integrate additional custom data of raw data matching the powerplantmatching format.
+
 **Bug fixes**
 
 * Fix `GEM_GGPT <https://globalenergymonitor.org/projects/global-gas-plant-tracker/>`_ interface.
