@@ -112,8 +112,8 @@ In order to ensure compatibility with the new code, please delete these sections
 * The `GEO` data now returns a dataset containing power plant units.  
 * The ``ESE`` dataset was removed due the hosting website taken down. 
 * The argument ``subsume_uncommon_fueltypes_to_other`` in ``powerplantmatching.collection.matched_data`` was removed. 
-* The function ``powerplantmatching.cleaning.aggregate_units`` does not support the arguments `use_saved_aggregation` and `save_aggregation` anymore due to it's unsecure behavior.
-* The function ``powerplantmatching.matching.compare_two_datasets`` does not support the arguments `use_saved_matches` anymore due to it's unsecure behavior.
+* The function ``powerplantmatching.cleaning.aggregate_units`` does not support the arguments `use_saved_aggregation` and `save_aggregation` anymore due to it's insecure behavior.
+* The function ``powerplantmatching.matching.compare_two_datasets`` does not support the arguments `use_saved_matches` anymore due to it's insecure behavior.
 
 
 Version 0.4.6 (25.11.2020)
