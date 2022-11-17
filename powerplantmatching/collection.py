@@ -124,15 +124,6 @@ def collect(
         return df.pipe(projectID_to_dict)
 
 
-@deprecated(
-    deprecated_in="0.5.0",
-    removed_in="0.6.0",
-    details="Use the collect function instead",
-)
-def Collection(**kwargs):
-    return collect(**kwargs)
-
-
 def matched_data(
     config=None,
     update=False,
@@ -140,6 +131,8 @@ def matched_data(
     extend_by_vres=False,
     extendby_kwargs={},
     extend_by_kwargs={},
+    fill_geopositions=True,
+    filter_missing_geopositions=True,
     **collection_kwargs,
 ):
     """
@@ -164,8 +157,18 @@ def matched_data(
             Whether extend the dataset by variable renewable energy sources
             given by powerplantmatching.data.OPSD_VRE()
     extendby_kwargs : Dict,
-            Dict of keywordarguments passed to powerplantmatchting.
+            Dict of keyword arguments passed to powerplantmatchting.
             heuristics.extend_by_non_matched
+    fill_geopositions: Boolean, default True
+            Whether to fill geo coordinates by calling
+            `df.powerplant.fill_geoposition()` after the matching process
+            and before the optional extension by VRES. Only active if
+            `update` is true.
+    filter_missing_geopositions: Boolean, default True
+            Whether to filter out resulting entries without geo coordinates. The
+            filtering happens after the matching process and the optional filling of
+            geo coordinates and before the optional extension by VRES. Only active
+            if `update` is true.
     **collection_kwargs : kwargs
             Arguments passed to powerplantmatching.collection.Collection.
 
@@ -235,7 +238,15 @@ def matched_data(
                 matched, name, config=config, **extend_by_kwargs
             )
 
-    matched.to_csv(fn, index_label="id", encoding="utf-8")
+    if fill_geopositions:
+        matched = matched.powerplant.fill_geoposition()
+
+    if filter_missing_geopositions:
+        matched = matched[matched.lat.notnull()]
+
+    matched.drop_duplicates(["Name", "Fueltype", "Country"])
+
+    matched.reset_index(drop=True).to_csv(fn, index_label="id", encoding="utf-8")
 
     if extend_by_vres:
         matched = extend_by_VRE(

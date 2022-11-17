@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from entsoe import EntsoePandasClient
+from update_powerplants import update
 
 import powerplantmatching as pm
 from powerplantmatching.cleaning import gather_fueltype_info
@@ -17,9 +18,7 @@ UPDATE = False
 config = pm.get_config()
 
 if UPDATE:
-    powerplants = pm.powerplants(update=True)
-    powerplants = powerplants.powerplant.convert_country_to_alpha2()
-    powerplants = powerplants.powerplant.fill_geoposition()
+    powerplants = update()
 else:
     powerplants = pm.powerplants()
     powerplants = powerplants.powerplant.convert_country_to_alpha2()
