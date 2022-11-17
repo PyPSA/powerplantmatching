@@ -46,9 +46,12 @@ def best_matches(links):
         Links as returned by duke
     """
     labels = links.columns.difference({"scores"})
-    return links.groupby(links.iloc[:, 1], as_index=False, sort=False).apply(
-        lambda x: x.loc[x.scores.idxmax(), labels]
-    )
+    if links.empty:
+        return pd.DataFrame(columns=labels)
+    else:
+        return links.groupby(links.iloc[:, 1], as_index=False, sort=False).apply(
+            lambda x: x.loc[x.scores.astype(float).idxmax(), labels]
+        )
 
 
 def compare_two_datasets(dfs, labels, country_wise=True, config=None, **dukeargs):
@@ -98,11 +101,11 @@ def compare_two_datasets(dfs, labels, country_wise=True, config=None, **dukeargs
                 [df[sel] for df, sel in zip(dfs, sel_country_b)], labels, **dukeargs
             )
         else:
-            return pd.DataFrame()
+            return pd.DataFrame(columns=[*labels, "scores"])
 
     if country_wise:
         countries = config["target_countries"]
-        links = pd.concat([country_link(dfs, c) for c in countries])
+        links = pd.concat([country_link(dfs, c) for c in countries], ignore_index=True)
     else:
         links = duke(dfs, labels=labels, **dukeargs)
 

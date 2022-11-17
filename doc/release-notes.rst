@@ -8,6 +8,7 @@ Upcoming Version
 **Bug fixes**
 
 * Fix `GEM_GGPT <https://globalenergymonitor.org/projects/global-gas-plant-tracker/>`_ interface.
+* Fix missing column names in dataframes
 
 
 Version 0.5.5 (05.09.2022)
