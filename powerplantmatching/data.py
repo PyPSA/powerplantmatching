@@ -1661,13 +1661,8 @@ def EXTERNAL_DATABASE(config=None):
     """
     if config is None:
         return pd.DataFrame()
-    
-    df = pd.read_csv(
-        config["EXTERNAL_DATABASE"]["fn"], low_memory=False
-    )
-    df = (df
-      .pipe(set_column_name, 'EXTERNAL_DATABASE')
-      .pipe(config_filter, config)
-    )
+
+    df = pd.read_csv(config["EXTERNAL_DATABASE"]["fn"], low_memory=False)
+    df = df.pipe(set_column_name, "EXTERNAL_DATABASE").pipe(config_filter, config)
 
     return df
