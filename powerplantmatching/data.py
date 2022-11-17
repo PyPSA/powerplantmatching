@@ -1661,13 +1661,13 @@ def EXTERNAL_DATABASE(config=None):
     """
     if config is None:
         return pd.DataFrame()
-
+    
     df = pd.read_csv(
-        get_raw_file("EXTERNAL_DATABASE", update=True, config=config),
-        low_memory=False,
+        config["EXTERNAL_DATABASE"]["fn"], low_memory=False
     )
-    df = df.loc[lambda df: df.Country.isin(config["target_countries"])].pipe(
-        set_column_name, "EXTERNAL_DATABASE"
+    df = (df
+      .pipe(set_column_name, 'EXTERNAL_DATABASE')
+      .pipe(config_filter, config)
     )
 
     return df
