@@ -5,17 +5,13 @@ History of Changes
 Upcoming Version
 ----------------
 
+
+* Rename `GEM_GGPT` to `GGPT` and add `GEM_GGPT` as an deprecated alias.
+
 **Bug fixes**
 
-* Fix `GEM_GGPT <https://globalenergymonitor.org/projects/global-gas-plant-tracker/>`_ interface.
+* Fix `GGPT <https://globalenergymonitor.org/projects/global-gas-plant-tracker/>`_ (formerly `GEM_GGPT`) interface.
 * Fix missing column names in dataframes
-
-
-Version 0.5.5 (05.09.2022)
--------------------------
-
-**Bug fixes**
-
 * Spanish hydro stores with an capacity larger than 50GWh in the `JRC` data base are assumed to be reservoirs even if stated differently.
 * add geolocations for Italian geothermal units and adjust filters in config.yaml to bring geothermal to powerplants.csv
 

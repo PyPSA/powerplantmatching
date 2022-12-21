@@ -1580,9 +1580,9 @@ def IRENASTAT(raw=False, update=False, config=None):
     return df
 
 
-def GEM_GGPT(raw=False, update=False, config=None):
+def GGPT(raw=False, update=False, config=None):
     """
-    Importer for the GEM_GPPT gas powerplant tracker.
+    Importer for the global gas powerplant tracker from global energy monitor.
 
     Parameters
     ----------
@@ -1596,7 +1596,7 @@ def GEM_GGPT(raw=False, update=False, config=None):
         defaults to powerplantmatching.config.get_config()
     """
     config = get_config() if config is None else config
-    fn = get_raw_file("GEM_GGPT", update=update, config=config)
+    fn = get_raw_file("GGPT", update=update, config=config)
     df = pd.read_excel(fn, sheet_name="Gas plants - data")
 
     if raw:
@@ -1611,6 +1611,7 @@ def GEM_GGPT(raw=False, update=False, config=None):
         "Start year": "DateIn",
         "Retired year": "DateOut",
         "CHP": "Set",
+        "GEM unit ID": "projectID",
     }
 
     technology_dict = {
@@ -1631,7 +1632,7 @@ def GEM_GGPT(raw=False, update=False, config=None):
     df = (
         df.rename(columns=RENAME_COLUMNS)
         .pipe(clean_name)
-        .pipe(set_column_name, "GEM_GGPT")
+        .pipe(set_column_name, "GGPT")
         .pipe(convert_to_short_name)
         .dropna(subset="Capacity")
         .assign(Fueltype="Natural Gas")[
@@ -1647,3 +1648,13 @@ def GEM_GGPT(raw=False, update=False, config=None):
     df = df.pipe(config_filter, config)
 
     return df
+
+
+# deprecated alias for GGPT
+@deprecated(
+    deprecated_in="0.5.5",
+    removed_in="0.6",
+    details="Use `GGPT` instead.",
+)
+def GEM_GGPT(*args, **kwargs):
+    return GGPT(*args, **kwargs)
