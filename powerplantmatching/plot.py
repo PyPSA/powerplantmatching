@@ -63,17 +63,19 @@ def fueltype_stats(df):
 
 def powerplant_map(
     df,
-    scale=1e2,
+    scale=1e1,
+    alpha=0.6,
     european_bounds=True,
     fillcontinents=False,
     legendscale=1,
     resolution=True,
-    **kwargs
+    figsize=None,
+    ncol=2,
+    loc="upper left",
 ):
 
     df = get_obj_if_Acc(df)
     # TODO: add reference circle in legend
-    figsize = kwargs.get("figsize", (11, 9))
     with sns.axes_style("darkgrid"):
         df = set_uncommon_fueltypes_to_other(df)
         shown_fueltypes = df.Fueltype.unique()
@@ -88,6 +90,7 @@ def powerplant_map(
             c=df.Fueltype.map(get_config()["fuel_to_color"]),
             edgecolor="face",
             facecolor="face",
+            alpha=alpha,
         )
 
         legendcols = pd.Series(get_config()["fuel_to_color"]).reindex(shown_fueltypes)
@@ -104,8 +107,8 @@ def powerplant_map(
             legendcols.index,
             handler_map=make_handler_map_to_scale_circles_as_in(ax),
             markerscale=1,
-            ncol=kwargs.get("ncol", 2),
-            loc=kwargs.get("loc", "upper left"),
+            ncol=ncol,
+            loc=loc,
             frameon=True,
             fancybox=True,
             edgecolor="w",

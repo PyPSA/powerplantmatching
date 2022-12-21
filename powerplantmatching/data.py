@@ -537,7 +537,7 @@ def Capacity_stats(
         .rename(columns=str.title)
         .powerplant.convert_alpha2_to_country()
         .pipe(gather_fueltype_info, config=config, search_col=["Fueltype"])
-        .query("Fueltype in @fueltypes")
+        .query("Fueltype in @fueltypes and Fueltype != 'Other'")
         .pipe(set_column_name, source.title())
     )
     return df

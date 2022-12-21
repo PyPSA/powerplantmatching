@@ -8,7 +8,9 @@ Upcoming Version
 **New Features**
 
 * New `EXTERNAL_DATABASE` interface to integrate additional custom data of raw data matching the powerplantmatching format.
-* Harmonize the analysis scripts with the pm.powerlants(update=True) functionality. 
+* The example notebook was updated to the new version of the package.
+* Rename the `matching_analysis` directory to `analysis`.
+* Harmonize the analysis scripts with the `pm.powerlants(update=True)` functionality. 
 
 **Bug fixes**
 
@@ -22,6 +24,7 @@ Upcoming Version
 * Rename the `matching_analysis` directory to `analysis`.
 * Rename `GEM_GGPT` to `GGPT` and add `GEM_GGPT` as an deprecated alias.
 * Rename `matched_data` to `powerplants` in `collection.py` and add `matched_data` as an deprecated alias.
+* Fueltype "Other" was remove from the Capacity_Stats function. 
 
 
 Version 0.5.4 (02.08.2022)
