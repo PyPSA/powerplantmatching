@@ -596,24 +596,30 @@ def fill_geoposition(
     ----------
     df : pandas.DataFrame
         DataFrame of power plants
-    use_saved_postion : Boolean, default False
+    use_saved_position : Boolean, default True
         Whether to firstly compare with cached results in
         powerplantmatching/data/parsed_locations.csv
+    saved_only: Boolean, default True
+        Whether to only add geo-positions which are stored at
+        `pm.core._package_data("parsed_locations.csv")`
     """
     df = get_obj_if_Acc(df)
+    fn = _package_data("parsed_locations.csv")
 
     if config is None:
         config = get_config()
 
-    if use_saved_locations and config["google_api_key"] is None:
+    if not saved_only and config["google_api_key"] is None:
         logger.warning(
             "Geoparsing not possible as no google api key was "
             "found, please add the key to your config.yaml if you "
             "want to enable it."
         )
+        saved_only = True
 
     if use_saved_locations:
-        locs = pd.read_csv(_package_data("parsed_locations.csv"), index_col=[0, 1])
+        logger.info(f"Adding stored geo-position from {fn}")
+        locs = pd.read_csv(fn, index_col=[0, 1])
         locs = locs[~locs.index.duplicated()]
         df = df.where(
             df[["lat", "lon"]].notnull().all(1),
@@ -622,7 +628,7 @@ def fill_geoposition(
     if saved_only:
         return df
 
-    logger.info("Parse geopositions for missing `lat` and `lon` values")
+    logger.info("Parse geo-positions for missing `lat` and `lon` values")
     missing = df[df.lat.isnull()].copy()
 
     if "postalcode" not in missing.columns:
@@ -639,7 +645,7 @@ def fill_geoposition(
 
     geodata.drop_duplicates(subset=["Name", "Country"]).set_index(
         ["Name", "Country"]
-    ).to_csv(_package_data("parsed_locations.csv"), mode="a", header=False)
+    ).to_csv(fn, mode="a", header=False)
 
     df.loc[geodata.index, ["lat", "lon"]] = geodata
 
