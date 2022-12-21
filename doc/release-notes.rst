@@ -2,8 +2,13 @@ History of Changes
 ==================
 
 
-Upcoming Version
-----------------
+.. Upcoming Version
+.. ----------------
+
+
+Version 0.5.5 (21.12.2022)
+-------------------------
+
 
 **New Features**
 
