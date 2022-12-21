@@ -12,8 +12,6 @@ The package allows to easily update the combined data as soon as new input datas
 
 You can directly [download the current version of the data](https://downgit.github.io/#/home?url=https://github.com/PyPSA/powerplantmatching/blob/master/powerplants.csv) as a CSV file.
 
-![Map of power plants in Europe](https://user-images.githubusercontent.com/19226431/46086361-36a13080-c1a8-11e8-82ed-9f04167273e5.png)
-
 Initially, powerplantmatching was initially developed by the
 [Renewable Energy Group](https://fias.uni-frankfurt.de/physics/schramm/complex-renewable-energy-networks/)
 at [FIAS](https://fias.uni-frankfurt.de/) and is now maintained by the [Digital Transformation in Energy Systems Group](https://tub-ensys.github.io/) at the Technical University of Berlin to build power plant data
