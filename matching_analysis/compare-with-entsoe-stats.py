@@ -1,29 +1,29 @@
+import pathlib
 import warnings
 
 import country_converter as cc
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from bs4 import XMLParsedAsHTMLWarning
 from entsoe import EntsoePandasClient
-from update_powerplants import update
 
 import powerplantmatching as pm
 from powerplantmatching.cleaning import gather_fueltype_info
 
-warnings.simplefilter(action="ignore", category=FutureWarning)
+warnings.simplefilter(action="ignore", category=(FutureWarning, XMLParsedAsHTMLWarning))
+root = pathlib.Path(__file__).parent.absolute()
+figpath = root / "figures"
 
-UPDATE = False
+UPDATE = True
 
 
 config = pm.get_config()
 
-if UPDATE:
-    powerplants = update()
-else:
-    powerplants = pm.powerplants()
-    powerplants = powerplants.powerplant.convert_country_to_alpha2()
+powerplants = pm.powerplants(update=UPDATE)
 
-# powerplants = powerplants[powerplants.lat.notnull()]
+
+powerplants = powerplants.powerplant.convert_country_to_alpha2()
 
 client = EntsoePandasClient(api_key=config["entsoe_token"])
 
@@ -121,9 +121,7 @@ diff[diff.abs() > 2].plot.barh(ax=ax, zorder=3)
 ax.set_xlabel("Capacity difference (stats - ppm) [GW]")
 ax.grid(True, zorder=2)
 fig.tight_layout()
-fig.savefig(
-    "matching_analysis/figures/capacity-diff-per-country-and-fueltype.png", dpi=150
-)
+fig.savefig(figpath / "capacity-diff-per-country-and-fueltype.png", dpi=150)
 
 
 for c in in_compare.index.unique(0):
@@ -133,5 +131,5 @@ for c in in_compare.index.unique(0):
     ax.set_ylabel("Capacity [GW]")
     ax.set_title(cc.convert(c, to="name"))
     fig.tight_layout()
-    fig.savefig("matching_analysis/figures/country-comparison/" + c + ".png", dpi=150)
+    fig.savefig(figpath / f"country-comparison/{c}.png", dpi=150)
     plt.close()

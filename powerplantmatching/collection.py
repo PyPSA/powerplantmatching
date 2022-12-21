@@ -124,7 +124,7 @@ def collect(
         return df.pipe(projectID_to_dict)
 
 
-def matched_data(
+def powerplants(
     config=None,
     update=False,
     from_url=False,
@@ -253,3 +253,28 @@ def matched_data(
             matched, config=config, base_year=config["opsd_vres_base_year"]
         )
     return matched.pipe(set_column_name, "Matched Data")
+
+
+@deprecated(deprecated_in="5.5", removed_in="0.6", details="Use `powerplants` instead.")
+def matched_data(
+    config=None,
+    update=False,
+    from_url=False,
+    extend_by_vres=False,
+    extendby_kwargs={},
+    extend_by_kwargs={},
+    fill_geopositions=True,
+    filter_missing_geopositions=True,
+    **collection_kwargs,
+):
+    return powerplants(
+        config=config,
+        update=update,
+        from_url=from_url,
+        extend_by_vres=extend_by_vres,
+        extendby_kwargs=extendby_kwargs,
+        extend_by_kwargs=extend_by_kwargs,
+        fill_geopositions=fill_geopositions,
+        filter_missing_geopositions=filter_missing_geopositions,
+        **collection_kwargs,
+    )

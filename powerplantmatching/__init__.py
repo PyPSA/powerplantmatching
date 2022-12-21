@@ -37,5 +37,5 @@ __copyright__ = "Copyright 2017-2020 Frankfurt Institute for Advanced Studies"
 # convenience.
 from . import core, data, heuristics, plot, utils
 from .accessor import PowerPlantAccessor
-from .collection import matched_data as powerplants
+from .collection import powerplants
 from .core import get_config, package_config
