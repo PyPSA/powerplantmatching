@@ -5,7 +5,8 @@ History of Changes
 Upcoming Version
 ----------------
 
-
+* Rename the `matching_analysis` directory to `analysis`.
+* Harmonize the analysis scripts with the pm.powerlants(update=True) functionality. 
 * Rename `GEM_GGPT` to `GGPT` and add `GEM_GGPT` as an deprecated alias.
 * Rename `matched_data` to `powerplants` in `collection.py` and add `matched_data` as an deprecated alias.
 

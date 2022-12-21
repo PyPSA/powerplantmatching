@@ -86,7 +86,7 @@ ENV/
 
 # Rope project settings
 .ropeproject
-matching_analysis/figures/
+analysis/figures/
 
 doc/_build
 doc/api
