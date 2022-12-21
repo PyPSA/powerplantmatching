@@ -1458,7 +1458,7 @@ def OPSD_VRE(raw=False, update=False, config=None):
 
 def OPSD_VRE_country(country, raw=False, update=False, config=None):
     """
-    Get country specifig data from OPSD for renewables, if available.
+    Get country specific data from OPSD for renewables, if available.
     Available for DE, FR, PL, CH, DK, CZ and SE (last update: 09/2020).
 
     Parameters
@@ -1658,3 +1658,30 @@ def GGPT(raw=False, update=False, config=None):
 )
 def GEM_GGPT(*args, **kwargs):
     return GGPT(*args, **kwargs)
+
+
+def EXTERNAL_DATABASE(raw=False, update=True, config=None):
+    """
+    Importer for external custom databases.
+    Parameters
+    ----------
+    raw : boolean, default False
+        Whether to return the original dataset
+    update: bool, default True (unused)
+        Whether to update the data from the url.
+    config : dict, default None
+        Add custom specific configuration,
+        e.g. powerplantmatching.config.get_config(target_countries='Italy'),
+        defaults to powerplantmatching.config.get_config()
+    """
+    if config is None:
+        return pd.DataFrame()
+
+    df = pd.read_csv(config["EXTERNAL_DATABASE"]["fn"], low_memory=False)
+
+    if raw:
+        return df
+
+    df = df.pipe(set_column_name, "EXTERNAL_DATABASE").pipe(config_filter, config)
+
+    return df

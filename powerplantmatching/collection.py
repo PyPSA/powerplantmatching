@@ -43,7 +43,6 @@ def collect(
     update=False,
     reduced=True,
     config=None,
-    config_update=None,
     **dukeargs,
 ):
     """
@@ -60,9 +59,6 @@ def collect(
         Switch as to return the reduced (True) or matched (False) dataset.
     config : dict
         Configuration file of powerplantmatching
-    config_update : dict
-        Configuration input dictionary to be merged into the default
-        configuration data
     **dukeargs : keyword-args for duke
     """
 
@@ -70,9 +66,6 @@ def collect(
 
     if config is None:
         config = get_config()
-
-    if config_update is not None:
-        config.update(config_update)
 
     def df_by_name(name):
         conf = config[name]
@@ -126,6 +119,7 @@ def collect(
 
 def powerplants(
     config=None,
+    config_update=None,
     update=False,
     from_url=False,
     extend_by_vres=False,
@@ -153,6 +147,9 @@ def powerplants(
     config : Dict, default None
             Define a configuration varying from the setting in config.yaml.
             Relevant keywords are 'matching_sources', 'fully_included_sources'.
+    config_update : Dict, default None
+            Configuration input dictionary to be merged into the default
+            configuration data
     extend_by_vres : Boolean, default False
             Whether extend the dataset by variable renewable energy sources
             given by powerplantmatching.data.OPSD_VRE()
@@ -176,7 +173,10 @@ def powerplants(
     from . import __version__
 
     if config is None:
-        config = get_config()
+        if config_update is None:
+            config = get_config()
+        else:
+            config = get_config(**config_update)
 
     deprecated_args = {"update_all", "stored"}
     used_deprecated_args = deprecated_args.intersection(collection_kwargs.keys())

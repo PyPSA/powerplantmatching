@@ -5,10 +5,10 @@ History of Changes
 Upcoming Version
 ----------------
 
-* Rename the `matching_analysis` directory to `analysis`.
+**New Features**
+
+* New `EXTERNAL_DATABASE` interface to integrate additional custom data of raw data matching the powerplantmatching format.
 * Harmonize the analysis scripts with the pm.powerlants(update=True) functionality. 
-* Rename `GEM_GGPT` to `GGPT` and add `GEM_GGPT` as an deprecated alias.
-* Rename `matched_data` to `powerplants` in `collection.py` and add `matched_data` as an deprecated alias.
 
 **Bug fixes**
 
@@ -16,6 +16,13 @@ Upcoming Version
 * Fix missing column names in dataframes
 * Spanish hydro stores with an capacity larger than 50GWh in the `JRC` data base are assumed to be reservoirs even if stated differently.
 * add geolocations for Italian geothermal units and adjust filters in config.yaml to bring geothermal to powerplants.csv
+
+**Other Changes**
+
+* Rename the `matching_analysis` directory to `analysis`.
+* Rename `GEM_GGPT` to `GGPT` and add `GEM_GGPT` as an deprecated alias.
+* Rename `matched_data` to `powerplants` in `collection.py` and add `matched_data` as an deprecated alias.
+
 
 Version 0.5.4 (02.08.2022)
 -------------------------
@@ -111,8 +118,8 @@ In order to ensure compatibility with the new code, please delete these sections
 * The `GEO` data now returns a dataset containing power plant units.  
 * The ``ESE`` dataset was removed due the hosting website taken down. 
 * The argument ``subsume_uncommon_fueltypes_to_other`` in ``powerplantmatching.collection.matched_data`` was removed. 
-* The function ``powerplantmatching.cleaning.aggregate_units`` does not support the arguments `use_saved_aggregation` and `save_aggregation` anymore due to it's unsecure behavior.
-* The function ``powerplantmatching.matching.compare_two_datasets`` does not support the arguments `use_saved_matches` anymore due to it's unsecure behavior.
+* The function ``powerplantmatching.cleaning.aggregate_units`` does not support the arguments `use_saved_aggregation` and `save_aggregation` anymore due to it's insecure behavior.
+* The function ``powerplantmatching.matching.compare_two_datasets`` does not support the arguments `use_saved_matches` anymore due to it's insecure behavior.
 
 
 Version 0.4.6 (25.11.2020)
