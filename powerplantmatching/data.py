@@ -302,6 +302,7 @@ def GEO(raw=False, update=False, config=None):
     not_included_ppl = ppl.query("projectID not in @res.projectID")
     res = pd.concat([res, not_included_ppl]).pipe(set_column_name, "GEO")
     res = scale_to_net_capacities(res)
+    res = convert_to_short_name(res)
     res = set_column_name(res, "GEO")
     res = config_filter(res, config)
     res["projectID"] = "GEO-" + res.projectID.astype(str)
