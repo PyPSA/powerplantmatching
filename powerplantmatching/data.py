@@ -579,13 +579,13 @@ def GPD(raw=False, update=False, config=None, filter_other_dbs=True):
         "Capacity_Mw": "Capacity",
         "Commissioning_Year": "DateIn",
     }
+    REPL_DATEIN = 2010
 
     other_dbs = []
     if filter_other_dbs:
         other_dbs = ["GEODB", "Open Power System Data", "ENTSOE"]
     countries = config["target_countries"]
-    return (
-        df.rename(columns=lambda x: x.title())
+    df = (df.rename(columns=lambda x: x.title())
         .query("Country_Long in @countries &" " Source not in @other_dbs")
         .drop(columns="Country")
         .rename(columns=RENAME_COLS)
@@ -594,6 +594,12 @@ def GPD(raw=False, update=False, config=None, filter_other_dbs=True):
             parse_columns=["Name", "Fueltype"],
             config=config,
         )
+    )
+    na_data = df[df.DateIn.isna()].idx
+    if len(na_data) > 0:
+        logger.warn(f"DateIn of {len(na_data)} entries of GPD datasource are NaN; replaced by {REPL_DATEIN")
+    
+    return (df.fillna(value={"DateIn": REPL_DATEIN})
         .pipe(clean_name)
         .pipe(set_column_name, "GPD")
         .pipe(config_filter, config)
