@@ -596,7 +596,7 @@ def GPD(raw=False, update=False, config=None, filter_other_dbs=True):
             config=config,
         )
     )
-    na_data = df[df.DateIn.isna()].idx
+    na_data = df[df.DateIn.isna()].index
     if len(na_data) > 0:
         logger.warn(
             f"DateIn of {len(na_data)} entries of GPD datasource are NaN; replaced by {REPL_DATEIN}"
