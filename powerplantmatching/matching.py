@@ -96,7 +96,7 @@ def compare_two_datasets(dfs, labels, country_wise=True, config=None, **dukeargs
         # country_selector for both dataframes
         sel_country_b = [df["Country"] == country for df in dfs]
         # only append if country appears in both dataframse
-        if all(sel.any() or sel.empty for sel in sel_country_b):
+        if all(sel.any() for sel in sel_country_b):
             return duke(
                 [df[sel] for df, sel in zip(dfs, sel_country_b)], labels, **dukeargs
             )
@@ -144,7 +144,9 @@ def cross_matches(sets_of_pairs, labels=None):
         match_base = pd.concat(base, axis=1).reset_index()
         matches = pd.concat([matches, match_base], sort=True)
 
-    assert not matches.empty, "No matches found"
+    if matches.empty:
+        logger.warn("No matches found")
+        return pd.DataFrame(columns=labels)
 
     if matches.isnull().all().any():
         cols = ", ".join(matches.columns[matches.isnull().all()])
