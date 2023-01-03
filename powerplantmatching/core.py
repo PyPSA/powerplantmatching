@@ -112,7 +112,12 @@ def get_config(filename=None, **overrides):
     if len(dict(**overrides)) == 0:
         config["hash"] = "default"
     else:
-        config["hash"] = encodebytes(sha1digest).decode("ascii")[2:12]
+        config["hash"] = (
+            encodebytes(sha1digest)
+            .decode("ascii")[2:12]
+            .replace("\\", "")
+            .replace("/", "")
+        )
 
     if not isdir(_data_out(".", config)):
         makedirs(abspath(_data_out(".", config)))
