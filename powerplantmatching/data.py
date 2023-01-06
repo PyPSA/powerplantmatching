@@ -587,9 +587,10 @@ def GPD(raw=False, update=False, config=None, filter_other_dbs=True):
     countries = config["target_countries"]
     return (
         df.rename(columns=lambda x: x.title())
-        .query("Country_Long in @countries &" " Source not in @other_dbs")
         .drop(columns="Country")
         .rename(columns=RENAME_COLS)
+        .pipe(convert_to_short_name)
+        .query("Country in @countries &" " Source not in @other_dbs")
         .pipe(
             gather_specifications,
             parse_columns=["Name", "Fueltype"],
