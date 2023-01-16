@@ -10,7 +10,7 @@ just call
    pm.powerplants(from_url=True)
 
 which will parse and store the `actual dataset of powerplants of this
-repository <https://raw.githubusercontent.com/FRESNA/powerplantmatching/master/matched_data_red.csv>`__.
+repository <https://github.com/PyPSA/powerplantmatching/blob/master/powerplants.csv>`__.
 Setting ``from_url=False`` (default) will load all the necessary data
 files and combine them. Note that this might take some minutes.
 
