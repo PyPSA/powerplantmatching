@@ -302,6 +302,7 @@ def GEO(raw=False, update=False, config=None):
     not_included_ppl = ppl.query("projectID not in @res.projectID")
     res = pd.concat([res, not_included_ppl]).pipe(set_column_name, "GEO")
     res = scale_to_net_capacities(res)
+    res = convert_to_short_name(res)
     res = set_column_name(res, "GEO")
     res = config_filter(res, config)
     res["projectID"] = "GEO-" + res.projectID.astype(str)
@@ -586,9 +587,10 @@ def GPD(raw=False, update=False, config=None, filter_other_dbs=True):
     countries = config["target_countries"]
     return (
         df.rename(columns=lambda x: x.title())
-        .query("Country_Long in @countries &" " Source not in @other_dbs")
         .drop(columns="Country")
         .rename(columns=RENAME_COLS)
+        .pipe(convert_to_short_name)
+        .query("Country in @countries &" " Source not in @other_dbs")
         .pipe(
             gather_specifications,
             parse_columns=["Name", "Fueltype"],

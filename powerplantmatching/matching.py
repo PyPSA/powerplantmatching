@@ -144,7 +144,9 @@ def cross_matches(sets_of_pairs, labels=None):
         match_base = pd.concat(base, axis=1).reset_index()
         matches = pd.concat([matches, match_base], sort=True)
 
-    assert not matches.empty, "No matches found"
+    if matches.empty:
+        logger.warn("No matches found")
+        return pd.DataFrame(columns=labels)
 
     if matches.isnull().all().any():
         cols = ", ".join(matches.columns[matches.isnull().all()])
