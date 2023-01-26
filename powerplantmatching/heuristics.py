@@ -242,18 +242,16 @@ def fill_missing_commissioning_years(df):
     df.DateIn.fillna(df.groupby(["Country"]).DateIn.transform("mean"), inplace=True)
     if df.DateIn.isnull().any():
         count = len(df[df.DateIn.isnull()])
-        raise (
-            ValueError(
-                """There are still *{0}* empty values for
-                            'DateIn' in the DataFrame. These should
-                            be either be filled manually or dropped to
-                            continue.""".format(
-                    count
-                )
+        logger.warn(
+            """There are still *{0}* empty values for
+                        'DateIn' in the DataFrame. These should
+                        be either be filled manually or dropped.
+            """.format(
+                count
             )
         )
-    df.loc[:, "DateIn"] = df.DateIn.astype(int)
-    df.DateRetrofit.fillna(df.DateIn.astype(int), inplace=True)
+    df.loc[:, "DateIn"] = df.DateIn.astype(float)
+    df.DateRetrofit.fillna(df.DateIn, inplace=True)
     return df
 
 
@@ -273,7 +271,7 @@ def fill_missing_decommissioning_years(df, config=None):
     df = fill_missing_commissioning_years(df)
     df["DateOut"] = df.DateOut.fillna(
         df[["DateIn", "DateRetrofit"]].max(1) + lifetime
-    ).astype(int)
+    ).astype(float)
     return df
 
 
