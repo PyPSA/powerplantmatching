@@ -167,7 +167,7 @@ def gather_and_replace(df, mapping):
         elif not isinstance(pattern, str):
             raise ValueError(f"Pattern must be string or list, not {type(pattern)}")
         func = lambda ds: ds.str.contains(pattern)
-        where = df.astype(str).apply(func).any(1)
+        where = df.astype(str).apply(func).any(axis=1)
         res = res.where(~where, key)
     return res
 
