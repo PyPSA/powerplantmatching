@@ -157,7 +157,7 @@ def to_TIMES(df=None, use_scaled_capacity=False, baseyear=2015):
         pos = [i for i, x in enumerate(df.columns) if x == "Country"][0]
         df.insert(pos + 1, "Region", np.nan)
     df.Country = df.Country.replace({"Czech Republic": "Czechia"})
-    df.loc[:, "Region"] = df.Country.apply(lambda c: cget(name=c).alpha_2)
+    df["Region"] = df.Country.apply(lambda c: cget(name=c).alpha_2)
     df = set_denmark_region_id(df)
     regions = sorted(set(df.Region))
     if None in regions:
@@ -168,11 +168,11 @@ def to_TIMES(df=None, use_scaled_capacity=False, baseyear=2015):
 
     # add column with TIMES-specific type. The pattern is as follows:
     # 'ConELC-' + Set + '_' + Fueltype + '-' Technology
-    df.loc[:, "Technology"].fillna("", inplace=True)
+    df["Technology"].fillna("", inplace=True)
     if "TimesType" not in df:
         pos = [i for i, x in enumerate(df.columns) if x == "Technology"][0]
         df.insert(pos + 1, "TimesType", np.nan)
-    df.loc[:, "TimesType"] = (
+    df["TimesType"] = (
         pd.Series("ConELC-" for _ in range(len(df)))
         + np.where(df.loc[:, "Set"].str.contains("CHP"), "CHP", "PP")
         + "_"
@@ -239,7 +239,7 @@ def to_TIMES(df=None, use_scaled_capacity=False, baseyear=2015):
     if "Life" not in df:
         pos = [i for i, x in enumerate(df.columns) if x == "Retrofit"][0]
         df.insert(pos + 1, "Life", np.nan)
-    df.loc[:, "Life"] = df.TimesType.map(timestype_to_life())
+    df["Life"] = df.TimesType.map(timestype_to_life())
     if df.Life.isnull().any():
         raise ValueError(
             "There are rows without a given lifetime in the " "dataframe. Please check!"
@@ -249,7 +249,7 @@ def to_TIMES(df=None, use_scaled_capacity=False, baseyear=2015):
     if "YearRetire" not in df:
         pos = [i for i, x in enumerate(df.columns) if x == "Life"][0]
         df.insert(pos + 1, "YearRetire", np.nan)
-    df.loc[:, "YearRetire"] = df.loc[:, "Retrofit"] + df.loc[:, "Life"]
+    df["YearRetire"] = df.loc[:, "Retrofit"] + df.loc[:, "Life"]
     df = set_known_retire_years(df)
 
     # Now create empty export dataframe with headers
@@ -302,9 +302,9 @@ def to_TIMES(df=None, use_scaled_capacity=False, baseyear=2015):
                     )
             df_exp.loc[row, "Pset_Pn"] = tt
             row += 1
-    df_exp.loc[:, "Attribute"] = "STOCK"
-    df_exp.loc[:, "*Unit"] = "GW"
-    df_exp.loc[:, "LimType"] = "FX"
+    df_exp["Attribute"] = "STOCK"
+    df_exp["*Unit"] = "GW"
+    df_exp["LimType"] = "FX"
 
     # Write resulting dataframe to file
     if plausible:

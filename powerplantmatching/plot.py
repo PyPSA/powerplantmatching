@@ -290,7 +290,7 @@ def boxplot_gross_to_net(axes_style="darkgrid", **kwargs):
         df = gtn(return_entire_data=True).loc[
             lambda df: df.energy_source_level_2 != "Hydro"
         ]
-        df.loc[:, "FuelTech"] = df.energy_source_level_2 + "\n(" + df.technology + ")"
+        df["FuelTech"] = df.energy_source_level_2 + "\n(" + df.technology + ")"
         df = df.groupby("FuelTech").filter(lambda x: len(x) >= 10)
         dfg = df.groupby("FuelTech")
         # plot
@@ -315,7 +315,7 @@ def boxplot_matchcount(df):
     names as the last columns.
     """
     # Mend needed data
-    df.loc[:, "Matches"] = df.projectID.apply(len)
+    df["Matches"] = df.projectID.apply(len)
 
     # Plot
     fig, ax = plt.subplots(figsize=(8, 4.5))

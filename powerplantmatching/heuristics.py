@@ -177,7 +177,7 @@ def rescale_capacities_to_country_totals(df, fueltypes=None):
             ].columns.tolist()
         )
     ratio = (stats_entsoe / stats_df).fillna(1)
-    df.loc[:, "Scaled Capacity"] = df.loc[:, "Capacity"]
+    df["Scaled Capacity"] = df.loc[:, "Capacity"]
     for country in ratio:
         for fueltype in fueltypes:
             df.loc[
@@ -250,7 +250,7 @@ def fill_missing_commissioning_years(df):
                 count
             )
         )
-    df.loc[:, "DateIn"] = df.DateIn.astype(float)
+    df["DateIn"] = df.DateIn.astype(float)
     df.DateRetrofit.fillna(df.DateIn, inplace=True)
     return df
 
@@ -493,8 +493,8 @@ def set_denmark_region_id(df):
     dk_o = df.loc[(df.Country == "Denmark") & (df.Region.isnull())].reset_index(
         drop=True
     )
-    dk_o.loc[:, "Capacity"] *= 0.5
-    dk_o.loc[:, "Region"] = "DKE"
+    dk_o["Capacity"] *= 0.5
+    dk_o["Region"] = "DKE"
     # Handle remaining in df
     df.loc[(df.Country == "Denmark") & (df.Region.isnull()), "Capacity"] *= 0.5
     df.loc[(df.Country == "Denmark") & (df.Region.isnull()), "Region"] = "DKW"
@@ -534,7 +534,7 @@ def gross_to_net_factors(reference="opsd", aggfunc="median", return_entire_data=
         reference = OPSD(raw=True)["DE"]
     df = reference.copy()
     df = df[df.capacity_gross_uba.notnull() & df.capacity_net_bnetza.notnull()]
-    df.loc[:, "ratio"] = df.capacity_net_bnetza / df.capacity_gross_uba
+    df["ratio"] = df.capacity_net_bnetza / df.capacity_gross_uba
     df = df[df.ratio <= 1.0]  # drop obvious data errors
     if return_entire_data:
         return df

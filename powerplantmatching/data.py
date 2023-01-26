@@ -943,7 +943,7 @@ def WEPP(raw=False, config=None):
         },
         inplace=True,
     )
-    wepp.loc[:, "DateRetrofit"] = wepp.DateIn
+    wepp["DateRetrofit"] = wepp.DateIn
     # Do country transformations and drop those which are not in defined scope
     c = {
         "ENGLAND & WALES": "UNITED KINGDOM",
