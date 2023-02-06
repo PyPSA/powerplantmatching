@@ -32,7 +32,6 @@ config_de2030["hash"] = "DE-2030"
 
 
 for config in [config_de2020, config_de2030]:
-
     label = config["hash"]
 
     df = pm.powerplants(config=config)

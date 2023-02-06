@@ -73,7 +73,6 @@ def powerplant_map(
     ncol=2,
     loc="upper left",
 ):
-
     df = get_obj_if_Acc(df)
     # TODO: add reference circle in legend
     with sns.axes_style("darkgrid"):
@@ -375,7 +374,6 @@ def draw_basemap(
     fillcontinents=True,
     **kwds
 ):
-
     if cartopy_present:
         if ax is None:
             ax = plt.gca(projection=ccrs.PlateCarree())
