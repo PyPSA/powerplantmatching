@@ -23,7 +23,6 @@ config_da2020["matching_sources"].remove("JRC")
 
 
 for config in [config_da2020]:
-
     label = config["hash"]
 
     df = pm.powerplants(config=config, update=True)
