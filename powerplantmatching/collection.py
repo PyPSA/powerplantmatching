@@ -133,7 +133,7 @@ def powerplants(
     Return the full matched dataset including all data sources listed in
     config.yaml/matching_sources. The combined data is additionally extended
     by non-matched entries of sources given in
-    config.yaml/fully_included_souces.
+    config.yaml/fully_included_sources.
 
 
     Parameters

@@ -7,12 +7,12 @@ plant databases.
 
 This package provides ready-to-use power plant data for the European power system.
 Starting from openly available power plant datasets, the package cleans, standardizes
-and merges the input data to create a new combining dataset, which includes all the important information.
+and merges the input data to create a new combined dataset, which includes all the important information.
 The package allows to easily update the combined data as soon as new input datasets are released.
 
 You can directly [download the current version of the data](https://downgit.github.io/#/home?url=https://github.com/PyPSA/powerplantmatching/blob/master/powerplants.csv) as a CSV file.
 
-Initially, powerplantmatching was initially developed by the
+Initially, powerplantmatching was developed by the
 [Renewable Energy Group](https://fias.uni-frankfurt.de/physics/schramm/complex-renewable-energy-networks/)
 at [FIAS](https://fias.uni-frankfurt.de/) and is now maintained by the [Digital Transformation in Energy Systems Group](https://tub-ensys.github.io/) at the Technical University of Berlin to build power plant data
 inputs to [PyPSA](http://www.pypsa.org/)-based models for carrying
@@ -21,15 +21,15 @@ out simulations.
 ### Main Features
 
 - clean and standardize power plant data sets
-- aggregate power plants units which belong to the same plant
+- aggregate power plant units which belong to the same plant
 - compare and combine different data sets
 - create lookups and give statistical insight to power plant goodness
 - provide cleaned data from different sources
-- choose between gros/net capacity
-- provide an already merged data set of six different data-sources
-- scale the power plant capacities in order to match country specific statistics about total power plant capacities
+- choose between gross/net capacity
+- provide an already merged data set of multiple different open data sources
+- scale the power plant capacities in order to match country-specific statistics about total power plant capacities
 - visualize the data
-- export your powerplant data to a [PyPSA](https://github.com/PyPSA/PyPSA)
+- export your powerplant data to a [PyPSA](https://github.com/PyPSA/PyPSA)-based model
 
 ## Installation
 
