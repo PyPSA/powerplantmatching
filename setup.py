@@ -9,7 +9,7 @@ with open("README.md", encoding="utf-8") as f:
 
 setup(
     name="powerplantmatching",
-    version="0.5.5",
+    version="0.5.6",
     author="Fabian Hofmann (FIAS), Jonas Hoersch (KIT), Fabian Gotzens (FZ Jülich)",
     author_email="hofmann@fias.uni-frankfurt.de",
     description="Toolset for generating and managing Power Plant Data",

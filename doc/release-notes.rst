@@ -6,6 +6,21 @@ History of Changes
 .. ----------------
 
 
+Version 0.5.6 (13.02.2023)
+-------------------------
+
+
+**Bug fixes**
+
+* Set `DateIn` column as a float
+* Remove special characters from hash path for custom configs
+* Add conversion of country name into GEO and GPD data sources
+
+**Other Changes**
+
+* Revise table in documentation and update links to powerplant database
+
+
 Version 0.5.5 (21.12.2022)
 -------------------------
 
