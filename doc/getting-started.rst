@@ -29,5 +29,13 @@ The merged data is also available as a bigger dataset which provides the origina
     pm.powerplants(reduced=False)
 
 It links the entries of the matched power plants and lists all the related
-properties given by the different data-sources. 
+properties given by the different data-sources.
+
+.. note::
+
+   Running ``reduced=False`` requires **Java** to be installed on your system. Please ensure that you have Java installed and that it is in your system's PATH.
+
+   You can download and install Java from the official website: https://www.java.com/en/download/
+
+   If Java is not installed or not in your system's PATH, you may encounter runtime errors.
 
