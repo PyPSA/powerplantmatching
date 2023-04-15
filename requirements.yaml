@@ -18,6 +18,7 @@ dependencies:
   - seaborn
   - six
   - xlrd
+  - openpyxl
   - pip:
     - pycountry
     - entsoe-py>=0.3.1
