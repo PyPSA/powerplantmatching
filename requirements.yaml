@@ -19,6 +19,7 @@ dependencies:
   - six
   - xlrd
   - openpyxl
+  - deprecation
   - pip
   - pip:
     - pycountry
