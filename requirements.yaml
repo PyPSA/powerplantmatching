@@ -19,6 +19,7 @@ dependencies:
   - six
   - xlrd
   - openpyxl
+  - pip
   - pip:
     - pycountry
     - entsoe-py>=0.3.1
