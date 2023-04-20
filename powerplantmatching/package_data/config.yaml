@@ -23,11 +23,13 @@ matching_sources:
   - BEYONDCOAL
   - WIKIPEDIA
   - GGPT
+  - GCPT
 
 fully_included_sources:
   # Make individual queries for the datasets
   - BEYONDCOAL
   - GGPT
+  - GCPT
   - OPSD: Country not in ['Switzerland', 'Italy', 'Spain', 'Norway', 'Austria']
   - JRC: Country not in ['Switzerland', 'Albania', 'United Kingdom', 'Norway']
   - ENTSOE: (Country not in ['Switzerland', 'Ireland', 'Albania', 'Greece', 'Czech Republic', 'Bulgaria', 'United Kingdom', 'Italy', 'Serbia'] and not (Country == 'Spain' and Fueltype == 'Hydro')) or (Fueltype == 'Geothermal')
@@ -152,7 +154,11 @@ GGPT:
   reliability_score: 4
   fn: Global-Gas-Plant-Tracker-Aug-2022.xlsx
   url: https://github.com/pz-max/gem-powerplant-data/raw/main/Global-Gas-Plant-Tracker-Aug-2022.xlsx
-
+GCPT:
+  net_capacity: false
+  reliability_score: 5
+  fn: Global-Coal-Plant-Tracker-January-2023.csv
+  url: https://raw.githubusercontent.com/pz-max/gem-powerplant-data/main/Global-Coal-Plant-Tracker-January-2023.csv
 # ---------------------------------------------------------------------------- #
 #                             Data Structure Config                            #
 # ---------------------------------------------------------------------------- #
