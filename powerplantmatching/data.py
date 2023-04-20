@@ -32,12 +32,23 @@ import pycountry
 import requests
 from deprecation import deprecated
 
-from .cleaning import (clean_name, gather_fueltype_info, gather_set_info,
-                       gather_specifications, gather_technology_info)
+from .cleaning import (
+    clean_name,
+    gather_fueltype_info,
+    gather_set_info,
+    gather_specifications,
+    gather_technology_info,
+)
 from .core import _data_in, _package_data, get_config
 from .heuristics import scale_to_net_capacities
-from .utils import (config_filter, convert_to_short_name, correct_manually,
-                    fill_geoposition, get_raw_file, set_column_name)
+from .utils import (
+    config_filter,
+    convert_to_short_name,
+    correct_manually,
+    fill_geoposition,
+    get_raw_file,
+    set_column_name,
+)
 
 logger = logging.getLogger(__name__)
 cget = pycountry.countries.get
@@ -1571,7 +1582,7 @@ def IRENASTAT(raw=False, update=False, config=None):
     return df
 
 
-def GCPT(raw=False,update=False,config=None):
+def GCPT(raw=False, update=False, config=None):
     """
     Importer for the global coal powerplant tracker from global energy monitor.
 
@@ -1588,15 +1599,15 @@ def GCPT(raw=False,update=False,config=None):
     """
 
     config = get_config() if config is None else config
-    fn = get_raw_file("GCPT",update=update,config=config)
+    fn = get_raw_file("GCPT", update=update, config=config)
     df = pd.read_csv(fn)
 
     if raw:
         return df
-    
+
     RENAME_COLUMNS = {
         "Plant": "Name",
-        "Combustion technology":"Technology",
+        "Combustion technology": "Technology",
         "Coal type": "Fueltype",
         "Capacity (MW)": "Capacity",
         "Latitude": "lat",
@@ -1604,49 +1615,49 @@ def GCPT(raw=False,update=False,config=None):
         "Year": "DateIn",
         "RETIRED": "DateOut",
         "Tracker ID": "projectID",
-
     }
     fueltype_dict = {
-        "bituminous":"Hard Coal",
+        "bituminous": "Hard Coal",
         "lignite": "Lignite",
         "unknown": "Hard Coal",
         "sub-bit": "Hard Coal",
-        "bituminous/sub-bit":"Hard Coal",
-        "wstbituminous":"Hard Coal",
-        "unknown(ccs90)":"Hard Coal",
-        "hard":"Hard Coal",
-        "anth":"Hard Coal",
+        "bituminous/sub-bit": "Hard Coal",
+        "wstbituminous": "Hard Coal",
+        "unknown(ccs90)": "Hard Coal",
+        "hard": "Hard Coal",
+        "anth": "Hard Coal",
         "lignite(ccs90)": "Lignite",
-        "sub-bit(ccs90)":"Hard Coal",
+        "sub-bit(ccs90)": "Hard Coal",
         "lignite/sub-bit": "Lignite",
-        "wstcoal":"Hard Coal",
-        "bituminous(ccs90)":"Hard Coal",
-        "bituminous(ccs30)":"Hard Coal",
+        "wstcoal": "Hard Coal",
+        "bituminous(ccs90)": "Hard Coal",
+        "bituminous(ccs30)": "Hard Coal",
         "lignite/bituminous": "Lignite",
-        "anth/bituminous":"Hard Coal",
-        "anth/culm":"Hard Coal",
-        "bituminous/wstbituminous":"Hard Coal"
-
+        "anth/bituminous": "Hard Coal",
+        "anth/culm": "Hard Coal",
+        "bituminous/wstbituminous": "Hard Coal",
     }
     df = df.rename(columns=RENAME_COLUMNS)
-    df_final = (df.pipe(clean_name)
-          .pipe(set_column_name, "GCPT")
-          .pipe(convert_to_short_name)
-          .dropna(subset="Capacity")
-          .pipe(lambda x: x.replace({"Fueltype":fueltype_dict}))
-          .pipe(lambda x: x.assign(Technology="Steam Turbine"))
-          .pipe(lambda x: x.assign(Set="PP"))
-          .assign(
-        DateIn=df["DateIn"].apply(pd.to_numeric,errors="coerce"),
-        DateOut=df["DateOut"].apply(pd.to_numeric,errors="coerce"),
-        lat=df["lat"].apply(pd.to_numeric,errors="coerce"),
-        lon=df["lon"].apply(pd.to_numeric,errors="coerce")
-          )
-          .pipe(lambda x: x[df.columns.intersection(config.get("target_columns"))])
-          .pipe(config_filter, config)
+    df_final = (
+        df.pipe(clean_name)
+        .pipe(set_column_name, "GCPT")
+        .pipe(convert_to_short_name)
+        .dropna(subset="Capacity")
+        .pipe(lambda x: x.replace({"Fueltype": fueltype_dict}))
+        .pipe(lambda x: x.assign(Technology="Steam Turbine"))
+        .pipe(lambda x: x.assign(Set="PP"))
+        .assign(
+            DateIn=df["DateIn"].apply(pd.to_numeric, errors="coerce"),
+            DateOut=df["DateOut"].apply(pd.to_numeric, errors="coerce"),
+            lat=df["lat"].apply(pd.to_numeric, errors="coerce"),
+            lon=df["lon"].apply(pd.to_numeric, errors="coerce"),
+        )
+        .pipe(lambda x: x[df.columns.intersection(config.get("target_columns"))])
+        .pipe(config_filter, config)
     )
 
     return df_final
+
 
 def GGPT(raw=False, update=False, config=None):
     """
