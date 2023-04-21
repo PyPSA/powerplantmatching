@@ -159,6 +159,13 @@ GCPT:
   reliability_score: 5
   fn: Global-Coal-Plant-Tracker-January-2023.csv
   url: https://raw.githubusercontent.com/pz-max/gem-powerplant-data/main/Global-Coal-Plant-Tracker-January-2023.csv
+
+GGtPT:
+  net_capacity: false
+  reliability_score: 4
+  fn: Global-Geothermal-Power-Tracker-January-2023.csv
+  url: https://raw.githubusercontent.com/pz-max/gem-powerplant-data/main/Global-Geothermal-Power-Tracker-January-2023.csv
+
 # ---------------------------------------------------------------------------- #
 #                             Data Structure Config                            #
 # ---------------------------------------------------------------------------- #
