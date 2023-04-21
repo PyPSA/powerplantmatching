@@ -1713,6 +1713,64 @@ def GGtPT(raw=False, update=False, config=None):
     return df_final
 
 
+def GWPT(raw=False, update=False, config=None):
+    """
+    Importer for the global wind powerplant tracker from global energy monitor.
+
+    Parameters
+    ----------
+    raw : boolean, default False
+        Whether to return the original dataset
+    update: bool, default False
+        Whether to update the data from the url.
+    config : dict, default None
+        Add custom specific configuration,
+        e.g. powerplantmatching.config.get_config(target_countries='Italy'),
+        defaults to powerplantmatching.config.get_config()
+    """
+    config = get_config() if config is None else config
+    fn = get_raw_file("GWPT", update=update, config=config)
+    df = pd.read_csv(fn)
+
+    RENAME_COLUMNS = {
+        "Project Name": "Name",
+        "Capacity (MW)": "Capacity",
+        "Latitude": "lat",
+        "Longitude": "lon",
+        "Start year": "DateIn",
+        "Retired year": "DateOut",
+        "GEM Location ID": "projectID",
+        "Installation Type": "Technology",
+    }
+
+    technology_dict = {
+        "onshore": "Onshore",
+        "offshore hard mount": "Offshore",
+        "offshore floating": "Offshore",
+        "offshore mount unknown": "Offshore",
+    }
+
+    df = df.rename(columns=RENAME_COLUMNS)
+    df_final = (
+        df.pipe(clean_name)
+        .pipe(set_column_name, "GWPT")
+        .pipe(convert_to_short_name)
+        .dropna(subset="Capacity")
+        .assign(
+            DateIn=df["DateIn"].apply(pd.to_numeric, errors="coerce"),
+            DateOut=df["DateOut"].apply(pd.to_numeric, errors="coerce"),
+            lat=df["lat"].apply(pd.to_numeric, errors="coerce"),
+            lon=df["lon"].apply(pd.to_numeric, errors="coerce"),
+        )
+        .query("Status in ['operating','mothballed','construction']")
+        .pipe(lambda x: x[df.columns.intersection(config.get("target_columns"))])
+        .assign(Fueltype="Wind")
+        .assign(Set="PP")
+        .pipe(config_filter, config)
+    )
+    return df_final
+
+
 def GGPT(raw=False, update=False, config=None):
     """
     Importer for the global gas powerplant tracker from global energy monitor.
