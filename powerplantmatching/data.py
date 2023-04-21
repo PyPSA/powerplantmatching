@@ -32,23 +32,12 @@ import pycountry
 import requests
 from deprecation import deprecated
 
-from .cleaning import (
-    clean_name,
-    gather_fueltype_info,
-    gather_set_info,
-    gather_specifications,
-    gather_technology_info,
-)
+from .cleaning import (clean_name, gather_fueltype_info, gather_set_info,
+                       gather_specifications, gather_technology_info)
 from .core import _data_in, _package_data, get_config
 from .heuristics import scale_to_net_capacities
-from .utils import (
-    config_filter,
-    convert_to_short_name,
-    correct_manually,
-    fill_geoposition,
-    get_raw_file,
-    set_column_name,
-)
+from .utils import (config_filter, convert_to_short_name, correct_manually,
+                    fill_geoposition, get_raw_file, set_column_name)
 
 logger = logging.getLogger(__name__)
 cget = pycountry.countries.get
@@ -1615,6 +1604,7 @@ def GCPT(raw=False, update=False, config=None):
         "Year": "DateIn",
         "RETIRED": "DateOut",
         "Tracker ID": "projectID",
+        
     }
     fueltype_dict = {
         "bituminous": "Hard Coal",
@@ -1676,7 +1666,7 @@ def GGPT(raw=False, update=False, config=None):
     """
     config = get_config() if config is None else config
     fn = get_raw_file("GGPT", update=update, config=config)
-    df = pd.read_excel(fn, sheet_name="Gas plants - data")
+    df = pd.read_csv(fn)
 
     if raw:
         return df
@@ -1708,25 +1698,27 @@ def GGPT(raw=False, update=False, config=None):
         "not found": "PP",
     }
 
-    df = (
-        df.rename(columns=RENAME_COLUMNS)
-        .pipe(clean_name)
+    df = df.rename(columns=RENAME_COLUMNS)
+    df_final = (
+         df.pipe(clean_name)
         .pipe(set_column_name, "GGPT")
         .pipe(convert_to_short_name)
         .dropna(subset="Capacity")
-        .assign(Fueltype="Natural Gas")[
-            lambda df: df.Status.isin(["operating", "mothballed", "construction"])
-        ]
-    )
-    df["DateIn"] = pd.to_numeric(df.DateIn, errors="coerce")
-    df["lat"] = pd.to_numeric(df.lat, errors="coerce")
-    df["lon"] = pd.to_numeric(df.lon, errors="coerce")
-    df.Technology.replace(technology_dict, inplace=True)
-    df.Set.replace(set_dict, inplace=True)
-    df = df[df.columns.intersection(config.get("target_columns"))]
-    df = df.pipe(config_filter, config)
-
-    return df
+        .assign(
+            DateIn=df["DateIn"].apply(pd.to_numeric, errors="coerce"),
+            DateOut=df["DateOut"].apply(pd.to_numeric, errors="coerce"),
+            lat=df["lat"].apply(pd.to_numeric, errors="coerce"),
+            lon=df["lon"].apply(pd.to_numeric, errors="coerce"),
+        )
+        .pipe(lambda x: x.replace({"Technology": technology_dict}))
+        .pipe(lambda x: x.replace({"Set": set_dict}))
+        .query("Status in ['operating','mothballed','construction']")
+        .pipe(lambda x: x[df.columns.intersection(config.get("target_columns"))])
+        .assign(Fueltype="Natural Gas")
+        .pipe(config_filter, config)
+        
+        )
+    return df_final
 
 
 # deprecated alias for GGPT

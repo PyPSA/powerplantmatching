@@ -152,8 +152,8 @@ WEPP:
 GGPT:
   net_capacity: false
   reliability_score: 4
-  fn: Global-Gas-Plant-Tracker-Aug-2022.xlsx
-  url: https://github.com/pz-max/gem-powerplant-data/raw/main/Global-Gas-Plant-Tracker-Aug-2022.xlsx
+  fn: Global-Gas-Plant-Tracker-GGPT-February-2023-v2.csv
+  url: https://raw.githubusercontent.com/pz-max/gem-powerplant-data/main/Global-Gas-Plant-Tracker-GGPT-February-2023-v2.csv
 GCPT:
   net_capacity: false
   reliability_score: 5
