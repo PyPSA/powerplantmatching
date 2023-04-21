@@ -4,6 +4,7 @@ History of Changes
 
 .. Upcoming Version
 .. ----------------
+* adds the following new GEM datasets: GCPT, GSPT, GGtPT, GWPT and updates GGPT. 
 
 
 Version 0.5.6 (13.02.2023)
