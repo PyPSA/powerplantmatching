@@ -172,6 +172,11 @@ GWPT:
   fn: Global-Wind-Power-Tracker-January-2023.csv
   url: https://raw.githubusercontent.com/pz-max/gem-powerplant-data/main/Global-Wind-Power-Tracker-January-2023.csv
 
+GSPT:
+  net_capacity: false
+  reliability_score: 4
+  fn: Global-Solar-Power-Tracker-January-2023.csv
+  url: https://raw.githubusercontent.com/pz-max/gem-powerplant-data/main/Global-Solar-Power-Tracker-January-2023.csv
 # ---------------------------------------------------------------------------- #
 #                             Data Structure Config                            #
 # ---------------------------------------------------------------------------- #
