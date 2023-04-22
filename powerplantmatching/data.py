@@ -1688,7 +1688,7 @@ def GGtPT(raw=False, update=False, config=None):
         "Longitude": "lon",
         "Start year": "DateIn",
         "Retired year": "DateOut",
-        "GEM unit ID": "projectID",
+        "GEM location ID": "projectID",
     }
 
     df = df.rename(columns=RENAME_COLUMNS)
@@ -1863,7 +1863,7 @@ def GGPT(raw=False, update=False, config=None):
         "Start year": "DateIn",
         "Retired year": "DateOut",
         "CHP": "Set",
-        "GEM unit ID": "projectID",
+        "GEM location ID": "projectID",
     }
 
     technology_dict = {
@@ -1887,6 +1887,8 @@ def GGPT(raw=False, update=False, config=None):
         .pipe(set_column_name, "GGPT")
         .pipe(convert_to_short_name)
         .dropna(subset="Capacity")
+        .pipe(lambda x: x.query("Capacity != 'not found'"))
+        .pipe(lambda x: x.astype({"Capacity": float}))
         .assign(
             DateIn=df["DateIn"].apply(pd.to_numeric, errors="coerce"),
             DateOut=df["DateOut"].apply(pd.to_numeric, errors="coerce"),
