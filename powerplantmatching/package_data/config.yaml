@@ -24,14 +24,12 @@ matching_sources:
   - WIKIPEDIA
   - GGPT
   - GCPT
-  - GWPT
-  - GGtPT
-  - GSPT
 
 fully_included_sources:
   # Make individual queries for the datasets
   - BEYONDCOAL
   - GGPT
+  - GCPT
   - OPSD: Country not in ['Switzerland', 'Italy', 'Spain', 'Norway', 'Austria']
   - JRC: Country not in ['Switzerland', 'Albania', 'United Kingdom', 'Norway']
   - ENTSOE: (Country not in ['Switzerland', 'Ireland', 'Albania', 'Greece', 'Czech Republic', 'Bulgaria', 'United Kingdom', 'Italy', 'Serbia'] and not (Country == 'Spain' and Fueltype == 'Hydro')) or (Fueltype == 'Geothermal')
@@ -204,7 +202,41 @@ target_columns:
   - EIC
   - projectID
 target_countries:
+  - Albania
+  - Austria
+  - Belgium
+  - Bosnia and Herzegovina
+  - Bulgaria
+  - Croatia
+  - Czech Republic
+  - Denmark
+  - Estonia
+  - Finland
   - France
+  - Germany
+  - Greece
+  - Hungary
+  - Ireland
+  - Italy
+  - Latvia
+  - Lithuania
+  - Luxembourg
+  - Macedonia, Republic of
+  - Moldova
+  - Montenegro
+  - Netherlands
+  - Norway
+  - Poland
+  - Portugal
+  - Romania
+  - Serbia
+  - Slovakia
+  - Slovenia
+  - Spain
+  - Sweden
+  - Switzerland
+  - United Kingdom
+  - Ukraine
 target_fueltypes:
   # Provide a mapping of the keys to a list or a regex expression which are used for parsing.
   # A list will be converted to a regex expression matching all words (case-insensitive)
