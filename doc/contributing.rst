@@ -140,4 +140,4 @@ Please, before starting, make sure that you’ve installed
 
    .. code:: python
     
-      pm.powerplants(update_all=True)
+      pm.powerplants(update = True)
