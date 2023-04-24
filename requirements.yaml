@@ -18,6 +18,9 @@ dependencies:
   - seaborn
   - six
   - xlrd
+  - openpyxl
+  - deprecation
+  - pip
   - pip:
     - pycountry
     - entsoe-py>=0.3.1

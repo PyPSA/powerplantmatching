@@ -77,6 +77,13 @@ def duke(
         If true, do not delete temporary files
     """
 
+    try:
+        sub.run(["java", "-version"], check=True, stderr=sub.PIPE, stdout=sub.PIPE)
+    except sub.CalledProcessError:
+        err = "Java is not installed or not in the system's PATH. Please install Java and ensure it is in your system's PATH, then try again."
+        logger.error(err)
+        raise FileNotFoundError(err)
+
     dedup = isinstance(datasets, pd.DataFrame)
     if dedup:
         # Deduplication mode
@@ -126,19 +133,13 @@ def duke(
             stdout = None
         args.append("config.xml")
 
-        try:
-            run = sub.Popen(
-                args,
-                stderr=sub.PIPE,
-                cwd=tmpdir,
-                stdout=stdout,
-                universal_newlines=True,
-            )
-        except FileNotFoundError:
-            err = "Java was not found on your system."
-            logger.error(err)
-            raise FileNotFoundError(err)
-
+        run = sub.Popen(
+            args,
+            stderr=sub.PIPE,
+            cwd=tmpdir,
+            stdout=stdout,
+            universal_newlines=True,
+        )
         _, stderr = run.communicate()
 
         if showmatches:
