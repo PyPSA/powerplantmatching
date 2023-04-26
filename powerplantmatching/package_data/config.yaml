@@ -24,12 +24,18 @@ matching_sources:
   - WIKIPEDIA
   - GGPT
   - GCPT
+  - GGtPT
+  - GSPT
+  - GWPT
 
 fully_included_sources:
   # Make individual queries for the datasets
   - BEYONDCOAL
   - GGPT
   - GCPT
+  - GGtPT
+  - GSPT
+  - GWPT
   - OPSD: Country not in ['Switzerland', 'Italy', 'Spain', 'Norway', 'Austria']
   - JRC: Country not in ['Switzerland', 'Albania', 'United Kingdom', 'Norway']
   - ENTSOE: (Country not in ['Switzerland', 'Ireland', 'Albania', 'Greece', 'Czech Republic', 'Bulgaria', 'United Kingdom', 'Italy', 'Serbia'] and not (Country == 'Spain' and Fueltype == 'Hydro')) or (Fueltype == 'Geothermal')

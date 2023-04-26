@@ -1688,7 +1688,7 @@ def GGtPT(raw=False, update=False, config=None):
         "Longitude": "lon",
         "Start year": "DateIn",
         "Retired year": "DateOut",
-        "GEM location ID": "projectID",
+        "GEM unit ID": "projectID",
     }
 
     df = df.rename(columns=RENAME_COLUMNS)
@@ -1739,7 +1739,7 @@ def GWPT(raw=False, update=False, config=None):
         "Longitude": "lon",
         "Start year": "DateIn",
         "Retired year": "DateOut",
-        "GEM Location ID": "projectID",
+        "GEM phase ID": "projectID",
         "Installation Type": "Technology",
     }
 
@@ -1802,7 +1802,7 @@ def GSPT(raw=False, update=False, config=None):
         "Start year": "DateIn",
         "Retired year": "DateOut",
         "Technology Type": "Technology",
-        "GEM location ID": "projectID",
+        "GEM phase ID": "projectID",
     }
 
     technology_dict = {
