@@ -4,7 +4,16 @@ History of Changes
 
 .. Upcoming Version
 .. ----------------
-* adds the following new GEM datasets: GCPT, GSPT, GGtPT, GWPT and updates GGPT. 
+**New Features**
+
+* adds the following new Global Energy Monitor data including:
+  * `GBPT`, bioenergy power plant
+  * `GGPT`, gas power plant update
+  * `GCPT`, coal power plant
+  * `GGTPT`, geothermal power plant
+  * `GNPT`, nuclear power plant
+  * `GSPT`, solar power plant
+  * `GWPT`, wind power plant 
 
 
 Version 0.5.6 (13.02.2023)

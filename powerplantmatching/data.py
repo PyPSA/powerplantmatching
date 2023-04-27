@@ -2002,7 +2002,7 @@ def GGPT(raw=False, update=False, config=None):
             DateOut=df["DateOut"].apply(pd.to_numeric, errors="coerce"),
             lat=df["lat"].apply(pd.to_numeric, errors="coerce"),
             lon=df["lon"].apply(pd.to_numeric, errors="coerce"),
-            Capacity=lambda df: pd.to_numeric(df.Capacity, "coerce")
+            Capacity=lambda df: pd.to_numeric(df.Capacity, "coerce"),
         )
         .pipe(lambda x: x.replace({"Technology": technology_dict}))
         .pipe(lambda x: x.replace({"Set": set_dict}))
