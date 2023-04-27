@@ -41,6 +41,7 @@ Data Sources
    scraper <https://morph.io/coroa/global_energy_observatory_power_plants>`__
 -  GPD - `Global Power Plant
    Database <http://datasets.wri.org/dataset/globalpowerplantdatabase>`__
+   provide their data under a free license
 -  GBPT - `Global Bioenergy Powerplant Tracker by Global Energy Monitor<https://globalenergymonitor.org/projects/global-bioenergy-power-tracker/>`__
 -  GCPT - `Global Coal Powerplant Tracker by Global Energy Monitor <https://globalenergymonitor.org/projects/global-coal-plant-tracker/>`__
 -  GGPT - `Global Gas Powerplant Tracker by Global Energy Monitor <https://globalenergymonitor.org/projects/global-gas-plant-tracker/>`__
