@@ -41,7 +41,13 @@ Data Sources
    scraper <https://morph.io/coroa/global_energy_observatory_power_plants>`__
 -  GPD - `Global Power Plant
    Database <http://datasets.wri.org/dataset/globalpowerplantdatabase>`__
-   provide their data under a free license
+-  GBPT - `Global Bioenergy Powerplant Tracker by Global Energy Monitor<https://globalenergymonitor.org/projects/global-bioenergy-power-tracker/>`__
+-  GCPT - `Global Coal Powerplant Tracker by Global Energy Monitor <https://globalenergymonitor.org/projects/global-coal-plant-tracker/>`__
+-  GGPT - `Global Gas Powerplant Tracker by Global Energy Monitor <https://globalenergymonitor.org/projects/global-gas-plant-tracker/>`__
+-  GGTPT - `Global Geothermal Powerplant Tracker by Global Energy Monitor <https://globalenergymonitor.org/projects/global-geothermal-power-tracker/>`__
+-  GNPT - `Global Nuclear Powerplant Tracker by Global Energy Monitor <https://globalenergymonitor.org/projects/global-nuclear-power-tracker/>`__
+-  GSPT - `Global Solar Powerplant Tracker by Global Energy Monitor <https://globalenergymonitor.org/projects/global-solar-power-tracker/>`__
+-  GWPT - `Global Wind Powerplant Tracker by Global Energy Monitor <https://globalenergymonitor.org/projects/global-wind-power-tracker/>`__
 -  CARMA - `Carbon Monitoring for Action <http://carma.org/plant>`__
 -  ENTSOe - `European Network of Transmission System Operators for
    Electricity <http://entsoe.eu/>`__, annually provides statistics
