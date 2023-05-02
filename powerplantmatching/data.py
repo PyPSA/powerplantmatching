@@ -1915,9 +1915,9 @@ def GSPT(raw=False, update=False, config=None):
     }
 
     technology_dict = {
-        "PV": "NaN",
-        "Solar Thermal": "Steam Turbine",
-        "Assumed PV": "NaN",
+        "PV": "PV",
+        "Solar Thermal": "CSP",
+        "Assumed PV": "PV",
     }
     df = df.rename(columns=RENAME_COLUMNS)
     df_final = (
