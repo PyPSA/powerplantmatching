@@ -30,6 +30,7 @@ matching_sources:
   - GNPT
   - GSPT
   - GWPT
+  - GHPT
 
 # fully_included_sources, these sources are included even without match to the final dataset
 fully_included_sources:
@@ -47,6 +48,7 @@ fully_included_sources:
   - GNPT
   - GSPT
   - GWPT
+  - GHPT
 
 parallel_duke_processes: false
 process_limit: 4
@@ -196,6 +198,12 @@ GNPT:
   reliability_score: 4
   fn: Global-Nuclear-Power-Tracker-January-2023.csv
   url: https://raw.githubusercontent.com/pz-max/gem-powerplant-data/main/Global-Nuclear-Power-Tracker-January-2023.csv
+
+GHPT:
+  net_capacity: false
+  reliability_score: 4
+  fn: Global-Hydropower-Tracker-May-2023.csv
+  url: https://raw.githubusercontent.com/pz-max/gem-powerplant-data/main/Global-Hydropower-Tracker-May-2023.csv
 # ---------------------------------------------------------------------------- #
 #                             Data Structure Config                            #
 # ---------------------------------------------------------------------------- #

@@ -2014,6 +2014,67 @@ def GGPT(raw=False, update=False, config=None):
     return df_final
 
 
+def GHPT(raw=False, update=False, config=None):
+    """
+    Importer for the global gas powerplant tracker from global energy monitor.
+
+    Parameters
+    ----------
+    raw : boolean, default False
+        Whether to return the original dataset
+    update: bool, default False
+        Whether to update the data from the url.
+    config : dict, default None
+        Add custom specific configuration,
+        e.g. powerplantmatching.config.get_config(target_countries='Italy'),
+        defaults to powerplantmatching.config.get_config()
+    """
+    config = get_config() if config is None else config
+    fn = get_raw_file("GHPT", update=update, config=config)
+    df = pd.read_csv(fn)
+
+    if raw:
+        return df
+
+    RENAME_COLUMNS = {
+        "Project Name": "Name",
+        "Capacity (MW)": "Capacity",
+        "Latitude": "lat",
+        "Longitude": "lon",
+        "Start Year": "DateIn",
+        "Retired Year": "DateOut",
+        "GEM unit ID": "projectID",
+        "Country 1": "Country",
+    }
+    technology_dict = {
+        "conventional storage": "Reservoir",
+        "pumped storage": "Pumped Storage",
+        "run-of-river": "Run-Of-River",
+        "conventional and pumped storage": "Pumped Storage",
+        "conventional and run-of-river": "Run-Of-River",
+    }
+    df = df.rename(columns=RENAME_COLUMNS)
+    df_final = (
+        df.pipe(clean_name)
+        .pipe(set_column_name, "GHPT")
+        .pipe(convert_to_short_name)
+        .dropna(subset="Capacity")
+        .assign(
+            DateIn=df["DateIn"].apply(pd.to_numeric, errors="coerce"),
+            DateOut=df["DateOut"].apply(pd.to_numeric, errors="coerce"),
+            lat=df["lat"].apply(pd.to_numeric, errors="coerce"),
+            lon=df["lon"].apply(pd.to_numeric, errors="coerce"),
+        )
+        .query("Status in ['operating','construction']")
+        .pipe(lambda x: x.replace({"Technology": technology_dict}))
+        .pipe(lambda x: x[df.columns.intersection(config.get("target_columns"))])
+        .assign(Fueltype="Hydro")
+        .assign(Set="PP")
+        .pipe(config_filter, config)
+    )
+    return df_final
+
+
 # deprecated alias for GGPT
 @deprecated(
     deprecated_in="0.5.5",
