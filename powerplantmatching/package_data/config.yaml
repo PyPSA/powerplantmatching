@@ -66,7 +66,7 @@ CARMA:
   fn: Full_CARMA_2009_Dataset_1.csv
 ENTSOE:
   reliability_score: 5
-  url: https://vfs.fias.science/f/ebbdf6ba8c/?raw=1
+  url: https://raw.githubusercontent.com/pypsa-meets-earth/ppm-data-backup/main/entsoe_powerplants.csv
   fn: entsoe_powerplants.csv
 ENTSOE-EIC:
   url: https://eepublicdownloads.entsoe.eu/eic-codes-csv/W_eiccodes.csv
@@ -78,12 +78,12 @@ JRC:
 GEO:
   net_capacity: false
   reliability_score: 3
-  url: https://vfs.fias.science/f/b4607c76b4/?raw=1
+  url: https://raw.githubusercontent.com/pypsa-meets-earth/ppm-data-backup/main/global_energy_observatory_power_plants.csv
   fn: global_energy_observatory_power_plants.csv
 GEO_units:
   net_capacity: false
   reliability_score: 3
-  url: https://vfs.fias.science/f/3f4cc3876f/?raw=1
+  url: https://raw.githubusercontent.com/pypsa-meets-earth/ppm-data-backup/main/global_energy_observatory_ppl_units.csv
   fn: global_energy_observatory_ppl_units.csv
 GPD:
   reliability_score: 3
@@ -92,7 +92,7 @@ GPD:
   url: https://wri-dataportal-prod.s3.amazonaws.com/manual/global_power_plant_database_v_1_3.zip
 WIKIPEDIA:
   reliability_score: 4
-  url: https://vfs.fias.science/f/c49203915f/?raw=1
+  url: https://raw.githubusercontent.com/pypsa-meets-earth/ppm-data-backup/main/nuclear_plants_from_wikipedia.csv
   fn: nuclear_plants_from_wikipedia.csv
 IWPDCY:
   aggregated_units: true
@@ -101,11 +101,11 @@ IWPDCY:
 OPSD_DE:
   reliability_score: 5
   fn: conventional_power_plants_DE.csv
-  url: https://data.open-power-system-data.org/conventional_power_plants/2020-10-01/conventional_power_plants_DE.csv
+  url: https://raw.githubusercontent.com/pypsa-meets-earth/ppm-data-backup/main/conventional_power_plants_DE.csv
 OPSD_EU:
   reliability_score: 5
   fn: conventional_power_plants_EU.csv
-  url: https://data.open-power-system-data.org/conventional_power_plants/2020-10-01/conventional_power_plants_EU.csv
+  url: https://raw.githubusercontent.com/pypsa-meets-earth/ppm-data-backup/main/conventional_power_plants_EU.csv
 OPSD_VRE:
   url: https://data.open-power-system-data.org/renewable_power_plants/2020-08-25/renewable_power_plants_EU.csv
   fn: renewable_power_plants_EU.csv

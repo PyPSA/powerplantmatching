@@ -4,7 +4,9 @@ History of Changes
 
 .. Upcoming Version
 .. ----------------
+**New Features**
 
+* Replace unstable FIAS and OPSD download links by new provider
 
 Version 0.5.6 (13.02.2023)
 -------------------------
