@@ -62,7 +62,7 @@ IRENA:
 CARMA:
   net_capacity: false
   reliability_score: 1
-  url: https://vfs.fias.science/f/e1d9d9d587/?raw=1
+  url: https://raw.githubusercontent.com/pypsa-meets-earth/ppm-data-backup/main/Full_CARMA_2009_Dataset_1.csv
   fn: Full_CARMA_2009_Dataset_1.csv
 ENTSOE:
   reliability_score: 5
