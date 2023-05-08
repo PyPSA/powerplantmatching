@@ -2045,6 +2045,7 @@ def GHPT(raw=False, update=False, config=None):
         "Retired Year": "DateOut",
         "GEM unit ID": "projectID",
         "Country 1": "Country",
+        "Technology Type": "Technology",
     }
     technology_dict = {
         "conventional storage": "Reservoir",
