@@ -6,6 +6,14 @@ History of Changes
 .. ----------------
 **New Features**
 
+* adds the following new Global Energy Monitor data including:
+  * `GBPT`, bioenergy power plant
+  * `GGPT`, gas power plant update
+  * `GCPT`, coal power plant
+  * `GGTPT`, geothermal power plant
+  * `GNPT`, nuclear power plant
+  * `GSPT`, solar power plant
+  * `GWPT`, wind power plant 
 * Replace unstable FIAS and OPSD download links by new provider
 
 Version 0.5.6 (13.02.2023)
