@@ -1582,6 +1582,365 @@ def IRENASTAT(raw=False, update=False, config=None):
     return df
 
 
+def GBPT(raw=False, update=False, config=None):
+    """
+    Importer for the global bioenergy powerplant tracker from global energy monitor.
+
+    Parameters
+    ----------
+    raw : boolean, default False
+        Whether to return the original dataset
+    update: bool, default False
+        Whether to update the data from the url.
+    config : dict, default None
+        Add custom specific configuration,
+        e.g. powerplantmatching.config.get_config(target_countries='Italy'),
+        defaults to powerplantmatching.config.get_config()
+    """
+    config = get_config() if config is None else config
+    fn = get_raw_file("GBPT", update=update, config=config)
+    df = pd.read_csv(fn, thousands=",")
+
+    if raw:
+        return df
+
+    RENAME_COLUMNS = {
+        "Project Name": "Name",
+        "Capacity (MW)": "Capacity",
+        "Operating Status": "Status",
+        "Latitude": "lat",
+        "Longitude": "lon",
+        "Start year": "DateIn",
+        "Retired year": "DateOut",
+        "GEM phase ID": "projectID",
+    }
+
+    df = df.rename(columns=RENAME_COLUMNS)
+    df_final = (
+        df.pipe(clean_name)
+        .pipe(set_column_name, "GBPT")
+        .pipe(convert_to_short_name)
+        .dropna(subset="Capacity")
+        .assign(
+            DateIn=df["DateIn"].apply(pd.to_numeric, errors="coerce"),
+            DateOut=df["DateOut"].apply(pd.to_numeric, errors="coerce"),
+            lat=df["lat"].apply(pd.to_numeric, errors="coerce"),
+            lon=df["lon"].apply(pd.to_numeric, errors="coerce"),
+        )
+        .query("Status in ['operating','mothballed','construction']")
+        .pipe(lambda x: x[df.columns.intersection(config.get("target_columns"))])
+        .assign(Fueltype="Bioenergy")
+        .assign(Technology="Steam Turbine")
+        .assign(Set="PP")
+        .pipe(config_filter, config)
+    )
+    return df_final
+
+
+def GNPT(raw=False, update=False, config=None):
+    """
+    Importer for the global nuclear energy powerplant tracker from global energy monitor.
+
+    Parameters
+    ----------
+    raw : boolean, default False
+        Whether to return the original dataset
+    update: bool, default False
+        Whether to update the data from the url.
+    config : dict, default None
+        Add custom specific configuration,
+        e.g. powerplantmatching.config.get_config(target_countries='Italy'),
+        defaults to powerplantmatching.config.get_config()
+    """
+    config = get_config() if config is None else config
+    fn = get_raw_file("GNPT", update=update, config=config)
+    df = pd.read_csv(fn, thousands=",")
+
+    if raw:
+        return df
+
+    RENAME_COLUMNS = {
+        "Project Name": "Name",
+        "Capacity (MW)": "Capacity",
+        "Latitude": "lat",
+        "Longitude": "lon",
+        "Start Year": "DateIn",
+        "Retired Year": "DateOut",
+        "GEM unit ID": "projectID",
+    }
+
+    df = df.rename(columns=RENAME_COLUMNS)
+    df_final = (
+        df.pipe(clean_name)
+        .pipe(set_column_name, "GNPT")
+        .pipe(convert_to_short_name)
+        .dropna(subset="Capacity")
+        .assign(
+            DateIn=df["DateIn"].apply(pd.to_numeric, errors="coerce"),
+            DateOut=df["DateOut"].apply(pd.to_numeric, errors="coerce"),
+            lat=df["lat"].apply(pd.to_numeric, errors="coerce"),
+            lon=df["lon"].apply(pd.to_numeric, errors="coerce"),
+        )
+        .query("Status in ['operating','mothballed','construction']")
+        .pipe(lambda x: x[df.columns.intersection(config.get("target_columns"))])
+        .assign(Fueltype="Nuclear")
+        .assign(Technology="Steam Turbine")
+        .assign(Set="PP")
+        .pipe(config_filter, config)
+    )
+    return df_final
+
+
+def GCPT(raw=False, update=False, config=None):
+    """
+    Importer for the global coal powerplant tracker from global energy monitor.
+
+    Parameters
+    ----------
+    raw : boolean, default False
+        Whether to return the original dataset
+    update: bool, default False
+        Whether to update the data from the url.
+    config : dict, default None
+        Add custom specific configuration,
+        e.g. powerplantmatching.config.get_config(target_countries='Italy'),
+        defaults to powerplantmatching.config.get_config()
+    """
+
+    config = get_config() if config is None else config
+    fn = get_raw_file("GCPT", update=update, config=config)
+    df = pd.read_csv(fn)
+
+    if raw:
+        return df
+
+    RENAME_COLUMNS = {
+        "Plant": "Name",
+        "Combustion technology": "Technology",
+        "Coal type": "Fueltype",
+        "Capacity (MW)": "Capacity",
+        "Latitude": "lat",
+        "Longitude": "lon",
+        "Year": "DateIn",
+        "RETIRED": "DateOut",
+        "Tracker ID": "projectID",
+    }
+    fueltype_dict = {
+        "bituminous": "Hard Coal",
+        "lignite": "Lignite",
+        "unknown": "Hard Coal",
+        "sub-bit": "Hard Coal",
+        "bituminous/sub-bit": "Hard Coal",
+        "wstbituminous": "Hard Coal",
+        "unknown(ccs90)": "Hard Coal",
+        "hard": "Hard Coal",
+        "anth": "Hard Coal",
+        "lignite(ccs90)": "Lignite",
+        "sub-bit(ccs90)": "Hard Coal",
+        "lignite/sub-bit": "Lignite",
+        "wstcoal": "Hard Coal",
+        "bituminous(ccs90)": "Hard Coal",
+        "bituminous(ccs30)": "Hard Coal",
+        "lignite/bituminous": "Lignite",
+        "anth/bituminous": "Hard Coal",
+        "anth/culm": "Hard Coal",
+        "bituminous/wstbituminous": "Hard Coal",
+    }
+    df = df.rename(columns=RENAME_COLUMNS)
+    df_final = (
+        df.pipe(clean_name)
+        .pipe(set_column_name, "GCPT")
+        .pipe(convert_to_short_name)
+        .dropna(subset="Capacity")
+        .pipe(lambda x: x.replace({"Fueltype": fueltype_dict}))
+        .pipe(lambda x: x.assign(Technology="Steam Turbine"))
+        .pipe(lambda x: x.assign(Set="PP"))
+        .assign(
+            DateIn=df["DateIn"].apply(pd.to_numeric, errors="coerce"),
+            DateOut=df["DateOut"].apply(pd.to_numeric, errors="coerce"),
+            lat=df["lat"].apply(pd.to_numeric, errors="coerce"),
+            lon=df["lon"].apply(pd.to_numeric, errors="coerce"),
+        )
+        .pipe(lambda x: x[df.columns.intersection(config.get("target_columns"))])
+        .pipe(config_filter, config)
+    )
+
+    return df_final
+
+
+def GGTPT(raw=False, update=False, config=None):
+    """
+    Importer for the global geothermal powerplant tracker from global energy monitor.
+
+    Parameters
+    ----------
+    raw : boolean, default False
+        Whether to return the original dataset
+    update: bool, default False
+        Whether to update the data from the url.
+    config : dict, default None
+        Add custom specific configuration,
+        e.g. powerplantmatching.config.get_config(target_countries='Italy'),
+        defaults to powerplantmatching.config.get_config()
+    """
+    config = get_config() if config is None else config
+    fn = get_raw_file("GGTPT", update=update, config=config)
+    df = pd.read_csv(fn)
+
+    if raw:
+        return df
+
+    RENAME_COLUMNS = {
+        "Project Name": "Name",
+        "Unit Capacity (MW)": "Capacity",
+        "Latitude": "lat",
+        "Longitude": "lon",
+        "Start year": "DateIn",
+        "Retired year": "DateOut",
+        "GEM unit ID": "projectID",
+    }
+
+    df = df.rename(columns=RENAME_COLUMNS)
+    df_final = (
+        df.pipe(clean_name)
+        .pipe(set_column_name, "GGTPT")
+        .pipe(convert_to_short_name)
+        .dropna(subset="Capacity")
+        .assign(
+            DateIn=df["DateIn"].apply(pd.to_numeric, errors="coerce"),
+            DateOut=df["DateOut"].apply(pd.to_numeric, errors="coerce"),
+            lat=df["lat"].apply(pd.to_numeric, errors="coerce"),
+            lon=df["lon"].apply(pd.to_numeric, errors="coerce"),
+        )
+        .query("Status in ['operating','mothballed','construction']")
+        .pipe(lambda x: x[df.columns.intersection(config.get("target_columns"))])
+        .assign(Fueltype="Geothermal")
+        .assign(Technology="Steam Turbine")
+        .assign(Set="PP")
+        .pipe(config_filter, config)
+    )
+    return df_final
+
+
+def GWPT(raw=False, update=False, config=None):
+    """
+    Importer for the global wind powerplant tracker from global energy monitor.
+
+    Parameters
+    ----------
+    raw : boolean, default False
+        Whether to return the original dataset
+    update: bool, default False
+        Whether to update the data from the url.
+    config : dict, default None
+        Add custom specific configuration,
+        e.g. powerplantmatching.config.get_config(target_countries='Italy'),
+        defaults to powerplantmatching.config.get_config()
+    """
+    config = get_config() if config is None else config
+    fn = get_raw_file("GWPT", update=update, config=config)
+    df = pd.read_csv(fn)
+
+    RENAME_COLUMNS = {
+        "Project Name": "Name",
+        "Capacity (MW)": "Capacity",
+        "Latitude": "lat",
+        "Longitude": "lon",
+        "Start year": "DateIn",
+        "Retired year": "DateOut",
+        "GEM phase ID": "projectID",
+        "Installation Type": "Technology",
+    }
+
+    technology_dict = {
+        "onshore": "Onshore",
+        "offshore hard mount": "Offshore",
+        "offshore floating": "Offshore",
+        "offshore mount unknown": "Offshore",
+    }
+
+    df = df.rename(columns=RENAME_COLUMNS)
+    df_final = (
+        df.pipe(clean_name)
+        .pipe(set_column_name, "GWPT")
+        .pipe(convert_to_short_name)
+        .dropna(subset="Capacity")
+        .assign(
+            DateIn=df["DateIn"].apply(pd.to_numeric, errors="coerce"),
+            DateOut=df["DateOut"].apply(pd.to_numeric, errors="coerce"),
+            lat=df["lat"].apply(pd.to_numeric, errors="coerce"),
+            lon=df["lon"].apply(pd.to_numeric, errors="coerce"),
+        )
+        .query("Status in ['operating','mothballed','construction']")
+        .pipe(lambda x: x[df.columns.intersection(config.get("target_columns"))])
+        .assign(Fueltype="Wind")
+        .assign(Set="PP")
+        .pipe(config_filter, config)
+    )
+    return df_final
+
+
+def GSPT(raw=False, update=False, config=None):
+    """
+    Importer for the global solar powerplant tracker from global energy monitor.
+
+    Parameters
+    ----------
+    raw : boolean, default False
+        Whether to return the original dataset
+    update: bool, default False
+        Whether to update the data from the url.
+    config : dict, default None
+        Add custom specific configuration,
+        e.g. powerplantmatching.config.get_config(target_countries='Italy'),
+        defaults to powerplantmatching.config.get_config()
+    """
+
+    config = get_config() if config is None else config
+    fn = get_raw_file("GSPT", update=update, config=config)
+    df = pd.read_csv(fn)
+
+    if raw:
+        return df
+
+    RENAME_COLUMNS = {
+        "Project Name": "Name",
+        "Capacity (MW)": "Capacity",
+        "Latitude": "lat",
+        "Longitude": "lon",
+        "Start year": "DateIn",
+        "Retired year": "DateOut",
+        "Technology Type": "Technology",
+        "GEM phase ID": "projectID",
+    }
+
+    technology_dict = {
+        "PV": "PV",
+        "Solar Thermal": "CSP",
+        "Assumed PV": "PV",
+    }
+    df = df.rename(columns=RENAME_COLUMNS)
+    df_final = (
+        df.pipe(clean_name)
+        .pipe(set_column_name, "GSPT")
+        .pipe(convert_to_short_name)
+        .dropna(subset="Capacity")
+        .pipe(lambda x: x.replace({"Technology": technology_dict}))
+        .assign(
+            DateIn=df["DateIn"].apply(pd.to_numeric, errors="coerce"),
+            DateOut=df["DateOut"].apply(pd.to_numeric, errors="coerce"),
+            lat=df["lat"].apply(pd.to_numeric, errors="coerce"),
+            lon=df["lon"].apply(pd.to_numeric, errors="coerce"),
+        )
+        .query("Status in ['operating','mothballed','construction']")
+        .pipe(lambda x: x[df.columns.intersection(config.get("target_columns"))])
+        .assign(Fueltype="Solar")
+        .assign(Set="PP")
+        .pipe(config_filter, config)
+    )
+    return df_final
+
+
 def GGPT(raw=False, update=False, config=None):
     """
     Importer for the global gas powerplant tracker from global energy monitor.
@@ -1599,7 +1958,7 @@ def GGPT(raw=False, update=False, config=None):
     """
     config = get_config() if config is None else config
     fn = get_raw_file("GGPT", update=update, config=config)
-    df = pd.read_excel(fn, sheet_name="Gas plants - data")
+    df = pd.read_csv(fn)
 
     if raw:
         return df
@@ -1613,7 +1972,7 @@ def GGPT(raw=False, update=False, config=None):
         "Start year": "DateIn",
         "Retired year": "DateOut",
         "CHP": "Set",
-        "GEM unit ID": "projectID",
+        "GEM location ID": "projectID",
     }
 
     technology_dict = {
@@ -1631,25 +1990,90 @@ def GGPT(raw=False, update=False, config=None):
         "not found": "PP",
     }
 
-    df = (
-        df.rename(columns=RENAME_COLUMNS)
-        .pipe(clean_name)
+    df = df.rename(columns=RENAME_COLUMNS)
+    df_final = (
+        df.pipe(clean_name)
         .pipe(set_column_name, "GGPT")
         .pipe(convert_to_short_name)
         .dropna(subset="Capacity")
-        .assign(Fueltype="Natural Gas")[
-            lambda df: df.Status.isin(["operating", "mothballed", "construction"])
-        ]
+        .pipe(lambda x: x.query("Capacity != 'not found'"))
+        .assign(
+            DateIn=df["DateIn"].apply(pd.to_numeric, errors="coerce"),
+            DateOut=df["DateOut"].apply(pd.to_numeric, errors="coerce"),
+            lat=df["lat"].apply(pd.to_numeric, errors="coerce"),
+            lon=df["lon"].apply(pd.to_numeric, errors="coerce"),
+            Capacity=lambda df: pd.to_numeric(df.Capacity, "coerce"),
+        )
+        .pipe(lambda x: x.replace({"Technology": technology_dict}))
+        .pipe(lambda x: x.replace({"Set": set_dict}))
+        .query("Status in ['operating','mothballed','construction']")
+        .pipe(lambda x: x[df.columns.intersection(config.get("target_columns"))])
+        .assign(Fueltype="Natural Gas")
+        .pipe(config_filter, config)
     )
-    df["DateIn"] = pd.to_numeric(df.DateIn, errors="coerce")
-    df["lat"] = pd.to_numeric(df.lat, errors="coerce")
-    df["lon"] = pd.to_numeric(df.lon, errors="coerce")
-    df.Technology.replace(technology_dict, inplace=True)
-    df.Set.replace(set_dict, inplace=True)
-    df = df[df.columns.intersection(config.get("target_columns"))]
-    df = df.pipe(config_filter, config)
+    return df_final
 
-    return df
+
+def GHPT(raw=False, update=False, config=None):
+    """
+    Importer for the global gas powerplant tracker from global energy monitor.
+
+    Parameters
+    ----------
+    raw : boolean, default False
+        Whether to return the original dataset
+    update: bool, default False
+        Whether to update the data from the url.
+    config : dict, default None
+        Add custom specific configuration,
+        e.g. powerplantmatching.config.get_config(target_countries='Italy'),
+        defaults to powerplantmatching.config.get_config()
+    """
+    config = get_config() if config is None else config
+    fn = get_raw_file("GHPT", update=update, config=config)
+    df = pd.read_csv(fn)
+
+    if raw:
+        return df
+
+    RENAME_COLUMNS = {
+        "Project Name": "Name",
+        "Capacity (MW)": "Capacity",
+        "Latitude": "lat",
+        "Longitude": "lon",
+        "Start Year": "DateIn",
+        "Retired Year": "DateOut",
+        "GEM unit ID": "projectID",
+        "Country 1": "Country",
+        "Technology Type": "Technology",
+    }
+    technology_dict = {
+        "conventional storage": "Reservoir",
+        "pumped storage": "Pumped Storage",
+        "run-of-river": "Run-Of-River",
+        "conventional and pumped storage": "Pumped Storage",
+        "conventional and run-of-river": "Run-Of-River",
+    }
+    df = df.rename(columns=RENAME_COLUMNS)
+    df_final = (
+        df.pipe(clean_name)
+        .pipe(set_column_name, "GHPT")
+        .pipe(convert_to_short_name)
+        .dropna(subset="Capacity")
+        .assign(
+            DateIn=df["DateIn"].apply(pd.to_numeric, errors="coerce"),
+            DateOut=df["DateOut"].apply(pd.to_numeric, errors="coerce"),
+            lat=df["lat"].apply(pd.to_numeric, errors="coerce"),
+            lon=df["lon"].apply(pd.to_numeric, errors="coerce"),
+        )
+        .query("Status in ['operating','construction']")
+        .pipe(lambda x: x.replace({"Technology": technology_dict}))
+        .pipe(lambda x: x[df.columns.intersection(config.get("target_columns"))])
+        .assign(Fueltype="Hydro")
+        .assign(Set="PP")
+        .pipe(config_filter, config)
+    )
+    return df_final
 
 
 # deprecated alias for GGPT

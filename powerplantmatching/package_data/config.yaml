@@ -12,6 +12,7 @@ google_api_key:
 # Note: querying "key == key" filters out nan values
 main_query: "Name != '' and (DateOut >= 2020 or DateOut != DateOut) and (lat >= 30 or lat != lat)"
 
+# matching_sources, only the matched powerplants are added to the final dataset
 matching_sources:
   # Make individual queries for the datasets as done in `fully_included_sources`
   # Queries are combined with `main_query` with an `and` operator
@@ -22,17 +23,32 @@ matching_sources:
   - OPSD: Country != "Spain" and Fueltype != 'Hard Coal'
   - BEYONDCOAL
   - WIKIPEDIA
+  - GBPT
   - GGPT
+  - GCPT
+  - GGTPT
+  - GNPT
+  - GSPT
+  - GWPT
+  - GHPT
 
+# fully_included_sources, these sources are included even without match to the final dataset
 fully_included_sources:
   # Make individual queries for the datasets
-  - BEYONDCOAL
-  - GGPT
-  - OPSD: Country not in ['Switzerland', 'Italy', 'Spain', 'Norway', 'Austria']
-  - JRC: Country not in ['Switzerland', 'Albania', 'United Kingdom', 'Norway']
   - ENTSOE: (Country not in ['Switzerland', 'Ireland', 'Albania', 'Greece', 'Czech Republic', 'Bulgaria', 'United Kingdom', 'Italy', 'Serbia'] and not (Country == 'Spain' and Fueltype == 'Hydro')) or (Fueltype == 'Geothermal')
-  - GPD: Country in ['Finland', 'Spain']
   - GEO: (Country == 'Spain' and Fueltype == 'Natural Gas')
+  - GPD: Country in ['Finland', 'Spain']
+  - JRC: Country not in ['Switzerland', 'Albania', 'United Kingdom', 'Norway']
+  - OPSD: Country not in ['Switzerland', 'Italy', 'Spain', 'Norway', 'Austria']
+  - BEYONDCOAL
+  - GBPT
+  - GGPT
+  - GCPT
+  - GGTPT
+  - GNPT
+  - GSPT
+  - GWPT
+  - GHPT
 
 parallel_duke_processes: false
 process_limit: 4
@@ -150,9 +166,44 @@ WEPP:
 GGPT:
   net_capacity: false
   reliability_score: 4
-  fn: Global-Gas-Plant-Tracker-Aug-2022.xlsx
-  url: https://github.com/pz-max/gem-powerplant-data/raw/main/Global-Gas-Plant-Tracker-Aug-2022.xlsx
+  fn: Global-Gas-Plant-Tracker-GGPT-February-2023-v2.csv
+  url: https://raw.githubusercontent.com/pz-max/gem-powerplant-data/main/Global-Gas-Plant-Tracker-GGPT-February-2023-v2.csv
+GCPT:
+  net_capacity: false
+  reliability_score: 5
+  fn: Global-Coal-Plant-Tracker-January-2023.csv
+  url: https://raw.githubusercontent.com/pz-max/gem-powerplant-data/main/Global-Coal-Plant-Tracker-January-2023.csv
+GGTPT:
+  net_capacity: false
+  reliability_score: 4
+  fn: Global-Geothermal-Power-Tracker-January-2023.csv
+  url: https://raw.githubusercontent.com/pz-max/gem-powerplant-data/main/Global-Geothermal-Power-Tracker-January-2023.csv
+GWPT:
+  net_capacity: false
+  reliability_score: 4
+  fn: Global-Wind-Power-Tracker-January-2023.csv
+  url: https://raw.githubusercontent.com/pz-max/gem-powerplant-data/main/Global-Wind-Power-Tracker-January-2023.csv
+GSPT:
+  net_capacity: false
+  reliability_score: 4
+  fn: Global-Solar-Power-Tracker-January-2023.csv
+  url: https://raw.githubusercontent.com/pz-max/gem-powerplant-data/main/Global-Solar-Power-Tracker-January-2023.csv
+GBPT:
+  net_capacity: false
+  reliability_score: 4
+  fn: Global-Bioenergy-Power-Tracker-January-2023.csv
+  url: https://raw.githubusercontent.com/pz-max/gem-powerplant-data/main/Global-Bioenergy-Power-Tracker-January-2023.csv
+GNPT:
+  net_capacity: false
+  reliability_score: 4
+  fn: Global-Nuclear-Power-Tracker-January-2023.csv
+  url: https://raw.githubusercontent.com/pz-max/gem-powerplant-data/main/Global-Nuclear-Power-Tracker-January-2023.csv
 
+GHPT:
+  net_capacity: false
+  reliability_score: 4
+  fn: Global-Hydropower-Tracker-May-2023.csv
+  url: https://raw.githubusercontent.com/pz-max/gem-powerplant-data/main/Global-Hydropower-Tracker-May-2023.csv
 # ---------------------------------------------------------------------------- #
 #                             Data Structure Config                            #
 # ---------------------------------------------------------------------------- #
