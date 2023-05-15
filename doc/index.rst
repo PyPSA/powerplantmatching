@@ -163,5 +163,6 @@ powerplantmatching is released as free software under the
    :caption: References
 
    contributing
+   support
    release-notes
 
