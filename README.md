@@ -45,6 +45,14 @@ or conda
 conda install -c conda-forge powerplantmatching
 ```
 
+# Contributing and Support
+We strongly welcome anyone interested in contributing to this project. If you have any ideas, suggestions or encounter problems, feel invited to file issues or make pull requests on GitHub.
+-   In case of code-related **questions**, please post on [stack overflow](https://stackoverflow.com/questions/tagged/pypsa).
+-   For non-programming related and more general questions please refer to the [PyPSA mailing list](https://groups.google.com/group/pypsa).
+-   To **discuss** with other PyPSA & technology-data users, organise projects, share news, and get in touch with the community you can use the [discord server](https://discord.gg/JTdvaEBb).
+-   For **bugs and feature requests**, please use the [powerplantmatching Github Issues page](https://github.com/PyPSA/powerplantmatching/issues).
+
+
 ## Citing powerplantmatching
 
 If you want to cite powerplantmatching, use the following paper
