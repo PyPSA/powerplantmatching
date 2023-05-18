@@ -150,7 +150,7 @@ def cross_matches(sets_of_pairs, labels=None):
 
     if matches.isnull().all().any():
         cols = ", ".join(matches.columns[matches.isnull().all()])
-        raise ValueError(f"No matches found for data source {cols}")
+        logger.warn(f"No matches found for data source {cols}")
 
     matches = matches.drop_duplicates().reset_index(drop=True)
     for i in labels:
