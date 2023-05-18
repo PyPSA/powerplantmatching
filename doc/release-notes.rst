@@ -14,7 +14,9 @@ History of Changes
   * `GNPT`, nuclear power plant
   * `GSPT`, solar power plant
   * `GWPT`, wind power plant 
+  * `GHPT`, hydro power plant
 * Replace unstable FIAS and OPSD download links by new provider
+* Replace ValueError when no matches found to logged warning.
 
 Version 0.5.6 (13.02.2023)
 -------------------------
