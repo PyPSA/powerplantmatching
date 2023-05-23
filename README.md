@@ -1,6 +1,7 @@
 # powerplantmatching
 
  [![pypi](https://img.shields.io/pypi/v/powerplantmatching.svg)](https://pypi.org/project/powerplantmatching/) [![conda](https://img.shields.io/conda/vn/conda-forge/powerplantmatching.svg)](https://anaconda.org/conda-forge/powerplantmatching) ![pythonversion](https://img.shields.io/pypi/pyversions/powerplantmatching) ![LICENSE](https://img.shields.io/pypi/l/powerplantmatching.svg) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3358985.svg)](https://zenodo.org/record/3358985#.XUReFPxS_MU) [![doc](https://readthedocs.org/projects/powerplantmatching/badge/?version=latest)](https://powerplantmatching.readthedocs.io/en/latest/) [![pre-commit.ci status](https://results.pre-commit.ci/badge/github/FRESNA/powerplantmatching/master.svg)](https://results.pre-commit.ci/latest/github/FRESNA/powerplantmatching/master)
+[![Stack Exchange questions](https://img.shields.io/stackexchange/stackoverflow/t/pypsa)](https://stackoverflow.com/questions/tagged/pypsa)
 
 A toolset for cleaning, standardizing and combining multiple power
 plant databases.
@@ -44,6 +45,14 @@ or conda
 ```bash
 conda install -c conda-forge powerplantmatching
 ```
+
+# Contributing and Support
+We strongly welcome anyone interested in contributing to this project. If you have any ideas, suggestions or encounter problems, feel invited to file issues or make pull requests on GitHub.
+-   In case of code-related **questions**, please post on [stack overflow](https://stackoverflow.com/questions/tagged/pypsa).
+-   For non-programming related and more general questions please refer to the [PyPSA mailing list](https://groups.google.com/group/pypsa).
+-   To **discuss** with other PyPSA & technology-data users, organise projects, share news, and get in touch with the community you can use the [discord server](https://discord.gg/JTdvaEBb).
+-   For **bugs and feature requests**, please use the [powerplantmatching Github Issues page](https://github.com/PyPSA/powerplantmatching/issues).
+
 
 ## Citing powerplantmatching
 

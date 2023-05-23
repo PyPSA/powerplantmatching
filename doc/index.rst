@@ -6,7 +6,7 @@
 Welcome to powerplantmatching's documentation!
 ==============================================
 
-|pypi| |conda| |pythonversion| |LICENSE| |DOI|
+|pypi| |conda| |pythonversion| |LICENSE| |DOI| |stackoverflow|
 
 A toolset for cleaning, standardizing and combining multiple power plant
 databases.
@@ -134,7 +134,9 @@ powerplantmatching is released as free software under the
    :target: https://zenodo.org/record/3358985#.XUReFPxS_MU
 .. |image1| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.3358985.svg
    :target: https://zenodo.org/record/3358985#.XURat99fjRY
-
+.. |stackoverflow| image:: https://img.shields.io/stackexchange/stackoverflow/t/pypsa
+   :target: https://stackoverflow.com/questions/tagged/pypsa
+   :alt: Stackoverflow
       
 
 .. toctree::
@@ -163,5 +165,6 @@ powerplantmatching is released as free software under the
    :caption: References
 
    contributing
+   support
    release-notes
 
