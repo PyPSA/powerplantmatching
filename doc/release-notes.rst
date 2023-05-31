@@ -6,6 +6,9 @@ History of Changes
 .. ----------------
 **New Features**
 
+* Updates the following Global Energy Monitor data according to latest May 2023 release:
+  * `GSPT`, solar power plant
+  * `GWPT`, wind power plant
 
 
 Version 0.5.7 (30.05.2023)
