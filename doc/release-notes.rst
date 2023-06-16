@@ -6,7 +6,7 @@ History of Changes
 .. ----------------
 **New Features**
 
-
+* Updated the JRC hydro power plant database to the latest versios.
 
 Version 0.5.7 (30.05.2023)
 -------------------------
