@@ -9,6 +9,8 @@ History of Changes
 * Updates the following Global Energy Monitor data according to latest May 2023 release: 
   * `GSPT`, solar power plant
   * `GWPT`, wind power plant
+* Changing Global Energy Monitor dataset name to -latest to avoid data update PRs in powerplantmatching
+  but rather encourage updates in `Global Energy Monitor data repo <https://github.com/pz-max/gem-powerplant-data>`__.
 
 
 Version 0.5.7 (30.05.2023)
