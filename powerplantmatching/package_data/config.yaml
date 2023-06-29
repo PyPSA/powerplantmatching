@@ -167,43 +167,43 @@ GGPT:
   net_capacity: false
   reliability_score: 4
   fn: Global-Gas-Plant-Tracker-GGPT-February-2023-v2.csv
-  url: https://raw.githubusercontent.com/pz-max/gem-powerplant-data/main/Global-Gas-Plant-Tracker-GGPT-February-2023-v2.csv
+  url: https://raw.githubusercontent.com/pz-max/gem-powerplant-data/main/Global-Gas-Plant-Tracker-GGPT-latest.csv
 GCPT:
   net_capacity: false
   reliability_score: 5
   fn: Global-Coal-Plant-Tracker-January-2023.csv
-  url: https://raw.githubusercontent.com/pz-max/gem-powerplant-data/main/Global-Coal-Plant-Tracker-January-2023.csv
+  url: https://raw.githubusercontent.com/pz-max/gem-powerplant-data/main/Global-Coal-Plant-Tracker-latest.csv
 GGTPT:
   net_capacity: false
   reliability_score: 4
   fn: Global-Geothermal-Power-Tracker-January-2023.csv
-  url: https://raw.githubusercontent.com/pz-max/gem-powerplant-data/main/Global-Geothermal-Power-Tracker-January-2023.csv
+  url: https://raw.githubusercontent.com/pz-max/gem-powerplant-data/main/Global-Geothermal-Power-Tracker-latest.csv
 GWPT:
   net_capacity: false
   reliability_score: 4
   fn: Global-Wind-Power-Tracker-January-2023.csv
-  url: https://raw.githubusercontent.com/pz-max/gem-powerplant-data/main/Global-Wind-Power-Tracker-May-2023.csv
+  url: https://raw.githubusercontent.com/pz-max/gem-powerplant-data/main/Global-Wind-Power-Tracker-latest.csv
 GSPT:
   net_capacity: false
   reliability_score: 4
   fn: Global-Solar-Power-Tracker-January-2023.csv
-  url: https://raw.githubusercontent.com/pz-max/gem-powerplant-data/main/Global-Solar-Power-Tracker-May-2023.csv
+  url: https://raw.githubusercontent.com/pz-max/gem-powerplant-data/main/Global-Solar-Power-Tracker-latest.csv
 GBPT:
   net_capacity: false
   reliability_score: 4
   fn: Global-Bioenergy-Power-Tracker-January-2023.csv
-  url: https://raw.githubusercontent.com/pz-max/gem-powerplant-data/main/Global-Bioenergy-Power-Tracker-January-2023.csv
+  url: https://raw.githubusercontent.com/pz-max/gem-powerplant-data/main/Global-Bioenergy-Power-Tracker-latest.csv
 GNPT:
   net_capacity: false
   reliability_score: 4
   fn: Global-Nuclear-Power-Tracker-January-2023.csv
-  url: https://raw.githubusercontent.com/pz-max/gem-powerplant-data/main/Global-Nuclear-Power-Tracker-January-2023.csv
+  url: https://raw.githubusercontent.com/pz-max/gem-powerplant-data/main/Global-Nuclear-Power-Tracker-latest.csv
 
 GHPT:
   net_capacity: false
   reliability_score: 4
   fn: Global-Hydropower-Tracker-May-2023.csv
-  url: https://raw.githubusercontent.com/pz-max/gem-powerplant-data/main/Global-Hydropower-Tracker-May-2023.csv
+  url: https://raw.githubusercontent.com/pz-max/gem-powerplant-data/main/Global-Hydropower-Tracker-latest.csv
 # ---------------------------------------------------------------------------- #
 #                             Data Structure Config                            #
 # ---------------------------------------------------------------------------- #
