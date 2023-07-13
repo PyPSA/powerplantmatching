@@ -403,10 +403,7 @@ def JRC(raw=False, update=False, config=None):
 
     fn = get_raw_file("JRC", update, config)
 
-    with ZipFile(fn, "r") as file:
-        directory = file.namelist()[0]
-        key = directory + "data/jrc-hydro-power-plant-database.csv"
-        df = pd.read_csv(file.open(key))
+    df = pd.read_csv(fn)
 
     if raw:
         return df

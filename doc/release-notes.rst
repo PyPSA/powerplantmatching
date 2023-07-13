@@ -6,6 +6,7 @@ History of Changes
 .. ----------------
 **New Features**
 
+* Updated the JRC hydro power plant database to the latest version.
 * Updates the following Global Energy Monitor data according to latest May 2023 release: 
   * `GSPT`, solar power plant
   * `GWPT`, wind power plant
