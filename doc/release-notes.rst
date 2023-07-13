@@ -6,6 +6,8 @@ History of Changes
 .. ----------------
 **New Features**
 
+
+* Datasets from the Global Energy Monitor are now combined into one dataset called `GEM`. This is per default used in the matching process.
 * Updates the following Global Energy Monitor data according to latest May 2023 release: 
   * `GSPT`, solar power plant
   * `GWPT`, wind power plant
