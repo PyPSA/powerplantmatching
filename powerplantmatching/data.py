@@ -2076,6 +2076,25 @@ def GHPT(raw=False, update=False, config=None):
     return df_final
 
 
+def GEM(raw=False, update=False, config=None):
+    """
+    Get the combined dataset of all GEM (https://globalenergymonitor.org/) datasets.
+
+    Parameters
+    ----------
+    raw : bool, optional
+        Whether to return the raw dataset, by default False
+    update : bool, optional
+        Whether to update the raw dataset, by default False
+    config : _type_, optional
+        Custom configuration, by default None
+
+    """
+    GEMS_FUNTIONS = [GBPT, GGPT, GCPT, GGTPT, GNPT, GSPT, GWPT, GHPT]
+    data = [f(raw=raw, update=update, config=config) for f in GEMS_FUNTIONS]
+    return pd.concat(data, ignore_index=True)
+
+
 # deprecated alias for GGPT
 @deprecated(
     deprecated_in="0.5.5",

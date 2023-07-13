@@ -23,14 +23,7 @@ matching_sources:
   - OPSD: Country != "Spain" and Fueltype != 'Hard Coal'
   - BEYONDCOAL
   - WIKIPEDIA
-  - GBPT
-  - GGPT
-  - GCPT
-  - GGTPT
-  - GNPT
-  - GSPT
-  - GWPT
-  - GHPT
+  - GEM
 
 # fully_included_sources, these sources are included even without match to the final dataset
 fully_included_sources:
@@ -41,14 +34,8 @@ fully_included_sources:
   - JRC: Country not in ['Switzerland', 'Albania', 'United Kingdom', 'Norway']
   - OPSD: Country not in ['Switzerland', 'Italy', 'Spain', 'Norway', 'Austria']
   - BEYONDCOAL
-  - GBPT
-  - GGPT
-  - GCPT
-  - GGTPT
-  - GNPT
-  - GSPT
-  - GWPT
-  - GHPT
+  - GEM
+
 
 parallel_duke_processes: false
 process_limit: 4
@@ -168,6 +155,10 @@ GGPT:
   reliability_score: 4
   fn: Global-Gas-Plant-Tracker-GGPT-February-2023-v2.csv
   url: https://raw.githubusercontent.com/pz-max/gem-powerplant-data/main/Global-Gas-Plant-Tracker-GGPT-latest.csv
+GEM: 
+  # combined data set of all GEM trackers
+  net_capacity: True
+  reliability_score: 5
 GCPT:
   net_capacity: false
   reliability_score: 5
