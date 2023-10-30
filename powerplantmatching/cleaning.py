@@ -143,7 +143,7 @@ def gather_and_replace(df, mapping):
     """
     Search for patterns in multiple columns and return a series of represantativ keys.
 
-    The function will return a series of unique identifyers given by the keys of the
+    The function will return a series of unique identifiers given by the keys of the
     `mapping` dictionary. The order in the `mapping` dictionary determines which
     represantativ keys are calculated first. Note that these may be overwritten by
     the following mappings.

@@ -10,7 +10,7 @@ google_api_key:
 
 # This query is applied to all input data
 # Note: querying "key == key" filters out nan values
-main_query: "Name != '' and (DateOut >= 2020 or DateOut != DateOut) and (lat >= 30 or lat != lat)"
+main_query: "Name != '' and (DateOut >= 2020 or DateOut != DateOut) and (lat >= 30 or lat != lat) and not (Country == 'Germany' and Fueltype == 'Nuclear')"
 
 # matching_sources, only the matched powerplants are added to the final dataset
 matching_sources:
@@ -34,7 +34,7 @@ fully_included_sources:
   - JRC: Country not in ['Switzerland', 'Albania', 'United Kingdom', 'Norway']
   - OPSD: Country not in ['Switzerland', 'Italy', 'Spain', 'Norway', 'Austria']
   - BEYONDCOAL
-  - GEM
+  # - GEM
 
 
 parallel_duke_processes: false
@@ -158,10 +158,10 @@ GGPT:
 GEM: 
   # combined data set of all GEM trackers
   net_capacity: True
-  reliability_score: 5
+  reliability_score: 4
 GCPT:
   net_capacity: false
-  reliability_score: 5
+  reliability_score: 4
   fn: Global-Coal-Plant-Tracker-January-2023.csv
   url: https://raw.githubusercontent.com/pz-max/gem-powerplant-data/main/Global-Coal-Plant-Tracker-latest.csv
 GGTPT:
