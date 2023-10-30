@@ -148,7 +148,7 @@ def rescale_capacities_to_country_totals(df, fueltypes=None):
     in order to match the statistics of the ENTSOe country totals. For every
     country the information about the total capacity of each fueltype is given.
     The scaling factor is determined by the ratio of the aggregated capacity of
-    the fueltype within each coutry and the ENTSOe statistics about the
+    the fueltype within each country and the ENTSOe statistics about the
     fueltype capacity total within each country.
 
     Parameters
