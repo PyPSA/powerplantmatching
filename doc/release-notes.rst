@@ -13,6 +13,7 @@ History of Changes
   * `GWPT`, wind power plant
 * Changing Global Energy Monitor dataset name to -latest to avoid data update PRs in powerplantmatching
   but rather encourage updates in `Global Energy Monitor data repo <https://github.com/pz-max/gem-powerplant-data>`__.
+* In the aggregation and merge process, the `DateIn` and `DateOut` columns are now aggregated by taking the minimum and maximum value respectively.
 
 
 Version 0.5.7 (30.05.2023)

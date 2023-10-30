@@ -55,7 +55,7 @@ AGGREGATION_FUNCTIONS = {
     "DateIn": "min",
     "DateRetrofit": "max",  # choose latest Retrofit-Year
     "DateMothball": "min",
-    "DateOut": "min",
+    "DateOut": "max",
     "File": mode,
     "projectID": set,
     "EIC": set,
