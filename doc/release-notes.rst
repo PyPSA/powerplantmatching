@@ -17,6 +17,7 @@ Version 0.5.8 (30.10.2023)
   * `GWPT`, wind power plant
 * Changing Global Energy Monitor dataset name to -latest to avoid data update PRs in powerplantmatching
   but rather encourage updates in `Global Energy Monitor data repo <https://github.com/pz-max/gem-powerplant-data>`__.
+* Fixed capacity of some hydro powerplants in GB based on manual search. The changes accumulate to an approx 5 GW reduction of capacity.
 
 **Fixes**
 
