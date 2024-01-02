@@ -73,7 +73,8 @@ def map_bus(df, buses):
     """
     df = get_obj_if_Acc(df)
     kdtree = KDTree(buses[["x", "y"]])
-    buses_i = buses.index.append(pd.Index([np.nan]))
+    non_empty_buses = buses.dropna().index
+    buses_i = non_empty_buses.append(pd.Index([np.nan]))
     return df.assign(bus=buses_i[kdtree.query(df[["lon", "lat"]].values)[1]])
 
 
