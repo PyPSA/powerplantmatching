@@ -5,6 +5,12 @@ History of Changes
 .. Upcoming Version
 .. ----------------
 
+Version 0.5.9 (16.01.2023)
+-------------------------
+
+* fix deprecation warnings for new pandas version
+* lower GEM reliability score to fix DateIn and DateOut for some powerplants
+
 
 Version 0.5.8 (30.10.2023)
 -------------------------
