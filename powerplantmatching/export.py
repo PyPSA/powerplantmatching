@@ -72,8 +72,8 @@ def map_bus(df, buses):
     DataFrame with an extra column 'bus' indicating the nearest bus.
     """
     df = get_obj_if_Acc(df)
-    kdtree = KDTree(buses[["x", "y"]])
     non_empty_buses = buses.dropna()
+    kdtree = KDTree(non_empty_buses[["x", "y"]])
     if non_empty_buses.empty:
         buses_i = pd.Index([np.nan])
     else:
@@ -117,7 +117,7 @@ def to_pypsa_network(df, network, buslist=None):
     """
     df = get_obj_if_Acc(df)
     df = map_bus(df, network.buses.reindex(buslist))
-    df.Set.replace("CHP", "PP", inplace=True)
+    df["Set"] = df.Set.replace("CHP", "PP")
     if "Duration" in df:
         df["weighted_duration"] = df["Duration"] * df["Capacity"]
         df = df.groupby(["bus", "Fueltype", "Set"]).aggregate(
