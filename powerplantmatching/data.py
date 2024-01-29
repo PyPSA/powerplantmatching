@@ -298,7 +298,7 @@ def GEO(raw=False, update=False, config=None):
     ppl = clean_name(ppl)
 
     res = units.join(ppl.set_index("projectID"), "projectID", rsuffix="_ppl")
-    res.DateIn.fillna(res.DateIn_ppl, inplace=True)
+    res["DateIn"] = res.DateIn.fillna(res.DateIn_ppl)
     not_included_ppl = ppl.query("projectID not in @res.projectID")
     res = pd.concat([res, not_included_ppl]).pipe(set_column_name, "GEO")
     res = scale_to_net_capacities(res)
@@ -1232,7 +1232,7 @@ def UBA(
             "\xd6lr\xfcckstand": "Oil",
         }
     )
-    uba.Name.replace([r"(?i)oe", r"(?i)ue"], ["ö", "ü"], regex=True, inplace=True)
+    uba["Name"] = uba.Name.replace([r"(?i)oe", r"(?i)ue"], ["ö", "ü"], regex=True)
     if prune_wind:
         uba = uba.loc[lambda x: x.Fueltype != "Wind"]
     if prune_solar:
@@ -1574,7 +1574,7 @@ def IRENASTAT(raw=False, update=False, config=None):
     }
 
     df["Fueltype"] = df.Technology.map(fueltype_dict)
-    df.Technology.replace(technology_dict, inplace=True)
+    df["Technology"] = df.Technology.replace(technology_dict)
 
     l = list(set(df.columns).difference(set(["Capacity"])))
     df = df.groupby(l, as_index=False, dropna=True).sum()

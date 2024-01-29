@@ -233,13 +233,13 @@ def fill_missing_commissioning_years(df):
     df = get_obj_if_Acc(df)
     df = df.copy()
     # 1st try: Fill with both country- and fueltypespecific averages
-    df.DateIn.fillna(
-        df.groupby(["Country", "Fueltype"]).DateIn.transform("mean"), inplace=True
+    df["DateIn"] = df.DateIn.fillna(
+        df.groupby(["Country", "Fueltype"]).DateIn.transform("mean")
     )
     # 2nd try: Fill remaining with only fueltype-specific average
-    df.DateIn.fillna(df.groupby(["Fueltype"]).DateIn.transform("mean"), inplace=True)
+    df["DateIn"] = df.DateIn.fillna(df.groupby(["Fueltype"]).DateIn.transform("mean"))
     # 3rd try: Fill remaining with only country-specific average
-    df.DateIn.fillna(df.groupby(["Country"]).DateIn.transform("mean"), inplace=True)
+    df["DateIn"] = df.DateIn.fillna(df.groupby(["Country"]).DateIn.transform("mean"))
     if df.DateIn.isnull().any():
         count = len(df[df.DateIn.isnull()])
         logger.warn(
@@ -251,7 +251,7 @@ def fill_missing_commissioning_years(df):
             )
         )
     df["DateIn"] = df.DateIn.astype(float)
-    df.DateRetrofit.fillna(df.DateIn, inplace=True)
+    df["DateRetrofit"] = df.DateRetrofit.fillna(df.DateIn)
     return df
 
 
@@ -319,7 +319,7 @@ def aggregate_VRE_by_commissioning_year(df, target_fueltypes=None, agg_geo_by=No
         target_fueltypes = ["Wind", "Solar", "Bioenergy"]
     df = df[df.Fueltype.isin(target_fueltypes)]
     df = fill_missing_commissioning_years(df)
-    df.Technology.fillna("-", inplace=True)
+    df["Technology"] = df.Technology.fillna("-")
     df = (
         df.groupby(["Country", "DateIn", "Fueltype", "Technology"])
         .agg(f)
@@ -539,7 +539,9 @@ def gross_to_net_factors(reference="opsd", aggfunc="median", return_entire_data=
     if return_entire_data:
         return df
     else:
-        df.energy_source_level_2.fillna(value=df.energy_source, inplace=True)
+        df["energy_source_level_2"] = df.energy_source_level_2.fillna(
+            value=df.energy_source
+        )
         df.replace(
             dict(
                 energy_source_level_2={
