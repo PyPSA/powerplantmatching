@@ -282,9 +282,11 @@ def to_TIMES(df=None, use_scaled_capacity=False, baseyear=2015):
                     # are being filtered.
                     elif yr > baseyear:
                         series = ct_group.apply(
-                            lambda x: x[cap_column]
-                            if yr >= x["DateIn"] and yr <= x["YearRetire"]
-                            else 0,
+                            lambda x: (
+                                x[cap_column]
+                                if yr >= x["DateIn"] and yr <= x["YearRetire"]
+                                else 0
+                            ),
                             axis=1,
                         )
                     else:
