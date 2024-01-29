@@ -1014,9 +1014,9 @@ def WEPP(raw=False, config=None):
     wepp.Turbtype.fillna("", inplace=True)
     # Correct technology infos:
     wepp.loc[wepp.Technology.str.contains("LIG", case=False), "Fueltype"] = "Lignite"
-    wepp.loc[
-        wepp.Turbtype.str.contains("KAPLAN|BULB", case=False), "Technology"
-    ] = "Run-Of-River"
+    wepp.loc[wepp.Turbtype.str.contains("KAPLAN|BULB", case=False), "Technology"] = (
+        "Run-Of-River"
+    )
     wepp.Technology = wepp.Technology.replace(
         {
             "CONV/PS": "Pumped Storage",
@@ -1367,9 +1367,9 @@ def BNETZA(
         "Pumpspeicher": "Pumped Storage",
     }
     for fuel in techmap:
-        bnetza.loc[
-            bnetza.Fueltype.str.contains(fuel, case=False), "Technology"
-        ] = techmap[fuel]
+        bnetza.loc[bnetza.Fueltype.str.contains(fuel, case=False), "Technology"] = (
+            techmap[fuel]
+        )
     # Fueltypes
     bnetza.Fueltype.replace(
         {

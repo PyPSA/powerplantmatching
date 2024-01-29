@@ -191,9 +191,9 @@ def fill_missing_duration(df):
     mean_duration = df[df.Set == "Store"].groupby("Fueltype").Duration.mean()
     df = get_obj_if_Acc(df)
     for store in mean_duration.index:
-        df.loc[
-            (df["Set"] == "Store") & (df["Fueltype"] == store), "Duration"
-        ] = mean_duration.at[store]
+        df.loc[(df["Set"] == "Store") & (df["Fueltype"] == store), "Duration"] = (
+            mean_duration.at[store]
+        )
     return df
 
 
@@ -482,13 +482,13 @@ def set_denmark_region_id(df):
     # Workaround:
     df.loc[(df.Country == "Denmark") & (df.lon >= 10.96), "Region"] = "DKE"
     df.loc[(df.Country == "Denmark") & (df.lon < 10.96), "Region"] = "DKW"
-    df.loc[
-        df.Name.str.contains("Jegerspris", case=False).fillna(False), "Region"
-    ] = "DKE"
+    df.loc[df.Name.str.contains("Jegerspris", case=False).fillna(False), "Region"] = (
+        "DKE"
+    )
     df.loc[df.Name.str.contains("Jetsmark", case=False).fillna(False), "Region"] = "DKW"
-    df.loc[
-        df.Name.str.contains("Fellinggard", case=False).fillna(False), "Region"
-    ] = "DKW"
+    df.loc[df.Name.str.contains("Fellinggard", case=False).fillna(False), "Region"] = (
+        "DKW"
+    )
     # Copy the remaining ones without Region and handle in copy
     dk_o = df.loc[(df.Country == "Denmark") & (df.Region.isnull())].reset_index(
         drop=True

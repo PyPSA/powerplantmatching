@@ -338,9 +338,9 @@ def clean_technology(df, generalize_hydros=False):
         tech[tech.str.contains("dam", case=False)] = "Reservoir"
     tech = tech.replace({"Gas turbine": "OCGT"})
     tech[tech.str.contains("combined cycle|combustion", case=False)] = "CCGT"
-    tech[
-        tech.str.contains("steam turbine|critical thermal", case=False)
-    ] = "Steam Turbine"
+    tech[tech.str.contains("steam turbine|critical thermal", case=False)] = (
+        "Steam Turbine"
+    )
     tech[tech.str.contains("ocgt|open cycle", case=False)] = "OCGT"
     tech = (
         tech.str.title()
