@@ -5,6 +5,12 @@ History of Changes
 .. Upcoming Version
 .. ----------------
 
+Version 0.5.10 (30.01.2023)
+-------------------------
+
+* fix deprecation warnings for new pandas version for inplace operations
+* fix bus mapping in ``export`` module 
+
 Version 0.5.9 (16.01.2023)
 -------------------------
 
