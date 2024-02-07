@@ -5,14 +5,19 @@ History of Changes
 .. Upcoming Version
 .. ----------------
 
-Version 0.5.10 (30.01.2023)
--------------------------
+Version 0.5.11 (05.02.2024)
+---------------------------
+
+* The default configuration no longer filters out retired power plants. This filtering should be done by the user afterwards.
+
+Version 0.5.10 (30.01.2024)
+---------------------------
 
 * fix deprecation warnings for new pandas version for inplace operations
 * fix bus mapping in ``export`` module 
 
-Version 0.5.9 (16.01.2023)
--------------------------
+Version 0.5.9 (16.01.2024)
+--------------------------
 
 * fix deprecation warnings for new pandas version
 * lower GEM reliability score to fix DateIn and DateOut for some powerplants
