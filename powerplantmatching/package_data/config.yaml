@@ -10,7 +10,7 @@ google_api_key:
 
 # This query is applied to all input data
 # Note: querying "key == key" filters out nan values
-main_query: "Name != '' and (DateOut >= 2020 or DateOut != DateOut) and (lat >= 30 or lat != lat) and not (Country == 'Germany' and Fueltype == 'Nuclear')"
+main_query: "Name != '' and (lat >= 30 or lat != lat)"
 
 # matching_sources, only the matched powerplants are added to the final dataset
 matching_sources:
