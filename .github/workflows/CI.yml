@@ -40,3 +40,13 @@ jobs:
       run: |
         pip install pytest
         pytest
+    - name: Update powerplants.csv
+      run: |
+        import powerplantmatching as pm
+        df = pm.powerplants(update=True)
+        df.to_csv("powerplants.csv", index_label="id")
+      shell: python
+    - name: Upload powerplants.csv as artifact
+      uses: actions/upload-artifact@v3
+      with:
+        path: powerplants.csv
