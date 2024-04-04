@@ -5,6 +5,10 @@ History of Changes
 .. Upcoming Version
 .. ----------------
 
+* fix the filtering of GCPT/GEM coal database by Status.
+* add add technology renaming for GWPT/GEM wind dataset.
+* improve performances of GEM data processing.
+
 Version 0.5.11 (05.02.2024)
 ---------------------------
 

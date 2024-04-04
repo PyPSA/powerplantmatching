@@ -153,7 +153,7 @@ def cross_matches(sets_of_pairs, labels=None):
             else:
                 matches = pd.concat([matches, match_base], sort=True)
 
-    if matches.empty:
+    if matches is None or matches.empty:
         logger.warn("No matches found")
         return pd.DataFrame(columns=labels)
 

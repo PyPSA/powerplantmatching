@@ -1752,16 +1752,17 @@ def GCPT(raw=False, update=False, config=None):
         .pipe(set_column_name, "GCPT")
         .pipe(convert_to_short_name)
         .dropna(subset="Capacity")
-        .pipe(lambda x: x.replace({"Fueltype": fueltype_dict}))
-        .pipe(lambda x: x.assign(Technology="Steam Turbine"))
-        .pipe(lambda x: x.assign(Set="PP"))
         .assign(
             DateIn=df["DateIn"].apply(pd.to_numeric, errors="coerce"),
             DateOut=df["DateOut"].apply(pd.to_numeric, errors="coerce"),
             lat=df["lat"].apply(pd.to_numeric, errors="coerce"),
             lon=df["lon"].apply(pd.to_numeric, errors="coerce"),
         )
+        .query("Status in ['operating','mothballed','construction']")
         .pipe(lambda x: x[df.columns.intersection(config.get("target_columns"))])
+        .pipe(lambda x: x.replace({"Fueltype": fueltype_dict}))
+        .pipe(lambda x: x.assign(Technology="Steam Turbine"))
+        .pipe(lambda x: x.assign(Set="PP"))
         .pipe(config_filter, config)
     )
 
@@ -1873,6 +1874,7 @@ def GWPT(raw=False, update=False, config=None):
         )
         .query("Status in ['operating','mothballed','construction']")
         .pipe(lambda x: x[df.columns.intersection(config.get("target_columns"))])
+        .pipe(lambda x: x.replace({"Technology": technology_dict}))
         .assign(Fueltype="Wind")
         .assign(Set="PP")
         .pipe(config_filter, config)
@@ -1925,7 +1927,6 @@ def GSPT(raw=False, update=False, config=None):
         .pipe(set_column_name, "GSPT")
         .pipe(convert_to_short_name)
         .dropna(subset="Capacity")
-        .pipe(lambda x: x.replace({"Technology": technology_dict}))
         .assign(
             DateIn=df["DateIn"].apply(pd.to_numeric, errors="coerce"),
             DateOut=df["DateOut"].apply(pd.to_numeric, errors="coerce"),
@@ -1934,6 +1935,7 @@ def GSPT(raw=False, update=False, config=None):
         )
         .query("Status in ['operating','mothballed','construction']")
         .pipe(lambda x: x[df.columns.intersection(config.get("target_columns"))])
+        .pipe(lambda x: x.replace({"Technology": technology_dict}))
         .assign(Fueltype="Solar")
         .assign(Set="PP")
         .pipe(config_filter, config)
@@ -2004,10 +2006,10 @@ def GGPT(raw=False, update=False, config=None):
             lon=df["lon"].apply(pd.to_numeric, errors="coerce"),
             Capacity=lambda df: pd.to_numeric(df.Capacity, "coerce"),
         )
-        .pipe(lambda x: x.replace({"Technology": technology_dict}))
-        .pipe(lambda x: x.replace({"Set": set_dict}))
         .query("Status in ['operating','mothballed','construction']")
         .pipe(lambda x: x[df.columns.intersection(config.get("target_columns"))])
+        .pipe(lambda x: x.replace({"Technology": technology_dict}))
+        .pipe(lambda x: x.replace({"Set": set_dict}))
         .assign(Fueltype="Natural Gas")
         .pipe(config_filter, config)
     )
@@ -2067,8 +2069,8 @@ def GHPT(raw=False, update=False, config=None):
             lon=df["lon"].apply(pd.to_numeric, errors="coerce"),
         )
         .query("Status in ['operating','construction']")
-        .pipe(lambda x: x.replace({"Technology": technology_dict}))
         .pipe(lambda x: x[df.columns.intersection(config.get("target_columns"))])
+        .pipe(lambda x: x.replace({"Technology": technology_dict}))
         .assign(Fueltype="Hydro")
         .assign(Set="PP")
         .pipe(config_filter, config)
