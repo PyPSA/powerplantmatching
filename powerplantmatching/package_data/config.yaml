@@ -60,8 +60,8 @@ BEYONDCOAL:
 IRENA:
   net_capacity: true
   aggregated_units: true
-  fn: IRENASTAT_capacities_2000-2020.csv
-  url: https://zenodo.org/record/6412255/files/IRENASTAT_capacities_2000-2020.csv
+  fn: IRENASTAT_capacities_2000-2023.csv
+  url: https://zenodo.org/records/10952917/files/IRENASTAT_capacities_2000-2023.csv
 CARMA:
   net_capacity: false
   reliability_score: 1

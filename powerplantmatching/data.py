@@ -1521,27 +1521,37 @@ def IRENASTAT(raw=False, update=False, config=None):
 
     fn = get_raw_file("IRENA", update=update, config=config)
 
-    df = pd.read_csv(fn, comment="#")
+    df = pd.read_csv(fn, comment="#", quotechar='"')
 
     if raw:
         return df
 
     RENAME_COLUMNS = {
-        "Installed electricity capacity by country/area (MW)": "Capacity",
+        "Electricity statistics": "Capacity",
         "Country/area": "Country",
         "Grid connection": "Grid",
     }
     df.rename(columns=RENAME_COLUMNS, inplace=True)
+
+    df.drop(columns="Data Type", inplace=True)
+
+    # Rename all entries "Congo (the)" to "Congo" under the column
+    # "Country"; the former confuses country_converter.
+    df["Country"] = df["Country"].replace("Congo (the)", "Congo")
 
     # Consistent country names for dataset
     df = convert_to_short_name(df)
 
     df.dropna(subset="Capacity", inplace=True)
 
+    # Remove all rows where Technology is just a Total
+    df = df[
+        ~df.Technology.str.contains("Total Renewable|Total Non-Renewable", na=False)
+    ]
+
     fueltype_dict = {
-        "On-grid Solar photovoltaic": "Solar",
-        "Off-grid Solar photovoltaic": "Solar",
-        "Concentrated solar power": "Solar",
+        "Solar photovoltaic": "Solar",
+        "Solar thermal energy": "Solar",
         "Onshore wind energy": "Wind",
         "Offshore wind energy": "Wind",
         "Renewable hydropower": "Hydro",
@@ -1553,7 +1563,6 @@ def IRENASTAT(raw=False, update=False, config=None):
         "Biogas": "Bioenergy",
         "Geothermal energy": "Geothermal",
         "Marine energy": "Marine",
-        "Fossil fuels": "Other",
         "Coal and peat": "Hard Coal",
         "Oil": "Oil",
         "Natural gas": "Natural Gas",
@@ -1563,9 +1572,8 @@ def IRENASTAT(raw=False, update=False, config=None):
     }
 
     technology_dict = {
-        "On-grid Solar photovoltaic": "PV",
-        "Off-grid Solar photovoltaic": "PV",
-        "Concentrated solar power": "CSP",
+        "Solar photovoltaic": "PV",
+        "Solar thermal energy": "CSP",
         "Onshore wind energy": "Onshore",
         "Offshore wind energy": "Offshore",
         "Pumped storage": "Pumped Storage",
