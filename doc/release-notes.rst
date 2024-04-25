@@ -5,7 +5,10 @@ History of Changes
 .. Upcoming Version
 .. ----------------
 
-* Update IRENASTAT to include data up to 2023.
+Version 0.5.13 (25.04.2024)
+---------------------------
+
+* Update IRENASTAT to include data up to 2023 (``ppm.data.IRENASTAT()``).
 
 Version 0.5.12 (07.04.2024)
 ---------------------------

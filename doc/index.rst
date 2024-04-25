@@ -117,7 +117,7 @@ in-depth discussions and exchanges of ideas and code with
 Licence
 -------
 
-Copyright 2018-2020 Fabian Gotzens (FZ Jülich), Jonas Hörsch (KIT),
+Copyright 2018-2024 Fabian Gotzens (FZ Jülich), Jonas Hörsch (KIT),
 Fabian Hofmann (FIAS)
 
 powerplantmatching is released as free software under the

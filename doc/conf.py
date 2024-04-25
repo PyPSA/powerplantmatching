@@ -18,7 +18,7 @@
 # -- Project information -----------------------------------------------------
 
 project = "powerplantmatching"
-copyright = "2021, Fabian Hofmann, Fabian Gotzens, Jonas Hörsch, Martha Frysztacki"
+copyright = "2021-2024, Fabian Hofmann, Fabian Gotzens, Jonas Hörsch, Martha Frysztacki"
 author = "Fabian Hofmann, Fabian Gotzens, Jonas Hörsch, Martha Frysztacki"
 
 

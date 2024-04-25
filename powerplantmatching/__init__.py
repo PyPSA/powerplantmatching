@@ -1,4 +1,4 @@
-# Copyright 2016-2020 Fabian Hofmann (FIAS), Jonas Hoersch (KIT, IAI) and
+# Copyright 2016-2024 Fabian Hofmann (FIAS), Jonas Hoersch (KIT, IAI) and
 # Fabian Gotzens (FZJ, IEK-STE)
 
 # This program is free software; you can redistribute it and/or
@@ -24,9 +24,9 @@ power plant databases.
 
 from __future__ import absolute_import
 
-__version__ = "0.5.12"
+__version__ = "0.5.13"
 __author__ = "Fabian Hofmann"
-__copyright__ = "Copyright 2017-2022 Technical University of Berlin"
+__copyright__ = "Copyright 2017-2024 Technical University of Berlin"
 # The rough hierarchy of this package is
 # core, utils, heuristics, cleaning, matching, collection, data
 
