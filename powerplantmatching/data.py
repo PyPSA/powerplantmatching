@@ -22,7 +22,6 @@ import logging
 import os
 import re
 import xml.etree.ElementTree as ET
-from distutils.log import debug
 from zipfile import ZipFile
 
 import entsoe
