@@ -5,6 +5,9 @@ History of Changes
 .. Upcoming Version
 .. ----------------
 
+Version 0.5.14 (30.04.2024)
+---------------------------
+
 * Bugfix to ensure compatibility with python 3.12.
 
 Version 0.5.13 (25.04.2024)
