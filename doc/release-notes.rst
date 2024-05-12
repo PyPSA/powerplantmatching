@@ -2,8 +2,10 @@ History of Changes
 ==================
 
 
-.. Upcoming Version
-.. ----------------
+Upcoming Version
+----------------
+
+* Updated the JRC hydro power plant database to the latest version.
 
 Version 0.5.14 (30.04.2024)
 ---------------------------
@@ -46,6 +48,7 @@ Version 0.5.8 (30.10.2023)
 **New Features**
 
 * Datasets from the Global Energy Monitor are now combined into one dataset called `GEM`. This is per default used in the matching process.
+
 * Updates the following Global Energy Monitor data according to latest May 2023 release: 
   * `GSPT`, solar power plant
   * `GWPT`, wind power plant
