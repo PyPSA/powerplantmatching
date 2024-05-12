@@ -77,7 +77,7 @@ ENTSOE-EIC:
 JRC:
   reliability_score: 4
   fn: jrc-hydro-power-plant-database.csv
-  url: https://raw.githubusercontent.com/energy-modelling-toolkit/hydro-power-database/master/data/jrc-hydro-power-plant-database.csv
+  url: https://raw.githubusercontent.com/energy-modelling-toolkit/hydro-power-database/fd7535c/data/jrc-hydro-power-plant-database.csv
 GEO:
   net_capacity: false
   reliability_score: 3
