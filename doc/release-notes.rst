@@ -5,9 +5,20 @@ History of Changes
 Upcoming Version
 ----------------
 
-* Updated the JRC hydro power plant database to the latest version.
+Version 0.5.15 (12.05.2024)
+---------------------------
 
-* Fixed capacity of some hydro powerplants in GB based on manual search. The changes accumulate to an approx 5 GW reduction of capacity.
+* Updated the JRC hydro power plant database to the latest version.
+  (https://github.com/PyPSA/powerplantmatching/pull/123)
+
+* Corrected capacity of some hydro powerplants in the United Kingdom contained
+  in the ENTSOE data based on manual search. The error originated from the use
+  of the value 999 in the capacity column to represent NaN values. The chnages
+  accumulate to a reduction of approximately 5 GW in capacity.
+  (https://github.com/PyPSA/powerplantmatching/pull/141)
+
+* Remove use of ``distutils`` package for compatibility with python 3.12.
+  (https://github.com/PyPSA/powerplantmatching/pull/159)
 
 Version 0.5.14 (30.04.2024)
 ---------------------------
