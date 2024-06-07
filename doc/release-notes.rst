@@ -1,5 +1,5 @@
-History of Changes
-==================
+Release Notes
+==============
 
 
 Upcoming Version
