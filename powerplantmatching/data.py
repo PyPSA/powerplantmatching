@@ -2101,6 +2101,102 @@ def GEM(raw=False, update=False, config=None):
     return pd.concat(data, ignore_index=True)
 
 
+def MASTR(
+    raw=False,
+    update=False,
+    config=None,
+):
+    """
+    Get the Marktstammdatenregister (MaStR) dataset.
+
+    Provided by the German Federal Network Agency (Bundesnetzagentur / BNetza) and
+    contains data on Germany, Austria and Switzerland.
+
+    Parameters
+    ----------
+    raw : Boolean, default False
+        Whether to return the original dataset
+    update: bool, default False
+        Whether to update the data from the url.
+    config : dict, default None
+        Add custom specific configuration,
+        e.g. powerplantmatching.config.get_config(target_countries='Italy'),
+        defaults to powerplantmatching.config.get_config()
+
+    """
+    config = get_config() if config is None else config
+
+    fn = get_raw_file("MASTR", update=update, config=config)
+
+    file_suffixes = {
+        "Bioenergy": "biomass.csv",
+        "Combustion": "combustion.csv",
+        "Nuclear": "nuclear.csv",
+        "Hydro": "hydro.csv",
+        # "Wind": "wind.csv",  # TODO: Needs performance discussion
+        # "Solar": "solar.csv",
+    }
+    df = pd.DataFrame()
+    with ZipFile(fn, "r") as file:
+        for fueltype, suffix in file_suffixes.items():
+            for name in file.namelist():
+                if name.endswith(suffix):
+                    df = pd.concat(
+                        [
+                            df,
+                            pd.read_csv(file.open(name), low_memory=False).assign(
+                                Filesuffix=fueltype
+                            ),
+                        ]
+                    )
+                    break
+    df = df.reset_index(drop=True)
+
+    if raw:
+        return df
+
+    RENAME_COLUMNS = {
+        "EinheitMastrNummer": "projectID",
+        "NameKraftwerk": "Name",
+        "Land": "Country",
+        "Nettonennleistung": "Capacity",
+        "Inbetriebnahmedatum": "DateIn",
+        "DatumEndgueltigeStilllegung": "DateOut",
+        "Laengengrad": "lon",
+        "Breitengrad": "lat",
+    }
+    COUNTRY_MAP = {
+        "Deutschland": "Germany",
+        "Österreich": "Austria",
+        "Schweiz": "Switzerland",
+    }
+
+    df = (
+        df.drop(columns=["Name"])
+        .rename(columns=RENAME_COLUMNS)
+        .assign(
+            projectID=lambda df: "MASTR-" + df.projectID,
+            Country=lambda df: df.Country.map(COUNTRY_MAP),
+            Capacity=lambda df: df.Capacity / 1e3,  # kW to MW
+            DateIn=lambda df: pd.to_datetime(df.DateIn).dt.year,
+            DateOut=lambda df: pd.to_datetime(df.DateOut).dt.year,
+            Technology=np.nan,
+            Set="PP",
+        )
+        .loc[lambda df: df.Capacity > 1]  # TODO: Needs performance discussion
+        .pipe(
+            gather_specifications,
+            config=config,
+            parse_columns=["Filesuffix", "Energietraeger"],
+        )
+        .pipe(clean_name)
+        .pipe(set_column_name, "MASTR")
+        .pipe(config_filter, config)
+    )
+
+    return df
+
+
 # deprecated alias for GGPT
 @deprecated(
     deprecated_in="0.5.5",

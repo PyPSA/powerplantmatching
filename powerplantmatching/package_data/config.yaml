@@ -24,6 +24,7 @@ matching_sources:
   - BEYONDCOAL
   - WIKIPEDIA
   - GEM
+  - MASTR
 
 # fully_included_sources, these sources are included even without match to the final dataset
 fully_included_sources:
@@ -195,6 +196,14 @@ GHPT:
   reliability_score: 4
   fn: Global-Hydropower-Tracker-May-2023.csv
   url: https://raw.githubusercontent.com/pz-max/gem-powerplant-data/main/Global-Hydropower-Tracker-latest.csv
+
+MASTR:
+  net_capacity: true
+  reliability_score: 8
+  fn: bnetza_open_mastr_2023-08-08_B.zip
+  url: https://zenodo.org/records/8225106/files/bnetza_open_mastr_2023-08-08_B.zip
+
+  
 # ---------------------------------------------------------------------------- #
 #                             Data Structure Config                            #
 # ---------------------------------------------------------------------------- #
@@ -273,6 +282,7 @@ target_fueltypes:
       combined cycle,
       fossil gas,
       mixed fossil fuels,
+      erdgas
     ]
   Hydro:
     [
@@ -285,9 +295,9 @@ target_fueltypes:
       hydroelectric,
       wasserkraft,
     ]
-  Hard Coal: [coal, coke]
-  Lignite: [brown coal, lignite, peat]
-  Oil: [oil, diesel]
+  Hard Coal: [coal, coke, steinkohle]
+  Lignite: [brown coal, lignite, peat, braunkohle]
+  Oil: [oil, diesel, mineralölprodukte]
   Geothermal: ""
   Solar: ""
   Waste: ""
