@@ -156,7 +156,7 @@ def gather_and_replace(df, mapping):
     for key, pattern in mapping.items():
         if not pattern:
             # if pattern is not given, fall back to case-insensitive key
-            pattern = f"(?i)\b{key}\b"
+            pattern = rf"(?i)\b{key}\b"
         elif isinstance(pattern, list):
             # if pattern is a list, concat all entries in a case-insensitive regex
             pattern = r"(?i)" + "|".join([rf"\b{p}\b" for p in pattern])
