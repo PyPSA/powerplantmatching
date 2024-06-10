@@ -36,8 +36,8 @@ kwargs = dict(start=start, end=end, psr_type=None)
 def parse(c):
     try:
         return client.query_installed_generation_capacity(c, **kwargs).iloc[0]
-    except:
-        print(f"Country {c} failed")
+    except Exception as e:
+        print(f"Country {c} failed with {e}")
         return np.nan
 
 

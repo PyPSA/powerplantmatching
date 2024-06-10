@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright 2016-2018 Fabian Hofmann (FIAS), Jonas Hoersch (KIT, IAI) and
 # Fabian Gotzens (FZJ, IEK-STE)
 
@@ -164,7 +163,7 @@ def fueltype_totals_bar(
     last_as_marker=False,
     axes_style="whitegrid",
     exclude=[],
-    **kwargs
+    **kwargs,
 ):
     dfs = get_obj_if_Acc(dfs)
     dfs = to_list_if_other(dfs)
@@ -190,10 +189,10 @@ def fueltype_totals_bar(
                 marker="D",
                 linestyle="None",
                 markerfacecolor="darkslategray",
-                **kwargs
+                **kwargs,
             )
         ax.legend(loc=0)
-        ax.set_ylabel(r"Capacity [$%s$]" % unit)
+        ax.set_ylabel(f"Capacity [${unit}$]")
         ax.xaxis.grid(False)
         fig.tight_layout(pad=0.5)
         return fig, ax
@@ -215,7 +214,7 @@ def country_totals_hbar(
         countrytotals[::-1][1:].plot(
             kind="barh", ax=ax, legend="reverse", edgecolor="none"
         )
-        ax.set_xlabel("Capacity [%s]" % unit)
+        ax.set_xlabel(f"Capacity [{unit}]")
         ax.yaxis.grid(False)
         ax.set_ylabel("")
         fig.tight_layout(pad=0.5)
@@ -372,7 +371,7 @@ def draw_basemap(
     coast_linewidth=0.4,
     zorder=None,
     fillcontinents=True,
-    **kwds
+    **kwds,
 ):
     if cartopy_present:
         if ax is None:

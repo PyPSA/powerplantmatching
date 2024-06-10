@@ -21,21 +21,25 @@ A set of tools for cleaning, standardising and combining multiple
 power plant databases.
 """
 
-
-from __future__ import absolute_import
-
 __version__ = "0.5.15"
 __author__ = "Fabian Hofmann"
 __copyright__ = "Copyright 2017-2024 Technical University of Berlin"
 # The rough hierarchy of this package is
 # core, utils, heuristics, cleaning, matching, collection, data
 
-# from . import cleaning
-# from . import matching
-# from . import collection
-# Commonly used sub-modules. Imported here to provide end-user
-# convenience.
 from . import core, data, heuristics, plot, utils
 from .accessor import PowerPlantAccessor
 from .collection import powerplants
 from .core import get_config, package_config
+
+__all__ = [
+    "powerplants",
+    "get_config",
+    "package_config",
+    "PowerPlantAccessor",
+    "core",
+    "data",
+    "heuristics",
+    "plot",
+    "utils",
+]

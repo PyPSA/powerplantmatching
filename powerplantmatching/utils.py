@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright 2016-2018 Fabian Hofmann (FIAS), Jonas Hoersch (KIT, IAI) and
 # Fabian Gotzens (FZJ, IEK-STE)
 
@@ -18,8 +17,6 @@
 Utility functions for checking data completeness and supporting other functions
 """
 
-from __future__ import absolute_import, print_function
-
 import multiprocessing
 import os
 from ast import literal_eval as liteval
@@ -30,7 +27,6 @@ import pandas as pd
 import pycountry as pyc
 import requests
 import six
-from deprecation import deprecated
 from numpy import atleast_1d
 from tqdm import tqdm
 
@@ -119,8 +115,8 @@ def config_filter(df, config):
     name = df.powerplant.get_name()
     assert name is not None, "No name given for data source"
 
-    countries = config["target_countries"]
-    fueltypes = config["target_fueltypes"]
+    countries = config["target_countries"]  # noqa
+    fueltypes = config["target_fueltypes"]  # noqa
     cols = config["target_columns"]
 
     target_query = "Country in @countries and Fueltype in @fueltypes"
@@ -355,7 +351,7 @@ def parmap(f, arg_list, config=None):
         config = get_config()
     if config["parallel_duke_processes"]:
         nprocs = min(multiprocessing.cpu_count(), config["process_limit"])
-        logger.info("Run process with {} parallel threads.".format(nprocs))
+        logger.info(f"Run process with {nprocs} parallel threads.")
         q_in = multiprocessing.Queue(1)
         q_out = multiprocessing.Queue()
 

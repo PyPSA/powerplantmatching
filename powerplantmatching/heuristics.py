@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright 2016-2018 Fabian Hofmann (FIAS), Jonas Hoersch (KIT, IAI) and
 # Fabian Gotzens (FZJ, IEK-STE)
 
@@ -26,7 +25,7 @@ from deprecation import deprecated
 from six import iteritems
 
 from .core import _package_data, get_config, get_obj_if_Acc
-from .utils import get_name, lookup
+from .utils import lookup
 
 logger = logging.getLogger(__name__)
 
@@ -134,8 +133,9 @@ def isin(df, matched, label=None):
     if matched.columns.nlevels > 1:
         included_ids = matched["projectID", label].dropna().apply(list).sum()
     else:
-        get = lambda d: d.get(label)
-        included_ids = matched.projectID.map(get).dropna().apply(list).sum()
+        included_ids = (
+            matched.projectID.map(lambda d: d.get(label)).dropna().apply(list).sum()
+        )
     if included_ids == 0:
         included_ids = []
 
@@ -169,12 +169,12 @@ def rescale_capacities_to_country_totals(df, fueltypes=None):
     stats_df = lookup(df).loc[fueltypes]
     stats_entsoe = lookup(Capacity_stats()).loc[fueltypes]
     if ((stats_df == 0) & (stats_entsoe != 0)).any().any():
+        country_list = stats_df.loc[
+            :, ((stats_df == 0) & (stats_entsoe != 0)).any()
+        ].columns.tolist()
         print(
-            "Could not scale powerplants in the countries %s because of no \
-              occurring power plants in these countries"
-            % stats_df.loc[
-                :, ((stats_df == 0) & (stats_entsoe != 0)).any()
-            ].columns.tolist()
+            f"Could not scale powerplants in the countries {country_list} because of "
+            f"no occurring power plants in these countries"
         )
     ratio = (stats_entsoe / stats_df).fillna(1)
     df["Scaled Capacity"] = df.loc[:, "Capacity"]
@@ -243,12 +243,10 @@ def fill_missing_commissioning_years(df):
     if df.DateIn.isnull().any():
         count = len(df[df.DateIn.isnull()])
         logger.warn(
-            """There are still *{0}* empty values for
+            f"""There are still *{count}* empty values for
                         'DateIn' in the DataFrame. These should
                         be either be filled manually or dropped.
-            """.format(
-                count
-            )
+            """
         )
     df["DateIn"] = df.DateIn.astype(float)
     df["DateRetrofit"] = df.DateRetrofit.fillna(df.DateIn)
@@ -309,10 +307,8 @@ def aggregate_VRE_by_commissioning_year(df, target_fueltypes=None, agg_geo_by=No
         }
     else:
         raise TypeError(
-            "Value given for `agg_geo_by` is '{}' but must be either \
-                        'NoneType' or 'mean' or 'wm'.".format(
-                agg_geo_by
-            )
+            f"Value given for `agg_geo_by` is '{agg_geo_by}' but must be either \
+                        'NoneType' or 'mean' or 'wm'."
         )
 
     if target_fueltypes is None:
@@ -572,9 +568,9 @@ def scale_to_net_capacities(df, is_gross=True, catch_all=True):
     if is_gross:
         factors = gross_to_net_factors()
         for ftype, tech in factors.index.values:
-            df.loc[
-                (df.Fueltype == ftype) & (df.Technology == tech), "Capacity"
-            ] *= factors.loc[(ftype, tech)]
+            df.loc[(df.Fueltype == ftype) & (df.Technology == tech), "Capacity"] *= (
+                factors.loc[(ftype, tech)]
+            )
         if catch_all:
             for ftype in factors.index.levels[0]:
                 techs = factors.loc[ftype].index.tolist()
@@ -626,6 +622,6 @@ def set_known_retire_years(df):
         if name_match_b.any():
             ppl_de_nuc.loc[name_match_b, "YearRetire"] = year
         else:
-            logger.warn("'{}' was not found in given DataFrame.".format(name))
+            logger.warn(f"'{name}' was not found in given DataFrame.")
     df.loc[ppl_de_nuc.index, "YearRetire"] = ppl_de_nuc["YearRetire"]
     return df
