@@ -17,6 +17,7 @@
 """
 Functions for vertically cleaning a dataset.
 """
+
 from __future__ import absolute_import, print_function
 
 import logging
@@ -449,7 +450,10 @@ def aggregate_units(
 
     df = cliques(df, duplicates)
     df = df.groupby("grouped").agg(props_for_groups)
-    df[str_cols] = df[str_cols].replace("", np.nan)
+
+    # Downcasting in replace is deprecated
+    with pd.option_context("future.no_silent_downcasting", True):
+        df[str_cols] = df[str_cols].replace("", np.nan).infer_objects(copy=False)
 
     df = (
         df.assign(
