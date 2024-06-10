@@ -40,7 +40,7 @@ def test_data_request_processed(source):
 
 
 def test_OPSD_VRE():
-    df = pm.data.OPSD_VRE().empty
+    df = pm.data.OPSD_VRE()
     assert not df.empty
     assert df.Capacity.sum() > 0
 
