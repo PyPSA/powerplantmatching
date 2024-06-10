@@ -7,15 +7,18 @@ repos:
     rev: v4.6.0
     hooks:
     -   id: check-yaml
--   repo: https://github.com/psf/black
-    rev: 24.4.2
+
+# Run ruff to lint and format
+-   repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.4.8
     hooks:
-    -   id: black
--   repo: https://github.com/PyCQA/isort
-    rev: 5.13.2
-    hooks:
-      - id: isort
-        args: ["--profile", "black", "--filter-files"]
+    # Run the linter.
+    -   id: ruff
+        args: [--fix]
+    # Run the formatter.
+    -   id: ruff-format
+
+# Run codespell to check spelling
 -   repo: https://github.com/codespell-project/codespell
     rev: v2.3.0
     hooks:
