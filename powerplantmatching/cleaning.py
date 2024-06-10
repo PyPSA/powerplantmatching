@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright 2016-2018 Fabian Hofmann (FIAS), Jonas Hoersch (KIT, IAI) and
 # Fabian Gotzens (FZJ, IEK-STE)
 
@@ -17,11 +16,8 @@
 """
 Functions for vertically cleaning a dataset.
 """
-from __future__ import absolute_import, print_function
 
 import logging
-import os
-import re
 
 import networkx as nx
 import numpy as np
@@ -160,14 +156,13 @@ def gather_and_replace(df, mapping):
     for key, pattern in mapping.items():
         if not pattern:
             # if pattern is not given, fall back to case-insensitive key
-            pattern = r"(?i)\b%s\b" % key
+            pattern = f"(?i)\b{key}\b"
         elif isinstance(pattern, list):
             # if pattern is a list, concat all entries in a case-insensitive regex
             pattern = r"(?i)" + "|".join([rf"\b{p}\b" for p in pattern])
         elif not isinstance(pattern, str):
             raise ValueError(f"Pattern must be string or list, not {type(pattern)}")
-        func = lambda ds: ds.str.contains(pattern)
-        where = df.astype(str).apply(func).any(axis=1)
+        where = df.astype(str).apply(lambda ds: ds.str.contains(pattern)).any(axis=1)
         res = res.where(~where, key)
     return res
 

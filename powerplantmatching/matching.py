@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright 2016-2018 Fabian Hofmann (FIAS), Jonas Hoersch (KIT, IAI) and
 # Fabian Gotzens (FZJ, IEK-STE)
 
@@ -18,10 +17,7 @@
 Functions for linking and combining different datasets
 """
 
-from __future__ import absolute_import, print_function
-
 import logging
-import os.path
 from itertools import combinations
 
 import numpy as np
@@ -89,7 +85,7 @@ def compare_two_datasets(dfs, labels, country_wise=True, config=None, **dukeargs
         logger.warn(msg + f"{used_deprecated_args}")
 
     dfs = list(map(read_csv_if_string, dfs))
-    if not ("singlematch" in dukeargs):
+    if "singlematch" not in dukeargs:
         dukeargs["singlematch"] = True
 
     def country_link(dfs, country):
@@ -106,7 +102,7 @@ def compare_two_datasets(dfs, labels, country_wise=True, config=None, **dukeargs
     if country_wise:
         countries = config["target_countries"]
         links = [country_link(dfs, c) for c in countries]
-        links = [l for l in links if not l.empty]
+        links = [link for link in links if not link.empty]
         if links:
             links = pd.concat(links, ignore_index=True)
         else:
@@ -210,7 +206,7 @@ def link_multiple_datasets(
     combs = list(combinations(range(len(labels)), 2))
 
     def comp_dfs(dfs_lbs):
-        logger.info("Comparing data sources `{0}` and `{1}`".format(*dfs_lbs[2:]))
+        logger.info("Comparing data sources `{}` and `{}`".format(*dfs_lbs[2:]))
         return compare_two_datasets(dfs_lbs[:2], dfs_lbs[2:], config=config, **dukeargs)
 
     mapargs = [[dfs[c], dfs[d], labels[c], labels[d]] for c, d in combs]

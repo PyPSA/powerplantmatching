@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright 2016-2020 Fabian Hofmann (FIAS), Jonas Hoersch (KIT, IAI) and
 # Fabian Gotzens (FZJ, IEK-STE)
 
@@ -20,8 +19,6 @@ Collection of power plant data bases and statistical data
 
 import logging
 import os
-import re
-import xml.etree.ElementTree as ET
 from zipfile import ZipFile
 
 import entsoe
@@ -38,13 +35,12 @@ from .cleaning import (
     gather_specifications,
     gather_technology_info,
 )
-from .core import _data_in, _package_data, get_config
+from .core import _package_data, get_config
 from .heuristics import scale_to_net_capacities
 from .utils import (
     config_filter,
     convert_to_short_name,
     correct_manually,
-    fill_geoposition,
     get_raw_file,
     set_column_name,
 )
@@ -266,7 +262,7 @@ def GEO(raw=False, update=False, config=None):
 
     def to_year(ds):
         years = pd.to_numeric(ds.dropna().astype(str).str[:4], errors="coerce")
-        year = years[lambda x: x > 1900]
+        year = years[lambda x: x > 1900]  # noqa
         return years.reindex_like(ds)
 
     fn = get_raw_file("GEO_units", update=update, config=config)
@@ -527,7 +523,7 @@ def Capacity_stats(
     else:
         source = "Capacity statistics"
 
-    fueltypes = config["target_fueltypes"]
+    fueltypes = config["target_fueltypes"]  # noqa
     df = (
         df.query("year == @year")
         .rename(columns={"technology": "Fueltype"})
@@ -579,8 +575,8 @@ def GPD(raw=False, update=False, config=None, filter_other_dbs=True):
 
     other_dbs = []
     if filter_other_dbs:
-        other_dbs = ["GEODB", "Open Power System Data", "ENTSOE"]
-    countries = config["target_countries"]
+        other_dbs = ["GEODB", "Open Power System Data", "ENTSOE"]  # noqa
+    countries = config["target_countries"]  # noqa
     return (
         df.rename(columns=lambda x: x.title())
         .drop(columns="Country")
@@ -1203,7 +1199,7 @@ def UBA(
         .str[0]
         .astype(float),
         Country="Germany",
-        projectID=["UBA{:03d}".format(i + header + 2) for i in uba.index],
+        projectID=[f"UBA{i + header + 2:03d}" for i in uba.index],
         Technology=uba.Technology.replace(RENAME_TECHNOLOGY),
     )
     uba.loc[uba.CHP.notnull(), "Set"] = "CHP"
@@ -1580,8 +1576,8 @@ def IRENASTAT(raw=False, update=False, config=None):
     df["Fueltype"] = df.Technology.map(fueltype_dict)
     df["Technology"] = df.Technology.replace(technology_dict)
 
-    l = list(set(df.columns).difference(set(["Capacity"])))
-    df = df.groupby(l, as_index=False, dropna=True).sum()
+    non_capacity_columns = list(set(df.columns).difference(set(["Capacity"])))
+    df = df.groupby(non_capacity_columns, as_index=False, dropna=True).sum()
 
     return df
 

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright 2015-2016 Fabian Hofmann (FIAS), Jonas Hoersch (FIAS)
 
 # This program is free software; you can redistribute it and/or
@@ -14,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import absolute_import, print_function
 
 import logging
 import os
@@ -78,7 +76,7 @@ def duke(
     """
 
     try:
-        sub.run(["java", "-version"], check=True, stderr=sub.PIPE, stdout=sub.PIPE)
+        sub.run(["java", "-version"], check=True, capture_output=True)
     except sub.CalledProcessError:
         err = "Java is not installed or not in the system's PATH. Please install Java and ensure it is in your system's PATH, then try again."
         logger.error(err)
@@ -112,9 +110,7 @@ def duke(
             if n == 1:
                 shift_by = datasets[0].index.max() + 1
                 df.index += shift_by
-            df.to_csv(
-                os.path.join(tmpdir, "file{}.csv".format(n + 1)), index_label="id"
-            )
+            df.to_csv(os.path.join(tmpdir, f"file{n + 1}.csv"), index_label="id")
             if n == 1:
                 df.index -= shift_by
 
@@ -145,9 +141,9 @@ def duke(
         if showmatches:
             print(_)
 
-        logger.debug("Stderr: {}".format(stderr))
+        logger.debug(f"Stderr: {stderr}")
         if any(word in stderr.lower() for word in ["error", "fehler"]):
-            raise RuntimeError("duke failed: {}".format(stderr))
+            raise RuntimeError(f"duke failed: {stderr}")
 
         if dedup:
             return pd.read_csv(
@@ -168,7 +164,7 @@ def duke(
 
     finally:
         if keepfiles:
-            logger.debug("Files of the duke run are kept in {}".format(tmpdir))
+            logger.debug(f"Files of the duke run are kept in {tmpdir}")
         else:
             shutil.rmtree(tmpdir)
-            logger.debug("Files of the duke run have been deleted in {}".format(tmpdir))
+            logger.debug(f"Files of the duke run have been deleted in {tmpdir}")
