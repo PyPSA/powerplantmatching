@@ -1,6 +1,9 @@
-name: Deploy Package
+name: Deploy release
 
-on: [push]
+on:
+  push:
+    tags:
+    - v*.*.*
 
 jobs:
   build-n-publish:
@@ -29,9 +32,42 @@ jobs:
         --outdir dist/
         .
 
-    - name: Publish distribution 📦 to PyPI
-      if: startsWith(github.ref, 'refs/tags')
-      uses: pypa/gh-action-pypi-publish@release/v1
+  update-dataset:
+    name: Update powerplants.csv in repository
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
       with:
-        user: __token__
-        password: ${{ secrets.PYPI_TOKEN }}
+        ref: master
+
+    - name: Fetch all history for all tags and branches (necessary for setuptools_scm)
+      run: git fetch --prune --unshallow
+    
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.9
+    
+    - name: Install package
+      run: |
+        python -m pip install --upgrade pip
+        pip install .[dev]
+
+    - name: Create dataset
+      run: |
+        import powerplantmatching as pm
+        df = pm.powerplants(update=True)
+        df.to_csv("powerplants.csv", index_label="id")
+      shell: python
+
+    - name: Commit and push changes
+      run: |
+        git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git config --global user.name "github-actions[bot]"
+        git checkout master
+        git pull origin master
+        git add powerplants.csv
+        git commit -m '[github-actions.ci] auto update `powerplants.csv`' || exit 0 
+        git push origin master
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

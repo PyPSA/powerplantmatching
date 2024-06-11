@@ -23,6 +23,8 @@ repos:
     rev: v2.3.0
     hooks:
     -   id: codespell
+        args: [
+            --ignore-regex, "(`<.+>`_)",  # Ignore urls in rst
+            --ignore-words, .codespell.ignore
+            ]
         types_or: [python, rst, markdown]
-        # files: ^(powerplantmatching|doc|test)/
-        entry: codespell --ignore-words ignore-spelling-words.txt
