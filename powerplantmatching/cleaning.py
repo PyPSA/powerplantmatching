@@ -444,7 +444,8 @@ def aggregate_units(
 
     df = cliques(df, duplicates)
     df = df.groupby("grouped").agg(props_for_groups)
-    df[str_cols] = df[str_cols].replace("", np.nan)
+
+    df[str_cols] = df[str_cols].replace("", pd.NA)
 
     df = (
         df.assign(
