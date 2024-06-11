@@ -1128,8 +1128,7 @@ def UBA(
 ):
     """
     Importer for the UBA Database. Please download the data from
-    `<https://www.umweltbundesamt.de/dokument/datenbank-kraftwerke-in
-    -deutschland>`_.
+    `<https://www.umweltbundesamt.de/dokument/datenbank-kraftwerke-in-deutschland>`_.
 
     Parameters
     ----------
