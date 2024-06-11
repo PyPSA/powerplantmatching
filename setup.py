@@ -1,15 +1,13 @@
-from __future__ import absolute_import
-
 from codecs import open
 
-from setuptools import find_packages, setup
+from setuptools import setup
 
 with open("README.md", encoding="utf-8") as f:
     long_description = f.read()
 
 setup(
     name="powerplantmatching",
-    version="0.5.7",
+    version="0.5.15",
     author="Fabian Hofmann (FIAS), Jonas Hoersch (KIT), Fabian Gotzens (FZ Jülich)",
     author_email="hofmann@fias.uni-frankfurt.de",
     description="Toolset for generating and managing Power Plant Data",
@@ -44,7 +42,7 @@ setup(
         "docs": [
             "numpydoc",
             "sphinx",
-            "sphinx_rtd_theme",
+            "sphinx-book-theme",
             "nbsphinx",
             "sphinx-automodapi",
         ],

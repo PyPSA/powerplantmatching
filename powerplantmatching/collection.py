@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright 2016-2018 Fabian Hofmann (FIAS), Jonas Hoersch (KIT, IAI) and
 # Fabian Gotzens (FZJ, IEK-STE)
 
@@ -17,6 +16,7 @@
 """
 Processed datasets of merged and/or adjusted data
 """
+
 import logging
 import os
 
@@ -31,7 +31,6 @@ from .utils import (
     parmap,
     projectID_to_dict,
     set_column_name,
-    set_uncommon_fueltypes_to_other,
     to_dict_if_string,
 )
 

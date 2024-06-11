@@ -20,6 +20,8 @@ dependencies:
   - xlrd
   - openpyxl
   - deprecation
+  - tqdm
+  - unidecode
   - pip
   - pip:
     - pycountry

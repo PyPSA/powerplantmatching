@@ -10,7 +10,7 @@ google_api_key:
 
 # This query is applied to all input data
 # Note: querying "key == key" filters out nan values
-main_query: "Name != '' and (DateOut >= 2020 or DateOut != DateOut) and (lat >= 30 or lat != lat)"
+main_query: "Name != '' and (lat >= 30 or lat != lat)"
 
 # matching_sources, only the matched powerplants are added to the final dataset
 matching_sources:
@@ -23,14 +23,7 @@ matching_sources:
   - OPSD: Country != "Spain" and Fueltype != 'Hard Coal'
   - BEYONDCOAL
   - WIKIPEDIA
-  - GBPT
-  - GGPT
-  - GCPT
-  - GGTPT
-  - GNPT
-  - GSPT
-  - GWPT
-  - GHPT
+  - GEM
 
 # fully_included_sources, these sources are included even without match to the final dataset
 fully_included_sources:
@@ -41,14 +34,8 @@ fully_included_sources:
   - JRC: Country not in ['Switzerland', 'Albania', 'United Kingdom', 'Norway']
   - OPSD: Country not in ['Switzerland', 'Italy', 'Spain', 'Norway', 'Austria']
   - BEYONDCOAL
-  - GBPT
-  - GGPT
-  - GCPT
-  - GGTPT
-  - GNPT
-  - GSPT
-  - GWPT
-  - GHPT
+  # - GEM
+
 
 parallel_duke_processes: false
 process_limit: 4
@@ -73,8 +60,8 @@ BEYONDCOAL:
 IRENA:
   net_capacity: true
   aggregated_units: true
-  fn: IRENASTAT_capacities_2000-2020.csv
-  url: https://zenodo.org/record/6412255/files/IRENASTAT_capacities_2000-2020.csv
+  fn: IRENASTAT_capacities_2000-2023.csv
+  url: https://zenodo.org/records/10952917/files/IRENASTAT_capacities_2000-2023.csv
 CARMA:
   net_capacity: false
   reliability_score: 1
@@ -89,8 +76,8 @@ ENTSOE-EIC:
   fn: entsoe_eic_codes.csv
 JRC:
   reliability_score: 4
-  fn: jrc-hydro-power-database-10.zip
-  url: https://github.com/energy-modelling-toolkit/hydro-power-database/archive/refs/tags/v10.zip
+  fn: jrc-hydro-power-plant-database.csv
+  url: https://raw.githubusercontent.com/energy-modelling-toolkit/hydro-power-database/fd7535c/data/jrc-hydro-power-plant-database.csv
 GEO:
   net_capacity: false
   reliability_score: 3
@@ -168,9 +155,13 @@ GGPT:
   reliability_score: 4
   fn: Global-Gas-Plant-Tracker-GGPT-February-2023-v2.csv
   url: https://raw.githubusercontent.com/pz-max/gem-powerplant-data/main/Global-Gas-Plant-Tracker-GGPT-latest.csv
+GEM: 
+  # combined data set of all GEM trackers
+  net_capacity: True
+  reliability_score: 5
 GCPT:
   net_capacity: false
-  reliability_score: 5
+  reliability_score: 4
   fn: Global-Coal-Plant-Tracker-January-2023.csv
   url: https://raw.githubusercontent.com/pz-max/gem-powerplant-data/main/Global-Coal-Plant-Tracker-latest.csv
 GGTPT:

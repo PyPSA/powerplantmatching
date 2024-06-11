@@ -18,7 +18,7 @@
 # -- Project information -----------------------------------------------------
 
 project = "powerplantmatching"
-copyright = "2021, Fabian Hofmann, Fabian Gotzens, Jonas Hörsch, Martha Frysztacki"
+copyright = "2021-2024, Fabian Hofmann, Fabian Gotzens, Jonas Hörsch, Martha Frysztacki"
 author = "Fabian Hofmann, Fabian Gotzens, Jonas Hörsch, Martha Frysztacki"
 
 
@@ -55,24 +55,24 @@ source_suffix = {
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = "sphinx_rtd_theme"
+html_theme = "sphinx_book_theme"
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
 html_theme_options = {
-    "display_version": True,
-    "sticky_navigation": True,
-    # 'style_nav_header_background': '#009682',
+    "repository_url": "https://github.com/pypsa/powerplantmatching",
+    "use_repository_button": True,
+    "show_navbar_depth": 1,
 }
 
 
 # These folders are copied to the documentation's HTML output
-html_static_path = ["_static"]
+# html_static_path = ["_static"]
 
 # These paths are either relative to html_static_path
 # or fully qualified paths (eg. https://...)
-html_css_files = ["theme_overrides.css"]
+# html_css_files = ["theme_overrides.css"]
 
 
 # -- Options for nbsphinx -------------------------------------------------

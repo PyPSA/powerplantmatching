@@ -1,16 +1,76 @@
-History of Changes
-==================
+Release Notes
+==============
 
 
-.. Upcoming Version
-.. ----------------
+Upcoming Version
+----------------
+
+Version 0.5.15 (12.05.2024)
+---------------------------
+
+* Updated the JRC hydro power plant database to the latest version.
+  (https://github.com/PyPSA/powerplantmatching/pull/123)
+
+* Corrected capacity of some hydro powerplants in the United Kingdom contained
+  in the ENTSOE data based on manual search. The error originated from the use
+  of the value 999 in the capacity column to represent NaN values. The changes
+  accumulate to a reduction of approximately 5 GW in capacity.
+  (https://github.com/PyPSA/powerplantmatching/pull/141)
+
+* Remove use of ``distutils`` package for compatibility with python 3.12.
+  (https://github.com/PyPSA/powerplantmatching/pull/159)
+
+Version 0.5.14 (30.04.2024)
+---------------------------
+
+* Bugfix to ensure compatibility with python 3.12.
+
+Version 0.5.13 (25.04.2024)
+---------------------------
+
+* Update IRENASTAT to include data up to 2023 (``ppm.data.IRENASTAT()``).
+
+Version 0.5.12 (07.04.2024)
+---------------------------
+
+* fix the filtering of GCPT/GEM coal database by Status.
+* add technology renaming for GWPT/GEM wind dataset.
+* improve performances of GEM data processing.
+
+Version 0.5.11 (05.02.2024)
+---------------------------
+
+* The default configuration no longer filters out retired power plants. This filtering should be done by the user afterwards.
+
+Version 0.5.10 (30.01.2024)
+---------------------------
+
+* fix deprecation warnings for new pandas version for inplace operations
+* fix bus mapping in ``export`` module 
+
+Version 0.5.9 (16.01.2024)
+--------------------------
+
+* fix deprecation warnings for new pandas version
+* lower GEM reliability score to fix DateIn and DateOut for some powerplants
+
+
+Version 0.5.8 (30.10.2023)
+-------------------------
+
 **New Features**
+
+* Datasets from the Global Energy Monitor are now combined into one dataset called `GEM`. This is per default used in the matching process.
 
 * Updates the following Global Energy Monitor data according to latest May 2023 release: 
   * `GSPT`, solar power plant
   * `GWPT`, wind power plant
 * Changing Global Energy Monitor dataset name to -latest to avoid data update PRs in powerplantmatching
   but rather encourage updates in `Global Energy Monitor data repo <https://github.com/pz-max/gem-powerplant-data>`__.
+
+**Fixes**
+
+* In the aggregation and merge process, the `DateIn` and `DateOut` columns are now aggregated by taking the minimum and maximum value respectively.
 
 
 Version 0.5.7 (30.05.2023)

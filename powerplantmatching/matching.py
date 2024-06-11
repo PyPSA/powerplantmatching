@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright 2016-2018 Fabian Hofmann (FIAS), Jonas Hoersch (KIT, IAI) and
 # Fabian Gotzens (FZJ, IEK-STE)
 
@@ -18,10 +17,7 @@
 Functions for linking and combining different datasets
 """
 
-from __future__ import absolute_import, print_function
-
 import logging
-import os.path
 from itertools import combinations
 
 import numpy as np
@@ -89,7 +85,7 @@ def compare_two_datasets(dfs, labels, country_wise=True, config=None, **dukeargs
         logger.warn(msg + f"{used_deprecated_args}")
 
     dfs = list(map(read_csv_if_string, dfs))
-    if not ("singlematch" in dukeargs):
+    if "singlematch" not in dukeargs:
         dukeargs["singlematch"] = True
 
     def country_link(dfs, country):
@@ -105,7 +101,12 @@ def compare_two_datasets(dfs, labels, country_wise=True, config=None, **dukeargs
 
     if country_wise:
         countries = config["target_countries"]
-        links = pd.concat([country_link(dfs, c) for c in countries], ignore_index=True)
+        links = [country_link(dfs, c) for c in countries]
+        links = [link for link in links if not link.empty]
+        if links:
+            links = pd.concat(links, ignore_index=True)
+        else:
+            links = pd.DataFrame(columns=[*labels, "scores"])
     else:
         links = duke(dfs, labels=labels, **dukeargs)
 
@@ -138,13 +139,17 @@ def cross_matches(sets_of_pairs, labels=None):
     m_all = sets_of_pairs
     if labels is None:
         labels = np.unique([x.columns for x in m_all])
-    matches = pd.DataFrame(columns=labels)
-    for i in labels:
-        base = [m.set_index(i) for m in m_all if i in m]
-        match_base = pd.concat(base, axis=1).reset_index()
-        matches = pd.concat([matches, match_base], sort=True)
+    matches = None
+    for label in labels:
+        base = [m.set_index(label) for m in m_all if label in m and not m.empty]
+        if base:
+            match_base = pd.concat(base, axis=1).reset_index()
+            if matches is None:
+                matches = match_base.reindex(columns=labels)
+            else:
+                matches = pd.concat([matches, match_base], sort=True)
 
-    if matches.empty:
+    if matches is None or matches.empty:
         logger.warn("No matches found")
         return pd.DataFrame(columns=labels)
 
@@ -153,13 +158,13 @@ def cross_matches(sets_of_pairs, labels=None):
         logger.warn(f"No matches found for data source {cols}")
 
     matches = matches.drop_duplicates().reset_index(drop=True)
-    for i in labels:
+    for label in labels:
         matches = pd.concat(
             [
-                matches.groupby(i, as_index=False, sort=False).apply(
+                matches.groupby(label, as_index=False, sort=False).apply(
                     lambda x: x.loc[x.isnull().sum(axis=1).idxmin()]
                 ),
-                matches[matches[i].isnull()],
+                matches[matches[label].isnull()],
             ]
         ).reset_index(drop=True)
     return (
@@ -201,7 +206,7 @@ def link_multiple_datasets(
     combs = list(combinations(range(len(labels)), 2))
 
     def comp_dfs(dfs_lbs):
-        logger.info("Comparing data sources `{0}` and `{1}`".format(*dfs_lbs[2:]))
+        logger.info("Comparing data sources `{}` and `{}`".format(*dfs_lbs[2:]))
         return compare_two_datasets(dfs_lbs[:2], dfs_lbs[2:], config=config, **dukeargs)
 
     mapargs = [[dfs[c], dfs[d], labels[c], labels[d]] for c, d in combs]
@@ -288,9 +293,9 @@ def reduce_matched_dataframe(df, show_orig_names=False, config=None):
     props_for_groups = {col: "first" for col in cols}
     props_for_groups.update(
         {
-            "DataIn": "min",
+            "DateIn": "min",
             "DateRetrofit": "max",
-            "DataOut": "max",
+            "DateOut": "max",
             "projectID": lambda x: dict(x.droplevel(0).dropna()),
             "eic_code": set,
         }

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright 2016-2018 Fabian Hofmann (FIAS), Jonas Hoersch (KIT, IAI) and
 # Fabian Gotzens (FZJ, IEK-STE)
 
@@ -17,11 +16,8 @@
 """
 Functions for vertically cleaning a dataset.
 """
-from __future__ import absolute_import, print_function
 
 import logging
-import os
-import re
 
 import networkx as nx
 import numpy as np
@@ -55,7 +51,7 @@ AGGREGATION_FUNCTIONS = {
     "DateIn": "min",
     "DateRetrofit": "max",  # choose latest Retrofit-Year
     "DateMothball": "min",
-    "DateOut": "min",
+    "DateOut": "max",
     "File": mode,
     "projectID": set,
     "EIC": set,
@@ -143,7 +139,7 @@ def gather_and_replace(df, mapping):
     """
     Search for patterns in multiple columns and return a series of represantativ keys.
 
-    The function will return a series of unique identifyers given by the keys of the
+    The function will return a series of unique identifiers given by the keys of the
     `mapping` dictionary. The order in the `mapping` dictionary determines which
     represantativ keys are calculated first. Note that these may be overwritten by
     the following mappings.
@@ -160,14 +156,13 @@ def gather_and_replace(df, mapping):
     for key, pattern in mapping.items():
         if not pattern:
             # if pattern is not given, fall back to case-insensitive key
-            pattern = r"(?i)\b%s\b" % key
+            pattern = rf"(?i)\b{key}\b"
         elif isinstance(pattern, list):
             # if pattern is a list, concat all entries in a case-insensitive regex
             pattern = r"(?i)" + "|".join([rf"\b{p}\b" for p in pattern])
         elif not isinstance(pattern, str):
             raise ValueError(f"Pattern must be string or list, not {type(pattern)}")
-        func = lambda ds: ds.str.contains(pattern)
-        where = df.astype(str).apply(func).any(axis=1)
+        where = df.astype(str).apply(lambda ds: ds.str.contains(pattern)).any(axis=1)
         res = res.where(~where, key)
     return res
 
@@ -338,9 +333,9 @@ def clean_technology(df, generalize_hydros=False):
         tech[tech.str.contains("dam", case=False)] = "Reservoir"
     tech = tech.replace({"Gas turbine": "OCGT"})
     tech[tech.str.contains("combined cycle|combustion", case=False)] = "CCGT"
-    tech[
-        tech.str.contains("steam turbine|critical thermal", case=False)
-    ] = "Steam Turbine"
+    tech[tech.str.contains("steam turbine|critical thermal", case=False)] = (
+        "Steam Turbine"
+    )
     tech[tech.str.contains("ocgt|open cycle", case=False)] = "OCGT"
     tech = (
         tech.str.title()
@@ -449,7 +444,8 @@ def aggregate_units(
 
     df = cliques(df, duplicates)
     df = df.groupby("grouped").agg(props_for_groups)
-    df[str_cols] = df[str_cols].replace("", np.nan)
+
+    df[str_cols] = df[str_cols].replace("", pd.NA)
 
     df = (
         df.assign(

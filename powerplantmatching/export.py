@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright 2016-2018 Fabian Hofmann (FIAS), Jonas Hoersch (KIT, IAI) and
 # Fabian Gotzens (FZJ, IEK-STE)
 
@@ -72,8 +71,12 @@ def map_bus(df, buses):
     DataFrame with an extra column 'bus' indicating the nearest bus.
     """
     df = get_obj_if_Acc(df)
-    kdtree = KDTree(buses[["x", "y"]])
-    buses_i = buses.index.append(pd.Index([np.nan]))
+    non_empty_buses = buses.dropna()
+    kdtree = KDTree(non_empty_buses[["x", "y"]])
+    if non_empty_buses.empty:
+        buses_i = pd.Index([np.nan])
+    else:
+        buses_i = non_empty_buses.index.append(pd.Index([np.nan]))
     return df.assign(bus=buses_i[kdtree.query(df[["lon", "lat"]].values)[1]])
 
 
@@ -113,7 +116,7 @@ def to_pypsa_network(df, network, buslist=None):
     """
     df = get_obj_if_Acc(df)
     df = map_bus(df, network.buses.reindex(buslist))
-    df.Set.replace("CHP", "PP", inplace=True)
+    df["Set"] = df.Set.replace("CHP", "PP")
     if "Duration" in df:
         df["weighted_duration"] = df["Duration"] * df["Capacity"]
         df = df.groupby(["bus", "Fueltype", "Set"]).aggregate(
@@ -278,9 +281,11 @@ def to_TIMES(df=None, use_scaled_capacity=False, baseyear=2015):
                     # are being filtered.
                     elif yr > baseyear:
                         series = ct_group.apply(
-                            lambda x: x[cap_column]
-                            if yr >= x["DateIn"] and yr <= x["YearRetire"]
-                            else 0,
+                            lambda x: (
+                                x[cap_column]
+                                if yr >= x["DateIn"] and yr <= x["YearRetire"]
+                                else 0
+                            ),
                             axis=1,
                         )
                     else:
@@ -296,9 +301,10 @@ def to_TIMES(df=None, use_scaled_capacity=False, baseyear=2015):
                     logger.error(
                         "For region '{}' and timestype '{}' the value for "
                         "year {} ({0.000}) is higher than in the year before "
-                        "({0.000}).".format(
-                            reg, tt, yr, df_exp.loc[row, reg], df_exp.loc[row - 1, reg]
-                        )
+                        "({0.000}).",
+                        reg,
+                        tt,
+                        yr,
                     )
             df_exp.loc[row, "Pset_Pn"] = tt
             row += 1

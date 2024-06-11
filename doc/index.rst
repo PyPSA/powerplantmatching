@@ -117,7 +117,7 @@ in-depth discussions and exchanges of ideas and code with
 Licence
 -------
 
-Copyright 2018-2020 Fabian Gotzens (FZ Jülich), Jonas Hörsch (KIT),
+Copyright 2018-2024 Fabian Gotzens (FZ Jülich), Jonas Hörsch (KIT),
 Fabian Hofmann (FIAS)
 
 powerplantmatching is released as free software under the
@@ -155,7 +155,7 @@ powerplantmatching is released as free software under the
    :caption: API Reference
 
    api-data
-   api-plot
+   api-utils
    api-core
 
    
@@ -164,7 +164,7 @@ powerplantmatching is released as free software under the
    :maxdepth: 2
    :caption: References
 
+   release-notes
    contributing
    support
-   release-notes
 

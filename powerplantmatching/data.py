@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright 2016-2020 Fabian Hofmann (FIAS), Jonas Hoersch (KIT, IAI) and
 # Fabian Gotzens (FZJ, IEK-STE)
 
@@ -20,9 +19,6 @@ Collection of power plant data bases and statistical data
 
 import logging
 import os
-import re
-import xml.etree.ElementTree as ET
-from distutils.log import debug
 from zipfile import ZipFile
 
 import entsoe
@@ -39,13 +35,12 @@ from .cleaning import (
     gather_specifications,
     gather_technology_info,
 )
-from .core import _data_in, _package_data, get_config
+from .core import _package_data, get_config
 from .heuristics import scale_to_net_capacities
 from .utils import (
     config_filter,
     convert_to_short_name,
     correct_manually,
-    fill_geoposition,
     get_raw_file,
     set_column_name,
 )
@@ -267,7 +262,7 @@ def GEO(raw=False, update=False, config=None):
 
     def to_year(ds):
         years = pd.to_numeric(ds.dropna().astype(str).str[:4], errors="coerce")
-        year = years[lambda x: x > 1900]
+        year = years[lambda x: x > 1900]  # noqa
         return years.reindex_like(ds)
 
     fn = get_raw_file("GEO_units", update=update, config=config)
@@ -298,7 +293,7 @@ def GEO(raw=False, update=False, config=None):
     ppl = clean_name(ppl)
 
     res = units.join(ppl.set_index("projectID"), "projectID", rsuffix="_ppl")
-    res.DateIn.fillna(res.DateIn_ppl, inplace=True)
+    res["DateIn"] = res.DateIn.fillna(res.DateIn_ppl)
     not_included_ppl = ppl.query("projectID not in @res.projectID")
     res = pd.concat([res, not_included_ppl]).pipe(set_column_name, "GEO")
     res = scale_to_net_capacities(res)
@@ -403,10 +398,7 @@ def JRC(raw=False, update=False, config=None):
 
     fn = get_raw_file("JRC", update, config)
 
-    with ZipFile(fn, "r") as file:
-        directory = file.namelist()[0]
-        key = directory + "data/jrc-hydro-power-plant-database.csv"
-        df = pd.read_csv(file.open(key))
+    df = pd.read_csv(fn)
 
     if raw:
         return df
@@ -531,7 +523,7 @@ def Capacity_stats(
     else:
         source = "Capacity statistics"
 
-    fueltypes = config["target_fueltypes"]
+    fueltypes = config["target_fueltypes"]  # noqa
     df = (
         df.query("year == @year")
         .rename(columns={"technology": "Fueltype"})
@@ -583,8 +575,8 @@ def GPD(raw=False, update=False, config=None, filter_other_dbs=True):
 
     other_dbs = []
     if filter_other_dbs:
-        other_dbs = ["GEODB", "Open Power System Data", "ENTSOE"]
-    countries = config["target_countries"]
+        other_dbs = ["GEODB", "Open Power System Data", "ENTSOE"]  # noqa
+    countries = config["target_countries"]  # noqa
     return (
         df.rename(columns=lambda x: x.title())
         .drop(columns="Country")
@@ -1014,9 +1006,9 @@ def WEPP(raw=False, config=None):
     wepp.Turbtype.fillna("", inplace=True)
     # Correct technology infos:
     wepp.loc[wepp.Technology.str.contains("LIG", case=False), "Fueltype"] = "Lignite"
-    wepp.loc[
-        wepp.Turbtype.str.contains("KAPLAN|BULB", case=False), "Technology"
-    ] = "Run-Of-River"
+    wepp.loc[wepp.Turbtype.str.contains("KAPLAN|BULB", case=False), "Technology"] = (
+        "Run-Of-River"
+    )
     wepp.Technology = wepp.Technology.replace(
         {
             "CONV/PS": "Pumped Storage",
@@ -1207,7 +1199,7 @@ def UBA(
         .str[0]
         .astype(float),
         Country="Germany",
-        projectID=["UBA{:03d}".format(i + header + 2) for i in uba.index],
+        projectID=[f"UBA{i + header + 2:03d}" for i in uba.index],
         Technology=uba.Technology.replace(RENAME_TECHNOLOGY),
     )
     uba.loc[uba.CHP.notnull(), "Set"] = "CHP"
@@ -1232,7 +1224,7 @@ def UBA(
             "\xd6lr\xfcckstand": "Oil",
         }
     )
-    uba.Name.replace([r"(?i)oe", r"(?i)ue"], ["ö", "ü"], regex=True, inplace=True)
+    uba["Name"] = uba.Name.replace([r"(?i)oe", r"(?i)ue"], ["ö", "ü"], regex=True)
     if prune_wind:
         uba = uba.loc[lambda x: x.Fueltype != "Wind"]
     if prune_solar:
@@ -1367,9 +1359,9 @@ def BNETZA(
         "Pumpspeicher": "Pumped Storage",
     }
     for fuel in techmap:
-        bnetza.loc[
-            bnetza.Fueltype.str.contains(fuel, case=False), "Technology"
-        ] = techmap[fuel]
+        bnetza.loc[bnetza.Fueltype.str.contains(fuel, case=False), "Technology"] = (
+            techmap[fuel]
+        )
     # Fueltypes
     bnetza.Fueltype.replace(
         {
@@ -1521,27 +1513,37 @@ def IRENASTAT(raw=False, update=False, config=None):
 
     fn = get_raw_file("IRENA", update=update, config=config)
 
-    df = pd.read_csv(fn, comment="#")
+    df = pd.read_csv(fn, comment="#", quotechar='"')
 
     if raw:
         return df
 
     RENAME_COLUMNS = {
-        "Installed electricity capacity by country/area (MW)": "Capacity",
+        "Electricity statistics": "Capacity",
         "Country/area": "Country",
         "Grid connection": "Grid",
     }
     df.rename(columns=RENAME_COLUMNS, inplace=True)
+
+    df.drop(columns="Data Type", inplace=True)
+
+    # Rename all entries "Congo (the)" to "Congo" under the column
+    # "Country"; the former confuses country_converter.
+    df["Country"] = df["Country"].replace("Congo (the)", "Congo")
 
     # Consistent country names for dataset
     df = convert_to_short_name(df)
 
     df.dropna(subset="Capacity", inplace=True)
 
+    # Remove all rows where Technology is just a Total
+    df = df[
+        ~df.Technology.str.contains("Total Renewable|Total Non-Renewable", na=False)
+    ]
+
     fueltype_dict = {
-        "On-grid Solar photovoltaic": "Solar",
-        "Off-grid Solar photovoltaic": "Solar",
-        "Concentrated solar power": "Solar",
+        "Solar photovoltaic": "Solar",
+        "Solar thermal energy": "Solar",
         "Onshore wind energy": "Wind",
         "Offshore wind energy": "Wind",
         "Renewable hydropower": "Hydro",
@@ -1553,7 +1555,6 @@ def IRENASTAT(raw=False, update=False, config=None):
         "Biogas": "Bioenergy",
         "Geothermal energy": "Geothermal",
         "Marine energy": "Marine",
-        "Fossil fuels": "Other",
         "Coal and peat": "Hard Coal",
         "Oil": "Oil",
         "Natural gas": "Natural Gas",
@@ -1563,9 +1564,8 @@ def IRENASTAT(raw=False, update=False, config=None):
     }
 
     technology_dict = {
-        "On-grid Solar photovoltaic": "PV",
-        "Off-grid Solar photovoltaic": "PV",
-        "Concentrated solar power": "CSP",
+        "Solar photovoltaic": "PV",
+        "Solar thermal energy": "CSP",
         "Onshore wind energy": "Onshore",
         "Offshore wind energy": "Offshore",
         "Pumped storage": "Pumped Storage",
@@ -1574,10 +1574,10 @@ def IRENASTAT(raw=False, update=False, config=None):
     }
 
     df["Fueltype"] = df.Technology.map(fueltype_dict)
-    df.Technology.replace(technology_dict, inplace=True)
+    df["Technology"] = df.Technology.replace(technology_dict)
 
-    l = list(set(df.columns).difference(set(["Capacity"])))
-    df = df.groupby(l, as_index=False, dropna=True).sum()
+    non_capacity_columns = list(set(df.columns).difference(set(["Capacity"])))
+    df = df.groupby(non_capacity_columns, as_index=False, dropna=True).sum()
 
     return df
 
@@ -1752,16 +1752,17 @@ def GCPT(raw=False, update=False, config=None):
         .pipe(set_column_name, "GCPT")
         .pipe(convert_to_short_name)
         .dropna(subset="Capacity")
-        .pipe(lambda x: x.replace({"Fueltype": fueltype_dict}))
-        .pipe(lambda x: x.assign(Technology="Steam Turbine"))
-        .pipe(lambda x: x.assign(Set="PP"))
         .assign(
             DateIn=df["DateIn"].apply(pd.to_numeric, errors="coerce"),
             DateOut=df["DateOut"].apply(pd.to_numeric, errors="coerce"),
             lat=df["lat"].apply(pd.to_numeric, errors="coerce"),
             lon=df["lon"].apply(pd.to_numeric, errors="coerce"),
         )
+        .query("Status in ['operating','mothballed','construction']")
         .pipe(lambda x: x[df.columns.intersection(config.get("target_columns"))])
+        .pipe(lambda x: x.replace({"Fueltype": fueltype_dict}))
+        .pipe(lambda x: x.assign(Technology="Steam Turbine"))
+        .pipe(lambda x: x.assign(Set="PP"))
         .pipe(config_filter, config)
     )
 
@@ -1873,6 +1874,7 @@ def GWPT(raw=False, update=False, config=None):
         )
         .query("Status in ['operating','mothballed','construction']")
         .pipe(lambda x: x[df.columns.intersection(config.get("target_columns"))])
+        .pipe(lambda x: x.replace({"Technology": technology_dict}))
         .assign(Fueltype="Wind")
         .assign(Set="PP")
         .pipe(config_filter, config)
@@ -1925,7 +1927,6 @@ def GSPT(raw=False, update=False, config=None):
         .pipe(set_column_name, "GSPT")
         .pipe(convert_to_short_name)
         .dropna(subset="Capacity")
-        .pipe(lambda x: x.replace({"Technology": technology_dict}))
         .assign(
             DateIn=df["DateIn"].apply(pd.to_numeric, errors="coerce"),
             DateOut=df["DateOut"].apply(pd.to_numeric, errors="coerce"),
@@ -1934,6 +1935,7 @@ def GSPT(raw=False, update=False, config=None):
         )
         .query("Status in ['operating','mothballed','construction']")
         .pipe(lambda x: x[df.columns.intersection(config.get("target_columns"))])
+        .pipe(lambda x: x.replace({"Technology": technology_dict}))
         .assign(Fueltype="Solar")
         .assign(Set="PP")
         .pipe(config_filter, config)
@@ -2004,10 +2006,10 @@ def GGPT(raw=False, update=False, config=None):
             lon=df["lon"].apply(pd.to_numeric, errors="coerce"),
             Capacity=lambda df: pd.to_numeric(df.Capacity, "coerce"),
         )
-        .pipe(lambda x: x.replace({"Technology": technology_dict}))
-        .pipe(lambda x: x.replace({"Set": set_dict}))
         .query("Status in ['operating','mothballed','construction']")
         .pipe(lambda x: x[df.columns.intersection(config.get("target_columns"))])
+        .pipe(lambda x: x.replace({"Technology": technology_dict}))
+        .pipe(lambda x: x.replace({"Set": set_dict}))
         .assign(Fueltype="Natural Gas")
         .pipe(config_filter, config)
     )
@@ -2067,13 +2069,32 @@ def GHPT(raw=False, update=False, config=None):
             lon=df["lon"].apply(pd.to_numeric, errors="coerce"),
         )
         .query("Status in ['operating','construction']")
-        .pipe(lambda x: x.replace({"Technology": technology_dict}))
         .pipe(lambda x: x[df.columns.intersection(config.get("target_columns"))])
+        .pipe(lambda x: x.replace({"Technology": technology_dict}))
         .assign(Fueltype="Hydro")
         .assign(Set="PP")
         .pipe(config_filter, config)
     )
     return df_final
+
+
+def GEM(raw=False, update=False, config=None):
+    """
+    Get the combined dataset of all GEM (https://globalenergymonitor.org/) datasets.
+
+    Parameters
+    ----------
+    raw : bool, optional
+        Whether to return the raw dataset, by default False
+    update : bool, optional
+        Whether to update the raw dataset, by default False
+    config : _type_, optional
+        Custom configuration, by default None
+
+    """
+    GEMS_FUNTIONS = [GBPT, GGPT, GCPT, GGTPT, GNPT, GSPT, GWPT, GHPT]
+    data = [f(raw=raw, update=update, config=config) for f in GEMS_FUNTIONS]
+    return pd.concat(data, ignore_index=True)
 
 
 # deprecated alias for GGPT

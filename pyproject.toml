@@ -1,0 +1,16 @@
+# Formater and linter settings
+
+[tool.ruff]
+line-length = 88
+extend-include = ['*.ipynb']
+
+[tool.ruff.lint]
+select = [
+    'F',   # pyflakes
+    # 'E',   # pycodestyle: Error
+    # 'W',   # pycodestyle: Warning
+    'I',   # isort
+    # 'D',   # pydocstyle
+    'UP',  # pyupgrade
+    'TID', # flake8-tidy-imports
+]

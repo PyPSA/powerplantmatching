@@ -36,8 +36,8 @@ kwargs = dict(start=start, end=end, psr_type=None)
 def parse(c):
     try:
         return client.query_installed_generation_capacity(c, **kwargs).iloc[0]
-    except:
-        print(f"Country {c} failed")
+    except Exception as e:
+        print(f"Country {c} failed with {e}")
         return np.nan
 
 
@@ -54,8 +54,9 @@ stats.loc["AT", "Hydro"] = 14600
 # https://www.statista.com/statistics/496283/total-electricity-generation-capacity-uk/
 stats.loc["GB", "Natural Gas"] = 37000  # (adding ~10GW)
 stats.loc["GB", "Other"] = 1400  # (subtracting ~10GW)
+stats.loc["DE", "Nuclear"] = 0
 
-
+# %%
 totals = powerplants.powerplant.lookup().fillna(0)
 
 sources = [s if isinstance(s, str) else list(s)[0] for s in config["matching_sources"]]
@@ -133,3 +134,5 @@ for c in in_compare.index.unique(0):
     fig.tight_layout()
     fig.savefig(figpath / f"country-comparison/{c}.png", dpi=150)
     plt.close()
+
+# %%
