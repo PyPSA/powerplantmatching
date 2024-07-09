@@ -226,10 +226,13 @@ def factor_comparison(dfs, keys=None, figsize=(12, 9)):
     with sns.axes_style("whitegrid"):
         compare = lookup(dfs, keys=keys, exclude=["Solar", "Wind"]).fillna(0.0)
         compare = (
-            compare.append(
-                pd.concat(
-                    [compare.groupby(level="Country").sum()], keys=["Total"]
-                ).swaplevel()
+            pd.concat(
+                [
+                    compare,
+                    pd.concat(
+                        [compare.groupby(level="Country").sum()], keys=["Total"]
+                    ).swaplevel(),
+                ]
             ).sort_index()
             / 1000
         )
