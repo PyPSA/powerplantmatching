@@ -89,13 +89,12 @@ def extend_by_non_matched(
         )
 
     if df.columns.nlevels > 1:
-        return df.append(
-            # , ignore_index=True ??
+        extend_by = (
             pd.concat([extend_by], keys=[label], axis=1)
             .swaplevel(axis=1)
-            .reindex(columns=df.columns),
-            ignore_index=True,
+            .reindex(columns=df.columns)
         )
+        return pd.concat([df, extend_by], ignore_index=True)
     else:
         return pd.concat([df, extend_by.reindex(columns=df.columns)], ignore_index=True)
 
@@ -223,7 +222,7 @@ def extend_by_VRE(df, config=None, base_year=2017, prune_beyond=True):
         .query('Fueltype != "Hydro"')
         .reindex(columns=config["target_columns"])
     )
-    return df.append(vre, sort=False)
+    return pd.concat([df, vre], sort=False)
 
 
 def fill_missing_commissioning_years(df):
