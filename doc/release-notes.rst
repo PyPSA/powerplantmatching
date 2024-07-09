@@ -13,7 +13,7 @@ Version 0.5.15 (12.05.2024)
 
 * Corrected capacity of some hydro powerplants in the United Kingdom contained
   in the ENTSOE data based on manual search. The error originated from the use
-  of the value 999 in the capacity column to represent NaN values. The chnages
+  of the value 999 in the capacity column to represent NaN values. The changes
   accumulate to a reduction of approximately 5 GW in capacity.
   (https://github.com/PyPSA/powerplantmatching/pull/141)
 
