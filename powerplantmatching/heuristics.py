@@ -319,7 +319,7 @@ def aggregate_VRE_by_commissioning_year(df, target_fueltypes=None, agg_geo_by=No
         df.groupby(["Country", "DateIn", "Fueltype", "Technology"])
         .agg(f)
         .reset_index()
-        .replace({"-": np.NaN})
+        .replace({"-": np.nan})
     )
     df.columns = df.columns.droplevel(level=1)
     return df.assign(Set="PP", DateRetrofit=df.DateIn)
@@ -431,7 +431,7 @@ def derive_vintage_cohorts_from_statistics(df, base_year=2015, config=None):
             mat = pd.DataFrame(
                 columns=range(y_start - life + 1, y_end + life),
                 index=range(y_start - life + 1, y_end),
-            ).astype(np.float)
+            ).astype(float)
             if dfs.Fueltype.iloc[0] in ["Solar", "Wind", "Bioenergy", "Geothermal"]:
                 mat = setInitial_Triangle(mat, dfs, life)
             else:
