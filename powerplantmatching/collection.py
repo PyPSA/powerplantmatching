@@ -241,9 +241,15 @@ def powerplants(
         matched = matched.powerplant.fill_geoposition()
 
     if filter_missing_geopositions:
-        matched = matched[matched.lat.notnull()]
+        if isinstance(matched.columns, pd.MultiIndex):
+            matched = matched[matched.lat.notnull().any(axis=1)]
+        else:
+            matched = matched[matched.lat.notnull()]
 
-    matched.drop_duplicates(["Name", "Fueltype", "Country"])
+    if isinstance(matched.columns, pd.MultiIndex):
+        matched.stack().drop_duplicates(["Name", "Fueltype", "Country"]).unstack(-1)
+    else:
+        matched.drop_duplicates(["Name", "Fueltype", "Country"])
 
     matched.reset_index(drop=True).to_csv(fn, index_label="id", encoding="utf-8")
 
