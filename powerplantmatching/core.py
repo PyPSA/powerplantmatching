@@ -55,8 +55,7 @@ if not exists(_data_in(".")):
 
 # Logging: General Settings
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=20)
-logger.setLevel("INFO")
+logger.setLevel(logging.INFO)
 # Logging: File
 logFormatter = logging.Formatter(
     "%(asctime)s [%(threadName)-12.12s] " "[%(levelname)-5.5s]  %(message)s"
