@@ -63,6 +63,7 @@ docs= [
 dev= ["pre-commit", "pytest", "pytest-cov"]
 
 [tool.setuptools_scm]
+version_scheme = "post-release"
 
 [tool.setuptools.packages.find]
 include = ["powerplantmatching"]
