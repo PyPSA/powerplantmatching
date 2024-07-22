@@ -100,10 +100,10 @@ def get_config(filename=None, **overrides):
     else:
         custom_config = package_config["custom_config"]
 
-    with open(base_config) as f:
+    with open(base_config, encoding="utf8") as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
     if exists(custom_config):
-        with open(custom_config) as f:
+        with open(custom_config, encoding="utf8") as f:
             config.update(yaml.load(f, Loader=yaml.FullLoader))
     config.update(overrides)
 
