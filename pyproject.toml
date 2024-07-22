@@ -13,4 +13,5 @@ select = [
     # 'D',   # pydocstyle
     'UP',  # pyupgrade
     'TID', # flake8-tidy-imports
+    'NPY', # numpy
 ]

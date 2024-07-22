@@ -51,6 +51,9 @@ def test_OPSD_VRE_country():
     assert df.Capacity.sum() > 0
 
 
-# Enable after release of v0.5.0
-# def test_powerplants():
-#     pm.powerplants(from_url=True)
+def test_url_retrieval():
+    pm.powerplants(from_url=True)
+
+
+def test_reduced_retrieval():
+    pm.powerplants(reduced=False)

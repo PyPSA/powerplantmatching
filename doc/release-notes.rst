@@ -5,6 +5,10 @@ Release Notes
 Upcoming Version
 ----------------
 
+* Pandas 2.0.0 and Numpy 2.0.0 compatibility
+
+* Bugfix: Fix retrieving data without aggregation
+
 Version 0.5.15 (12.05.2024)
 ---------------------------
 
