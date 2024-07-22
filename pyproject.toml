@@ -9,7 +9,7 @@ name="powerplantmatching"
 dynamic = ["version"]
 description="Toolset for generating and managing Power Plant Data"
 readme="README.md"
-authors = [{ name = "Fabian Hofmann (FIAS)", email = "hofmann@fias.uni-frankfurt.de" },
+authors = [{ name = "Fabian Hofmann (FIAS)", email = "fabianmarikhofmann@gmail.com" },
 { name = "Jonas Hoersch (KIT)" },
 { name = "Fabian Gotzens (FZ Jülich)" }]
 license = { file = "LICENSE" }
