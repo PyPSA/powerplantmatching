@@ -82,7 +82,7 @@ def compare_two_datasets(dfs, labels, country_wise=True, config=None, **dukeargs
         for arg in used_deprecated_args:
             dukeargs.pop(arg)
         msg = "The following arguments were deprecated and are being ignored: "
-        logger.warn(msg + f"{used_deprecated_args}")
+        logger.warning(msg + f"{used_deprecated_args}")
 
     dfs = list(map(read_csv_if_string, dfs))
     if "singlematch" not in dukeargs:
@@ -150,12 +150,12 @@ def cross_matches(sets_of_pairs, labels=None):
                 matches = pd.concat([matches, match_base], sort=True)
 
     if matches is None or matches.empty:
-        logger.warn("No matches found")
+        logger.warning("No matches found")
         return pd.DataFrame(columns=labels)
 
     if matches.isnull().all().any():
         cols = ", ".join(matches.columns[matches.isnull().all()])
-        logger.warn(f"No matches found for data source {cols}")
+        logger.warning(f"No matches found for data source {cols}")
 
     matches = matches.drop_duplicates().reset_index(drop=True)
     for label in labels:

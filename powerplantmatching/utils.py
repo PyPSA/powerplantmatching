@@ -585,7 +585,7 @@ def parse_Geoposition(
             exactly_one=True,
         )
     except geopy.exc.GeocoderQueryError as e:
-        logger.warn(e)
+        logger.warning(e)
         gdata = None
 
     if gdata is not None:

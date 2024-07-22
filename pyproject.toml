@@ -15,3 +15,10 @@ select = [
     'TID', # flake8-tidy-imports
     'NPY', # numpy
 ]
+
+# Pytest settings
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    "error::FutureWarning",      # Raise all FutureWarnings as errors
+]

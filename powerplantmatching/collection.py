@@ -181,9 +181,9 @@ def powerplants(
     used_deprecated_args = deprecated_args.intersection(collection_kwargs.keys())
     if used_deprecated_args:
         msg = "The following arguments were deprecated and are being ignored: "
-        logger.warn(msg + f"{used_deprecated_args}")
+        logger.warning(msg + f"{used_deprecated_args}")
     if extendby_kwargs:
-        logger.warn(
+        logger.warning(
             DeprecationWarning,
             "`extendby_kwargs` is deprecated in the favor of extend_by_kwargs",
         )
