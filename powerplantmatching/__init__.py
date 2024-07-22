@@ -21,16 +21,27 @@ A set of tools for cleaning, standardising and combining multiple
 power plant databases.
 """
 
-__version__ = "0.5.15"
-__author__ = "Fabian Hofmann"
-__copyright__ = "Copyright 2017-2024 Technical University of Berlin"
-# The rough hierarchy of this package is
-# core, utils, heuristics, cleaning, matching, collection, data
+import re
+from importlib.metadata import version
 
 from . import core, data, heuristics, plot, utils
 from .accessor import PowerPlantAccessor
 from .collection import powerplants
 from .core import get_config, package_config
+
+__author__ = "Fabian Hofmann"
+__copyright__ = "Copyright 2017-2024 Technical University of Berlin"
+# The rough hierarchy of this package is
+# core, utils, heuristics, cleaning, matching, collection, data
+
+# e.g. "0.17.1" or "0.17.1.dev4+ga3890dc0" (if installed from git)
+__version__ = version("powerplantmatching")
+# e.g. "0.17.0" # TODO, in the network structure it should use the dev version
+release_version = re.match(r"(\d+\.\d+(\.\d+)?)", __version__).group(0)
+
+# Assert that version is not 0.1 (which is the default version in the setup.py)
+assert release_version != "0.1", "setuptools_scm could not find the version number"
+
 
 __all__ = [
     "powerplants",
