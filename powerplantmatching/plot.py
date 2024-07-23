@@ -44,7 +44,7 @@ except (ModuleNotFoundError, ImportError):
     cartopy_present = False
 
 if not cartopy_present:
-    logger.warn("Cartopy not existent.")
+    logger.warning("Cartopy not existent.")
 
 
 def fueltype_stats(df):
@@ -524,7 +524,7 @@ def gather_nrows_ncols(x, orientation="landscape"):
 #                  .fillna(0.0))               # country (if all zero->drop!).
 #
 #    if (show_indicators or threshold >= 0.) and len(stats.columns) < 2:
-#        logger.warn('At least two objects for comparison needed when using '
+#        logger.warning('At least two objects for comparison needed when using '
 #                    '`show_indicators` or `threshold`. Arguments ignored.')
 #        show_indicators = False
 #        threshold = -1

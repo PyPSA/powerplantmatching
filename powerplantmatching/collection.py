@@ -29,7 +29,7 @@ from .heuristics import extend_by_non_matched, extend_by_VRE
 from .matching import combine_multiple_datasets, reduce_matched_dataframe
 from .utils import (
     parmap,
-    projectID_to_dict,
+    parse_string_to_dict,
     set_column_name,
     to_dict_if_string,
 )
@@ -113,7 +113,7 @@ def collect(
             df = pd.read_csv(
                 outfn_matched, index_col=0, header=[0, 1], low_memory=False
             )
-        return df.pipe(projectID_to_dict)
+        return df.pipe(parse_string_to_dict, ["projectID", "EIC"])
 
 
 def powerplants(
@@ -181,9 +181,9 @@ def powerplants(
     used_deprecated_args = deprecated_args.intersection(collection_kwargs.keys())
     if used_deprecated_args:
         msg = "The following arguments were deprecated and are being ignored: "
-        logger.warn(msg + f"{used_deprecated_args}")
+        logger.warning(msg + f"{used_deprecated_args}")
     if extendby_kwargs:
-        logger.warn(
+        logger.warning(
             DeprecationWarning,
             "`extendby_kwargs` is deprecated in the favor of extend_by_kwargs",
         )
@@ -204,7 +204,7 @@ def powerplants(
         logger.info(f"Retrieving data from {url}")
         df = (
             pd.read_csv(url, index_col=0)
-            .pipe(projectID_to_dict)
+            .pipe(parse_string_to_dict, ["projectID", "EIC"])
             .pipe(set_column_name, "Matched Data")
         )
         logger.info(f"Store data at {fn}")
@@ -214,7 +214,7 @@ def powerplants(
     if not update and os.path.exists(fn):
         df = (
             pd.read_csv(fn, index_col=0, header=header)
-            .pipe(projectID_to_dict)
+            .pipe(parse_string_to_dict, ["projectID", "EIC"])
             .pipe(set_column_name, "Matched Data")
         )
         if extend_by_vres:

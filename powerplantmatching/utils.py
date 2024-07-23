@@ -19,6 +19,7 @@ Utility functions for checking data completeness and supporting other functions
 
 import multiprocessing
 import os
+import re
 from ast import literal_eval as liteval
 
 import country_converter as coco
@@ -270,18 +271,39 @@ def to_dict_if_string(s):
         return s
 
 
-def projectID_to_dict(df):
+def parse_string_to_dict(df, cols):
     """
-    Convenience function to convert string of dict to dict type
+    Convenience function to convert string of dict to dict type for specified columns.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame on which to apply the parsing
+    cols : str, list
+        Column(s) to be parsed to dict type
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame with specified columns parsed to dict type
     """
-    if df.columns.nlevels > 1:
+    if isinstance(cols, str):
+        cols = [cols]
+
+    def _replace_and_evaluate(value):
+        # Needed to read in older files with {nan} as string
+        value = re.sub(r"\bnan\b(, )?|, \bnan\b", "", value)
+        return liteval(value)
+
+    if isinstance(df.columns, pd.MultiIndex):
         return df.assign(
-            projectID=(
-                df.projectID.stack().dropna().apply(lambda ds: liteval(ds)).unstack()
-            )
+            **{
+                col: df[col].stack().dropna().apply(_replace_and_evaluate).unstack()
+                for col in cols
+            }
         )
     else:
-        return df.assign(projectID=df.projectID.apply(lambda x: liteval(x)))
+        return df.assign(**{col: df[col].apply(_replace_and_evaluate) for col in cols})
 
 
 def select_by_projectID(df, projectID, dataset_name=None):
@@ -563,7 +585,7 @@ def parse_Geoposition(
             exactly_one=True,
         )
     except geopy.exc.GeocoderQueryError as e:
-        logger.warn(e)
+        logger.warning(e)
         gdata = None
 
     if gdata is not None:

@@ -241,7 +241,7 @@ def fill_missing_commissioning_years(df):
     df["DateIn"] = df.DateIn.fillna(df.groupby(["Country"]).DateIn.transform("mean"))
     if df.DateIn.isnull().any():
         count = len(df[df.DateIn.isnull()])
-        logger.warn(
+        logger.warning(
             f"""There are still *{count}* empty values for
                         'DateIn' in the DataFrame. These should
                         be either be filled manually or dropped.
@@ -621,6 +621,6 @@ def set_known_retire_years(df):
         if name_match_b.any():
             ppl_de_nuc.loc[name_match_b, "YearRetire"] = year
         else:
-            logger.warn(f"'{name}' was not found in given DataFrame.")
+            logger.warning(f"'{name}' was not found in given DataFrame.")
     df.loc[ppl_de_nuc.index, "YearRetire"] = ppl_de_nuc["YearRetire"]
     return df

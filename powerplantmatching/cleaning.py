@@ -405,7 +405,7 @@ def aggregate_units(
         for arg in used_deprecated_args:
             kwargs.pop(arg)
         msg = "The following arguments were deprecated and are being ignored: "
-        logger.warn(msg + f"{used_deprecated_args}")
+        logger.warning(msg + f"{used_deprecated_args}")
 
     df = get_obj_if_Acc(df)
 
