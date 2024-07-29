@@ -124,7 +124,7 @@ def powerplant_map(
 
         fig.tight_layout(pad=0.5)
         if cartopy_present:
-            ax.outline_patch.set_visible(False)
+            ax.spines["geo"].set_visible(False)
         return fig, ax
 
 
@@ -389,7 +389,7 @@ def draw_basemap(
         ax.coastlines(linewidth=0.4, zorder=-1, resolution=resolution)
         border = cartopy.feature.BORDERS.with_scale(resolution)
         ax.add_feature(border, linewidth=0.3)
-        ax.outline_patch.set_visible(False)
+        ax.spines["geo"].set_visible(False)
         if fillcontinents:
             land = cartopy.feature.LAND.with_scale(resolution)
             ax.add_feature(land, facecolor="lavender", alpha=0.25)
