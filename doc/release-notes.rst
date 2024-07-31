@@ -1,13 +1,18 @@
 Release Notes
 ==============
 
+.. Upcoming Version
+.. ----------------
 
-Upcoming Version
+
+Version 0.5.16 (31.08.2024)
 ----------------
 
-* Pandas 2.0.0 and Numpy 2.0.0 compatibility
+* Dependency updates: Ensure compatibility with pandas 2.0, numpy 2.0 and cartopy.
 
-* Bugfix: Fix retrieving data without aggregation
+* Bugfix: Fix retrieving data without aggregation (https://github.com/PyPSA/powerplantmatching/pull/180)
+
+* See full list of changes `here <https://github.com/PyPSA/powerplantmatching/releases/tag/v0.5.16>`__.
 
 Version 0.5.15 (12.05.2024)
 ---------------------------
