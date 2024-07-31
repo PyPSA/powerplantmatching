@@ -1,8 +1,6 @@
-# Formater and linter settings
 [build-system]
 requires = ["setuptools>=64", "setuptools_scm>=8"]
 build-backend = "setuptools.build_meta"
-
 
 [project]
 name="powerplantmatching"
@@ -62,6 +60,8 @@ docs= [
 ]
 dev= ["pre-commit", "pytest", "pytest-cov"]
 
+ # setuptools_scm settings
+
 [tool.setuptools_scm]
 version_scheme = "post-release"
 
@@ -71,7 +71,6 @@ include = ["powerplantmatching"]
 # Formatter and linter settings
 
 [tool.ruff]
-line-length = 88
 extend-include = ['*.ipynb']
 
 [tool.ruff.lint]
@@ -87,6 +86,7 @@ select = [
 ]
 
 # Pytest settings
+
 [tool.pytest.ini_options]
 filterwarnings = [
     "error::FutureWarning",      # Raise all FutureWarnings as errors

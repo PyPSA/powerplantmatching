@@ -1,4 +1,3 @@
-
 name: Tests
 
 on:
@@ -9,6 +8,7 @@ on:
   schedule:
   - cron: "0 5 * * TUE"
 
+# Cancel any in-progress runs when a new run is triggered
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -72,4 +72,6 @@ jobs:
     - name: Test with pytest
       run: |
         pytest
+      env:
+        GITHUB_ACTIONS: true
 
