@@ -68,6 +68,13 @@ version_scheme = "post-release"
 [tool.setuptools.packages.find]
 include = ["powerplantmatching"]
 
+# Pytest settings
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    "error::FutureWarning",      # Raise all FutureWarnings as errors
+]
+
 # Formatter and linter settings
 
 [tool.ruff]
@@ -85,9 +92,3 @@ select = [
     'NPY', # numpy
 ]
 
-# Pytest settings
-
-[tool.pytest.ini_options]
-filterwarnings = [
-    "error::FutureWarning",      # Raise all FutureWarnings as errors
-]
