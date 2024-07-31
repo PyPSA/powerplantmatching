@@ -641,7 +641,7 @@ def fill_geoposition(
         if isinstance(df.columns, pd.MultiIndex):
             new_data = (
                 df.drop(columns=["lat", "lon"])
-                .stack()
+                .stack(future_stack=True)
                 .join(locs, on=["Name", "Country"])
                 .unstack(-1)
                 .reindex(columns=df.columns)

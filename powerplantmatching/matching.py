@@ -307,7 +307,7 @@ def reduce_matched_dataframe(df, show_orig_names=False, config=None):
     sdf = (
         df.assign(Set=lambda df: df.Set.where(df.Set != "PP"))
         .assign(Fueltype=lambda df: df.Fueltype.where(df.Set != "Other"))
-        .stack(1)
+        .stack(1, future_stack=True)
         .reindex(rel_scores.index, level=1)
         .groupby(level=0)
         .agg(props_for_groups)

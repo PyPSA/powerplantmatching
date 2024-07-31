@@ -169,7 +169,7 @@ def powerplants(
             Arguments passed to powerplantmatching.collection.Collection.
 
     """
-    from . import __version__
+    from . import latest_release
 
     if config is None:
         if config_update is None:
@@ -200,7 +200,7 @@ def powerplants(
 
     if from_url:
         fn = _data_out("matched_data_red.csv", config)
-        url = config["matched_data_url"].format(tag="v" + __version__)
+        url = config["matched_data_url"].format(tag="v" + latest_release)
         logger.info(f"Retrieving data from {url}")
         df = (
             pd.read_csv(url, index_col=0)
@@ -247,7 +247,9 @@ def powerplants(
             matched = matched[matched.lat.notnull()]
 
     if isinstance(matched.columns, pd.MultiIndex):
-        matched.stack().drop_duplicates(["Name", "Fueltype", "Country"]).unstack(-1)
+        matched.stack(future_stack=True).drop_duplicates(
+            ["Name", "Fueltype", "Country"]
+        ).unstack(-1)
     else:
         matched.drop_duplicates(["Name", "Fueltype", "Country"])
 
