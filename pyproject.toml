@@ -87,7 +87,6 @@ select = [
 ]
 
 # Pytest settings
-
 [tool.pytest.ini_options]
 filterwarnings = [
     "error::FutureWarning",      # Raise all FutureWarnings as errors
