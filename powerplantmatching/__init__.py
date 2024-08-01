@@ -38,8 +38,9 @@ __version__ = version("powerplantmatching")
 # e.g. "0.5.15", without the post part (if it exists, otherwise the same as __version__)
 latest_release = __version__.split(".post")[0]
 
-assert latest_release != "0.1", "setuptools_scm could not find the version number"
-
+assert not __version__.startswith(
+    "0.0"
+), "Could not determine version of powerplantmatching."
 
 __all__ = [
     "powerplants",

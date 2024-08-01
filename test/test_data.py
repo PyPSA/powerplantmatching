@@ -5,8 +5,6 @@ Created on Wed Nov 25 08:48:04 2020
 @author: fabian
 """
 
-import os
-
 import pytest
 
 import powerplantmatching as pm
@@ -17,11 +15,6 @@ sources = [s if isinstance(s, str) else list(s)[0] for s in config["matching_sou
 
 if not config["entsoe_token"] and "ENTSOE" in sources:
     sources.remove("ENTSOE")
-
-
-@pytest.fixture(scope="session")
-def is_github_actions():
-    return os.environ.get("GITHUB_ACTIONS") == "true"
 
 
 @pytest.mark.parametrize("source", sources)
@@ -59,10 +52,8 @@ def test_OPSD_VRE_country():
 
 
 @pytest.mark.github_actions
-def test_url_retrieval(is_github_actions):
-    # Leads to HTTPError in GitHubAction
-    if not is_github_actions:
-        pm.powerplants(from_url=True)
+def test_url_retrieval():
+    pm.powerplants(from_url=True)
 
 
 def test_reduced_retrieval():
