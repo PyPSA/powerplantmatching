@@ -7,7 +7,7 @@ be it with new ideas, suggestions, by filing bug reports or
 contributing code.
 
 You are invited to submit pull requests / issues to our
-`Github repository <https://github.com/FRESNA/powerplantmatching>`_.
+`Github repository <https://github.com/PyPSA/powerplantmatching>`_.
 
 Therefore, we encourage to install ``powerplantmatching`` together with packages used for developing:
 
@@ -57,7 +57,7 @@ Please, before starting, make sure that you’ve installed
   
   If this file does not yet exist on your machine, download the
   `standard
-  configuration <https://raw.githubusercontent.com/FRESNA/powerplantmatching/master/powerplantmatching/package_data/config.yaml>`__
+  configuration <https://raw.githubusercontent.com/PyPSA/powerplantmatching/master/powerplantmatching/package_data/config.yaml>`__
   and store it under the given path as
   ``.powerplantmatching_config.yaml``.
 
