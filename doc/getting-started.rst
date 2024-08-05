@@ -18,7 +18,7 @@ The resulting dataset compared with the capacity statistics provided by
 the `ENTSOE
 SO&AF <https://data.open-power-system-data.org/national_generation_capacity/2019-02-22>`__:
 
-.. figure:: https://raw.githubusercontent.com/FRESNA/powerplantmatching/master/matching_analysis/factor_plot_Matched%20Data.png
+.. figure:: https://raw.githubusercontent.com/PyPSA/powerplantmatching/master/matching_analysis/factor_plot_Matched%20Data.png
    :alt: Capacity statistics comparison
 
 
