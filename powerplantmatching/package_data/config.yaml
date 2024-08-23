@@ -153,8 +153,9 @@ WEPP:
 GGPT:
   net_capacity: false
   reliability_score: 4
-  fn: Global-Gas-Plant-Tracker-GGPT-February-2023-v2.csv
-  url: https://raw.githubusercontent.com/pz-max/gem-powerplant-data/main/Global-Gas-Plant-Tracker-GGPT-latest.csv
+  status: ["operating", "retired", "construction"]
+  fn: Global-Oil-and-Gas-Plant-Tracker-GOGPT-February-2024-v4.xlsx
+  url: https://globalenergymonitor.org/wp-content/uploads/2024/03/Global-Oil-and-Gas-Plant-Tracker-GOGPT-February-2024-v4.xlsx
 GEM: 
   # combined data set of all GEM trackers
   net_capacity: True
@@ -162,39 +163,45 @@ GEM:
 GCPT:
   net_capacity: false
   reliability_score: 4
-  fn: Global-Coal-Plant-Tracker-January-2023.csv
-  url: https://raw.githubusercontent.com/pz-max/gem-powerplant-data/main/Global-Coal-Plant-Tracker-latest.csv
+  status: ["operating", "retired", "construction"]
+  fn: Global-Coal-Plant-Tracker-July-2024.xlsx
+  url: https://globalenergymonitor.org/wp-content/uploads/2024/07/Global-Coal-Plant-Tracker-July-2024.xlsx
 GGTPT:
   net_capacity: false
   reliability_score: 4
-  fn: Global-Geothermal-Power-Tracker-January-2023.csv
-  url: https://raw.githubusercontent.com/pz-max/gem-powerplant-data/main/Global-Geothermal-Power-Tracker-latest.csv
+  status: ["operating", "retired", "construction"]
+  fn: Geothermal-Power-Tracker-May-2024.xlsx
+  url: https://globalenergymonitor.org/wp-content/uploads/2024/05/Geothermal-Power-Tracker-May-2024.xlsx
 GWPT:
   net_capacity: false
   reliability_score: 4
-  fn: Global-Wind-Power-Tracker-January-2023.csv
-  url: https://raw.githubusercontent.com/pz-max/gem-powerplant-data/main/Global-Wind-Power-Tracker-latest.csv
+  status: ["operating", "retired", "construction"]
+  fn: Global-Wind-Power-Tracker-June-2024.xlsx
+  url: https://globalenergymonitor.org/wp-content/uploads/2024/05/Global-Wind-Power-Tracker-June-2024.xlsx
 GSPT:
   net_capacity: false
   reliability_score: 4
-  fn: Global-Solar-Power-Tracker-January-2023.csv
-  url: https://raw.githubusercontent.com/pz-max/gem-powerplant-data/main/Global-Solar-Power-Tracker-latest.csv
+  status: ["operating", "construction"]
+  fn: Global-Solar-Power-Tracker-June-2024.xlsx
+  url: https://globalenergymonitor.org/wp-content/uploads/2024/05/Global-Solar-Power-Tracker-June-2024.xlsx
 GBPT:
   net_capacity: false
   reliability_score: 4
-  fn: Global-Bioenergy-Power-Tracker-January-2023.csv
-  url: https://raw.githubusercontent.com/pz-max/gem-powerplant-data/main/Global-Bioenergy-Power-Tracker-latest.csv
+  status: ["operating", "retired", "construction"]
+  fn: Global-Bioenergy-Power-Tracker-GBPT-V1.xlsx
+  url: https://globalenergymonitor.org/wp-content/uploads/2023/11/Global-Bioenergy-Power-Tracker-GBPT-V1.xlsx
 GNPT:
   net_capacity: false
   reliability_score: 4
-  fn: Global-Nuclear-Power-Tracker-January-2023.csv
-  url: https://raw.githubusercontent.com/pz-max/gem-powerplant-data/main/Global-Nuclear-Power-Tracker-latest.csv
-
+  status: ["operating", "retired", "mothballed", "construction"]
+  fn: Global-Nuclear-Power-Tracker-July-2024.xlsx
+  url: https://globalenergymonitor.org/wp-content/uploads/2024/07/Global-Nuclear-Power-Tracker-July-2024.xlsx
 GHPT:
   net_capacity: false
   reliability_score: 4
-  fn: Global-Hydropower-Tracker-May-2023.csv
-  url: https://raw.githubusercontent.com/pz-max/gem-powerplant-data/main/Global-Hydropower-Tracker-latest.csv
+  status: ["operating", "retired", "construction"]
+  fn: Global-Hydropower-Tracker-April-2024.xlsx
+  url: https://globalenergymonitor.org/wp-content/uploads/2024/04/Global-Hydropower-Tracker-April-2024.xlsx
 # ---------------------------------------------------------------------------- #
 #                             Data Structure Config                            #
 # ---------------------------------------------------------------------------- #
