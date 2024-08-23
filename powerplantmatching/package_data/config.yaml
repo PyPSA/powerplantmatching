@@ -16,13 +16,13 @@ main_query: "Name != '' and (lat >= 30 or lat != lat)"
 matching_sources:
   # Make individual queries for the datasets as done in `fully_included_sources`
   # Queries are combined with `main_query` with an `and` operator
-  - ENTSOE
-  - GEO
-  - GPD
-  - JRC
-  - OPSD: Country != "Spain" and Fueltype != 'Hard Coal'
-  - BEYONDCOAL
-  - WIKIPEDIA
+  - ENTSOE: Fueltype != 'Solar'
+  - GEO: Fueltype != 'Solar'
+  - GPD: Fueltype != 'Solar'
+  - JRC: Fueltype != 'Solar'
+  - OPSD: Country != "Spain" and Fueltype != 'Hard Coal' and Fueltype != 'Solar'
+  - BEYONDCOAL: Fueltype != 'Solar'
+  - WIKIPEDIA: Fueltype != 'Solar'
   - GEM
 
 # fully_included_sources, these sources are included even without match to the final dataset
@@ -34,7 +34,7 @@ fully_included_sources:
   - JRC: Country not in ['Switzerland', 'Albania', 'United Kingdom', 'Norway']
   - OPSD: Country not in ['Switzerland', 'Italy', 'Spain', 'Norway', 'Austria']
   - BEYONDCOAL
-  # - GEM
+  - GEM
 
 
 parallel_duke_processes: false
@@ -48,7 +48,7 @@ matched_data_url: https://raw.githubusercontent.com/PyPSA/powerplantmatching/{ta
 opsd_vres_base_year: 2020
 
 BNETZA:
-  reliability_score: 3
+  reliability_score: 2
   fn: Kraftwerksliste_2017_2.xlsx
   url: https://www.bundesnetzagentur.de/SharedDocs/Downloads/DE/Sachgebiete/Energie/Unternehmen_Institutionen/Versorgungssicherheit/Erzeugungskapazitaeten/Kraftwerksliste/Kraftwerksliste_2019_1.xlsx;jsessionid=17E419F28D025C7DD9FC6E2BEB3D088F?__blob=publicationFile&v=2
 BEYONDCOAL:
@@ -102,11 +102,11 @@ IWPDCY:
   reliability_score: 3
   fn: IWPDCY.csv
 OPSD_DE:
-  reliability_score: 5
+  reliability_score: 4
   fn: conventional_power_plants_DE.csv
   url: https://raw.githubusercontent.com/pypsa-meets-earth/ppm-data-backup/main/conventional_power_plants_DE.csv
 OPSD_EU:
-  reliability_score: 5
+  reliability_score: 4
   fn: conventional_power_plants_EU.csv
   url: https://raw.githubusercontent.com/pypsa-meets-earth/ppm-data-backup/main/conventional_power_plants_EU.csv
 OPSD_VRE:
@@ -137,28 +137,28 @@ OPSD_VRE_GB:
   url: https://data.open-power-system-data.org/renewable_power_plants/2020-08-25/renewable_power_plants_UK.csv
   fn: renewable_power_plants_UK.csv
 OPSD:
-  reliability_score: 5
+  reliability_score: 4
 Capacity_stats:
   url: https://data.open-power-system-data.org/national_generation_capacity/2020-10-01/national_generation_capacity_stacked.csv
   fn: national_generation_capacity_stacked.csv
 UBA:
   net_capacity: false
-  reliability_score: 5
+  reliability_score: 4
   fn: kraftwerke-de-ab-100-mw.xls
   url: https://www.umweltbundesamt.de/sites/default/files/medien/372/dokumente/kraftwerke_de_ab_100_mw_0.xls
 WEPP:
   net_capacity: false
-  reliability_score: 4
+  reliability_score: 3
   fn: platts_wepp.csv
 GGPT:
   net_capacity: false
-  reliability_score: 4
+  reliability_score: 5
   status: ["operating", "retired", "construction"]
   fn: Global-Oil-and-Gas-Plant-Tracker-GOGPT-February-2024-v4.xlsx
   url: https://globalenergymonitor.org/wp-content/uploads/2024/03/Global-Oil-and-Gas-Plant-Tracker-GOGPT-February-2024-v4.xlsx
 GEM: 
   # combined data set of all GEM trackers
-  net_capacity: True
+  net_capacity: true
   reliability_score: 5
 GCPT:
   net_capacity: false
