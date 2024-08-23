@@ -1,9 +1,10 @@
 Release Notes
 ==============
 
-.. Upcoming Version
-.. ----------------
+Upcoming Version
+----------------
 
+* Update Global Energy Monitor data to latest versions as of 2024-08-23.
 
 Version 0.5.16 (31.08.2024)
 ----------------
