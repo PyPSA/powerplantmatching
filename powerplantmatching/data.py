@@ -1614,7 +1614,7 @@ def GBPT(raw=False, update=False, config=None):
         "GEM phase ID": "projectID",
     }
 
-    status_list = config["GBPT"].get("status", ["operating"]) # noqa: F841
+    status_list = config["GBPT"].get("status", ["operating"])  # noqa: F841
 
     df = df.rename(columns=RENAME_COLUMNS)
     df_final = (
@@ -1671,7 +1671,7 @@ def GNPT(raw=False, update=False, config=None):
         "GEM unit ID": "projectID",
     }
 
-    status_list = config["GNPT"].get("status", ["operating"]) # noqa: F841
+    status_list = config["GNPT"].get("status", ["operating"])  # noqa: F841
 
     df = df.rename(columns=RENAME_COLUMNS)
     df_final = (
@@ -1745,7 +1745,7 @@ def GCPT(raw=False, update=False, config=None):
 
     planned_retirement = df["Planned retirement"].apply(pd.to_numeric, errors="coerce")
 
-    status_list = config["GCPT"].get("status", ["operating"]) # noqa: F841
+    status_list = config["GCPT"].get("status", ["operating"])  # noqa: F841
 
     df = df.rename(columns=RENAME_COLUMNS)
     df_final = (
@@ -1804,7 +1804,7 @@ def GGTPT(raw=False, update=False, config=None):
         "GEM unit ID": "projectID",
     }
 
-    status_list = config["GGTPT"].get("status", ["operating"]) # noqa: F841
+    status_list = config["GGTPT"].get("status", ["operating"])  # noqa: F841
 
     df = df.rename(columns=RENAME_COLUMNS)
     df_final = (
@@ -1866,7 +1866,7 @@ def GWPT(raw=False, update=False, config=None):
         "Offshore mount unknown": "Offshore",
     }
 
-    status_list = config["GWPT"].get("status", ["operating"]) # noqa: F841
+    status_list = config["GWPT"].get("status", ["operating"])  # noqa: F841
 
     df = df.rename(columns=RENAME_COLUMNS)
     df_final = (
@@ -1931,7 +1931,7 @@ def GSPT(raw=False, update=False, config=None):
         "Assumed PV": "PV",
     }
 
-    status_list = config["GSPT"].get("status", ["operating"]) # noqa: F841
+    status_list = config["GSPT"].get("status", ["operating"])  # noqa: F841
 
     df = df.rename(columns=RENAME_COLUMNS)
     df_final = (
@@ -2007,7 +2007,7 @@ def GGPT(raw=False, update=False, config=None):
         "not found": "PP",
     }
 
-    status_list = config["GGPT"].get("status", ["operating"]) # noqa: F841
+    status_list = config["GGPT"].get("status", ["operating"])  # noqa: F841
     gas_fuels = ["NG", "LNG", "BU", "LFG", "BG", "BFG", "COG", "CM", "H", "OG"]
 
     df = df.rename(columns=RENAME_COLUMNS)
@@ -2081,7 +2081,7 @@ def GHPT(raw=False, update=False, config=None):
         "conventional and pumped storage": "Pumped Storage",
         "conventional and run-of-river": "Run-Of-River",
     }
-    status_list = config["GHPT"].get("status", ["operating"]) # noqa: F841
+    status_list = config["GHPT"].get("status", ["operating"])  # noqa: F841
     df = df.rename(columns=RENAME_COLUMNS)
     df_final = (
         df.pipe(clean_name)
