@@ -1,13 +1,20 @@
 Release Notes
 ==============
 
-Upcoming Version
-----------------
+.. Upcoming Version
+.. ----------------
+
+Version 0.5.17 (23.08.2024)
+---------------------------
 
 * Update Global Energy Monitor data to latest versions as of 2024-08-23.
 
-Version 0.5.16 (31.08.2024)
-----------------
+* Adjusted reliability scores in favour of GEM data.
+
+* See full list of changes `here <https://github.com/PyPSA/powerplantmatching/releases/tag/v0.5.17>`__.
+
+Version 0.5.16 (31.07.2024)
+---------------------------
 
 * Dependency updates: Ensure compatibility with pandas 2.0, numpy 2.0 and cartopy.
 
