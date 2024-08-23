@@ -10,6 +10,8 @@ from entsoe import EntsoePandasClient
 
 import powerplantmatching as pm
 from powerplantmatching.cleaning import gather_fueltype_info
+import numpy as np
+import time
 
 warnings.simplefilter(action="ignore", category=(FutureWarning, XMLParsedAsHTMLWarning))
 root = pathlib.Path(__file__).parent.absolute()
@@ -27,19 +29,22 @@ powerplants = powerplants.powerplant.convert_country_to_alpha2()
 
 client = EntsoePandasClient(api_key=config["entsoe_token"])
 
-start = pd.Timestamp("20190101", tz="Europe/Berlin")
-end = pd.Timestamp("20200101", tz="Europe/Berlin")
+start = pd.Timestamp("20220101", tz="Europe/Berlin")
+end = pd.Timestamp("20230101", tz="Europe/Berlin")
 
 kwargs = dict(start=start, end=end, psr_type=None)
 
 
 def parse(c):
-    try:
-        return client.query_installed_generation_capacity(c, **kwargs).iloc[0]
-    except Exception as e:
-        print(f"Country {c} failed with {e}")
-        return np.nan
-
+    rename = {"GB": "UK"}
+    for n in range(2):
+        try:
+            print(c, n)
+            return client.query_installed_generation_capacity(rename.get(c, c), **kwargs).iloc[0]
+        except Exception as e:
+            print(f"Country {c} failed with {e}")
+            time.sleep(3)
+    return np.nan
 
 stats = pd.DataFrame({c: parse(c) for c in powerplants.Country.unique()})
 fueltypes = gather_fueltype_info(pd.DataFrame({"Fueltype": stats.index}), ["Fueltype"])
@@ -48,15 +53,11 @@ stats = stats.groupby(fueltypes.Fueltype.values).sum().unstack()
 # Manual correction on the statistics
 
 # https://de.wikipedia.org/wiki/Liste_von_Wasserkraftwerken_in_der_Schweiz?oldformat=true
-stats.loc["CH", "Hydro"] = 18000
-# https://www.bmk.gv.at/dam/jcr:f0bdbaa4-59f2-4bde-9af9-e139f9568769/Energie_in_OE_2020_ua.pdf
-stats.loc["AT", "Hydro"] = 14600
-# https://www.statista.com/statistics/496283/total-electricity-generation-capacity-uk/
-stats.loc["GB", "Natural Gas"] = 37000  # (adding ~10GW)
-stats.loc["GB", "Other"] = 1400  # (subtracting ~10GW)
-stats.loc["DE", "Nuclear"] = 0
+stats.loc["CH", "Hydro"] = 17038
 
 # %%
+query = "(DateOut > 2022 or DateOut != DateOut) and (DateIn < 2023 or DateIn != DateIn)"
+powerplants = powerplants.query(query)
 totals = powerplants.powerplant.lookup().fillna(0)
 
 sources = [s if isinstance(s, str) else list(s)[0] for s in config["matching_sources"]]
@@ -64,6 +65,7 @@ sources = [s if isinstance(s, str) else list(s)[0] for s in config["matching_sou
 input_dbs = {
     s.title(): getattr(pm.data, s)()
     .powerplant.convert_country_to_alpha2()
+    .query(query)
     .powerplant.lookup()
     .fillna(0)
     for s in sources
