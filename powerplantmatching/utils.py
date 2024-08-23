@@ -90,7 +90,7 @@ def get_raw_file(name, update=False, config=None, skip_retrieve=False):
     if (not os.path.exists(path) or update) and not skip_retrieve:
         url = df_config["url"]
         logger.info(f"Retrieving data from {url}")
-        r = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
+        r = requests.get(url, headers={"User-Agent": "Mozilla/5.0"})
         with open(path, "wb") as outfile:
             outfile.write(r.content)
 
