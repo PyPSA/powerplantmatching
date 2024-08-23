@@ -1908,7 +1908,9 @@ def GSPT(raw=False, update=False, config=None):
 
     config = get_config() if config is None else config
     fn = get_raw_file("GSPT", update=update, config=config)
-    df = pd.read_excel(fn, sheet_name="20 MW+")
+    large = pd.read_excel(fn, sheet_name="20 MW+")
+    small = pd.read_excel(fn, sheet_name="1-20 MW")
+    df = pd.concat([large, small], ignore_index=True)
 
     if raw:
         return df
