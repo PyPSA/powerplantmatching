@@ -1987,7 +1987,6 @@ def GGPT(raw=False, update=False, config=None):
         "Retired year": "DateOut",
         "CHP": "Set",
         "GEM location ID": "projectID",
-        "Fuel": "Fueltype",
     }
 
     technology_dict = {
