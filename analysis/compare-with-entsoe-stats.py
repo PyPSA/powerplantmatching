@@ -1,4 +1,5 @@
 import pathlib
+import time
 import warnings
 
 import country_converter as cc
@@ -10,8 +11,6 @@ from entsoe import EntsoePandasClient
 
 import powerplantmatching as pm
 from powerplantmatching.cleaning import gather_fueltype_info
-import numpy as np
-import time
 
 warnings.simplefilter(action="ignore", category=(FutureWarning, XMLParsedAsHTMLWarning))
 root = pathlib.Path(__file__).parent.absolute()
@@ -40,11 +39,14 @@ def parse(c):
     for n in range(2):
         try:
             print(c, n)
-            return client.query_installed_generation_capacity(rename.get(c, c), **kwargs).iloc[0]
+            return client.query_installed_generation_capacity(
+                rename.get(c, c), **kwargs
+            ).iloc[0]
         except Exception as e:
             print(f"Country {c} failed with {e}")
             time.sleep(3)
     return np.nan
+
 
 stats = pd.DataFrame({c: parse(c) for c in powerplants.Country.unique()})
 fueltypes = gather_fueltype_info(pd.DataFrame({"Fueltype": stats.index}), ["Fueltype"])
