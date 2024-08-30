@@ -1,8 +1,17 @@
 Release Notes
 ==============
 
-.. Upcoming Version
-.. ----------------
+Upcoming Version
+----------------
+
+Version 0.5.18 (30.08.2024)
+---------------------------
+
+* Treat Kosovo as separate country and do not assign powerplants to Serbia.
+
+* Correctly reference North Macedonia and Moldova for ``pycountry`` matching.
+
+* See full list of changes `here <https://github.com/PyPSA/powerplantmatching/releases/tag/v0.5.18>`__.
 
 Version 0.5.17 (23.08.2024)
 ---------------------------
