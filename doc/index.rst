@@ -54,7 +54,7 @@ combining dataset, which includes all the important information. The
 package allows to easily update the combined data as soon as new input
 datasets are released.
 
-.. figure:: https://user-images.githubusercontent.com/19226431/46086361-36a13080-c1a8-11e8-82ed-9f04167273e5.png
+.. figure:: powerplants.png
    :alt: Map of power plants in Europe
 
    Map of power plants in Europe

@@ -269,7 +269,8 @@ target_fueltypes:
   # given by the list. An empty string results in a regex expression containing only the key.
   # Parsed of representatives at the top may be overwritten by representatives further below.
   Other: ".*"
-  Bioenergy: [biological, biogas, bioenergy, agricultural, wood, biomass]
+  Solid Biomass: [biological, bioenergy, agricultural, wood, biomass]
+  Biogas: [biogas]
   Nuclear: [nuclear]
   Natural Gas:
     [
@@ -397,7 +398,8 @@ clean_name:
 #                               Heuristic Config                               #
 # ---------------------------------------------------------------------------- #
 fuel_to_lifetime:
-  Bioenergy: 20
+  Solid Biomass: 20
+  Biogas: 20
   Geothermal: 15
   Hard Coal: 45
   Hydro: 100
@@ -414,28 +416,30 @@ fuel_to_lifetime:
 #                                Plotting Config                               #
 # ---------------------------------------------------------------------------- #
 fuel_to_color:
-  OCGT: darkorange
-  Hydro: seagreen
-  Pumped hydro: limegreen
-  Run-of-river: navy
-  Ror: navy
-  Lignite: saddlebrown
-  Nuclear: yellow
+  OCGT: lightcoral
+  Hydro: lightseagreen
+  Pumped hydro: aquamarine
+  Run-of-river: lightseagreen
+  Ror: lightseagreen
+  Lignite: sienna
+  Nuclear: mediumorchid
   Solar: gold
   Windoff: cornflowerblue
   Windon: darkblue
   Offshore: cornflowerblue
   Onshore: darkblue
   Wind: steelblue
-  Bioenergy: forestgreen
-  Natural Gas: red
-  CCGT: red
+  Biogas: yellowgreen
+  Bioenergy: green
+  Solid Biomass: forestgreen
+  Natural Gas: orangered
+  CCGT: orangered
   Coal: black
   Hard Coal: dimgray
   Oil: black
-  Other: silver
-  Waste: grey
-  Geothermal: orange
+  Other: lightgrey
+  Waste: olive
+  Geothermal: darkgoldenrod
   Battery: purple
   Hydrogen Storage: teal
   Electro-mechanical: teal

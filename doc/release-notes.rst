@@ -4,6 +4,8 @@ Release Notes
 Upcoming Version
 ----------------
 
+* BREAKING: Split "Bioenergy" into "Biogas" and "Solid Biomass".
+
 Version 0.5.18 (30.08.2024)
 ---------------------------
 

@@ -62,7 +62,7 @@ def fueltype_stats(df):
 
 def powerplant_map(
     df,
-    scale=1e1,
+    scale=2e1,
     alpha=0.6,
     european_bounds=True,
     fillcontinents=False,
@@ -117,7 +117,7 @@ def powerplant_map(
         ax.set_xlabel("")
         ax.set_ylabel("")
         if european_bounds:
-            ax.set_xlim(-13, 34)
+            ax.set_xlim(-13, 40)
             ax.set_ylim(35, 72)
         draw_basemap(ax=ax, resolution=resolution, fillcontinents=fillcontinents)
         ax.set_facecolor("w")

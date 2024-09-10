@@ -187,15 +187,13 @@ def set_uncommon_fueltypes_to_other(df, fillna_other=True, config=None, **kwargs
         Whether to replace NaN values in 'Fueltype' with 'Other'
     fueltypes : list
         list of replaced fueltypes, defaults to
-        ['Bioenergy', 'Geothermal', 'Mixed fuel types', 'Electro-mechanical',
+        ['Mixed fuel types', 'Electro-mechanical',
         'Hydrogen Storage']
     """
     config = get_config() if config is None else config
     df = get_obj_if_Acc(df)
 
     default = [
-        "Bioenergy",
-        "Geothermal",
         "Mixed fuel types",
         "Electro-mechanical",
         "Hydrogen Storage",
