@@ -337,7 +337,8 @@ def fueltype_to_abbrev():
     Return the fueltype-specific abbreviation.
     """
     data = {
-        "Bioenergy": "BIO",
+        "Solid Biomass": "BIO",
+        "Biogas": "BIG",
         "Geothermal": "GEO",
         "Hard Coal": "COA",
         "Hydro": "HYD",

@@ -360,9 +360,9 @@ def CARMA(raw=False, update=False, config=None):
                     "GEO": "Geothermal",
                     "WSTH": "Waste",
                     "SUN": "Solar",
-                    "BLIQ": "Bioenergy",
-                    "BGAS": "Bioenergy",
-                    "BSOL": "Bioenergy",
+                    "BLIQ": "Solid Biomass",
+                    "BGAS": "Biogas",
+                    "BSOL": "Solid Biomass",
                     "OTH": "Other",
                 }
             )
@@ -950,11 +950,11 @@ def WEPP(raw=False, config=None):
     )
     # Replace fueltypes
     d = {
-        "AGAS": "Bioenergy",  # Syngas from gasified agricultural waste
+        "AGAS": "Solid Biomass",  # Syngas from gasified agricultural waste
         "BFG": "Other",  # blast furnance gas -> "Hochofengas"
-        "BGAS": "Bioenergy",
-        "BIOMASS": "Bioenergy",
-        "BL": "Bioenergy",
+        "BGAS": "Biogas",
+        "BIOMASS": "Solid Biomass",
+        "BL": "Solid Biomass",
         "CGAS": "Hard Coal",
         "COAL": "Hard Coal",
         "COG": "Other",  # coke oven gas -> deutsch: "Hochofengas"
@@ -971,13 +971,13 @@ def WEPP(raw=False, config=None):
         "JET": "Oil",  # Jet fuels
         "KERO": "Oil",  # Kerosene
         "LGAS": "Other",  # landfill gas -> deutsch: "Deponiegas"
-        "LIGNIN": "Bioenergy",
+        "LIGNIN": "Solid Biomass",
         "LIQ": "Other",  # (black) liqour -> deutsch: "Schwarzlauge",
         #    die bei Papierherstellung anfaellt
         "LNG": "Natural Gas",  # Liquified natural gas
         "LPG": "Natural Gas",  # Liquified petroleum gas (u. butane/propane)
-        "MBM": "Bioenergy",  # Meat and bonemeal
-        "MEDWST": "Bioenergy",  # Medical waste
+        "MBM": "Solid Biomass",  # Meat and bonemeal
+        "MEDWST": "Solid Biomass",  # Medical waste
         "MGAS": "Other",  # mine gas -> deutsch: "Grubengas"
         "NAP": "Oil",  # naphta
         "OGAS": "Oil",  # Gasified crude oil/refinery bottoms/bitumen
@@ -994,8 +994,8 @@ def WEPP(raw=False, config=None):
         "UNK": "Other",
         "UR": "Nuclear",
         "WAT": "Hydro",
-        "WOOD": "Bioenergy",
-        "WOODGAS": "Bioenergy",
+        "WOOD": "Solid Biomass",
+        "WOODGAS": "Solid Biomass",
         "WSTGAS": "Other",  # waste gas -> deutsch: "Industrieabgas"
         "WSTWSL": "Waste",  # Wastewater sludge
         "WSTH": "Waste",
@@ -1212,7 +1212,7 @@ def UBA(
     uba.loc[uba.Fueltype.str.contains("HEL"), "Fueltype"] = "Oil"
     uba.Fueltype = uba.Fueltype.replace(
         {
-            "Biomasse": "Bioenergy",
+            "Biomasse": "Solid Biomass",
             "Gichtgas": "Other",
             "HS": "Oil",
             "Konvertergas": "Other",
@@ -1372,7 +1372,7 @@ def BNETZA(
             ".*(?i)energietr.*ger.*\n.*": "Other",
             "Kern.*": "Nuclear",
             "Mineral.l.*": "Oil",
-            "Biom.*": "Bioenergy",
+            "Biom.*": "Solid Biomass",
             ".*(?i)(e|r|n)gas": "Other",
             "Geoth.*": "Geothermal",
             "Abfall": "Waste",
@@ -1548,10 +1548,10 @@ def IRENASTAT(raw=False, update=False, config=None):
         "Renewable hydropower": "Hydro",
         "Mixed Hydro Plants": "Hydro",
         "Pumped storage": "Hydro",
-        "Solid biofuels": "Bioenergy",
+        "Solid biofuels": "Solid Biomass",
         "Renewable municipal waste": "Waste",
-        "Liquid biofuels": "Bioenergy",
-        "Biogas": "Bioenergy",
+        "Liquid biofuels": "Solid Biomass",
+        "Biogas": "Biogas",
         "Geothermal energy": "Geothermal",
         "Marine energy": "Marine",
         "Coal and peat": "Hard Coal",
@@ -1606,12 +1606,29 @@ def GBPT(raw=False, update=False, config=None):
     RENAME_COLUMNS = {
         "Project name": "Name",
         "Capacity (MW)": "Capacity",
+        "Fuel 1": "Fueltype",
         "Operating status": "Status",
         "Latitude": "lat",
         "Longitude": "lon",
         "Unit start year": "DateIn",
         "Retired year": "DateOut",
         "GEM phase ID": "projectID",
+    }
+    fueltype_dict = {
+        'bioenergy - agricultural waste (solids)': 'Solid Biomass',
+        'bioenergy - refuse (municipal and industrial wastes)': 'Solid Biomass',
+        'bioenergy - refuse (syngas)': 'Solid Biomass',
+        'bioenergy - agricultural waste (biogas)': 'Biogas',
+        'bioenergy - wood & other biomass (solids)': 'Solid Biomass',
+        'bioenergy - ethanol': 'Solid Biomass',
+        'bioenergy - paper mill wastes': 'Solid Biomass',
+        'bioenergy - biodiesel': 'Solid Biomass',
+        'bioenergy - unknown': 'Solid Biomass',
+        'bioenergy - wastewater and sewage sludge (solids or biogas)': 'Solid Biomass',
+        'bioenergy - refuse (landfill gas)': 'Biogas',
+        'bioenergy - agricultural waste (unknown)': 'Solid Biomass',
+        'bioenergy - agricultural waste (syngas)': 'Solid Biomass',
+        'bioenergy - wood & other biomass (biocoal)': 'Solid Biomass',
     }
 
     status_list = config["GBPT"].get("status", ["operating"])  # noqa: F841
@@ -1630,7 +1647,7 @@ def GBPT(raw=False, update=False, config=None):
         )
         .query("Status in @status_list")
         .pipe(lambda x: x[df.columns.intersection(config.get("target_columns"))])
-        .assign(Fueltype="Bioenergy")
+        .pipe(lambda x: x.replace({"Fueltype": fueltype_dict}))
         .assign(Technology="Steam Turbine")
         .assign(Set="PP")
         .pipe(config_filter, config)

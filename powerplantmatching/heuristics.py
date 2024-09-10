@@ -311,7 +311,7 @@ def aggregate_VRE_by_commissioning_year(df, target_fueltypes=None, agg_geo_by=No
         )
 
     if target_fueltypes is None:
-        target_fueltypes = ["Wind", "Solar", "Bioenergy"]
+        target_fueltypes = ["Wind", "Solar", "Biogas", "Solid Biomass"]
     df = df[df.Fueltype.isin(target_fueltypes)]
     df = fill_missing_commissioning_years(df)
     df["Technology"] = df.Technology.fillna("-")
@@ -432,7 +432,8 @@ def derive_vintage_cohorts_from_statistics(df, base_year=2015, config=None):
                 columns=range(y_start - life + 1, y_end + life),
                 index=range(y_start - life + 1, y_end),
             ).astype(float)
-            if dfs.Fueltype.iloc[0] in ["Solar", "Wind", "Bioenergy", "Geothermal"]:
+            fuels = ["Solar", "Wind", "Biogas", "Solid Biomass", "Geothermal"]
+            if dfs.Fueltype.iloc[0] in fuels:
                 mat = setInitial_Triangle(mat, dfs, life)
             else:
                 mat = setInitial_Flat(mat, dfs, life)
@@ -540,12 +541,12 @@ def gross_to_net_factors(reference="opsd", aggfunc="median", return_entire_data=
         df.replace(
             dict(
                 energy_source_level_2={
-                    "Biomass and biogas": "Bioenergy",
+                    "Biomass and biogas": "Biogas",
                     "Fossil fuels": "Other",
                     "Mixed fossil fuels": "Other",
                     "Natural gas": "Natural Gas",
                     "Non-renewable waste": "Waste",
-                    "Other bioenergy and renewable waste": "Bioenergy",
+                    "Other bioenergy and renewable waste": "Solid Biomass",
                     "Other or unspecified energy sources": "Other",
                     "Other fossil fuels": "Other",
                     "Other fuels": "Other",

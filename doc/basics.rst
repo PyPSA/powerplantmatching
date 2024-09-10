@@ -6,7 +6,7 @@ The dataset combines the data of all the data sources listed in
 `Data-Sources <#Data-Sources>`__ and provides the following information:
 
 -  **Power plant name** - claim of each database
--  **Fueltype** - {Bioenergy, Geothermal, Hard Coal, Hydro, Lignite,
+-  **Fueltype** - {Solid Biomass, Biogas, Geothermal, Hard Coal, Hydro, Lignite,
    Nuclear, Natural Gas, Oil, Solar, Wind, Other}
 -  **Technology** - {CCGT, OCGT, Steam Turbine, Combustion Engine,
    Run-Of-River, Pumped Storage, Reservoir}
