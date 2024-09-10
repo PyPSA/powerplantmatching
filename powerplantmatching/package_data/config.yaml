@@ -429,7 +429,7 @@ fuel_to_color:
   Offshore: cornflowerblue
   Onshore: darkblue
   Wind: steelblue
-  Biogas: lightgreen
+  Biogas: yellowgreen
   Bioenergy: green
   Solid Biomass: forestgreen
   Natural Gas: orangered
@@ -439,7 +439,7 @@ fuel_to_color:
   Oil: black
   Other: lightgrey
   Waste: olive
-  Geothermal: darkorange
+  Geothermal: darkgoldenrod
   Battery: purple
   Hydrogen Storage: teal
   Electro-mechanical: teal
