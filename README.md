@@ -40,6 +40,10 @@ out simulations.
 - visualize the data
 - export your powerplant data to a [PyPSA](https://github.com/PyPSA/PyPSA)-based model
 
+## Map
+
+![powerplants.png](doc/powerplants.png)
+
 ## Installation
 
  Using pip
