@@ -155,7 +155,7 @@ GGPT:
   reliability_score: 5
   status: ["operating", "retired", "construction"]
   fn: Global-Oil-and-Gas-Plant-Tracker-GOGPT-February-2024-v4.xlsx
-  url: https://globalenergymonitor.org/wp-content/uploads/2024/03/Global-Oil-and-Gas-Plant-Tracker-GOGPT-February-2024-v4.xlsx
+  url: https://tubcloud.tu-berlin.de/s/Be5arQgT9Z9g8Kp/download/Global-Oil-and-Gas-Plant-Tracker-GOGPT-February-2024-v4.xlsx
 GEM: 
   # combined data set of all GEM trackers
   net_capacity: true
@@ -165,43 +165,43 @@ GCPT:
   reliability_score: 4
   status: ["operating", "retired", "construction"]
   fn: Global-Coal-Plant-Tracker-July-2024.xlsx
-  url: https://globalenergymonitor.org/wp-content/uploads/2024/07/Global-Coal-Plant-Tracker-July-2024.xlsx
+  url: https://tubcloud.tu-berlin.de/s/FdyKMZtr2ddRJEd/download/Global-Coal-Plant-Tracker-July-2024.xlsx
 GGTPT:
   net_capacity: false
   reliability_score: 4
   status: ["operating", "retired", "construction"]
   fn: Geothermal-Power-Tracker-May-2024.xlsx
-  url: https://globalenergymonitor.org/wp-content/uploads/2024/05/Geothermal-Power-Tracker-May-2024.xlsx
+  url: https://tubcloud.tu-berlin.de/s/Hz3ZD7YcKnZTs9t/download/Geothermal-Power-Tracker-May-2024.xlsx
 GWPT:
   net_capacity: false
   reliability_score: 4
   status: ["operating", "retired", "construction"]
   fn: Global-Wind-Power-Tracker-June-2024.xlsx
-  url: https://globalenergymonitor.org/wp-content/uploads/2024/05/Global-Wind-Power-Tracker-June-2024.xlsx
+  url: https://tubcloud.tu-berlin.de/s/Z9b3WkAJmSnsrHD/download/Global-Wind-Power-Tracker-June-2024.xlsx
 GSPT:
   net_capacity: false
   reliability_score: 4
   status: ["operating", "construction"]
   fn: Global-Solar-Power-Tracker-June-2024.xlsx
-  url: https://globalenergymonitor.org/wp-content/uploads/2024/05/Global-Solar-Power-Tracker-June-2024.xlsx
+  url: https://tubcloud.tu-berlin.de/s/tJ5K5rA2e5XaNjM/download/Global-Solar-Power-Tracker-June-2024.xlsx
 GBPT:
   net_capacity: false
   reliability_score: 4
   status: ["operating", "retired", "construction"]
   fn: Global-Bioenergy-Power-Tracker-GBPT-V1.xlsx
-  url: https://globalenergymonitor.org/wp-content/uploads/2023/11/Global-Bioenergy-Power-Tracker-GBPT-V1.xlsx
+  url: https://tubcloud.tu-berlin.de/s/F34bbwcxYHL9ZR4/download/Global-Bioenergy-Power-Tracker-GBPT-V1.xlsx
 GNPT:
   net_capacity: false
   reliability_score: 4
   status: ["operating", "retired", "mothballed", "construction"]
   fn: Global-Nuclear-Power-Tracker-July-2024.xlsx
-  url: https://globalenergymonitor.org/wp-content/uploads/2024/07/Global-Nuclear-Power-Tracker-July-2024.xlsx
+  url: https://tubcloud.tu-berlin.de/s/gXFim9EciRHrjeQ/download/Global-Nuclear-Power-Tracker-July-2024.xlsx
 GHPT:
   net_capacity: false
   reliability_score: 4
   status: ["operating", "retired", "construction"]
   fn: Global-Hydropower-Tracker-April-2024.xlsx
-  url: https://globalenergymonitor.org/wp-content/uploads/2024/04/Global-Hydropower-Tracker-April-2024.xlsx
+  url: https://tubcloud.tu-berlin.de/s/sEztyBLdJS5sNHY/download/Global-Hydropower-Tracker-April-2024.xlsx
 # ---------------------------------------------------------------------------- #
 #                             Data Structure Config                            #
 # ---------------------------------------------------------------------------- #
