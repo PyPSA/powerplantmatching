@@ -4,6 +4,15 @@ Release Notes
 Upcoming Version
 ----------------
 
+* BREAKING: Split "Bioenergy" into "Biogas" and "Solid Biomass".
+
+Version 0.5.19 (16.09.2024)
+---------------------------
+
+* Bugfix: Fix retrieval of Global Energy Monitor data.
+
+* See full list of changes `here <https://github.com/PyPSA/powerplantmatching/releases/tag/v0.5.19>`__.
+
 Version 0.5.18 (30.08.2024)
 ---------------------------
 
