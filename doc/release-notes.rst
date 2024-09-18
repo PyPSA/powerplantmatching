@@ -1,13 +1,19 @@
 Release Notes
 ==============
 
-Upcoming Version
-----------------
+.. Upcoming Version
+.. ----------------
 
-* BREAKING: Split "Bioenergy" into "Biogas" and "Solid Biomass".
 
-* Consistently rename countries, affecting power plants in Czech Republic and
-  Moldova.
+Version 0.6.0 (18.09.2024)
+---------------------------
+
+* BREAKING: Split "Bioenergy" into "Biogas" and "Solid Biomass" (https://github.com/PyPSA/powerplantmatching/pull/201).
+
+* Bugfix: Consistently rename countries, affecting power plants in Czech Republic and
+  Moldova (https://github.com/PyPSA/powerplantmatching/pull/204).
+
+* See full list of changes `here <https://github.com/PyPSA/powerplantmatching/releases/tag/v0.6.0>`__.
 
 Version 0.5.19 (16.09.2024)
 ---------------------------
