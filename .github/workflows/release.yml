@@ -71,12 +71,16 @@ jobs:
       run: |
         python -m pip install uv
         uv pip install --system ".[dev]"
+        uv pip install --system cartopy
         
     - name: Create dataset
       run: |
         import powerplantmatching as pm
         df = pm.powerplants(update=True)
         df.to_csv("powerplants.csv", index_label="id")
+
+        fig, ax = df.powerplant.plot_map(figsize=(22, 16))
+        fig.savefig('doc/powerplants.png')
       shell: python
     
     # End of preparation script
@@ -91,7 +95,6 @@ jobs:
       with:
         branch: ${{ env.BRANCH_NAME }}
         commit_message: '${{ env.PREPARATION_COMMIT }}'
-        file_pattern: 'powerplants.csv'
         tagging_message: '${{ github.ref_name }}'
         push_options: '${{ github.ref_name }}'
 
@@ -113,7 +116,7 @@ jobs:
       - uses: softprops/action-gh-release@v2
         with:
           body: |
-            Revised release notes are available in the [documentation](https://powerplantmatching.readthedocs.io/en/latest/release-notes.html).
+            Revised release notes are available in the [documentation](https://${{ github.event.repository.name }}.readthedocs.io/en/latest/release-notes.html).
           append_body: true
           generate_release_notes: true
 
@@ -123,7 +126,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: pypi
-      url: https://pypi.org/project/powerplantmatching/
+      url: https://pypi.org/project/${{ github.event.repository.name }}
     permissions:
       id-token: write
     steps:
