@@ -104,6 +104,7 @@ def BEYONDCOAL(raw=False, update=False, config=None):
         )
         .pipe(scale_to_net_capacities)
         .pipe(clean_name)
+        .pipe(convert_to_short_name)
         .pipe(set_column_name, "BEYONDCOAL")
         .pipe(config_filter, config)
     )
@@ -629,6 +630,7 @@ def WIKIPEDIA(raw=False, update=False, config=None):
     df = (
         df.rename(columns=RENAME_COLUMNS)
         .pipe(clean_name)
+        .pipe(convert_to_short_name)
         .assign(
             Fueltype="Nuclear",
             Set="PP",

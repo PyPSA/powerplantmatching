@@ -6,6 +6,9 @@ Upcoming Version
 
 * BREAKING: Split "Bioenergy" into "Biogas" and "Solid Biomass".
 
+* Consistently rename countries, affecting power plants in Czech Republic and
+  Moldova.
+
 Version 0.5.19 (16.09.2024)
 ---------------------------
 
