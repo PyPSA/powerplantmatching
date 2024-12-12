@@ -304,7 +304,7 @@ def boxplot_gross_to_net(axes_style="darkgrid", **kwargs):
         ax2 = ax.twiny()
         ax2.set_xlim(ax.get_xlim())
         ax2.set_xticks([i + 1 for i in range(len(dfg))])
-        ax2.set_xticklabels(["$n$=%d" % (len(v)) for k, v in dfg])
+        ax2.set_xticklabels([f"$n$={len(v)}" for k, v in dfg])
         fig.suptitle("")
         return fig, ax
 
