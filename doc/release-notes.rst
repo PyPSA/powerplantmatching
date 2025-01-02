@@ -1,9 +1,53 @@
-History of Changes
-==================
+Release Notes
+==============
+
+.. Upcoming Version
+.. ----------------
 
 
-Upcoming Version
-----------------
+Version 0.6.0 (18.09.2024)
+---------------------------
+
+* BREAKING: Split "Bioenergy" into "Biogas" and "Solid Biomass" (https://github.com/PyPSA/powerplantmatching/pull/201).
+
+* Bugfix: Consistently rename countries, affecting power plants in Czech Republic and
+  Moldova (https://github.com/PyPSA/powerplantmatching/pull/204).
+
+* See full list of changes `here <https://github.com/PyPSA/powerplantmatching/releases/tag/v0.6.0>`__.
+
+Version 0.5.19 (16.09.2024)
+---------------------------
+
+* Bugfix: Fix retrieval of Global Energy Monitor data.
+
+* See full list of changes `here <https://github.com/PyPSA/powerplantmatching/releases/tag/v0.5.19>`__.
+
+Version 0.5.18 (30.08.2024)
+---------------------------
+
+* Treat Kosovo as separate country and do not assign powerplants to Serbia.
+
+* Correctly reference North Macedonia and Moldova for ``pycountry`` matching.
+
+* See full list of changes `here <https://github.com/PyPSA/powerplantmatching/releases/tag/v0.5.18>`__.
+
+Version 0.5.17 (23.08.2024)
+---------------------------
+
+* Update Global Energy Monitor data to latest versions as of 2024-08-23.
+
+* Adjusted reliability scores in favour of GEM data.
+
+* See full list of changes `here <https://github.com/PyPSA/powerplantmatching/releases/tag/v0.5.17>`__.
+
+Version 0.5.16 (31.07.2024)
+---------------------------
+
+* Dependency updates: Ensure compatibility with pandas 2.0, numpy 2.0 and cartopy.
+
+* Bugfix: Fix retrieving data without aggregation (https://github.com/PyPSA/powerplantmatching/pull/180)
+
+* See full list of changes `here <https://github.com/PyPSA/powerplantmatching/releases/tag/v0.5.16>`__.
 
 Version 0.5.15 (12.05.2024)
 ---------------------------
@@ -13,7 +57,7 @@ Version 0.5.15 (12.05.2024)
 
 * Corrected capacity of some hydro powerplants in the United Kingdom contained
   in the ENTSOE data based on manual search. The error originated from the use
-  of the value 999 in the capacity column to represent NaN values. The chnages
+  of the value 999 in the capacity column to represent NaN values. The changes
   accumulate to a reduction of approximately 5 GW in capacity.
   (https://github.com/PyPSA/powerplantmatching/pull/141)
 

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright 2016-2018 Fabian Hofmann (FIAS), Jonas Hoersch (KIT, IAI) and
 # Fabian Gotzens (FZJ, IEK-STE)
 
@@ -18,10 +17,7 @@
 Functions for linking and combining different datasets
 """
 
-from __future__ import absolute_import, print_function
-
 import logging
-import os.path
 from itertools import combinations
 
 import numpy as np
@@ -86,10 +82,10 @@ def compare_two_datasets(dfs, labels, country_wise=True, config=None, **dukeargs
         for arg in used_deprecated_args:
             dukeargs.pop(arg)
         msg = "The following arguments were deprecated and are being ignored: "
-        logger.warn(msg + f"{used_deprecated_args}")
+        logger.warning(msg + f"{used_deprecated_args}")
 
     dfs = list(map(read_csv_if_string, dfs))
-    if not ("singlematch" in dukeargs):
+    if "singlematch" not in dukeargs:
         dukeargs["singlematch"] = True
 
     def country_link(dfs, country):
@@ -106,7 +102,7 @@ def compare_two_datasets(dfs, labels, country_wise=True, config=None, **dukeargs
     if country_wise:
         countries = config["target_countries"]
         links = [country_link(dfs, c) for c in countries]
-        links = [l for l in links if not l.empty]
+        links = [link for link in links if not link.empty]
         if links:
             links = pd.concat(links, ignore_index=True)
         else:
@@ -154,12 +150,12 @@ def cross_matches(sets_of_pairs, labels=None):
                 matches = pd.concat([matches, match_base], sort=True)
 
     if matches is None or matches.empty:
-        logger.warn("No matches found")
+        logger.warning("No matches found")
         return pd.DataFrame(columns=labels)
 
     if matches.isnull().all().any():
         cols = ", ".join(matches.columns[matches.isnull().all()])
-        logger.warn(f"No matches found for data source {cols}")
+        logger.warning(f"No matches found for data source {cols}")
 
     matches = matches.drop_duplicates().reset_index(drop=True)
     for label in labels:
@@ -210,7 +206,7 @@ def link_multiple_datasets(
     combs = list(combinations(range(len(labels)), 2))
 
     def comp_dfs(dfs_lbs):
-        logger.info("Comparing data sources `{0}` and `{1}`".format(*dfs_lbs[2:]))
+        logger.info("Comparing data sources `{}` and `{}`".format(*dfs_lbs[2:]))
         return compare_two_datasets(dfs_lbs[:2], dfs_lbs[2:], config=config, **dukeargs)
 
     mapargs = [[dfs[c], dfs[d], labels[c], labels[d]] for c, d in combs]
@@ -311,7 +307,7 @@ def reduce_matched_dataframe(df, show_orig_names=False, config=None):
     sdf = (
         df.assign(Set=lambda df: df.Set.where(df.Set != "PP"))
         .assign(Fueltype=lambda df: df.Fueltype.where(df.Set != "Other"))
-        .stack(1)
+        .stack(1, future_stack=True)
         .reindex(rel_scores.index, level=1)
         .groupby(level=0)
         .agg(props_for_groups)

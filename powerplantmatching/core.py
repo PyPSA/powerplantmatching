@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 Created on Tue Jul 16 15:47:46 2019
 
@@ -56,8 +55,7 @@ if not exists(_data_in(".")):
 
 # Logging: General Settings
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=20)
-logger.setLevel("INFO")
+logger.setLevel(logging.INFO)
 # Logging: File
 logFormatter = logging.Formatter(
     "%(asctime)s [%(threadName)-12.12s] " "[%(levelname)-5.5s]  %(message)s"
@@ -101,10 +99,10 @@ def get_config(filename=None, **overrides):
     else:
         custom_config = package_config["custom_config"]
 
-    with open(base_config) as f:
+    with open(base_config, encoding="utf8") as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
     if exists(custom_config):
-        with open(custom_config) as f:
+        with open(custom_config, encoding="utf8") as f:
             config.update(yaml.load(f, Loader=yaml.FullLoader))
     config.update(overrides)
 

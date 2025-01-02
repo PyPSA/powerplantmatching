@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright 2016-2020 Fabian Hofmann (FIAS), Jonas Hoersch (KIT, IAI) and
 # Fabian Gotzens (FZJ, IEK-STE)
 
@@ -20,8 +19,6 @@ Collection of power plant data bases and statistical data
 
 import logging
 import os
-import re
-import xml.etree.ElementTree as ET
 from zipfile import ZipFile
 
 import entsoe
@@ -38,13 +35,12 @@ from .cleaning import (
     gather_specifications,
     gather_technology_info,
 )
-from .core import _data_in, _package_data, get_config
+from .core import _package_data, get_config
 from .heuristics import scale_to_net_capacities
 from .utils import (
     config_filter,
     convert_to_short_name,
     correct_manually,
-    fill_geoposition,
     get_raw_file,
     set_column_name,
 )
@@ -108,6 +104,7 @@ def BEYONDCOAL(raw=False, update=False, config=None):
         )
         .pipe(scale_to_net_capacities)
         .pipe(clean_name)
+        .pipe(convert_to_short_name)
         .pipe(set_column_name, "BEYONDCOAL")
         .pipe(config_filter, config)
     )
@@ -266,7 +263,7 @@ def GEO(raw=False, update=False, config=None):
 
     def to_year(ds):
         years = pd.to_numeric(ds.dropna().astype(str).str[:4], errors="coerce")
-        year = years[lambda x: x > 1900]
+        year = years[lambda x: x > 1900]  # noqa
         return years.reindex_like(ds)
 
     fn = get_raw_file("GEO_units", update=update, config=config)
@@ -364,9 +361,9 @@ def CARMA(raw=False, update=False, config=None):
                     "GEO": "Geothermal",
                     "WSTH": "Waste",
                     "SUN": "Solar",
-                    "BLIQ": "Bioenergy",
-                    "BGAS": "Bioenergy",
-                    "BSOL": "Bioenergy",
+                    "BLIQ": "Solid Biomass",
+                    "BGAS": "Biogas",
+                    "BSOL": "Solid Biomass",
                     "OTH": "Other",
                 }
             )
@@ -527,7 +524,7 @@ def Capacity_stats(
     else:
         source = "Capacity statistics"
 
-    fueltypes = config["target_fueltypes"]
+    fueltypes = config["target_fueltypes"]  # noqa
     df = (
         df.query("year == @year")
         .rename(columns={"technology": "Fueltype"})
@@ -579,8 +576,8 @@ def GPD(raw=False, update=False, config=None, filter_other_dbs=True):
 
     other_dbs = []
     if filter_other_dbs:
-        other_dbs = ["GEODB", "Open Power System Data", "ENTSOE"]
-    countries = config["target_countries"]
+        other_dbs = ["GEODB", "Open Power System Data", "ENTSOE"]  # noqa
+    countries = config["target_countries"]  # noqa
     return (
         df.rename(columns=lambda x: x.title())
         .drop(columns="Country")
@@ -633,6 +630,7 @@ def WIKIPEDIA(raw=False, update=False, config=None):
     df = (
         df.rename(columns=RENAME_COLUMNS)
         .pipe(clean_name)
+        .pipe(convert_to_short_name)
         .assign(
             Fueltype="Nuclear",
             Set="PP",
@@ -954,11 +952,11 @@ def WEPP(raw=False, config=None):
     )
     # Replace fueltypes
     d = {
-        "AGAS": "Bioenergy",  # Syngas from gasified agricultural waste
+        "AGAS": "Solid Biomass",  # Syngas from gasified agricultural waste
         "BFG": "Other",  # blast furnance gas -> "Hochofengas"
-        "BGAS": "Bioenergy",
-        "BIOMASS": "Bioenergy",
-        "BL": "Bioenergy",
+        "BGAS": "Biogas",
+        "BIOMASS": "Solid Biomass",
+        "BL": "Solid Biomass",
         "CGAS": "Hard Coal",
         "COAL": "Hard Coal",
         "COG": "Other",  # coke oven gas -> deutsch: "Hochofengas"
@@ -975,13 +973,13 @@ def WEPP(raw=False, config=None):
         "JET": "Oil",  # Jet fuels
         "KERO": "Oil",  # Kerosene
         "LGAS": "Other",  # landfill gas -> deutsch: "Deponiegas"
-        "LIGNIN": "Bioenergy",
+        "LIGNIN": "Solid Biomass",
         "LIQ": "Other",  # (black) liqour -> deutsch: "Schwarzlauge",
         #    die bei Papierherstellung anfaellt
         "LNG": "Natural Gas",  # Liquified natural gas
         "LPG": "Natural Gas",  # Liquified petroleum gas (u. butane/propane)
-        "MBM": "Bioenergy",  # Meat and bonemeal
-        "MEDWST": "Bioenergy",  # Medical waste
+        "MBM": "Solid Biomass",  # Meat and bonemeal
+        "MEDWST": "Solid Biomass",  # Medical waste
         "MGAS": "Other",  # mine gas -> deutsch: "Grubengas"
         "NAP": "Oil",  # naphta
         "OGAS": "Oil",  # Gasified crude oil/refinery bottoms/bitumen
@@ -998,8 +996,8 @@ def WEPP(raw=False, config=None):
         "UNK": "Other",
         "UR": "Nuclear",
         "WAT": "Hydro",
-        "WOOD": "Bioenergy",
-        "WOODGAS": "Bioenergy",
+        "WOOD": "Solid Biomass",
+        "WOODGAS": "Solid Biomass",
         "WSTGAS": "Other",  # waste gas -> deutsch: "Industrieabgas"
         "WSTWSL": "Waste",  # Wastewater sludge
         "WSTH": "Waste",
@@ -1132,8 +1130,7 @@ def UBA(
 ):
     """
     Importer for the UBA Database. Please download the data from
-    `<https://www.umweltbundesamt.de/dokument/datenbank-kraftwerke-in
-    -deutschland>`_.
+    `<https://www.umweltbundesamt.de/dokument/datenbank-kraftwerke-in-deutschland>`_.
 
     Parameters
     ----------
@@ -1203,7 +1200,7 @@ def UBA(
         .str[0]
         .astype(float),
         Country="Germany",
-        projectID=["UBA{:03d}".format(i + header + 2) for i in uba.index],
+        projectID=[f"UBA{i + header + 2:03d}" for i in uba.index],
         Technology=uba.Technology.replace(RENAME_TECHNOLOGY),
     )
     uba.loc[uba.CHP.notnull(), "Set"] = "CHP"
@@ -1217,7 +1214,7 @@ def UBA(
     uba.loc[uba.Fueltype.str.contains("HEL"), "Fueltype"] = "Oil"
     uba.Fueltype = uba.Fueltype.replace(
         {
-            "Biomasse": "Bioenergy",
+            "Biomasse": "Solid Biomass",
             "Gichtgas": "Other",
             "HS": "Oil",
             "Konvertergas": "Other",
@@ -1377,7 +1374,7 @@ def BNETZA(
             ".*(?i)energietr.*ger.*\n.*": "Other",
             "Kern.*": "Nuclear",
             "Mineral.l.*": "Oil",
-            "Biom.*": "Bioenergy",
+            "Biom.*": "Solid Biomass",
             ".*(?i)(e|r|n)gas": "Other",
             "Geoth.*": "Geothermal",
             "Abfall": "Waste",
@@ -1553,10 +1550,10 @@ def IRENASTAT(raw=False, update=False, config=None):
         "Renewable hydropower": "Hydro",
         "Mixed Hydro Plants": "Hydro",
         "Pumped storage": "Hydro",
-        "Solid biofuels": "Bioenergy",
+        "Solid biofuels": "Solid Biomass",
         "Renewable municipal waste": "Waste",
-        "Liquid biofuels": "Bioenergy",
-        "Biogas": "Bioenergy",
+        "Liquid biofuels": "Solid Biomass",
+        "Biogas": "Biogas",
         "Geothermal energy": "Geothermal",
         "Marine energy": "Marine",
         "Coal and peat": "Hard Coal",
@@ -1580,8 +1577,8 @@ def IRENASTAT(raw=False, update=False, config=None):
     df["Fueltype"] = df.Technology.map(fueltype_dict)
     df["Technology"] = df.Technology.replace(technology_dict)
 
-    l = list(set(df.columns).difference(set(["Capacity"])))
-    df = df.groupby(l, as_index=False, dropna=True).sum()
+    non_capacity_columns = list(set(df.columns).difference(set(["Capacity"])))
+    df = df.groupby(non_capacity_columns, as_index=False, dropna=True).sum()
 
     return df
 
@@ -1603,21 +1600,40 @@ def GBPT(raw=False, update=False, config=None):
     """
     config = get_config() if config is None else config
     fn = get_raw_file("GBPT", update=update, config=config)
-    df = pd.read_csv(fn, thousands=",")
+    df = pd.read_excel(fn, sheet_name="Data")
 
     if raw:
         return df
 
     RENAME_COLUMNS = {
-        "Project Name": "Name",
+        "Project name": "Name",
         "Capacity (MW)": "Capacity",
-        "Operating Status": "Status",
+        "Fuel 1": "Fueltype",
+        "Operating status": "Status",
         "Latitude": "lat",
         "Longitude": "lon",
-        "Start year": "DateIn",
+        "Unit start year": "DateIn",
         "Retired year": "DateOut",
         "GEM phase ID": "projectID",
     }
+    fueltype_dict = {
+        "bioenergy - agricultural waste (solids)": "Solid Biomass",
+        "bioenergy - refuse (municipal and industrial wastes)": "Solid Biomass",
+        "bioenergy - refuse (syngas)": "Solid Biomass",
+        "bioenergy - agricultural waste (biogas)": "Biogas",
+        "bioenergy - wood & other biomass (solids)": "Solid Biomass",
+        "bioenergy - ethanol": "Solid Biomass",
+        "bioenergy - paper mill wastes": "Solid Biomass",
+        "bioenergy - biodiesel": "Solid Biomass",
+        "bioenergy - unknown": "Solid Biomass",
+        "bioenergy - wastewater and sewage sludge (solids or biogas)": "Solid Biomass",
+        "bioenergy - refuse (landfill gas)": "Biogas",
+        "bioenergy - agricultural waste (unknown)": "Solid Biomass",
+        "bioenergy - agricultural waste (syngas)": "Solid Biomass",
+        "bioenergy - wood & other biomass (biocoal)": "Solid Biomass",
+    }
+
+    status_list = config["GBPT"].get("status", ["operating"])  # noqa: F841
 
     df = df.rename(columns=RENAME_COLUMNS)
     df_final = (
@@ -1631,9 +1647,9 @@ def GBPT(raw=False, update=False, config=None):
             lat=df["lat"].apply(pd.to_numeric, errors="coerce"),
             lon=df["lon"].apply(pd.to_numeric, errors="coerce"),
         )
-        .query("Status in ['operating','mothballed','construction']")
+        .query("Status in @status_list")
         .pipe(lambda x: x[df.columns.intersection(config.get("target_columns"))])
-        .assign(Fueltype="Bioenergy")
+        .pipe(lambda x: x.replace({"Fueltype": fueltype_dict}))
         .assign(Technology="Steam Turbine")
         .assign(Set="PP")
         .pipe(config_filter, config)
@@ -1658,7 +1674,7 @@ def GNPT(raw=False, update=False, config=None):
     """
     config = get_config() if config is None else config
     fn = get_raw_file("GNPT", update=update, config=config)
-    df = pd.read_csv(fn, thousands=",")
+    df = pd.read_excel(fn, sheet_name="Data")
 
     if raw:
         return df
@@ -1669,9 +1685,12 @@ def GNPT(raw=False, update=False, config=None):
         "Latitude": "lat",
         "Longitude": "lon",
         "Start Year": "DateIn",
-        "Retired Year": "DateOut",
+        "Retirement Year": "DateOut",
+        "Country/Area": "Country",
         "GEM unit ID": "projectID",
     }
+
+    status_list = config["GNPT"].get("status", ["operating"])  # noqa: F841
 
     df = df.rename(columns=RENAME_COLUMNS)
     df_final = (
@@ -1685,7 +1704,7 @@ def GNPT(raw=False, update=False, config=None):
             lat=df["lat"].apply(pd.to_numeric, errors="coerce"),
             lon=df["lon"].apply(pd.to_numeric, errors="coerce"),
         )
-        .query("Status in ['operating','mothballed','construction']")
+        .query("Status in @status_list")
         .pipe(lambda x: x[df.columns.intersection(config.get("target_columns"))])
         .assign(Fueltype="Nuclear")
         .assign(Technology="Steam Turbine")
@@ -1713,43 +1732,40 @@ def GCPT(raw=False, update=False, config=None):
 
     config = get_config() if config is None else config
     fn = get_raw_file("GCPT", update=update, config=config)
-    df = pd.read_csv(fn)
+    df = pd.read_excel(fn, sheet_name="Units")
 
     if raw:
         return df
 
     RENAME_COLUMNS = {
-        "Plant": "Name",
+        "Plant name": "Name",
         "Combustion technology": "Technology",
         "Coal type": "Fueltype",
         "Capacity (MW)": "Capacity",
         "Latitude": "lat",
         "Longitude": "lon",
-        "Year": "DateIn",
-        "RETIRED": "DateOut",
-        "Tracker ID": "projectID",
+        "Start year": "DateIn",
+        "Retired year": "DateOut",
+        "Country/Area": "Country",
+        "GEM unit/phase ID": "projectID",
     }
     fueltype_dict = {
         "bituminous": "Hard Coal",
         "lignite": "Lignite",
         "unknown": "Hard Coal",
-        "sub-bit": "Hard Coal",
-        "bituminous/sub-bit": "Hard Coal",
-        "wstbituminous": "Hard Coal",
-        "unknown(ccs90)": "Hard Coal",
-        "hard": "Hard Coal",
-        "anth": "Hard Coal",
-        "lignite(ccs90)": "Lignite",
-        "sub-bit(ccs90)": "Hard Coal",
-        "lignite/sub-bit": "Lignite",
-        "wstcoal": "Hard Coal",
-        "bituminous(ccs90)": "Hard Coal",
-        "bituminous(ccs30)": "Hard Coal",
-        "lignite/bituminous": "Lignite",
-        "anth/bituminous": "Hard Coal",
-        "anth/culm": "Hard Coal",
-        "bituminous/wstbituminous": "Hard Coal",
+        "subbituminous": "Hard Coal",
+        "waste coal": "Hard Coal",
+        "anthracite": "Hard Coal",
+        "lignite with CCS": "Lignite",
+        "bituminous with CCS": "Hard Coal",
+        "subbituminous with CCS": "Hard Coal",
+        "unknown with CCS": "Hard Coal",
     }
+
+    planned_retirement = df["Planned retirement"].apply(pd.to_numeric, errors="coerce")
+
+    status_list = config["GCPT"].get("status", ["operating"])  # noqa: F841
+
     df = df.rename(columns=RENAME_COLUMNS)
     df_final = (
         df.pipe(clean_name)
@@ -1762,7 +1778,8 @@ def GCPT(raw=False, update=False, config=None):
             lat=df["lat"].apply(pd.to_numeric, errors="coerce"),
             lon=df["lon"].apply(pd.to_numeric, errors="coerce"),
         )
-        .query("Status in ['operating','mothballed','construction']")
+        .assign(DateOut=lambda x: x["DateOut"].combine_first(planned_retirement))
+        .query("Status in @status_list")
         .pipe(lambda x: x[df.columns.intersection(config.get("target_columns"))])
         .pipe(lambda x: x.replace({"Fueltype": fueltype_dict}))
         .pipe(lambda x: x.assign(Technology="Steam Turbine"))
@@ -1790,20 +1807,23 @@ def GGTPT(raw=False, update=False, config=None):
     """
     config = get_config() if config is None else config
     fn = get_raw_file("GGTPT", update=update, config=config)
-    df = pd.read_csv(fn)
+    df = pd.read_excel(fn, sheet_name="Data")
 
     if raw:
         return df
 
     RENAME_COLUMNS = {
         "Project Name": "Name",
-        "Unit Capacity (MW)": "Capacity",
+        "Capacity (MW)": "Capacity",
         "Latitude": "lat",
         "Longitude": "lon",
         "Start year": "DateIn",
         "Retired year": "DateOut",
+        "Country/Area": "Country",
         "GEM unit ID": "projectID",
     }
+
+    status_list = config["GGTPT"].get("status", ["operating"])  # noqa: F841
 
     df = df.rename(columns=RENAME_COLUMNS)
     df_final = (
@@ -1817,7 +1837,7 @@ def GGTPT(raw=False, update=False, config=None):
             lat=df["lat"].apply(pd.to_numeric, errors="coerce"),
             lon=df["lon"].apply(pd.to_numeric, errors="coerce"),
         )
-        .query("Status in ['operating','mothballed','construction']")
+        .query("Status in @status_list")
         .pipe(lambda x: x[df.columns.intersection(config.get("target_columns"))])
         .assign(Fueltype="Geothermal")
         .assign(Technology="Steam Turbine")
@@ -1844,7 +1864,7 @@ def GWPT(raw=False, update=False, config=None):
     """
     config = get_config() if config is None else config
     fn = get_raw_file("GWPT", update=update, config=config)
-    df = pd.read_csv(fn)
+    df = pd.read_excel(fn, sheet_name="Data")
 
     RENAME_COLUMNS = {
         "Project Name": "Name",
@@ -1855,14 +1875,17 @@ def GWPT(raw=False, update=False, config=None):
         "Retired year": "DateOut",
         "GEM phase ID": "projectID",
         "Installation Type": "Technology",
+        "Country/Area": "Country",
     }
 
     technology_dict = {
-        "onshore": "Onshore",
-        "offshore hard mount": "Offshore",
-        "offshore floating": "Offshore",
-        "offshore mount unknown": "Offshore",
+        "Onshore": "Onshore",
+        "Offshore hard mount": "Offshore",
+        "Offshore floating": "Offshore",
+        "Offshore mount unknown": "Offshore",
     }
+
+    status_list = config["GWPT"].get("status", ["operating"])  # noqa: F841
 
     df = df.rename(columns=RENAME_COLUMNS)
     df_final = (
@@ -1876,7 +1899,7 @@ def GWPT(raw=False, update=False, config=None):
             lat=df["lat"].apply(pd.to_numeric, errors="coerce"),
             lon=df["lon"].apply(pd.to_numeric, errors="coerce"),
         )
-        .query("Status in ['operating','mothballed','construction']")
+        .query("Status in @status_list")
         .pipe(lambda x: x[df.columns.intersection(config.get("target_columns"))])
         .pipe(lambda x: x.replace({"Technology": technology_dict}))
         .assign(Fueltype="Wind")
@@ -1904,7 +1927,9 @@ def GSPT(raw=False, update=False, config=None):
 
     config = get_config() if config is None else config
     fn = get_raw_file("GSPT", update=update, config=config)
-    df = pd.read_csv(fn)
+    large = pd.read_excel(fn, sheet_name="20 MW+")
+    small = pd.read_excel(fn, sheet_name="1-20 MW")
+    df = pd.concat([large, small], ignore_index=True)
 
     if raw:
         return df
@@ -1918,6 +1943,7 @@ def GSPT(raw=False, update=False, config=None):
         "Retired year": "DateOut",
         "Technology Type": "Technology",
         "GEM phase ID": "projectID",
+        "Country/Area": "Country",
     }
 
     technology_dict = {
@@ -1925,6 +1951,9 @@ def GSPT(raw=False, update=False, config=None):
         "Solar Thermal": "CSP",
         "Assumed PV": "PV",
     }
+
+    status_list = config["GSPT"].get("status", ["operating"])  # noqa: F841
+
     df = df.rename(columns=RENAME_COLUMNS)
     df_final = (
         df.pipe(clean_name)
@@ -1937,7 +1966,7 @@ def GSPT(raw=False, update=False, config=None):
             lat=df["lat"].apply(pd.to_numeric, errors="coerce"),
             lon=df["lon"].apply(pd.to_numeric, errors="coerce"),
         )
-        .query("Status in ['operating','mothballed','construction']")
+        .query("Status in @status_list")
         .pipe(lambda x: x[df.columns.intersection(config.get("target_columns"))])
         .pipe(lambda x: x.replace({"Technology": technology_dict}))
         .assign(Fueltype="Solar")
@@ -1964,7 +1993,7 @@ def GGPT(raw=False, update=False, config=None):
     """
     config = get_config() if config is None else config
     fn = get_raw_file("GGPT", update=update, config=config)
-    df = pd.read_csv(fn)
+    df = pd.read_excel(fn, sheet_name="Gas & Oil Units")
 
     if raw:
         return df
@@ -1972,7 +2001,7 @@ def GGPT(raw=False, update=False, config=None):
     RENAME_COLUMNS = {
         "Plant name": "Name",
         "Fuel": "Fueltype",
-        "Capacity elec. (MW)": "Capacity",
+        "Capacity (MW)": "Capacity",
         "Latitude": "lat",
         "Longitude": "lon",
         "Start year": "DateIn",
@@ -1983,11 +2012,13 @@ def GGPT(raw=False, update=False, config=None):
 
     technology_dict = {
         "GT": "Steam Turbine",
+        "IC": "Steam Turbine",
         "CC": "CCGT",
         "GT/IC": "Steam Turbine",
         "ICCC": "CCGT",
         "ISCC": "CCGT",
         "ST": "Steam Turbine",
+        "AFC": "CCGT",
     }
 
     set_dict = {
@@ -1995,6 +2026,9 @@ def GGPT(raw=False, update=False, config=None):
         "N": "PP",
         "not found": "PP",
     }
+
+    status_list = config["GGPT"].get("status", ["operating"])  # noqa: F841
+    gas_fuels = ["NG", "LNG", "BU", "LFG", "BG", "BFG", "COG", "CM", "H", "OG"]
 
     df = df.rename(columns=RENAME_COLUMNS)
     df_final = (
@@ -2009,11 +2043,18 @@ def GGPT(raw=False, update=False, config=None):
             lat=df["lat"].apply(pd.to_numeric, errors="coerce"),
             lon=df["lon"].apply(pd.to_numeric, errors="coerce"),
             Capacity=lambda df: pd.to_numeric(df.Capacity, "coerce"),
+            Fueltype=df["Fueltype"].apply(
+                lambda s: (
+                    "Natural Gas"
+                    if any(sub in gas_fuels for sub in s.split("/"))
+                    else "Oil"
+                )
+            ),
         )
-        .query("Status in ['operating','mothballed','construction']")
+        .query("Status in @status_list")
         .pipe(lambda x: x[df.columns.intersection(config.get("target_columns"))])
         .pipe(lambda x: x.replace({"Technology": technology_dict}))
-        .pipe(lambda x: x.replace({"Set": set_dict}))
+        .pipe(lambda x: x.replace({"Set": set_dict}).fillna({"Set": "PP"}))
         .assign(Fueltype="Natural Gas")
         .pipe(config_filter, config)
     )
@@ -2037,7 +2078,7 @@ def GHPT(raw=False, update=False, config=None):
     """
     config = get_config() if config is None else config
     fn = get_raw_file("GHPT", update=update, config=config)
-    df = pd.read_csv(fn)
+    df = pd.read_excel(fn, sheet_name="Data")
 
     if raw:
         return df
@@ -2060,6 +2101,7 @@ def GHPT(raw=False, update=False, config=None):
         "conventional and pumped storage": "Pumped Storage",
         "conventional and run-of-river": "Run-Of-River",
     }
+    status_list = config["GHPT"].get("status", ["operating"])  # noqa: F841
     df = df.rename(columns=RENAME_COLUMNS)
     df_final = (
         df.pipe(clean_name)
@@ -2072,7 +2114,7 @@ def GHPT(raw=False, update=False, config=None):
             lat=df["lat"].apply(pd.to_numeric, errors="coerce"),
             lon=df["lon"].apply(pd.to_numeric, errors="coerce"),
         )
-        .query("Status in ['operating','construction']")
+        .query("Status in @status_list")
         .pipe(lambda x: x[df.columns.intersection(config.get("target_columns"))])
         .pipe(lambda x: x.replace({"Technology": technology_dict}))
         .assign(Fueltype="Hydro")

@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 Created on Wed Nov 25 08:48:04 2020
 
@@ -41,17 +40,21 @@ def test_data_request_processed(source):
 
 
 def test_OPSD_VRE():
-    df = pm.data.OPSD_VRE().empty
+    df = pm.data.OPSD_VRE()
     assert not df.empty
     assert df.Capacity.sum() > 0
 
 
-def test_OPSD_VRE():
+def test_OPSD_VRE_country():
     df = pm.data.OPSD_VRE_country("DE")
     assert not df.empty
     assert df.Capacity.sum() > 0
 
 
-# Enable after release of v0.5.0
-# def test_powerplants():
-#     pm.powerplants(from_url=True)
+@pytest.mark.github_actions
+def test_url_retrieval():
+    pm.powerplants(from_url=True)
+
+
+def test_reduced_retrieval():
+    pm.powerplants(reduced=False)

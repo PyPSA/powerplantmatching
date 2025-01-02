@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright 2016-2018 Fabian Hofmann (FIAS), Jonas Hoersch (KIT, IAI) and
 # Fabian Gotzens (FZJ, IEK-STE)
 
@@ -17,6 +16,7 @@
 """
 Processed datasets of merged and/or adjusted data
 """
+
 import logging
 import os
 
@@ -29,9 +29,8 @@ from .heuristics import extend_by_non_matched, extend_by_VRE
 from .matching import combine_multiple_datasets, reduce_matched_dataframe
 from .utils import (
     parmap,
-    projectID_to_dict,
+    parse_string_to_dict,
     set_column_name,
-    set_uncommon_fueltypes_to_other,
     to_dict_if_string,
 )
 
@@ -114,7 +113,7 @@ def collect(
             df = pd.read_csv(
                 outfn_matched, index_col=0, header=[0, 1], low_memory=False
             )
-        return df.pipe(projectID_to_dict)
+        return df.pipe(parse_string_to_dict, ["projectID", "EIC"])
 
 
 def powerplants(
@@ -170,7 +169,7 @@ def powerplants(
             Arguments passed to powerplantmatching.collection.Collection.
 
     """
-    from . import __version__
+    from . import latest_release
 
     if config is None:
         if config_update is None:
@@ -182,9 +181,9 @@ def powerplants(
     used_deprecated_args = deprecated_args.intersection(collection_kwargs.keys())
     if used_deprecated_args:
         msg = "The following arguments were deprecated and are being ignored: "
-        logger.warn(msg + f"{used_deprecated_args}")
+        logger.warning(msg + f"{used_deprecated_args}")
     if extendby_kwargs:
-        logger.warn(
+        logger.warning(
             DeprecationWarning,
             "`extendby_kwargs` is deprecated in the favor of extend_by_kwargs",
         )
@@ -201,11 +200,11 @@ def powerplants(
 
     if from_url:
         fn = _data_out("matched_data_red.csv", config)
-        url = config["matched_data_url"].format(tag="v" + __version__)
+        url = config["matched_data_url"].format(tag="v" + latest_release)
         logger.info(f"Retrieving data from {url}")
         df = (
             pd.read_csv(url, index_col=0)
-            .pipe(projectID_to_dict)
+            .pipe(parse_string_to_dict, ["projectID", "EIC"])
             .pipe(set_column_name, "Matched Data")
         )
         logger.info(f"Store data at {fn}")
@@ -215,7 +214,7 @@ def powerplants(
     if not update and os.path.exists(fn):
         df = (
             pd.read_csv(fn, index_col=0, header=header)
-            .pipe(projectID_to_dict)
+            .pipe(parse_string_to_dict, ["projectID", "EIC"])
             .pipe(set_column_name, "Matched Data")
         )
         if extend_by_vres:
@@ -242,9 +241,17 @@ def powerplants(
         matched = matched.powerplant.fill_geoposition()
 
     if filter_missing_geopositions:
-        matched = matched[matched.lat.notnull()]
+        if isinstance(matched.columns, pd.MultiIndex):
+            matched = matched[matched.lat.notnull().any(axis=1)]
+        else:
+            matched = matched[matched.lat.notnull()]
 
-    matched.drop_duplicates(["Name", "Fueltype", "Country"])
+    if isinstance(matched.columns, pd.MultiIndex):
+        matched.stack(future_stack=True).drop_duplicates(
+            ["Name", "Fueltype", "Country"]
+        ).unstack(-1)
+    else:
+        matched.drop_duplicates(["Name", "Fueltype", "Country"])
 
     matched.reset_index(drop=True).to_csv(fn, index_label="id", encoding="utf-8")
 

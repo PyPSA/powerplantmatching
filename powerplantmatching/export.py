@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright 2016-2018 Fabian Hofmann (FIAS), Jonas Hoersch (KIT, IAI) and
 # Fabian Gotzens (FZJ, IEK-STE)
 
@@ -302,9 +301,10 @@ def to_TIMES(df=None, use_scaled_capacity=False, baseyear=2015):
                     logger.error(
                         "For region '{}' and timestype '{}' the value for "
                         "year {} ({0.000}) is higher than in the year before "
-                        "({0.000}).".format(
-                            reg, tt, yr, df_exp.loc[row, reg], df_exp.loc[row - 1, reg]
-                        )
+                        "({0.000}).",
+                        reg,
+                        tt,
+                        yr,
                     )
             df_exp.loc[row, "Pset_Pn"] = tt
             row += 1
@@ -337,7 +337,8 @@ def fueltype_to_abbrev():
     Return the fueltype-specific abbreviation.
     """
     data = {
-        "Bioenergy": "BIO",
+        "Solid Biomass": "BIO",
+        "Biogas": "BIG",
         "Geothermal": "GEO",
         "Hard Coal": "COA",
         "Hydro": "HYD",

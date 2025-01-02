@@ -6,7 +6,43 @@
 Welcome to powerplantmatching's documentation!
 ==============================================
 
-|pypi| |conda| |pythonversion| |LICENSE| |DOI| |stackoverflow|
+.. image:: https://img.shields.io/pypi/v/powerplantmatching.svg
+    :target: https://pypi.org/project/powerplantmatching/
+    :alt: pypi
+
+.. image:: https://img.shields.io/conda/vn/conda-forge/powerplantmatching.svg
+    :target: https://anaconda.org/conda-forge/powerplantmatching
+    :alt: conda
+
+.. image:: https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2FPyPSA%2Fpowerplantmatching%2Fmaster%2Fpyproject.toml
+    :alt: pythonversion
+
+.. image:: https://github.com/PyPSA/powerplantmatching/actions/workflows/test.yml/badge.svg
+    :target: https://github.com/PyPSA/powerplantmatching/actions/workflows/test.yml
+    :alt: Tests
+
+.. image:: https://readthedocs.org/projects/powerplantmatching/badge/?version=latest
+    :target: https://powerplantmatching.readthedocs.io/en/latest/
+    :alt: doc
+
+.. image:: https://results.pre-commit.ci/badge/github/PyPSA/powerplantmatching/master.svg
+    :target: https://results.pre-commit.ci/latest/github/PyPSA/powerplantmatching/master
+    :alt: pre-commit.ci status
+
+.. image:: https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json
+    :target: https://github.com/astral-sh/ruff
+    :alt: Ruff
+
+.. image:: https://img.shields.io/pypi/l/powerplantmatching.svg
+    :alt: LICENSE
+
+.. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.3358985.svg
+    :target: https://zenodo.org/record/3358985#.XUReFPxS_MU
+    :alt: DOI
+
+.. image:: https://img.shields.io/stackexchange/stackoverflow/t/pypsa
+    :target: https://stackoverflow.com/questions/tagged/pypsa
+    :alt: Stack Exchange questions
 
 A toolset for cleaning, standardizing and combining multiple power plant
 databases.
@@ -18,7 +54,7 @@ combining dataset, which includes all the important information. The
 package allows to easily update the combined data as soon as new input
 datasets are released.
 
-.. figure:: https://user-images.githubusercontent.com/19226431/46086361-36a13080-c1a8-11e8-82ed-9f04167273e5.png
+.. figure:: powerplants.png
    :alt: Map of power plants in Europe
 
    Map of power plants in Europe
@@ -123,20 +159,6 @@ Fabian Hofmann (FIAS)
 powerplantmatching is released as free software under the
 `GPLv3 <http://www.gnu.org/licenses/gpl-3.0.en.html>`__, see
 `LICENSE <LICENSE>`__ for further information.
-
-.. |pypi| image:: https://img.shields.io/pypi/v/powerplantmatching.svg
-   :target: https://pypi.org/project/powerplantmatching/
-.. |conda| image:: https://img.shields.io/conda/vn/conda-forge/powerplantmatching.svg
-   :target: https://anaconda.org/conda-forge/powerplantmatching
-.. |pythonversion| image:: https://img.shields.io/pypi/pyversions/powerplantmatching
-.. |LICENSE| image:: https://img.shields.io/pypi/l/powerplantmatching.svg
-.. |DOI| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.3358985.svg
-   :target: https://zenodo.org/record/3358985#.XUReFPxS_MU
-.. |image1| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.3358985.svg
-   :target: https://zenodo.org/record/3358985#.XURat99fjRY
-.. |stackoverflow| image:: https://img.shields.io/stackexchange/stackoverflow/t/pypsa
-   :target: https://stackoverflow.com/questions/tagged/pypsa
-   :alt: Stackoverflow
       
 
 .. toctree::
@@ -155,7 +177,7 @@ powerplantmatching is released as free software under the
    :caption: API Reference
 
    api-data
-   api-plot
+   api-utils
    api-core
 
    
@@ -164,7 +186,7 @@ powerplantmatching is released as free software under the
    :maxdepth: 2
    :caption: References
 
+   release-notes
    contributing
    support
-   release-notes
 

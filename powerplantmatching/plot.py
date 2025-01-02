@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright 2016-2018 Fabian Hofmann (FIAS), Jonas Hoersch (KIT, IAI) and
 # Fabian Gotzens (FZJ, IEK-STE)
 
@@ -45,7 +44,7 @@ except (ModuleNotFoundError, ImportError):
     cartopy_present = False
 
 if not cartopy_present:
-    logger.warn("Cartopy not existent.")
+    logger.warning("Cartopy not existent.")
 
 
 def fueltype_stats(df):
@@ -63,7 +62,7 @@ def fueltype_stats(df):
 
 def powerplant_map(
     df,
-    scale=1e1,
+    scale=2e1,
     alpha=0.6,
     european_bounds=True,
     fillcontinents=False,
@@ -118,14 +117,14 @@ def powerplant_map(
         ax.set_xlabel("")
         ax.set_ylabel("")
         if european_bounds:
-            ax.set_xlim(-13, 34)
+            ax.set_xlim(-13, 40)
             ax.set_ylim(35, 72)
         draw_basemap(ax=ax, resolution=resolution, fillcontinents=fillcontinents)
         ax.set_facecolor("w")
 
         fig.tight_layout(pad=0.5)
         if cartopy_present:
-            ax.outline_patch.set_visible(False)
+            ax.spines["geo"].set_visible(False)
         return fig, ax
 
 
@@ -164,7 +163,7 @@ def fueltype_totals_bar(
     last_as_marker=False,
     axes_style="whitegrid",
     exclude=[],
-    **kwargs
+    **kwargs,
 ):
     dfs = get_obj_if_Acc(dfs)
     dfs = to_list_if_other(dfs)
@@ -190,10 +189,10 @@ def fueltype_totals_bar(
                 marker="D",
                 linestyle="None",
                 markerfacecolor="darkslategray",
-                **kwargs
+                **kwargs,
             )
         ax.legend(loc=0)
-        ax.set_ylabel(r"Capacity [$%s$]" % unit)
+        ax.set_ylabel(f"Capacity [${unit}$]")
         ax.xaxis.grid(False)
         fig.tight_layout(pad=0.5)
         return fig, ax
@@ -215,7 +214,7 @@ def country_totals_hbar(
         countrytotals[::-1][1:].plot(
             kind="barh", ax=ax, legend="reverse", edgecolor="none"
         )
-        ax.set_xlabel("Capacity [%s]" % unit)
+        ax.set_xlabel(f"Capacity [{unit}]")
         ax.yaxis.grid(False)
         ax.set_ylabel("")
         fig.tight_layout(pad=0.5)
@@ -226,10 +225,13 @@ def factor_comparison(dfs, keys=None, figsize=(12, 9)):
     with sns.axes_style("whitegrid"):
         compare = lookup(dfs, keys=keys, exclude=["Solar", "Wind"]).fillna(0.0)
         compare = (
-            compare.append(
-                pd.concat(
-                    [compare.groupby(level="Country").sum()], keys=["Total"]
-                ).swaplevel()
+            pd.concat(
+                [
+                    compare,
+                    pd.concat(
+                        [compare.groupby(level="Country").sum()], keys=["Total"]
+                    ).swaplevel(),
+                ]
             ).sort_index()
             / 1000
         )
@@ -302,7 +304,7 @@ def boxplot_gross_to_net(axes_style="darkgrid", **kwargs):
         ax2 = ax.twiny()
         ax2.set_xlim(ax.get_xlim())
         ax2.set_xticks([i + 1 for i in range(len(dfg))])
-        ax2.set_xticklabels(["$n$=%d" % (len(v)) for k, v in dfg])
+        ax2.set_xticklabels([f"$n$={len(v)}" for k, v in dfg])
         fig.suptitle("")
         return fig, ax
 
@@ -372,7 +374,7 @@ def draw_basemap(
     coast_linewidth=0.4,
     zorder=None,
     fillcontinents=True,
-    **kwds
+    **kwds,
 ):
     if cartopy_present:
         if ax is None:
@@ -387,7 +389,7 @@ def draw_basemap(
         ax.coastlines(linewidth=0.4, zorder=-1, resolution=resolution)
         border = cartopy.feature.BORDERS.with_scale(resolution)
         ax.add_feature(border, linewidth=0.3)
-        ax.outline_patch.set_visible(False)
+        ax.spines["geo"].set_visible(False)
         if fillcontinents:
             land = cartopy.feature.LAND.with_scale(resolution)
             ax.add_feature(land, facecolor="lavender", alpha=0.25)
@@ -522,7 +524,7 @@ def gather_nrows_ncols(x, orientation="landscape"):
 #                  .fillna(0.0))               # country (if all zero->drop!).
 #
 #    if (show_indicators or threshold >= 0.) and len(stats.columns) < 2:
-#        logger.warn('At least two objects for comparison needed when using '
+#        logger.warning('At least two objects for comparison needed when using '
 #                    '`show_indicators` or `threshold`. Arguments ignored.')
 #        show_indicators = False
 #        threshold = -1

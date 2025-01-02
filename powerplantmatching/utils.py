@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright 2016-2018 Fabian Hofmann (FIAS), Jonas Hoersch (KIT, IAI) and
 # Fabian Gotzens (FZJ, IEK-STE)
 
@@ -18,10 +17,9 @@
 Utility functions for checking data completeness and supporting other functions
 """
 
-from __future__ import absolute_import, print_function
-
 import multiprocessing
 import os
+import re
 from ast import literal_eval as liteval
 
 import country_converter as coco
@@ -30,7 +28,6 @@ import pandas as pd
 import pycountry as pyc
 import requests
 import six
-from deprecation import deprecated
 from numpy import atleast_1d
 from tqdm import tqdm
 
@@ -93,7 +90,7 @@ def get_raw_file(name, update=False, config=None, skip_retrieve=False):
     if (not os.path.exists(path) or update) and not skip_retrieve:
         url = df_config["url"]
         logger.info(f"Retrieving data from {url}")
-        r = requests.get(url)
+        r = requests.get(url, headers={"User-Agent": "Mozilla/5.0"})
         with open(path, "wb") as outfile:
             outfile.write(r.content)
 
@@ -119,8 +116,8 @@ def config_filter(df, config):
     name = df.powerplant.get_name()
     assert name is not None, "No name given for data source"
 
-    countries = config["target_countries"]
-    fueltypes = config["target_fueltypes"]
+    countries = config["target_countries"]  # noqa
+    fueltypes = config["target_fueltypes"]  # noqa
     cols = config["target_columns"]
 
     target_query = "Country in @countries and Fueltype in @fueltypes"
@@ -190,15 +187,13 @@ def set_uncommon_fueltypes_to_other(df, fillna_other=True, config=None, **kwargs
         Whether to replace NaN values in 'Fueltype' with 'Other'
     fueltypes : list
         list of replaced fueltypes, defaults to
-        ['Bioenergy', 'Geothermal', 'Mixed fuel types', 'Electro-mechanical',
+        ['Mixed fuel types', 'Electro-mechanical',
         'Hydrogen Storage']
     """
     config = get_config() if config is None else config
     df = get_obj_if_Acc(df)
 
     default = [
-        "Bioenergy",
-        "Geothermal",
         "Mixed fuel types",
         "Electro-mechanical",
         "Hydrogen Storage",
@@ -274,18 +269,39 @@ def to_dict_if_string(s):
         return s
 
 
-def projectID_to_dict(df):
+def parse_string_to_dict(df, cols):
     """
-    Convenience function to convert string of dict to dict type
+    Convenience function to convert string of dict to dict type for specified columns.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame on which to apply the parsing
+    cols : str, list
+        Column(s) to be parsed to dict type
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame with specified columns parsed to dict type
     """
-    if df.columns.nlevels > 1:
+    if isinstance(cols, str):
+        cols = [cols]
+
+    def _replace_and_evaluate(value):
+        # Needed to read in older files with {nan} as string
+        value = re.sub(r"\bnan\b(, )?|, \bnan\b", "", value)
+        return liteval(value)
+
+    if isinstance(df.columns, pd.MultiIndex):
         return df.assign(
-            projectID=(
-                df.projectID.stack().dropna().apply(lambda ds: liteval(ds)).unstack()
-            )
+            **{
+                col: df[col].stack().dropna().apply(_replace_and_evaluate).unstack()
+                for col in cols
+            }
         )
     else:
-        return df.assign(projectID=df.projectID.apply(lambda x: liteval(x)))
+        return df.assign(**{col: df[col].apply(_replace_and_evaluate) for col in cols})
 
 
 def select_by_projectID(df, projectID, dataset_name=None):
@@ -355,7 +371,7 @@ def parmap(f, arg_list, config=None):
         config = get_config()
     if config["parallel_duke_processes"]:
         nprocs = min(multiprocessing.cpu_count(), config["process_limit"])
-        logger.info("Run process with {} parallel threads.".format(nprocs))
+        logger.info(f"Run process with {nprocs} parallel threads.")
         q_in = multiprocessing.Queue(1)
         q_out = multiprocessing.Queue()
 
@@ -567,7 +583,7 @@ def parse_Geoposition(
             exactly_one=True,
         )
     except geopy.exc.GeocoderQueryError as e:
-        logger.warn(e)
+        logger.warning(e)
         gdata = None
 
     if gdata is not None:
@@ -619,12 +635,23 @@ def fill_geoposition(
 
     if use_saved_locations:
         logger.info(f"Adding stored geo-position from {fn}")
-        locs = pd.read_csv(fn, index_col=[0, 1])
-        locs = locs[~locs.index.duplicated()]
-        df = df.where(
-            df[["lat", "lon"]].notnull().all(1),
-            df.drop(columns=["lat", "lon"]).join(locs, on=["Name", "Country"]),
-        )
+        locs = pd.read_csv(fn, index_col=[0, 1]).drop_duplicates()
+        if isinstance(df.columns, pd.MultiIndex):
+            new_data = (
+                df.drop(columns=["lat", "lon"])
+                .stack(future_stack=True)
+                .join(locs, on=["Name", "Country"])
+                .unstack(-1)
+                .reindex(columns=df.columns)
+            )
+        else:
+            new_data = (
+                df.drop(columns=["lat", "lon"])
+                .join(locs, on=["Name", "Country"])
+                .reindex(columns=df.columns)
+            )
+
+        df = df.where(df[["lat", "lon"]].notnull().all(axis=1), new_data)
     if saved_only:
         return df
 

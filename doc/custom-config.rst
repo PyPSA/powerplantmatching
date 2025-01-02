@@ -3,12 +3,12 @@ Make your own configuration
 
 You have the option to easily manipulate the resulting data modifying
 the global configuration. Just save the `config.yaml
-file <https://github.com/FRESNA/powerplantmatching/blob/master/powerplantmatching/package_data/config.yaml>`__
+file <https://github.com/PyPSA/powerplantmatching/blob/master/powerplantmatching/package_data/config.yaml>`__
 as **~/.powerplantmatching_config.yaml** manually or for linux users
 
 .. code:: bash
 
-   wget -O ~/.powerplantmatching_config.yaml https://raw.githubusercontent.com/FRESNA/powerplantmatching/master/powerplantmatching/package_data/config.yaml
+   wget -O ~/.powerplantmatching_config.yaml https://raw.githubusercontent.com/PyPSA/powerplantmatching/master/powerplantmatching/package_data/config.yaml
 
 and change the **.powerplantmaching_config.yaml** file according to your
 wishes. Thereby you can
@@ -22,7 +22,7 @@ wishes. Thereby you can
    `pandas.DataFrame.query <http://pandas.pydata.org/pandas-docs/stable/indexing.html#the-query-method>`__
    statements set as an argument of data source name. See the default
    `config.yaml
-   file <https://github.com/FRESNA/powerplantmatching/blob/master/powerplantmatching/package_data/config.yaml>`__
+   file <https://github.com/PyPSA/powerplantmatching/blob/master/powerplantmatching/package_data/config.yaml>`__
    as an example
 
 Optionally you can:

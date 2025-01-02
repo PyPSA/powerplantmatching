@@ -16,13 +16,13 @@ main_query: "Name != '' and (lat >= 30 or lat != lat)"
 matching_sources:
   # Make individual queries for the datasets as done in `fully_included_sources`
   # Queries are combined with `main_query` with an `and` operator
-  - ENTSOE
-  - GEO
-  - GPD
-  - JRC
-  - OPSD: Country != "Spain" and Fueltype != 'Hard Coal'
-  - BEYONDCOAL
-  - WIKIPEDIA
+  - ENTSOE: Fueltype != 'Solar'
+  - GEO: Fueltype != 'Solar'
+  - GPD: Fueltype != 'Solar'
+  - JRC: Fueltype != 'Solar'
+  - OPSD: Country != "Spain" and Fueltype != 'Hard Coal' and Fueltype != 'Solar'
+  - BEYONDCOAL: Fueltype != 'Solar'
+  - WIKIPEDIA: Fueltype != 'Solar'
   - GEM
   - MASTR
 
@@ -35,12 +35,12 @@ fully_included_sources:
   - JRC: Country not in ['Switzerland', 'Albania', 'United Kingdom', 'Norway']
   - OPSD: Country not in ['Switzerland', 'Italy', 'Spain', 'Norway', 'Austria']
   - BEYONDCOAL
-  # - GEM
+  - GEM
 
 
 parallel_duke_processes: false
 process_limit: 4
-matched_data_url: https://raw.githubusercontent.com/FRESNA/powerplantmatching/{tag}/powerplants.csv
+matched_data_url: https://raw.githubusercontent.com/PyPSA/powerplantmatching/{tag}/powerplants.csv
 
 # ---------------------------------------------------------------------------- #
 #                                  Data Source Config                          #
@@ -49,7 +49,7 @@ matched_data_url: https://raw.githubusercontent.com/FRESNA/powerplantmatching/{t
 opsd_vres_base_year: 2020
 
 BNETZA:
-  reliability_score: 3
+  reliability_score: 2
   fn: Kraftwerksliste_2017_2.xlsx
   url: https://www.bundesnetzagentur.de/SharedDocs/Downloads/DE/Sachgebiete/Energie/Unternehmen_Institutionen/Versorgungssicherheit/Erzeugungskapazitaeten/Kraftwerksliste/Kraftwerksliste_2019_1.xlsx;jsessionid=17E419F28D025C7DD9FC6E2BEB3D088F?__blob=publicationFile&v=2
 BEYONDCOAL:
@@ -103,11 +103,11 @@ IWPDCY:
   reliability_score: 3
   fn: IWPDCY.csv
 OPSD_DE:
-  reliability_score: 5
+  reliability_score: 4
   fn: conventional_power_plants_DE.csv
   url: https://raw.githubusercontent.com/pypsa-meets-earth/ppm-data-backup/main/conventional_power_plants_DE.csv
 OPSD_EU:
-  reliability_score: 5
+  reliability_score: 4
   fn: conventional_power_plants_EU.csv
   url: https://raw.githubusercontent.com/pypsa-meets-earth/ppm-data-backup/main/conventional_power_plants_EU.csv
 OPSD_VRE:
@@ -138,64 +138,71 @@ OPSD_VRE_GB:
   url: https://data.open-power-system-data.org/renewable_power_plants/2020-08-25/renewable_power_plants_UK.csv
   fn: renewable_power_plants_UK.csv
 OPSD:
-  reliability_score: 5
+  reliability_score: 4
 Capacity_stats:
   url: https://data.open-power-system-data.org/national_generation_capacity/2020-10-01/national_generation_capacity_stacked.csv
   fn: national_generation_capacity_stacked.csv
 UBA:
   net_capacity: false
-  reliability_score: 5
+  reliability_score: 4
   fn: kraftwerke-de-ab-100-mw.xls
   url: https://www.umweltbundesamt.de/sites/default/files/medien/372/dokumente/kraftwerke_de_ab_100_mw_0.xls
 WEPP:
   net_capacity: false
-  reliability_score: 4
+  reliability_score: 3
   fn: platts_wepp.csv
 GGPT:
   net_capacity: false
-  reliability_score: 4
-  fn: Global-Gas-Plant-Tracker-GGPT-February-2023-v2.csv
-  url: https://raw.githubusercontent.com/pz-max/gem-powerplant-data/main/Global-Gas-Plant-Tracker-GGPT-latest.csv
+  reliability_score: 5
+  status: ["operating", "retired", "construction"]
+  fn: Global-Oil-and-Gas-Plant-Tracker-GOGPT-February-2024-v4.xlsx
+  url: https://tubcloud.tu-berlin.de/s/Be5arQgT9Z9g8Kp/download/Global-Oil-and-Gas-Plant-Tracker-GOGPT-February-2024-v4.xlsx
 GEM: 
   # combined data set of all GEM trackers
-  net_capacity: True
+  net_capacity: true
   reliability_score: 5
 GCPT:
   net_capacity: false
   reliability_score: 4
-  fn: Global-Coal-Plant-Tracker-January-2023.csv
-  url: https://raw.githubusercontent.com/pz-max/gem-powerplant-data/main/Global-Coal-Plant-Tracker-latest.csv
+  status: ["operating", "retired", "construction"]
+  fn: Global-Coal-Plant-Tracker-July-2024.xlsx
+  url: https://tubcloud.tu-berlin.de/s/FdyKMZtr2ddRJEd/download/Global-Coal-Plant-Tracker-July-2024.xlsx
 GGTPT:
   net_capacity: false
   reliability_score: 4
-  fn: Global-Geothermal-Power-Tracker-January-2023.csv
-  url: https://raw.githubusercontent.com/pz-max/gem-powerplant-data/main/Global-Geothermal-Power-Tracker-latest.csv
+  status: ["operating", "retired", "construction"]
+  fn: Geothermal-Power-Tracker-May-2024.xlsx
+  url: https://tubcloud.tu-berlin.de/s/Hz3ZD7YcKnZTs9t/download/Geothermal-Power-Tracker-May-2024.xlsx
 GWPT:
   net_capacity: false
   reliability_score: 4
-  fn: Global-Wind-Power-Tracker-January-2023.csv
-  url: https://raw.githubusercontent.com/pz-max/gem-powerplant-data/main/Global-Wind-Power-Tracker-latest.csv
+  status: ["operating", "retired", "construction"]
+  fn: Global-Wind-Power-Tracker-June-2024.xlsx
+  url: https://tubcloud.tu-berlin.de/s/Z9b3WkAJmSnsrHD/download/Global-Wind-Power-Tracker-June-2024.xlsx
 GSPT:
   net_capacity: false
   reliability_score: 4
-  fn: Global-Solar-Power-Tracker-January-2023.csv
-  url: https://raw.githubusercontent.com/pz-max/gem-powerplant-data/main/Global-Solar-Power-Tracker-latest.csv
+  status: ["operating", "construction"]
+  fn: Global-Solar-Power-Tracker-June-2024.xlsx
+  url: https://tubcloud.tu-berlin.de/s/tJ5K5rA2e5XaNjM/download/Global-Solar-Power-Tracker-June-2024.xlsx
 GBPT:
   net_capacity: false
   reliability_score: 4
-  fn: Global-Bioenergy-Power-Tracker-January-2023.csv
-  url: https://raw.githubusercontent.com/pz-max/gem-powerplant-data/main/Global-Bioenergy-Power-Tracker-latest.csv
+  status: ["operating", "retired", "construction"]
+  fn: Global-Bioenergy-Power-Tracker-GBPT-V1.xlsx
+  url: https://tubcloud.tu-berlin.de/s/F34bbwcxYHL9ZR4/download/Global-Bioenergy-Power-Tracker-GBPT-V1.xlsx
 GNPT:
   net_capacity: false
   reliability_score: 4
-  fn: Global-Nuclear-Power-Tracker-January-2023.csv
-  url: https://raw.githubusercontent.com/pz-max/gem-powerplant-data/main/Global-Nuclear-Power-Tracker-latest.csv
-
+  status: ["operating", "retired", "mothballed", "construction"]
+  fn: Global-Nuclear-Power-Tracker-July-2024.xlsx
+  url: https://tubcloud.tu-berlin.de/s/gXFim9EciRHrjeQ/download/Global-Nuclear-Power-Tracker-July-2024.xlsx
 GHPT:
   net_capacity: false
   reliability_score: 4
-  fn: Global-Hydropower-Tracker-May-2023.csv
-  url: https://raw.githubusercontent.com/pz-max/gem-powerplant-data/main/Global-Hydropower-Tracker-latest.csv
+  status: ["operating", "retired", "construction"]
+  fn: Global-Hydropower-Tracker-April-2024.xlsx
+  url: https://tubcloud.tu-berlin.de/s/sEztyBLdJS5sNHY/download/Global-Hydropower-Tracker-April-2024.xlsx
 
 MASTR:
   net_capacity: true
@@ -203,7 +210,6 @@ MASTR:
   fn: bnetza_open_mastr_2023-08-08_B.zip
   url: https://zenodo.org/records/8225106/files/bnetza_open_mastr_2023-08-08_B.zip
 
-  
 # ---------------------------------------------------------------------------- #
 #                             Data Structure Config                            #
 # ---------------------------------------------------------------------------- #
@@ -235,7 +241,7 @@ target_countries:
   - Bosnia and Herzegovina
   - Bulgaria
   - Croatia
-  - Czech Republic
+  - Czechia
   - Denmark
   - Estonia
   - Finland
@@ -245,10 +251,11 @@ target_countries:
   - Hungary
   - Ireland
   - Italy
+  - Kosovo
   - Latvia
   - Lithuania
   - Luxembourg
-  - Macedonia, Republic of
+  - North Macedonia
   - Moldova
   - Montenegro
   - Netherlands
@@ -270,7 +277,8 @@ target_fueltypes:
   # given by the list. An empty string results in a regex expression containing only the key.
   # Parsed of representatives at the top may be overwritten by representatives further below.
   Other: ".*"
-  Bioenergy: [biological, biogas, bioenergy, agricultural, wood, biomass]
+  Solid Biomass: [biological, bioenergy, agricultural, wood, biomass]
+  Biogas: [biogas]
   Nuclear: [nuclear]
   Natural Gas:
     [
@@ -399,7 +407,8 @@ clean_name:
 #                               Heuristic Config                               #
 # ---------------------------------------------------------------------------- #
 fuel_to_lifetime:
-  Bioenergy: 20
+  Solid Biomass: 20
+  Biogas: 20
   Geothermal: 15
   Hard Coal: 45
   Hydro: 100
@@ -416,28 +425,30 @@ fuel_to_lifetime:
 #                                Plotting Config                               #
 # ---------------------------------------------------------------------------- #
 fuel_to_color:
-  OCGT: darkorange
-  Hydro: seagreen
-  Pumped hydro: limegreen
-  Run-of-river: navy
-  Ror: navy
-  Lignite: saddlebrown
-  Nuclear: yellow
+  OCGT: lightcoral
+  Hydro: lightseagreen
+  Pumped hydro: aquamarine
+  Run-of-river: lightseagreen
+  Ror: lightseagreen
+  Lignite: sienna
+  Nuclear: mediumorchid
   Solar: gold
   Windoff: cornflowerblue
   Windon: darkblue
   Offshore: cornflowerblue
   Onshore: darkblue
   Wind: steelblue
-  Bioenergy: forestgreen
-  Natural Gas: red
-  CCGT: red
+  Biogas: yellowgreen
+  Bioenergy: green
+  Solid Biomass: forestgreen
+  Natural Gas: orangered
+  CCGT: orangered
   Coal: black
   Hard Coal: dimgray
   Oil: black
-  Other: silver
-  Waste: grey
-  Geothermal: orange
+  Other: lightgrey
+  Waste: olive
+  Geothermal: darkgoldenrod
   Battery: purple
   Hydrogen Storage: teal
   Electro-mechanical: teal

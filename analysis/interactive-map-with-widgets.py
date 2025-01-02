@@ -1,10 +1,7 @@
 import hvplot
 import hvplot.pandas  # noqa
 import hvplot.xarray  # noqa
-import pandas as pd
 import panel as pn
-import xarray as xr
-from xarray import align
 
 import powerplantmatching as pm
 

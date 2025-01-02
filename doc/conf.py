@@ -4,6 +4,8 @@
 # list see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
+from importlib.metadata import version as get_version
+
 # -- Path setup --------------------------------------------------------------
 
 # If extensions (or modules to document with autodoc) are in another directory,
@@ -14,13 +16,17 @@
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
 
-
 # -- Project information -----------------------------------------------------
 
 project = "powerplantmatching"
 copyright = "2021-2024, Fabian Hofmann, Fabian Gotzens, Jonas Hörsch, Martha Frysztacki"
 author = "Fabian Hofmann, Fabian Gotzens, Jonas Hörsch, Martha Frysztacki"
 
+# -- Version information -------------------------------------------------
+
+# The short X.Y version.
+release: str = get_version("powerplantmatching")
+version: str = ".".join(release.split(".")[:2])
 
 # -- General configuration ---------------------------------------------------
 
