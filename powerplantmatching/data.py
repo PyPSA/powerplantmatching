@@ -2214,12 +2214,12 @@ def MASTR(
                         "KwkMastrNummer",
                     ]
                     target_columns = (
-                        target_columns
-                        + PARSE_COLUMNS
-                        + list(RENAME_COLUMNS.keys())
+                        target_columns + PARSE_COLUMNS + list(RENAME_COLUMNS.keys())
                     )
                     usecols = available_columns.intersection(target_columns)
-                    df = pd.read_csv(file.open(name), usecols=usecols).assign(Filesuffix=fueltype)
+                    df = pd.read_csv(file.open(name), usecols=usecols).assign(
+                        Filesuffix=fueltype
+                    )
                     data_frames.append(df)
                     break
     df = pd.concat(data_frames).reset_index(drop=True)
