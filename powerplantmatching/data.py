@@ -2168,35 +2168,6 @@ def MASTR(
     """
     config = get_config() if config is None else config
 
-    fn = get_raw_file("MASTR", update=update, config=config)
-
-    file_suffixes = {
-        "Bioenergy": "biomass.csv",
-        "Combustion": "combustion.csv",
-        "Nuclear": "nuclear.csv",
-        "Hydro": "hydro.csv",
-        # "Wind": "wind.csv",  # TODO: Needs performance discussion
-        # "Solar": "solar.csv",
-    }
-    df = pd.DataFrame()
-    with ZipFile(fn, "r") as file:
-        for fueltype, suffix in file_suffixes.items():
-            for name in file.namelist():
-                if name.endswith(suffix):
-                    df = pd.concat(
-                        [
-                            df,
-                            pd.read_csv(file.open(name), low_memory=False).assign(
-                                Filesuffix=fueltype
-                            ),
-                        ]
-                    )
-                    break
-    df = df.reset_index(drop=True)
-
-    if raw:
-        return df
-
     RENAME_COLUMNS = {
         "EinheitMastrNummer": "projectID",
         "NameKraftwerk": "Name",
@@ -2204,6 +2175,7 @@ def MASTR(
         "Nettonennleistung": "Capacity",
         "Inbetriebnahmedatum": "DateIn",
         "DatumEndgueltigeStilllegung": "DateOut",
+        "EinheitBetriebsstatus": "Status",
         "Laengengrad": "lon",
         "Breitengrad": "lat",
     }
@@ -2212,24 +2184,77 @@ def MASTR(
         "Österreich": "Austria",
         "Schweiz": "Switzerland",
     }
+    PARSE_COLUMNS = [
+        "ArtDerWasserkraftanlage",
+        "Biomasseart",
+        "Filesuffix",
+        "Energietraeger",
+        "Hauptbrennstoff",
+        "NameStromerzeugungseinheit",
+    ]
+
+    fn = get_raw_file("MASTR", update=update, config=config)
+    file_suffixes = {
+        "Bioenergy": "biomass.csv",
+        "Combustion": "combustion.csv",
+        "Nuclear": "nuclear.csv",
+        "Hydro": "hydro.csv",
+        "Wind": "wind.csv",
+        "Solar": "solar.csv",
+    }
+    data_frames = []
+    with ZipFile(fn, "r") as file:
+        for fueltype, suffix in file_suffixes.items():
+            for name in file.namelist():
+                if name.endswith(suffix):
+                    available_columns = pd.read_csv(file.open(name), nrows=0).columns
+                    target_columns = [
+                        "GeplantesInbetriebnahmedatum",
+                        "ThermischeNutzleistung",
+                        "KwkMastrNummer",
+                    ]
+                    target_columns = (
+                        target_columns
+                        + PARSE_COLUMNS
+                        + list(RENAME_COLUMNS.keys())
+                    )
+                    usecols = available_columns.intersection(target_columns)
+                    df = pd.read_csv(file.open(name), usecols=usecols).assign(Filesuffix=fueltype)
+                    data_frames.append(df)
+                    break
+    df = pd.concat(data_frames).reset_index(drop=True)
+
+    if raw:
+        return df
+
+    status_list = config["MASTR"].get("status", ["In Betrieb"])  # noqa: F841
+    capacity_threshold_kw = 50
 
     df = (
-        df.drop(columns=["Name"])
-        .rename(columns=RENAME_COLUMNS)
+        raw.rename(columns=RENAME_COLUMNS)
+        .query("Status in @status_list")
+        .loc[lambda df: df.Capacity > capacity_threshold_kw]
         .assign(
             projectID=lambda df: "MASTR-" + df.projectID,
             Country=lambda df: df.Country.map(COUNTRY_MAP),
             Capacity=lambda df: df.Capacity / 1e3,  # kW to MW
             DateIn=lambda df: pd.to_datetime(df.DateIn).dt.year,
             DateOut=lambda df: pd.to_datetime(df.DateOut).dt.year,
-            Technology=np.nan,
-            Set="PP",
         )
-        .loc[lambda df: df.Capacity > 1]  # TODO: Needs performance discussion
+        .assign(
+            DateIn=lambda df: df["DateIn"].combine_first(
+                pd.to_datetime(df["GeplantesInbetriebnahmedatum"]).dt.year
+            ),
+        )
         .pipe(
             gather_specifications,
             config=config,
-            parse_columns=["Filesuffix", "Energietraeger"],
+            parse_columns=PARSE_COLUMNS,
+        )
+        .assign(
+            Set=lambda df: df["Set"].where(
+                df["KwkMastrNummer"].isna() & df["ThermischeNutzleistung"].isna(), "CHP"
+            ),
         )
         .pipe(clean_name)
         .pipe(set_column_name, "MASTR")

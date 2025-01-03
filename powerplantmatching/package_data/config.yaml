@@ -35,7 +35,8 @@ fully_included_sources:
   - JRC: Country not in ['Switzerland', 'Albania', 'United Kingdom', 'Norway']
   - OPSD: Country not in ['Switzerland', 'Italy', 'Spain', 'Norway', 'Austria']
   - BEYONDCOAL
-  - GEM
+  - GEM: Country != 'Germany'
+  - MASTR
 
 
 parallel_duke_processes: false
@@ -207,6 +208,7 @@ GHPT:
 MASTR:
   net_capacity: true
   reliability_score: 8
+  status: ["In Betrieb", "In Planung", "Endgültig stillgelegt"]
   fn: bnetza_open_mastr_2023-08-08_B.zip
   url: https://zenodo.org/records/8225106/files/bnetza_open_mastr_2023-08-08_B.zip
 
@@ -277,8 +279,8 @@ target_fueltypes:
   # given by the list. An empty string results in a regex expression containing only the key.
   # Parsed of representatives at the top may be overwritten by representatives further below.
   Other: ".*"
-  Solid Biomass: [biological, bioenergy, agricultural, wood, biomass]
-  Biogas: [biogas]
+  Solid Biomass: [biological, bioenergy, agricultural, wood, biomass, feste biomasse]
+  Biogas: [biogas, biomethan, gasförmige biomasse]
   Nuclear: [nuclear]
   Natural Gas:
     [
@@ -290,7 +292,8 @@ target_fueltypes:
       combined cycle,
       fossil gas,
       mixed fossil fuels,
-      erdgas
+      erdgas,
+      andere gase,
     ]
   Hydro:
     [
@@ -302,13 +305,14 @@ target_fueltypes:
       hydro,
       hydroelectric,
       wasserkraft,
+      wasser,
     ]
   Hard Coal: [coal, coke, steinkohle]
   Lignite: [brown coal, lignite, peat, braunkohle]
   Oil: [oil, diesel, mineralölprodukte]
   Geothermal: ""
   Solar: ""
-  Waste: ""
+  Waste: ["abfall.*", "waste"]
   Wind: ""
   Battery: [Electro-chemical, battery]
 target_sets:
@@ -337,12 +341,12 @@ target_technologies:
   # A list will be converted to a regex expression matching all words (case-insensitive)
   # given by the list. An empty string results in a regex expression containing only the key.
   # Parsed of representatives at the top may be overwritten by representatives further below.
-  CCGT: [ccgt, gas, natural gas]
-  OCGT: [ocgt]
-  Steam Turbine: [steam, turbine]
-  Combustion Engine: [combustion engine]
-  Run-Of-River: [run-off, run off, run of river, run-of-river, ror]
-  Pumped Storage: [pumped hydro, pumped]
+  CCGT: [ccgt, gas, natural gas, gasturbinen mit abhitzekessel]
+  OCGT: [ocgt, gasturbinen ohne abhitzekessel]
+  Steam Turbine: [steam, turbine, kondensationsmaschine, gegendruckmaschine, dampfmotor]
+  Combustion Engine: [combustion engine, verbrennungsmotor, stirlingmotor]
+  Run-Of-River: [run-off, run off, run of river, run-of-river, ror, laufwasseranlage]
+  Pumped Storage: [pumped hydro, pumped, speicherwasseranlage]
   Reservoir: ""
   Marine: ""
   Onshore: ""
