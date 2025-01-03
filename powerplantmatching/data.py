@@ -2231,7 +2231,7 @@ def MASTR(
     capacity_threshold_kw = 50
 
     df = (
-        raw.rename(columns=RENAME_COLUMNS)
+        df.rename(columns=RENAME_COLUMNS)
         .query("Status in @status_list")
         .loc[lambda df: df.Capacity > capacity_threshold_kw]
         .assign(
