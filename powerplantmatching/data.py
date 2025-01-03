@@ -2228,7 +2228,7 @@ def MASTR(
         return df
 
     status_list = config["MASTR"].get("status", ["In Betrieb"])  # noqa: F841
-    capacity_threshold_kw = 50
+    capacity_threshold_kw = 1000
 
     df = (
         df.rename(columns=RENAME_COLUMNS)

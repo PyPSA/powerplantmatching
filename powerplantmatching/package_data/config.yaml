@@ -35,7 +35,7 @@ fully_included_sources:
   - JRC: Country not in ['Switzerland', 'Albania', 'United Kingdom', 'Norway']
   - OPSD: Country not in ['Switzerland', 'Italy', 'Spain', 'Norway', 'Austria']
   - BEYONDCOAL
-  - GEM: Country != 'Germany'
+  - GEM: Country != 'Germany' or Fueltype == 'Solar'
   - MASTR
 
 
