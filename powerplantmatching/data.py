@@ -191,6 +191,7 @@ def OPSD(
     opsd_DE = (
         opsd_DE.rename(columns=str.title)
         .rename(columns=DE_RENAME_COLUMNS)
+        .query("Country == 'DE'")
         .assign(
             Name=lambda d: d.Name_Bnetza.fillna(d.Name_Uba),
             Fueltype=lambda d: d.Fueltype.fillna(d.Energy_Source_Level_1),
