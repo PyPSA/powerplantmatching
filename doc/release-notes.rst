@@ -13,6 +13,8 @@ Version 0.6.0 (18.09.2024)
 * Bugfix: Consistently rename countries, affecting power plants in Czech Republic and
   Moldova (https://github.com/PyPSA/powerplantmatching/pull/204).
 
+* Bugfix: Remove duplicate conventional power plants coming from different OPSD input files
+
 * See full list of changes `here <https://github.com/PyPSA/powerplantmatching/releases/tag/v0.6.0>`__.
 
 Version 0.5.19 (16.09.2024)
