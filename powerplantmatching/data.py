@@ -2144,6 +2144,127 @@ def GEM(raw=False, update=False, config=None):
     return pd.concat(data, ignore_index=True)
 
 
+def MASTR(
+    raw=False,
+    update=False,
+    config=None,
+):
+    """
+    Get the Marktstammdatenregister (MaStR) dataset.
+
+    Provided by the German Federal Network Agency (Bundesnetzagentur / BNetza) and
+    contains data on Germany, Austria and Switzerland.
+
+    Parameters
+    ----------
+    raw : Boolean, default False
+        Whether to return the original dataset
+    update: bool, default False
+        Whether to update the data from the url.
+    config : dict, default None
+        Add custom specific configuration,
+        e.g. powerplantmatching.config.get_config(target_countries='Italy'),
+        defaults to powerplantmatching.config.get_config()
+
+    """
+    config = get_config() if config is None else config
+
+    RENAME_COLUMNS = {
+        "EinheitMastrNummer": "projectID",
+        "NameKraftwerk": "Name",
+        "Land": "Country",
+        "Nettonennleistung": "Capacity",
+        "Inbetriebnahmedatum": "DateIn",
+        "DatumEndgueltigeStilllegung": "DateOut",
+        "EinheitBetriebsstatus": "Status",
+        "Laengengrad": "lon",
+        "Breitengrad": "lat",
+    }
+    COUNTRY_MAP = {
+        "Deutschland": "Germany",
+        "Österreich": "Austria",
+        "Schweiz": "Switzerland",
+    }
+    PARSE_COLUMNS = [
+        "ArtDerWasserkraftanlage",
+        "Biomasseart",
+        "Filesuffix",
+        "Energietraeger",
+        "Hauptbrennstoff",
+        "NameStromerzeugungseinheit",
+    ]
+
+    fn = get_raw_file("MASTR", update=update, config=config)
+    file_suffixes = {
+        "Bioenergy": "biomass.csv",
+        "Combustion": "combustion.csv",
+        "Nuclear": "nuclear.csv",
+        "Hydro": "hydro.csv",
+        "Wind": "wind.csv",
+        "Solar": "solar.csv",
+    }
+    data_frames = []
+    with ZipFile(fn, "r") as file:
+        for fueltype, suffix in file_suffixes.items():
+            for name in file.namelist():
+                if name.endswith(suffix):
+                    available_columns = pd.read_csv(file.open(name), nrows=0).columns
+                    target_columns = [
+                        "GeplantesInbetriebnahmedatum",
+                        "ThermischeNutzleistung",
+                        "KwkMastrNummer",
+                    ]
+                    target_columns = (
+                        target_columns + PARSE_COLUMNS + list(RENAME_COLUMNS.keys())
+                    )
+                    usecols = available_columns.intersection(target_columns)
+                    df = pd.read_csv(file.open(name), usecols=usecols).assign(
+                        Filesuffix=fueltype
+                    )
+                    data_frames.append(df)
+                    break
+    df = pd.concat(data_frames).reset_index(drop=True)
+
+    if raw:
+        return df
+
+    status_list = config["MASTR"].get("status", ["In Betrieb"])  # noqa: F841
+    capacity_threshold_kw = 1000
+
+    df = (
+        df.rename(columns=RENAME_COLUMNS)
+        .query("Status in @status_list")
+        .loc[lambda df: df.Capacity > capacity_threshold_kw]
+        .assign(
+            projectID=lambda df: "MASTR-" + df.projectID,
+            Country=lambda df: df.Country.map(COUNTRY_MAP),
+            Capacity=lambda df: df.Capacity / 1e3,  # kW to MW
+            DateIn=lambda df: pd.to_datetime(df.DateIn).dt.year,
+            DateOut=lambda df: pd.to_datetime(df.DateOut).dt.year,
+        )
+        .assign(
+            DateIn=lambda df: df["DateIn"].combine_first(
+                pd.to_datetime(df["GeplantesInbetriebnahmedatum"]).dt.year
+            ),
+        )
+        .pipe(
+            gather_specifications,
+            config=config,
+            parse_columns=PARSE_COLUMNS,
+        )
+        .assign(
+            Set=lambda df: df["Set"].where(
+                df["KwkMastrNummer"].isna() & df["ThermischeNutzleistung"].isna(), "CHP"
+            ),
+        )
+        .pipe(clean_name)
+        .pipe(set_column_name, "MASTR")
+        .pipe(config_filter, config)
+    )
+
+    return df
+
+
 # deprecated alias for GGPT
 @deprecated(
     deprecated_in="0.5.5",
