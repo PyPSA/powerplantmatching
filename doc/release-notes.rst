@@ -4,6 +4,10 @@ Release Notes
 .. Upcoming Version
 .. ----------------
 
+Version 0.7.0 (23.01.2025)
+
+* Add "Marktstammdatenregister" (MaStR) data source for Germany (https://github.com/PyPSA/powerplantmatching/pull/165).
+
 Version 0.6.1 (15.01.2025)
 
 * Bugfix: Remove duplicate conventional power plants coming from different OPSD input files (https://github.com/PyPSA/powerplantmatching/pull/213).
