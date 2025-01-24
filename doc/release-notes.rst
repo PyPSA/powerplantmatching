@@ -4,6 +4,8 @@ Release Notes
 .. Upcoming Version
 .. ----------------
 
+* Bugfix: Patch for a bug in matching caused by faulty names for BNA hydro powerplants in the OPSD_EU input dataset.
+
 Version 0.7.0 (23.01.2025)
 
 * Add "Marktstammdatenregister" (MaStR) data source for Germany (https://github.com/PyPSA/powerplantmatching/pull/165).
