@@ -178,7 +178,9 @@ def OPSD(
         .rename(columns=EU_RENAME_COLUMNS)
         .eval("DateRetrofit = DateIn")
         .query("Country != 'DE'")
-        .query("not Name.str.startswith('BNA')")  # Manual fix for duplicated BNA powerplants since these are included in opsd_DE in the correct format
+        .query(
+            "not Name.str.startswith('BNA')"
+        )  # Manual fix for duplicated BNA powerplants since these are included in opsd_DE in the correct format
         .assign(
             Name=lambda df: df.Name.str.replace("\x96", " "),  # for geoparsing
             projectID=lambda s: "OEU-" + s.index.astype(str),
