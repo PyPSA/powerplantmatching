@@ -586,7 +586,7 @@ def GPD(raw=False, update=False, config=None, filter_other_dbs=True):
         .drop(columns="Country")
         .rename(columns=RENAME_COLS)
         .pipe(convert_to_short_name)
-        .query("Country in @countries &" " Source not in @other_dbs")
+        .query("Country in @countries & Source not in @other_dbs")
         .pipe(
             gather_specifications,
             parse_columns=["Name", "Fueltype"],
@@ -674,7 +674,8 @@ def ENTSOE(
         e.g. powerplantmatching.config.get_config(target_countries='Italy'),
         defaults to powerplantmatching.config.get_config()
     entsoe_token: String
-        Security token of the ENTSO-E Transparency platform
+        Security token of the ENTSO-E Transparency platform. If None, it will be
+        read from the config file. A token is required any update.
     fill_geoposition_kwargs:
         Keyword arguments passed to `fill_geoposition`.
 
@@ -689,8 +690,9 @@ def ENTSOE(
     def retrieve_data(token):
         client = entsoe.EntsoePandasClient(api_key=token)
 
-        start = pd.Timestamp("20190101", tz="Europe/Brussels")
-        end = pd.Timestamp("20200101", tz="Europe/Brussels")
+        current_year = pd.Timestamp.now().year
+        start = pd.Timestamp(f"{current_year - 1}0101", tz="Europe/Brussels")
+        end = pd.Timestamp(f"{current_year}0101", tz="Europe/Brussels")
 
         not_retrieved = []
         dfs = []
@@ -718,16 +720,19 @@ def ENTSOE(
     if os.path.exists(path) and not update:
         df = pd.read_csv(path, index_col=0)
     else:
-        token = config.get("entsoe_token")
-        if token is not None:
-            df = retrieve_data(token)
+        if entsoe_token:
+            df = retrieve_data(entsoe_token)
             df.to_csv(path)
         else:
-            logger.info(
-                "No entsoe_token in config.yaml given, "
-                "falling back to stored version."
-            )
-            df = pd.read_csv(get_raw_file("ENTSOE", update, config), index_col=0)
+            token = config.get("entsoe_token")
+            if token is not None:
+                df = retrieve_data(token)
+                df.to_csv(path)
+            else:
+                logger.info(
+                    "No entsoe_token in config.yaml given, falling back to stored version."
+                )
+                df = pd.read_csv(get_raw_file("ENTSOE", update, config), index_col=0)
 
     if raw:
         return df
