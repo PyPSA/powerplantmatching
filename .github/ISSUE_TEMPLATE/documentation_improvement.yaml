@@ -1,0 +1,22 @@
+name: Documentation Improvement
+description: Report wrong or missing documentation
+labels: ["documentation", "needs triage"]
+
+body:
+- type: textarea
+  id: location
+  attributes:
+    label: Location
+    description: >
+      Please provide the location of the documentation or docstring, e.g. `powerplantmatching.data.BEYONDCOAL` or the link to the docs.
+    placeholder: https://powerplantmatching.readthedocs.io/en/latest/basics.html
+  validations:
+    required: true
+- type: textarea
+  id: problem
+  attributes:
+    label: Documentation problem
+    description: >
+      Please provide a description of what you believe needs to be fixed/ improved/ explained.
+  validations:
+    required: true
