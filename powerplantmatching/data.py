@@ -652,6 +652,7 @@ def ENTSOE(
     update=False,
     config=None,
     entsoe_token=None,
+    session=None,
     **fill_geoposition_kwargs,
 ):
     """
@@ -676,6 +677,10 @@ def ENTSOE(
     entsoe_token: String
         Security token of the ENTSO-E Transparency platform. If None, it will be
         read from the config file. A token is required any update.
+    entsoe_session: bool, default None
+        Whether to pass a session to the ENTSO-E client. This can be useful for
+        some networks with proxy settings. Check the client documentation for
+        more information. This argument is just passed to `entsoe.EntsoePandasClient`.
     fill_geoposition_kwargs:
         Keyword arguments passed to `fill_geoposition`.
 
@@ -688,7 +693,7 @@ def ENTSOE(
     config = get_config() if config is None else config
 
     def retrieve_data(token):
-        client = entsoe.EntsoePandasClient(api_key=token)
+        client = entsoe.EntsoePandasClient(api_key=token, session=session)
 
         current_year = pd.Timestamp.now().year
         start = pd.Timestamp(f"{current_year - 1}0101", tz="Europe/Brussels")
