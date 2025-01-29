@@ -567,8 +567,8 @@ def GPD(raw=False, update=False, config=None, filter_other_dbs=True):
     # fix a bug within the data source GPD related with the power plant at 'Creyke Beck'
     # Technology: CCGT  -> Combustion Engine
     # Set:        Store -> PP
-    df.loc[df['Gppd_Idnr'] == 'GBR2001173', 'Technology'] = 'Combustion Engine'
-    df.loc[df['Gppd_Idnr'] == 'GBR2001173', 'Set'] = 'PP'
+    df.loc[df["Gppd_Idnr"] == "GBR2001173", "Technology"] = "Combustion Engine"
+    df.loc[df["Gppd_Idnr"] == "GBR2001173", "Set"] = "PP"
 
     if raw:
         return df
