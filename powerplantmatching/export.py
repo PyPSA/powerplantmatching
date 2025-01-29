@@ -139,7 +139,6 @@ def to_pypsa_network(df, network, buslist=None):
 
 @deprecated(
     deprecated_in="0.5.0",
-    removed_in="0.6.0",
     details="This function is not maintained anymore and will be removed in the future.",
 )
 def to_TIMES(df=None, use_scaled_capacity=False, baseyear=2015):
@@ -318,7 +317,7 @@ def to_TIMES(df=None, use_scaled_capacity=False, baseyear=2015):
     return df_exp
 
 
-@deprecated(deprecated_in="0.5.0", removed_in="0.6.0")
+@deprecated(deprecated_in="0.5.0")
 def store_open_dataset():
     from .collection import matched_data, reduce_matched_dataframe
 
@@ -331,7 +330,7 @@ def store_open_dataset():
     return m
 
 
-@deprecated(deprecated_in="0.5.0", removed_in="0.6.0")
+@deprecated(deprecated_in="0.5.0")
 def fueltype_to_abbrev():
     """
     Return the fueltype-specific abbreviation.
@@ -354,7 +353,7 @@ def fueltype_to_abbrev():
     return data
 
 
-@deprecated(deprecated_in="0.5.0", removed_in="0.6.0")
+@deprecated(deprecated_in="0.5.0")
 def timestype_to_life():
     """
     Returns the timestype-specific technical lifetime.

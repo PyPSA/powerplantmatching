@@ -109,7 +109,7 @@ def clean_name(df, config=None):
     return df.assign(Name=name).sort_values("Name")
 
 
-@deprecated(deprecated_in="5.0", removed_in="0.6", details="Use `clean_name` instead.")
+@deprecated(deprecated_in="5.0", details="Use `clean_name` instead.")
 def clean_powerplantname(df, config=None):
     return clean_name(df, config=config)
 
@@ -243,7 +243,6 @@ def gather_fueltype_info(
 
 @deprecated(
     deprecated_in="0.5",
-    removed_in="0.6",
     details="Use `gather_specifications` instead.",
 )
 def gather_technology_info(
@@ -304,7 +303,6 @@ def gather_set_info(df, search_col=["Name", "Fueltype", "Technology"], config=No
 
 @deprecated(
     deprecated_in="0.5",
-    removed_in="0.6",
 )
 def clean_technology(df, generalize_hydros=False):
     """
