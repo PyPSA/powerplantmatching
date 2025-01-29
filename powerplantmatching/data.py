@@ -652,7 +652,7 @@ def ENTSOE(
     update=False,
     config=None,
     entsoe_token=None,
-    session=None,
+    entsoe_session=None,
     **fill_geoposition_kwargs,
 ):
     """
@@ -693,7 +693,7 @@ def ENTSOE(
     config = get_config() if config is None else config
 
     def retrieve_data(token):
-        client = entsoe.EntsoePandasClient(api_key=token, session=session)
+        client = entsoe.EntsoePandasClient(api_key=token, session=entsoe_session)
 
         current_year = pd.Timestamp.now().year
         start = pd.Timestamp(f"{current_year - 1}0101", tz="Europe/Brussels")
