@@ -301,9 +301,9 @@ def gather_set_info(df, search_col=["Name", "Fueltype", "Technology"], config=No
     return df.assign(Set=Set)
 
 
-@deprecated(
-    deprecated_in="0.5",
-)
+# @deprecated(
+#     deprecated_in="0.5",
+# )
 def clean_technology(df, generalize_hydros=False):
     """
     Clean the 'Technology' by condensing down the value into one claim. This
