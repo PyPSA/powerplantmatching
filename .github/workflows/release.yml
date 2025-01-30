@@ -31,11 +31,16 @@ jobs:
           fi
 
           echo "prepared=$prepared" >> $GITHUB_OUTPUT
+  
+  test:
+    needs: [check-preparation]
+    # Run test workflow before building and releasing
+    if: ${{ needs.check-preparation.outputs.prepared == 'false' }}
+    uses: ./.github/workflows/test.yml
 
   prepare-release:
     name: Prepare release
-    needs: [check-preparation]
-    if: ${{ needs.check-preparation.outputs.prepared == 'false' }}
+    needs: [test]
     runs-on: ubuntu-latest
     steps:
     - name: Generate token for PyPSA Bot
@@ -106,6 +111,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: hynek/build-and-inspect-python-package@v2
+        with:
+          upload-name-suffix: "-release"
 
   release:
     name: Create GitHub release
