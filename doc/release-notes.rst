@@ -4,62 +4,81 @@ Release Notes
 .. Upcoming Version
 .. ----------------
 
-* Bugfix: Patch for a bug in matching caused by faulty names for BNA hydro powerplants in the OPSD_EU input dataset.
+`v0.7.1 <https://github.com/PyPSA/powerplantmatching/releases/tag/v0.7.1>`__ (30th January 2024)
+=================================================================================================
 
-Version 0.7.0 (23.01.2025)
+Bug fixes
+---------
+
+* Patch for a bug in matching caused by faulty names for BNA hydro powerplants 
+  in the OPSD_EU input dataset. (https://github.com/PyPSA/powerplantmatching/pull/217)
+
+* Minor manual correction for CCGT powerplant. (https://github.com/PyPSA/powerplantmatching/pull/221)
+
+`v0.7.0 <https://github.com/PyPSA/powerplantmatching/releases/tag/v0.7.0>`__ (23rd January 2025)
+=================================================================================================
+
+Features
+--------
 
 * Add "Marktstammdatenregister" (MaStR) data source for Germany (https://github.com/PyPSA/powerplantmatching/pull/165).
 
-Version 0.6.1 (15.01.2025)
 
-* Bugfix: Remove duplicate conventional power plants coming from different OPSD input files (https://github.com/PyPSA/powerplantmatching/pull/213).
+`v0.6.1 <https://github.com/PyPSA/powerplantmatching/releases/tag/v0.6.1>`__ (15th January 2025)
+=================================================================================================
 
-Version 0.6.0 (18.09.2024)
----------------------------
+Bug fixes
+---------
+
+* Remove duplicate conventional power plants coming from different OPSD input files (https://github.com/PyPSA/powerplantmatching/pull/213).
+
+`v0.6.0 <https://github.com/PyPSA/powerplantmatching/releases/tag/v0.6.0>`__ (18th September 2024)
+=================================================================================================
+
+Features
+--------
 
 * BREAKING: Split "Bioenergy" into "Biogas" and "Solid Biomass" (https://github.com/PyPSA/powerplantmatching/pull/201).
+
+Bug fixes
+---------
 
 * Bugfix: Consistently rename countries, affecting power plants in Czech Republic and
   Moldova (https://github.com/PyPSA/powerplantmatching/pull/204).
 
-* See full list of changes `here <https://github.com/PyPSA/powerplantmatching/releases/tag/v0.6.0>`__.
 
 Version 0.5.19 (16.09.2024)
----------------------------
+===========================
 
 * Bugfix: Fix retrieval of Global Energy Monitor data.
 
-* See full list of changes `here <https://github.com/PyPSA/powerplantmatching/releases/tag/v0.5.19>`__.
 
 Version 0.5.18 (30.08.2024)
----------------------------
+===========================
 
 * Treat Kosovo as separate country and do not assign powerplants to Serbia.
 
 * Correctly reference North Macedonia and Moldova for ``pycountry`` matching.
 
-* See full list of changes `here <https://github.com/PyPSA/powerplantmatching/releases/tag/v0.5.18>`__.
 
 Version 0.5.17 (23.08.2024)
----------------------------
+===========================
 
 * Update Global Energy Monitor data to latest versions as of 2024-08-23.
 
 * Adjusted reliability scores in favour of GEM data.
 
-* See full list of changes `here <https://github.com/PyPSA/powerplantmatching/releases/tag/v0.5.17>`__.
 
 Version 0.5.16 (31.07.2024)
----------------------------
+===========================
 
 * Dependency updates: Ensure compatibility with pandas 2.0, numpy 2.0 and cartopy.
 
 * Bugfix: Fix retrieving data without aggregation (https://github.com/PyPSA/powerplantmatching/pull/180)
 
-* See full list of changes `here <https://github.com/PyPSA/powerplantmatching/releases/tag/v0.5.16>`__.
 
 Version 0.5.15 (12.05.2024)
----------------------------
+===========================
 
 * Updated the JRC hydro power plant database to the latest version.
   (https://github.com/PyPSA/powerplantmatching/pull/123)
@@ -74,35 +93,35 @@ Version 0.5.15 (12.05.2024)
   (https://github.com/PyPSA/powerplantmatching/pull/159)
 
 Version 0.5.14 (30.04.2024)
----------------------------
+===========================
 
 * Bugfix to ensure compatibility with python 3.12.
 
 Version 0.5.13 (25.04.2024)
----------------------------
+===========================
 
 * Update IRENASTAT to include data up to 2023 (``ppm.data.IRENASTAT()``).
 
 Version 0.5.12 (07.04.2024)
----------------------------
+===========================
 
 * fix the filtering of GCPT/GEM coal database by Status.
 * add technology renaming for GWPT/GEM wind dataset.
 * improve performances of GEM data processing.
 
 Version 0.5.11 (05.02.2024)
----------------------------
+===========================
 
 * The default configuration no longer filters out retired power plants. This filtering should be done by the user afterwards.
 
 Version 0.5.10 (30.01.2024)
----------------------------
+===========================
 
 * fix deprecation warnings for new pandas version for inplace operations
 * fix bus mapping in ``export`` module 
 
 Version 0.5.9 (16.01.2024)
---------------------------
+===========================
 
 * fix deprecation warnings for new pandas version
 * lower GEM reliability score to fix DateIn and DateOut for some powerplants
@@ -288,7 +307,7 @@ In order to ensure compatibility with the new code, please delete these sections
 
 
 Version 0.4.6 (25.11.2020)
---------------------------
+===========================
 
 | Triggered by the ongoing phase-outs of especially nuclear, coal and
   lignite plants in many countries, we acknowledge that time-related
@@ -318,7 +337,7 @@ Version 0.4.6 (25.11.2020)
   power plant list
 
 Version 0.4.1 (02.08.2019)
---------------------------
+===========================
 
 Data structure
 ~~~~~~~~~~~~~~
