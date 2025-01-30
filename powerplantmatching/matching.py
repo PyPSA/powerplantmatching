@@ -162,7 +162,8 @@ def cross_matches(sets_of_pairs, labels=None):
         matches = pd.concat(
             [
                 matches.groupby(label, as_index=False, sort=False).apply(
-                    lambda x: x.loc[x.isnull().sum(axis=1).idxmin()]
+                    lambda x: x.loc[x.isnull().sum(axis=1).idxmin()],
+                    include_groups=False,
                 ),
                 matches[matches[label].isnull()],
             ]

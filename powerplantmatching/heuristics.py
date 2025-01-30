@@ -24,6 +24,8 @@ import pandas as pd
 from deprecation import deprecated
 from six import iteritems
 
+from powerplantmatching.cleaning import gather_specifications
+
 from .core import _package_data, get_config, get_obj_if_Acc
 from .utils import lookup
 
@@ -327,7 +329,6 @@ def aggregate_VRE_by_commissioning_year(df, target_fueltypes=None, agg_geo_by=No
 
 @deprecated(
     deprecated_in="0.5.0",
-    removed_in="0.6.0",
     details="This function was renamed to `fill_missing_commissioning_years`",
 )
 def fill_missing_commyears(df):
@@ -336,7 +337,6 @@ def fill_missing_commyears(df):
 
 @deprecated(
     deprecated_in="0.5.0",
-    removed_in="0.6.0",
     details="This function was renamed to `fill_missing_decommissioning_years`",
 )
 def fill_missing_decommyears(df, config=None):
@@ -345,7 +345,6 @@ def fill_missing_decommyears(df, config=None):
 
 @deprecated(
     deprecated_in="0.5.0",
-    removed_in="0.6.0",
     details="This function was renamed to `aggregate_VRE_by_commissioning_year`",
 )
 def aggregate_VRE_by_commyear(df, config=None):
@@ -354,7 +353,6 @@ def aggregate_VRE_by_commyear(df, config=None):
 
 @deprecated(
     deprecated_in="0.5.0",
-    removed_in="0.6.0",
     details="This function is not maintained anymore and will be removed in the future.",
 )
 def derive_vintage_cohorts_from_statistics(df, base_year=2015, config=None):
@@ -455,7 +453,6 @@ def derive_vintage_cohorts_from_statistics(df, base_year=2015, config=None):
 
 @deprecated(
     deprecated_in="0.5.0",
-    removed_in="0.6.0",
     details="This function is not maintained anymore and will be removed in the future.",
 )
 def set_denmark_region_id(df):
@@ -501,7 +498,6 @@ def set_denmark_region_id(df):
 
 @deprecated(
     deprecated_in="0.5.0",
-    removed_in="0.6.0",
     details="This function is not maintained anymore and will be removed in the future.",
 )
 def remove_oversea_areas(df, lat=[36, 72], lon=[-10.6, 31]):
@@ -522,7 +518,6 @@ def remove_oversea_areas(df, lat=[36, 72], lon=[-10.6, 31]):
 
 def gross_to_net_factors(reference="opsd", aggfunc="median", return_entire_data=False):
     """ """
-    from .cleaning import gather_technology_info
 
     if reference == "opsd":
         from .data import OPSD
@@ -555,7 +550,9 @@ def gross_to_net_factors(reference="opsd", aggfunc="median", return_entire_data=
             inplace=True,
         )
         df.rename(columns={"technology": "Technology"}, inplace=True)
-        df = gather_technology_info(df, ["Technology", "energy_source_level_2"])
+        df = gather_specifications(
+            df, parse_columns=["Technology", "energy_source_level_2"]
+        )
         df = df.assign(
             energy_source_level_2=lambda df: df.energy_source_level_2.str.title()
         )
@@ -588,7 +585,6 @@ def PLZ_to_LatLon_map():
 
 @deprecated(
     deprecated_in="0.5.0",
-    removed_in="0.6.0",
     details="This function is not maintained anymore and will be removed in the future.",
 )
 def set_known_retire_years(df):

@@ -262,7 +262,7 @@ def powerplants(
     return matched.pipe(set_column_name, "Matched Data")
 
 
-@deprecated(deprecated_in="5.5", removed_in="0.6", details="Use `powerplants` instead.")
+@deprecated(deprecated_in="5.5", details="Use `powerplants` instead.")
 def matched_data(
     config=None,
     update=False,

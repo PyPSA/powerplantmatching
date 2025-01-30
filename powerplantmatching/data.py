@@ -33,7 +33,6 @@ from .cleaning import (
     gather_fueltype_info,
     gather_set_info,
     gather_specifications,
-    gather_technology_info,
 )
 from .core import _package_data, get_config
 from .heuristics import scale_to_net_capacities
@@ -311,7 +310,6 @@ def GEO(raw=False, update=False, config=None):
 
 @deprecated(
     deprecated_in="0.5.0",
-    removed_in="0.6.0",
     details="Removed since data is not publicly available anymore",
 )
 def CARMA(raw=False, update=False, config=None):
@@ -458,7 +456,6 @@ def JRC(raw=False, update=False, config=None):
 
 @deprecated(
     deprecated_in="0.5.0",
-    removed_in="0.6.0",
     details="Use the JRC data instead",
 )
 def IWPDCY(config=None):
@@ -595,7 +592,7 @@ def GPD(raw=False, update=False, config=None, filter_other_dbs=True):
         .pipe(clean_name)
         .pipe(set_column_name, "GPD")
         .pipe(config_filter, config)
-        .pipe(gather_technology_info, config=config)
+        .pipe(gather_specifications, config=config)
     )
 
 
@@ -859,7 +856,6 @@ def ENTSOE_EIC(raw=False, update=False, config=None, entsoe_token=None):
 
 @deprecated(
     deprecated_in="0.5.0",
-    removed_in="0.6.0",
     details="This function is not maintained anymore.",
 )
 def WEPP(raw=False, config=None):
@@ -1129,7 +1125,6 @@ def WEPP(raw=False, config=None):
 
 @deprecated(
     deprecated_in="0.5.0",
-    removed_in="0.6.0",
     details="This function is not maintained anymore.",
 )
 def UBA(
@@ -1253,7 +1248,6 @@ def UBA(
 
 @deprecated(
     deprecated_in="0.5.0",
-    removed_in="0.6.0",
     details="This function is not maintained anymore.",
 )
 def BNETZA(
@@ -1350,7 +1344,7 @@ def BNETZA(
         lambda df: df.projectID.notna()
         & df.Status.str.contains(pattern, regex=True, case=False)
     ].pipe(
-        gather_technology_info,
+        gather_specifications,
         search_col=["Name", "Fueltype", "Blockname"],
         config=config,
     )
@@ -2280,7 +2274,6 @@ def MASTR(
 # deprecated alias for GGPT
 @deprecated(
     deprecated_in="0.5.5",
-    removed_in="0.6",
     details="Use `GGPT` instead.",
 )
 def GEM_GGPT(*args, **kwargs):
