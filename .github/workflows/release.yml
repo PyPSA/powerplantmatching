@@ -33,6 +33,7 @@ jobs:
           echo "prepared=$prepared" >> $GITHUB_OUTPUT
   
   test:
+    name: Run test workflow
     needs: [check-preparation]
     # Run test workflow before building and releasing
     if: ${{ needs.check-preparation.outputs.prepared == 'false' }}
@@ -139,6 +140,6 @@ jobs:
     steps:
     - uses: actions/download-artifact@v4
       with:
-        name: Packages
+        name: Packages-release
         path: dist
     - uses: pypa/gh-action-pypi-publish@release/v1
