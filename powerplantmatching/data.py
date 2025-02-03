@@ -1533,7 +1533,7 @@ def IRENASTAT(raw=False, update=False, config=None):
     }
     df.rename(columns=RENAME_COLUMNS, inplace=True)
 
-    df.drop(columns="Data Type", inplace=True)
+    df.drop(columns="Data Type", inplace=True, errors="ignore")
 
     # Rename all entries "Congo (the)" to "Congo" under the column
     # "Country"; the former confuses country_converter.
