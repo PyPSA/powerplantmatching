@@ -99,7 +99,7 @@ def map_country_bus(df, buses):
     diff = set(df.Country.unique()) - set(buses.country)
     if len(diff):
         logger.warning(
-            f'Power plants in {", ".join(diff)} cannot be mapped '
+            f"Power plants in {', '.join(diff)} cannot be mapped "
             "because the countries do not appear in `buses`."
         )
     res = []
@@ -244,7 +244,7 @@ def to_TIMES(df=None, use_scaled_capacity=False, baseyear=2015):
     df["Life"] = df.TimesType.map(timestype_to_life())
     if df.Life.isnull().any():
         raise ValueError(
-            "There are rows without a given lifetime in the " "dataframe. Please check!"
+            "There are rows without a given lifetime in the dataframe. Please check!"
         )
 
     # add column with decommissioning year
