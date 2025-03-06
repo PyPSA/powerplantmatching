@@ -209,8 +209,8 @@ MASTR:
   net_capacity: true
   reliability_score: 8
   status: ["In Betrieb", "In Planung", "Endgültig stillgelegt"]
-  fn: bnetza_open_mastr_2023-08-08_B.zip
-  url: https://zenodo.org/records/8225106/files/bnetza_open_mastr_2023-08-08_B.zip
+  fn: bnetza_open_mastr_2025-02-09.zip
+  url: https://zenodo.org/records/14783581/files/bnetza_open_mastr_2025-02-09.zip
 
 # ---------------------------------------------------------------------------- #
 #                             Data Structure Config                            #
