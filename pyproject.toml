@@ -58,7 +58,22 @@ docs= [
     "nbsphinx",
     "sphinx-automodapi",
 ]
-dev= ["pre-commit", "pytest", "pytest-cov"]
+dev= [
+    "pre-commit", 
+    "pytest", 
+    "pytest-cov", 
+    "mypy", 
+    "types-requests", 
+    "types-PyYAML", 
+    "pandas-stubs",
+    "types-tqdm",
+    "types-six"
+]
+
+# Add optional dependencies for plotting
+plotting= [
+    "cartopy"
+]
 
  # setuptools_scm settings
 
@@ -93,3 +108,32 @@ select = [
     'NPY', # numpy
 ]
 
+# Add basic mypy configuration
+[tool.mypy]
+python_version = "3.9"
+warn_unused_configs = true
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+# Ignore class-level imports in accessor.py
+disable_error_code = ["misc"]
+
+# Ignore missing imports for external libraries
+[[tool.mypy.overrides]]
+module = [
+    "matplotlib.*",
+    "seaborn.*",
+    "networkx.*",
+    "pycountry.*",
+    "country_converter.*",
+    "geopy.*",
+    "unidecode.*",
+    "entsoe.*",
+    "yaml.*",
+    "scipy.*",
+    "pandas.*",
+    "tqdm.*",
+    "deprecation.*",
+    "cartopy.*",
+    "six.*",
+]
+ignore_missing_imports = true
