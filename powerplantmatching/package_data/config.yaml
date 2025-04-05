@@ -158,7 +158,7 @@ GGPT:
   status: ["operating", "retired", "construction"]
   fn: Global-Oil-and-Gas-Plant-Tracker-GOGPT-February-2024-v4.xlsx
   url: https://tubcloud.tu-berlin.de/s/Be5arQgT9Z9g8Kp/download/Global-Oil-and-Gas-Plant-Tracker-GOGPT-February-2024-v4.xlsx
-GEM: 
+GEM:
   # combined data set of all GEM trackers
   net_capacity: true
   reliability_score: 5

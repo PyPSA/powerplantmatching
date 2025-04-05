@@ -59,12 +59,12 @@ docs= [
     "sphinx-automodapi",
 ]
 dev= [
-    "pre-commit", 
-    "pytest", 
-    "pytest-cov", 
-    "mypy", 
-    "types-requests", 
-    "types-PyYAML", 
+    "pre-commit",
+    "pytest",
+    "pytest-cov",
+    "mypy",
+    "types-requests",
+    "types-PyYAML",
     "pandas-stubs",
     "types-tqdm",
     "types-six"
