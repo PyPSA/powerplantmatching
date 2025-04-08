@@ -8,7 +8,7 @@ on:
   schedule:
   - cron: "0 5 * * TUE"
   workflow_call:
-    
+
 # Cancel any in-progress runs when a new run is triggered
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -52,7 +52,7 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
-    
+
     - name: Set up Java
       uses: actions/setup-java@v4
       with:

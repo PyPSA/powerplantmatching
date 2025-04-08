@@ -22,7 +22,7 @@ SO&AF <https://data.open-power-system-data.org/national_generation_capacity/2019
    :alt: Capacity statistics comparison
 
 
-The merged data is also available as a bigger dataset which provides the original data entries  
+The merged data is also available as a bigger dataset which provides the original data entries
 
 .. code:: python
 
@@ -38,4 +38,3 @@ properties given by the different data-sources.
    You can download and install Java from the official website: https://www.java.com/en/download/
 
    If Java is not installed or not in your system's PATH, you may encounter runtime errors.
-
