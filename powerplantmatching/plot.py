@@ -23,7 +23,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from matplotlib import cycler, rcParams
+from cycler import cycler
+from matplotlib import rcParams
 from matplotlib.legend_handler import HandlerPatch
 from matplotlib.lines import Line2D
 

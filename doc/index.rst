@@ -96,12 +96,12 @@ Install the package via pip
 
    pip install powerplantmatching
 
-or conda 
+or conda
 
 .. code:: bash
 
    conda install -c conda-forge powerplantmatching
-   
+
 
 Citing powerplantmatching
 -------------------------
@@ -159,7 +159,7 @@ Fabian Hofmann (FIAS)
 powerplantmatching is released as free software under the
 `GPLv3 <http://www.gnu.org/licenses/gpl-3.0.en.html>`__, see
 `LICENSE <LICENSE>`__ for further information.
-      
+
 
 .. toctree::
    :hidden:
@@ -180,7 +180,7 @@ powerplantmatching is released as free software under the
    api-utils
    api-core
 
-   
+
 .. toctree::
    :hidden:
    :maxdepth: 2
@@ -189,4 +189,3 @@ powerplantmatching is released as free software under the
    release-notes
    contributing
    support
-

@@ -26,8 +26,8 @@ package_config = {
     "downloaders": {},
 }
 
-makedirs(join(package_config["data_dir"], "data", "in"), exist_ok=True)
-makedirs(join(package_config["data_dir"], "data", "out"), exist_ok=True)
+makedirs(join(str(package_config["data_dir"]), "data", "in"), exist_ok=True)
+makedirs(join(str(package_config["data_dir"]), "data", "out"), exist_ok=True)
 
 
 def _package_data(fn):
@@ -35,14 +35,14 @@ def _package_data(fn):
 
 
 def _data_in(fn):
-    return join(package_config["data_dir"], "data", "in", fn)
+    return join(str(package_config["data_dir"]), "data", "in", fn)
 
 
 def _data_out(fn, config):
     if config is None:
-        directory = join(package_config["data_dir"], "data", "out", "default")
+        directory = join(str(package_config["data_dir"]), "data", "out", "default")
     else:
-        directory = join(package_config["data_dir"], "data", "out", config["hash"])
+        directory = join(str(package_config["data_dir"]), "data", "out", config["hash"])
     makedirs(directory, exist_ok=True)
     return join(directory, fn)
 
@@ -60,7 +60,7 @@ logger.setLevel(logging.INFO)
 logFormatter = logging.Formatter(
     "%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s"
 )
-fileHandler = logging.FileHandler(join(package_config["data_dir"], "PPM.log"))
+fileHandler = logging.FileHandler(join(str(package_config["data_dir"]), "PPM.log"))
 fileHandler.setFormatter(logFormatter)
 logger.addHandler(fileHandler)
 # logger.info('Initialization complete.')

@@ -92,3 +92,7 @@ doc/_build
 doc/api
 .vscode
 test.ipynb
+
+# temporary
+.devcontainer/
+.repoai/
