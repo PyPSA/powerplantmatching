@@ -2202,12 +2202,12 @@ def MASTR(
 
     fn = get_raw_file("MASTR", update=update, config=config)
     file_suffixes = {
-        "Bioenergy": "biomass.csv",
-        "Combustion": "combustion.csv",
-        "Nuclear": "nuclear.csv",
-        "Hydro": "hydro.csv",
-        "Wind": "wind.csv",
-        "Solar": "solar.csv",
+        "Bioenergy": "biomass_raw.csv",
+        "Combustion": "combustion_raw.csv",
+        "Nuclear": "nuclear_raw.csv",
+        "Hydro": "hydro_raw.csv",
+        "Wind": "wind_raw.csv",
+        "Solar": "solar_raw.csv",
     }
     data_frames = []
     with ZipFile(fn, "r") as file:
