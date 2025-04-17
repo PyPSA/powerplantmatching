@@ -79,12 +79,12 @@ Not available but supported sources:
 -  WEPP (Platts, World Elecrtric Power Plants Database)
 
 
-Reliabilty Score 
+Reliabilty Score
 ----------------
 
 When the matched power plant entries from different sources are combined, the resulting value per column is determined by the most reliable source. The corresponding reliability scores
 are:
-   
+
 ======= ================
 Dataset Reliabilty score
 ======= ================

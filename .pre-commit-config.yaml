@@ -9,6 +9,9 @@ repos:
     rev: v5.0.0
     hooks:
     -   id: check-yaml
+    -   id: end-of-file-fixer
+    -   id: trailing-whitespace
+    -   id: check-merge-conflict
 
 # Run ruff to lint and format
 -   repo: https://github.com/astral-sh/ruff-pre-commit

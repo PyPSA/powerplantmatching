@@ -16,11 +16,11 @@ Therefore, we encourage to install ``powerplantmatching`` together with packages
   pip install powerplantmatching[dev]
 
 
-This will also install the ``pre-commit`` package which checks that new changes are aligned with the guidelines. 
-To automatically activate ``pre-commit`` on every ``git commit``, run ``pre-commit install``. 
+This will also install the ``pre-commit`` package which checks that new changes are aligned with the guidelines.
+To automatically activate ``pre-commit`` on every ``git commit``, run ``pre-commit install``.
 To manually run it, execute ``pre-commit run --all``.
 
-To double-check that your code is working, we welcome you to write a unit test. Run all tests with 
+To double-check that your code is working, we welcome you to write a unit test. Run all tests with
 
 .. code:: bash
 
@@ -39,8 +39,8 @@ Please, before starting, make sure that you’ve installed
 1. Look where powerplantmatching stores all data files
 
   .. code:: python
-  
-    import powerplantmatching as pm     
+
+    import powerplantmatching as pm
     pm.core.package_config['data_dir']
 
 2. Store FOO.csv in this directory under the subfolder ``data/in``. So
@@ -49,12 +49,12 @@ Please, before starting, make sure that you’ve installed
    ``/home/<user>/.local/share/powerplantmatching/data/in/FOO.csv``
 
 3. Look where powerplantmatching looks for a custom configuration file
- 
+
   .. code:: python
 
     pm.core.package_config["custom_config"]
 
-  
+
   If this file does not yet exist on your machine, download the
   `standard
   configuration <https://raw.githubusercontent.com/PyPSA/powerplantmatching/master/powerplantmatching/package_data/config.yaml>`__
@@ -66,10 +66,10 @@ Please, before starting, make sure that you’ve installed
 
    .. code:: yaml
 
-    FOO:       
-      reliability_score: 4       
-      fn: FOO.csv 
-     
+    FOO:
+      reliability_score: 4
+      fn: FOO.csv
+
    The ``reliability_score`` indicates the reliability of your data, choose
    a number between 1 (low quality data) and 7 (high quality data). If
    the data is openly available, you can add an ``url`` argument linking
@@ -80,20 +80,20 @@ Please, before starting, make sure that you’ve installed
 
    .. code:: yaml
 
-    #matching config  
-    matching_sources:      
-      ...      
-      - OPSD      
+    #matching config
+    matching_sources:
+      ...
+      - OPSD
       - FOO
 
 5. Add a function ``FOO()`` to the data.py in the powerplantmatching
    source code. You find the file in your local repository under
    ``powerplantmatching/data.py``. The function should be structured
-   like this: 
-   
+   like this:
+
   .. code:: python
 
-    def FOO(raw=False, config=None): 
+    def FOO(raw=False, config=None):
     """
     Importer for the FOO database.
 
@@ -127,11 +127,11 @@ Please, before starting, make sure that you’ve installed
 6. Make sure the FOO entry is given in the configuration
 
   .. code:: python
-    
+
     pm.get_config()
 
-  and load the file 
-   
+  and load the file
+
   .. code:: python
 
     pm.data.FOO()
@@ -139,5 +139,5 @@ Please, before starting, make sure that you’ve installed
 7. If everything works fine, you can run the whole matching process with
 
    .. code:: python
-    
+
       pm.powerplants(update=True)
