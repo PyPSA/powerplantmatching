@@ -6,7 +6,7 @@
    - some area numbers have spaces in them
    - not stripping accents from names
 -->
-<duke> 
+<duke>
 
 
 
@@ -22,46 +22,46 @@
       <name>ID</name>
     </property>
     <property>
-      <name>NAME</name> 
+      <name>NAME</name>
       <comparator>no.priv.garshol.duke.comparators.JaroWinklerTokenized</comparator>
       <low>0.09</low>
       <high>0.99</high>
-    </property>    
+    </property>
     <property>
-      <name>FUELTYPE</name> 
+      <name>FUELTYPE</name>
       <comparator>no.priv.garshol.duke.comparators.QGramComparator</comparator>
       <low>0.09</low>
       <high>0.7</high>
-    </property> 
+    </property>
     <property>
-      <name>COUNTRY</name> 
+      <name>COUNTRY</name>
       <comparator>no.priv.garshol.duke.comparators.QGramComparator</comparator>
       <low>0.0</low>
       <high>0.53</high>
-    </property>   
+    </property>
     <property>
-      <name>CAPACITY</name> 
+      <name>CAPACITY</name>
       <comparator>no.priv.garshol.duke.comparators.NumericComparator</comparator>
       <low>0.3</low>
       <high>0.75</high>
-    </property> 
+    </property>
     <property>
-      <name>GEOPOSITION</name> 
+      <name>GEOPOSITION</name>
       <comparator>GeoComparator</comparator>
       <low>0.1</low>
       <high>0.8</high>
-    </property>   
+    </property>
   </schema>
 
-  <database class="no.priv.garshol.duke.databases.InMemoryDatabase">    
+  <database class="no.priv.garshol.duke.databases.InMemoryDatabase">
   </database>
-  
+
   <group>
     <csv>
       <param name="input-file" value="file2.csv"/>
 
       <column name="id" property="ID"/>
-      <column name="Name" 
+      <column name="Name"
               property="NAME"
               cleaner="no.priv.garshol.duke.cleaners.LowerCaseNormalizeCleaner"/>
       <column name="Fueltype"
@@ -81,7 +81,7 @@
       <param name="input-file" value="file1.csv"/>
 
       <column name="id" property="ID"/>
-      <column name="Name" 
+      <column name="Name"
               property="NAME"
               cleaner="no.priv.garshol.duke.cleaners.LowerCaseNormalizeCleaner"/>
       <column name="Fueltype"
@@ -96,5 +96,5 @@
     </csv>
   </group>
 
-  
+
 </duke>
