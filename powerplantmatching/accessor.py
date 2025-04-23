@@ -45,6 +45,7 @@ class PowerPlantAccessor:
         scale_to_net_capacities,
     )
     from .matching import reduce_matched_dataframe
+    from .plot import plotly_map
     from .plot import powerplant_map as plot_map
     from .utils import (
         breakdown_matches,

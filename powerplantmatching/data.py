@@ -36,6 +36,7 @@ from .cleaning import (
 )
 from .core import _package_data, get_config
 from .heuristics import scale_to_net_capacities
+from .osm import PowerPlantExtractor
 from .utils import (
     config_filter,
     convert_to_short_name,
@@ -824,34 +825,6 @@ def ENTSOE_EIC(raw=False, update=False, config=None, entsoe_token=None):
         .pipe(set_column_name, "ENTSOE-EIC")
         .assign(lat=np.nan, lon=np.nan)
     )
-
-
-# def OSM():
-#    """
-#    Parser and Importer for Open Street Map power plant data.
-#    """
-#    import requests
-#    overpass_url = "http://overpass-api.de/api/interpreter"
-#    overpass_query = """
-#    [out:json][timeout:210];
-#    area["name"="Luxembourg"]->.boundaryarea;
-#    (
-#    // query part for: “power=plant”
-#    node["power"="plant"](area.boundaryarea);
-#    way["power"="plant"](area.boundaryarea);
-#    relation["power"="plant"](area.boundaryarea);
-#    node["power"="generator"](area.boundaryarea);
-#    way["power"="generator"](area.boundaryarea);
-#    relation["power"="generator"](area.boundaryarea);
-#    );
-#    out body;
-#    """
-#    response = requests.get(overpass_url,
-#                            params={'data': overpass_query})
-#    data = response.json()
-#    df = pd.DataFrame(data['elements'])
-#    df = pd.concat([df.drop(columns='tags'), df.tags.apply(pd.Series)], axis=1)
-#
 
 
 @deprecated(
@@ -2269,6 +2242,132 @@ def MASTR(
     )
 
     return df
+
+
+def OSM(raw=False, update=False, config=None):
+    """
+    Importer for the OpenStreetMap power plant data.
+
+    Parameters
+    ----------
+    raw : boolean, default False
+        Whether to return the original dataset
+    update: bool, default False
+        Whether to update the data from the url.
+    config : dict, default None
+        Add custom specific configuration,
+        e.g. powerplantmatching.config.get_config(target_countries='Italy'),
+        defaults to powerplantmatching.config.get_config()
+
+    Returns
+    -------
+    pd.DataFrame
+        Power plant data from OpenStreetMap formatted according to
+        powerplantmatching standards
+    """
+    from .core import _data_in
+
+    if config is None:
+        config = get_config()
+    else:
+        config = get_config(**config)
+
+    fn = _data_in(config.get("OSM", {}).get("fn", "osm_data.csv"))
+
+    countries = config["target_countries"]
+
+    update_needed = update
+
+    if not update_needed and os.path.exists(fn):
+        df = pd.read_csv(fn)
+        update_needed = not set(countries).issubset(df["country"].unique())
+
+    if update_needed or not os.path.exists(fn):
+        extractor = PowerPlantExtractor(custom_config=config)
+        df = extractor.extract_plants(countries, force_refresh=update)
+        if os.path.exists(fn):
+            full_df = pd.read_csv(fn)
+            df = pd.concat(
+                [df, full_df[~full_df["country"].isin(countries)]], ignore_index=True
+            )
+        df.to_csv(fn, index=False)
+    else:
+        full_df = pd.read_csv(fn)
+        df = full_df[full_df["country"].isin(countries)]
+
+    if raw:
+        return df
+
+    # Map OSM generator:source/plant:source to powerplantmatching fueltypes
+    fueltype_map = {
+        "nuclear": "Nuclear",
+        "coal": "Hard Coal",
+        "lignite": "Lignite",
+        "gas": "Natural Gas",
+        "oil": "Oil",
+        "biomass": "Solid Biomass",
+        "wood": "Solid Biomass",
+        "hydro": "Hydro",
+        "wind": "Wind",
+        "solar": "Solar",
+        "geothermal": "Geothermal",
+        "waste": "Waste",
+        "biogas": "Biogas",
+        "diesel": "Oil",
+        "coal;gas": "Hard Coal",
+        "gas;coal": "Natural Gas",
+        "gas;diesel": "Natural Gas",
+        "diesel;gas": "Oil",
+    }
+
+    # Map OSM method/technology to powerplantmatching technologies
+    technology_map = {
+        "wind_turbine": "Onshore",
+        "water-storage": "Reservoir",
+        "run-of-river": "Run-Of-River",
+        "water-pumped-storage": "Pumped Storage",
+        "combustion": "Steam Turbine",
+        "combined_cycle": "CCGT",
+        "steam_turbine": "Steam Turbine",
+        "gas_turbine": "OCGT",
+        "photovoltaic": "PV",
+        "concentrated_solar": "CSP",
+        "run-of-the-river": "Run-Of-River",
+        "thermal;photovoltaic": "PV",
+        "photovoltaic;wind_turbine": "PV",
+        "francis_turbine": "Reservoir",
+        "pelton_turbine": "Reservoir",
+    }
+
+    df = df.copy()
+    df["Fueltype"] = df["source"].map(fueltype_map)
+    df["Technology"] = df["technology"].map(technology_map)
+
+    # Rename columns to match powerplantmatching standards
+    df = df.rename(
+        columns={
+            "id": "projectID",
+            "name": "Name",
+            "capacity_mw": "Capacity",
+            "country": "Country",
+            "lat": "lat",
+            "lon": "lon",
+        }
+    )
+
+    # Select only the columns we need
+    columns = config["target_columns"]
+    # there are some target columns that are not present in the df. Add all missing columns with nan
+    for col in columns:
+        if col not in df.columns:
+            df[col] = np.nan
+
+    df = df[columns]
+
+    # filter name not nan and capacity not nan
+    df = df[~df["Name"].isna() & ~df["Capacity"].isna()]
+
+    return df.pipe(set_column_name, "OSM").pipe(config_filter, config)
 
 
 # deprecated alias for GGPT

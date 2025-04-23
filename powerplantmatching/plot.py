@@ -448,6 +448,48 @@ def gather_nrows_ncols(x, orientation="landscape"):
             raise ValueError("Wrong `orientation` given!")
 
 
+def plotly_map(df) -> "plotly.graph_objs._figure.Figure":  # noqa
+    """
+    Plot a map using plotly. Use fig.update_layout(height=800, width=1200) and fig.show(config={'scrollZoom': True}) to make it interactive
+
+    Parameters
+    ----------
+    df : DataFrame
+
+    Returns
+    -------
+    plotly.graph_objs._figure.Figure
+    """
+    try:
+        import plotly  # noqa
+        import plotly.express as px
+    except ImportError:
+        logger.warning("Plotly is not installed. Install it with `pip install plotly`.")
+        raise ImportError(
+            "Plotly is not installed. Install it with `pip install plotly`."
+        )
+
+    import plotly.express as px
+
+    df = get_obj_if_Acc(df)
+
+    fig = px.scatter_mapbox(
+        df,
+        lat="lat",
+        lon="lon",
+        hover_name="Capacity",
+        hover_data=["Name", "Country", "Technology"],
+        color="Fueltype",
+        color_continuous_scale=px.colors.sequential.Darkmint,
+        zoom=3,  # Initial zoom level,
+        opacity=0.75,
+    )
+
+    fig.update_layout(mapbox_style="open-street-map")
+
+    return fig
+
+
 # %% extra data needed, plots for publication
 #
 #

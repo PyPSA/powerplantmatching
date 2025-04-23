@@ -212,6 +212,59 @@ MASTR:
   fn: bnetza_open_mastr_2025-02-09.zip
   url: https://zenodo.org/records/14783581/files/bnetza_open_mastr_2025-02-09.zip
 
+OSM:
+  reliability_score: 3
+  net_capacity: false
+  api_url: https://overpass-api.de/api/interpreter  # Default Overpass API endpoint https://overpass.private.coffee/api/interpreter   https://overpass-api.de/api/interpreter
+  fn: osm_data.csv # Filename for saving OSM data
+
+  # OSM Global configurations
+  force_refresh: false
+  plants_only: false
+  enable_estimation: false
+  enable_clustering: false
+
+  # Generators clustering or estimation
+  sources:
+    solar:
+      clustering:
+        method: dbscan
+        to_radians: false
+        eps: 0.003
+        min_samples: 2
+      estimation:
+        method: area_based
+        efficiency: 150  # W/m2
+
+    wind:
+      clustering:
+        method: dbscan
+        to_radians: false
+        eps: 0.009
+        min_samples: 2
+      estimation:
+        method: default_value
+        default_capacity: 2000  # kW
+
+    biomass:
+      clustering:
+        method: dbscan
+        to_radians: false
+        eps: 0.0018
+        min_samples: 2
+
+  # Algorithm parameters (for reference)
+  algorithm_params:
+    dbscan:
+      - eps
+      - min_samples
+      - metric
+      - metric_params
+      - algorithm
+      - leaf_size
+      - p
+      - n_jobs
+
 # ---------------------------------------------------------------------------- #
 #                             Data Structure Config                            #
 # ---------------------------------------------------------------------------- #
