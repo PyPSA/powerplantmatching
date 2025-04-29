@@ -215,43 +215,189 @@ MASTR:
 OSM:
   reliability_score: 3
   net_capacity: false
-  api_url: https://overpass-api.de/api/interpreter  # Default Overpass API endpoint https://overpass.private.coffee/api/interpreter   https://overpass-api.de/api/interpreter
   fn: osm_data.csv # Filename for saving OSM data
+  api_url: zenodo.org
 
   # OSM Global configurations
   force_refresh: false
   plants_only: false
-  enable_estimation: false
-  enable_clustering: false
-
-  # Generators clustering or estimation
+  # enable_extraction: false
+  # enable_estimation: false
+  # enable_clustering: true
+  default_source_type: unknown
+  capacity_extraction:
+    enabled: true
+    tags:
+      - plant:output:electricity
+      - generator:output:electricity
+      - generator:output
+      - power_output
+      - capacity
+      - output:electricity
+    basic:
+      min_capacity_mw: 0.001
+      max_capacity_mw: 10000
+      default_unit: kw
+    advanced_parsing:
+      enabled: true
+      regex_patterns:
+        - ^(\d+(?:\.\d+)?)\s*([a-zA-Z]+p?)$
+      unit_conversions:
+        w: 0.000001
+        wp: 0.000001
+        watt: 0.000001
+        watts: 0.000001
+        kw: 0.001
+        kwp: 0.001
+        kilowatt: 0.001
+        kilowatts: 0.001
+        mw: 1.0
+        mwp: 1.0
+        megawatt: 1.0
+        megawatts: 1.0
+        gw: 1000.0
+        gwp: 1000.0
+        gigawatt: 1000.0
+        gigawatts: 1000.0
+  capacity_estimation:
+    enabled: true
+    methods:
+      - default_value
+      - area_based
+      - unit_size
+  clustering:
+    enabled: true
+    method: dbscan
+    eps: 0.01
+    min_samples: 2
+    n_clusters: 8
+    to_radians: false
   sources:
     solar:
       clustering:
         method: dbscan
-        to_radians: false
-        eps: 0.003
+        eps: 0.005
         min_samples: 2
+      capacity_extraction:
+        enabled: true
+        additional_tags:
+          - solar:output
+          - pv:output
+        basic:
+          min_capacity_mw: 0.0005
+          max_capacity_mw: 2000
       estimation:
         method: area_based
-        efficiency: 150  # W/m2
-
+        efficiency: 150
+        default_capacity: 10
+        fallback_enabled: true
+        fallback_method: default_value
     wind:
       clustering:
         method: dbscan
-        to_radians: false
-        eps: 0.009
+        eps: 0.02
+        min_samples: 2
+      capacity_extraction:
+        enabled: true
+        additional_tags:
+          - wind:output
+          - turbine:output
+        basic:
+          min_capacity_mw: 0.1
+          max_capacity_mw: 7000
+      estimation:
+        method: unit_size
+        unit_capacity: 2000
+        fallback_enabled: true
+        fallback_method: default_value
+    hydro:
+      clustering:
+        method: dbscan
+        eps: 0.01
+        min_samples: 2
+      capacity_extraction:
+        enabled: true
+        additional_tags:
+          - hydro:output
+      estimation:
+        method: default_value
+        default_capacity: 1000
+        fallback_enabled: false
+    nuclear:
+      clustering:
+        method: dbscan
+        eps: 0.01
+        min_samples: 2
+      capacity_extraction:
+        enabled: true
+      estimation:
+        method: default_value
+        default_capacity: 500000
+    coal:
+      clustering:
+        method: dbscan
+        eps: 0.01
         min_samples: 2
       estimation:
         method: default_value
-        default_capacity: 2000  # kW
-
+        default_capacity: 300000
+    gas:
+      clustering:
+        method: dbscan
+        eps: 0.01
+        min_samples: 2
+      estimation:
+        method: default_value
+        default_capacity: 100000
     biomass:
       clustering:
         method: dbscan
-        to_radians: false
-        eps: 0.0018
+        eps: 0.01
         min_samples: 2
+      estimation:
+        method: default_value
+        default_capacity: 10000
+    geothermal:
+      clustering:
+        method: dbscan
+        eps: 0.01
+        min_samples: 2
+      estimation:
+        method: default_value
+        default_capacity: 20000
+    oil:
+      clustering:
+        method: dbscan
+        eps: 0.01
+        min_samples: 2
+      estimation:
+        method: default_value
+        default_capacity: 75000
+    diesel:
+      clustering:
+        method: dbscan
+        eps: 0.01
+        min_samples: 2
+      estimation:
+        method: default_value
+        default_capacity: 30000
+    unknown:
+      clustering:
+        method: dbscan
+        eps: 0.01
+        min_samples: 2
+      estimation:
+        method: default_value
+        default_capacity: 0
+  rejection_handling:
+    log_rejections: true
+    save_rejections: true
+    rejections_file: osm_rejections.json
+  overpass_api:
+    url: https://overpass-api.de/api/interpreter  # Default Overpass API endpoint https://overpass.private.coffee/api/interpreter   https://overpass-api.de/api/interpreter
+    timeout: 300
+    max_retries: 3
+    retry_delay: 5
 
   # Algorithm parameters (for reference)
   algorithm_params:

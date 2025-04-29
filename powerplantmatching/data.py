@@ -1,18 +1,3 @@
-# Copyright 2016-2020 Fabian Hofmann (FIAS), Jonas Hoersch (KIT, IAI) and
-# Fabian Gotzens (FZJ, IEK-STE)
-
-# This program is free software; you can redistribute it and/or
-# modify it under the terms of the GNU General Public License as
-# published by the Free Software Foundation; either version 3 of the
-# License, or (at your option) any later version.
-
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 Collection of power plant data bases and statistical data
 """
@@ -36,7 +21,8 @@ from .cleaning import (
 )
 from .core import _package_data, get_config
 from .heuristics import scale_to_net_capacities
-from .osm import PowerPlantExtractor
+
+# from .osm import PowerPlantExtractor
 from .utils import (
     config_filter,
     convert_to_short_name,
@@ -2283,7 +2269,7 @@ def OSM(raw=False, update=False, config=None):
         update_needed = not set(countries).issubset(df["country"].unique())
 
     if update_needed or not os.path.exists(fn):
-        extractor = PowerPlantExtractor(custom_config=config)
+        extractor = None  # PowerPlantExtractor(custom_config=config)
         df = extractor.extract_plants(countries, force_refresh=update)
         if os.path.exists(fn):
             full_df = pd.read_csv(fn)
