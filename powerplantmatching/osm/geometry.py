@@ -1,7 +1,3 @@
-"""
-Geometry handling for OSM elements
-"""
-
 import logging
 import math
 from dataclasses import dataclass
@@ -107,7 +103,7 @@ class GeometryHandler:
         self, relation: dict[str, Any]
     ) -> Optional[PlantPolygon]:
         """
-        Create a polygon from a relation
+        Create a polygon from a relation with improved member handling
 
         Parameters
         ----------
@@ -130,8 +126,11 @@ class GeometryHandler:
 
         # Extract way members
         way_members = [m for m in relation["members"] if m["type"] == "way"]
-        if not way_members:
-            logger.debug(f"Relation {relation['id']} does not have way members")
+        node_members = [m for m in relation["members"] if m["type"] == "node"]
+
+        # Check if we have any way members
+        if not way_members and not node_members:
+            logger.debug(f"Relation {relation['id']} does not have way or node members")
             return None
 
         # Create polygons from ways
@@ -148,30 +147,62 @@ class GeometryHandler:
                 ):
                     polygons.append(way_polygon.geometry)
 
-        # Check if we have any valid polygons
-        if not polygons:
-            logger.debug(f"No valid polygons found for relation {relation['id']}")
-            return None
+        # If no polygons from ways, try to create from nodes
+        if not polygons and node_members:
+            points = []
+            for node_member in node_members:
+                node_id = node_member["ref"]
+                node = self.client.cache.get_node(node_id)
+                if node and "lat" in node and "lon" in node:
+                    points.append(Point(node["lon"], node["lat"]))
 
-        try:
-            # Create union of polygons
-            if len(polygons) == 1:
-                union = polygons[0]
-            else:
-                union = unary_union(polygons)
+            if len(points) > 0:
+                # Create a geometric representation of the node cluster
+                if len(points) >= 3:
+                    # With 3+ points, create convex hull as polygon
+                    try:
+                        from shapely.geometry import MultiPoint
 
-            if not union.is_valid:
-                logger.debug(f"Invalid union polygon for relation {relation['id']}")
+                        hull = MultiPoint(points).convex_hull
+                        return PlantPolygon(
+                            id=str(relation["id"]), type=relation["type"], geometry=hull
+                        )
+                    except Exception as e:
+                        logger.debug(
+                            f"Error creating hull for relation {relation['id']}: {str(e)}"
+                        )
+                        return None
+                else:
+                    # With 1-2 points, just return first point as centroid marker
+                    return PlantPolygon(
+                        id=str(relation["id"]),
+                        type=relation["type"],
+                        geometry=points[0],
+                    )
+
+        # Process polygons from ways if any
+        if polygons:
+            try:
+                # Create union of polygons
+                if len(polygons) == 1:
+                    union = polygons[0]
+                else:
+                    union = unary_union(polygons)
+
+                if not union.is_valid:
+                    logger.debug(f"Invalid union polygon for relation {relation['id']}")
+                    return None
+
+                return PlantPolygon(
+                    id=str(relation["id"]), type=relation["type"], geometry=union
+                )
+            except ShapelyError as e:
+                logger.debug(
+                    f"Error creating union polygon for relation {relation['id']}: {str(e)}"
+                )
                 return None
 
-            return PlantPolygon(
-                id=str(relation["id"]), type=relation["type"], geometry=union
-            )
-        except ShapelyError as e:
-            logger.debug(
-                f"Error creating union polygon for relation {relation['id']}: {str(e)}"
-            )
-            return None
+        return None
 
     def get_element_geometry(
         self, element: dict[str, Any]
@@ -236,6 +267,93 @@ class GeometryHandler:
         except (AttributeError, ShapelyError) as e:
             logger.debug(f"Error calculating centroid: {str(e)}")
             return None, None
+
+    def get_relation_centroid_from_members(
+        self, relation: dict[str, Any]
+    ) -> tuple[Optional[float], Optional[float]]:
+        """
+        Get centroid for a relation by examining its members
+
+        Parameters
+        ----------
+        relation : dict[str, Any]
+            OSM relation data
+
+        Returns
+        -------
+        tuple[Optional[float], Optional[float]]
+            (lat, lon) of centroid if found, (None, None) otherwise
+        """
+        if "members" not in relation:
+            return None, None
+
+        # Collect points from all members
+        points = []
+
+        # First look at members with capacity info (higher priority)
+        capacity_member_points = []
+
+        for member in relation["members"]:
+            member_type = member["type"]
+            member_id = member["ref"]
+
+            # Get member element
+            member_elem = None
+            if member_type == "node":
+                member_elem = self.client.cache.get_node(member_id)
+            elif member_type == "way":
+                member_elem = self.client.cache.get_way(member_id)
+            elif member_type == "relation":
+                # Skip nested relations to avoid recursion
+                continue
+
+            if not member_elem:
+                continue
+
+            # Check if member has capacity info
+            has_capacity = False
+            if "tags" in member_elem:
+                tags = member_elem["tags"]
+                for tag in ["plant:output:electricity", "generator:output:electricity"]:
+                    if tag in tags:
+                        has_capacity = True
+                        break
+
+            # Get coordinates
+            lat, lon = None, None
+
+            if member_type == "node" and "lat" in member_elem and "lon" in member_elem:
+                lat, lon = member_elem["lat"], member_elem["lon"]
+            elif member_type == "way":
+                # For ways, try to get centroid
+                way_geom = self.create_way_polygon(member_elem)
+                if way_geom:
+                    lat, lon = self.get_geometry_centroid(way_geom)
+
+            if lat is not None and lon is not None:
+                # Add to appropriate list
+                if has_capacity:
+                    capacity_member_points.append((lat, lon))
+                else:
+                    points.append((lat, lon))
+
+        # Use capacity points if available
+        if capacity_member_points:
+            # Calculate centroid of capacity points
+            lat_sum = sum(p[0] for p in capacity_member_points)
+            lon_sum = sum(p[1] for p in capacity_member_points)
+            return lat_sum / len(capacity_member_points), lon_sum / len(
+                capacity_member_points
+            )
+
+        # Fall back to all points
+        if points:
+            # Calculate centroid of all points
+            lat_sum = sum(p[0] for p in points)
+            lon_sum = sum(p[1] for p in points)
+            return lat_sum / len(points), lon_sum / len(points)
+
+        return None, None
 
     def calculate_area(self, coordinates: list[dict[str, float]]) -> float:
         """

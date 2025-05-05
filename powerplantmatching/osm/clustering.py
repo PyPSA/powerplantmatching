@@ -1,7 +1,3 @@
-"""
-Clustering algorithms for grouping nearby generators
-"""
-
 import inspect
 import logging
 from typing import Any, Optional
@@ -273,9 +269,7 @@ class KMeansClustering(ClusteringAlgorithm):
 class ClusteringManager:
     """Manager for different clustering algorithms"""
 
-    def __init__(
-        self, client: OverpassAPIClient, default_config: Optional[dict[str, Any]] = None
-    ):
+    def __init__(self, client: OverpassAPIClient, config: dict[str, Any]):
         """
         Initialize the clustering manager
 
@@ -283,19 +277,15 @@ class ClusteringManager:
         ----------
         client : OverpassAPIClient
             Client for accessing OSM data
-        default_config : Optional[dict[str, Any]]
-            Default configuration for clustering
+        config : dict[str, Any]
+            Configuration for osm sources
         """
         self.client = client
-        self.default_config = default_config or {
-            "method": "dbscan",
-            "eps": 0.01,
-            "min_samples": 2,
-        }
+        self.config = config
 
     def create_algorithm(
-        self, source_type: str, config: Optional[dict[str, Any]] = None
-    ) -> ClusteringAlgorithm:
+        self, source_type: str
+    ) -> tuple[bool, Optional[ClusteringAlgorithm]]:
         """
         Create a clustering algorithm based on configuration
 
@@ -303,45 +293,43 @@ class ClusteringManager:
         ----------
         source_type : str
             Type of power source
-        config : Optional[dict[str, Any]]
-            Configuration for clustering
 
         Returns
         -------
-        ClusteringAlgorithm
-            Clustering algorithm instance
+        tuple[bool, Optional[ClusteringAlgorithm]]
+            Tuple containing a boolean indicating success and the clustering algorithm
         """
-        # Use config if provided, otherwise use default
-        config = config or self.default_config
-
-        # If source-specific config is provided, use it
-        if (
-            isinstance(config, dict)
-            and "sources" in config
-            and source_type in config["sources"]
-        ):
-            source_config = config["sources"][source_type].get("clustering", {})
-            # Merge with default config
-            merged_config = self.default_config.copy()
-            merged_config.update(source_config)
-            config = merged_config
+        assert isinstance(source_type, str), "source_type must be a string"
 
         # Create algorithm based on method
-        method = config.get("method", "dbscan").lower()
+        method = (
+            self.config.get("sources", {})
+            .get(source_type, {})
+            .get("units_clustering", {})
+            .get("method", "unknown")
+            .lower()
+        )
         if method == "dbscan":
-            return DBSCANClustering(self.client, config)
+            return True, DBSCANClustering(
+                self.client,
+                config=self.config.get("sources", {})
+                .get(source_type, {})
+                .get("units_clustering", {}),
+            )
         elif method == "kmeans":
-            return KMeansClustering(self.client, config)
+            return True, KMeansClustering(
+                self.client,
+                config=self.config.get("sources", {})
+                .get(source_type, {})
+                .get("units_clustering", {}),
+            )
         else:
-            logger.warning(f"Unknown clustering method: {method}, using DBSCAN")
-            return DBSCANClustering(self.client, config)
+            logger.warning(f"Unknown clustering method '{method}'")
+            return False, None
 
     def cluster_generators(
-        self,
-        generators: list[Unit],
-        source_type: str = None,
-        config: Optional[dict[str, Any]] = None,
-    ) -> dict[int, list[Unit]]:
+        self, generators: list[Unit], source_type: str
+    ) -> tuple[bool, dict[int, list[Unit]]]:
         """
         Cluster generators based on source type and configuration
 
@@ -351,37 +339,20 @@ class ClusteringManager:
             list of generator plants to cluster
         source_type : str
             Type of power source
-        config : Optional[dict[str, Any]]
-            Configuration for clustering
 
         Returns
         -------
-        dict[int, list[Unit]]
-            dictionary mapping cluster IDs to lists of plants
+        tuple[bool, dict[int, list[Unit]]]
+            Tuple containing success flag and dictionary mapping cluster IDs to lists of plants
         """
-        # Group generators by source type if not already done
-        if source_type is None:
-            by_source = {}
-            for gen in generators:
-                src = gen.source or "unknown"
-                if src not in by_source:
-                    by_source[src] = []
-                by_source[src].append(gen)
-
-            # Cluster each source type separately
-            all_clusters = {}
-            for src, src_generators in by_source.items():
-                src_clusters = self.cluster_generators(src_generators, src, config)
-                # Offset cluster IDs to avoid conflicts
-                offset = max(all_clusters.keys()) + 1 if all_clusters else 0
-                all_clusters.update(
-                    {k + offset if k >= 0 else k: v for k, v in src_clusters.items()}
-                )
-            return all_clusters
-
         # Create algorithm and cluster
-        algorithm = self.create_algorithm(source_type, config)
-        return algorithm.cluster(generators)
+        success, algorithm = self.create_algorithm(source_type)
+        if not success:
+            logger.warning(
+                f"Failed to create clustering algorithm for source type '{source_type}'"
+            )
+            return success, {}
+        return success, algorithm.cluster(generators)
 
     def create_cluster_plants(
         self, clusters: dict[int, list[Unit]], source_type: str
@@ -402,7 +373,13 @@ class ClusteringManager:
             list of plant objects representing clusters
         """
         # Get centroids and capacities
-        algorithm = self.create_algorithm(source_type)
+        success, algorithm = self.create_algorithm(source_type)
+        if not success:
+            logger.warning(
+                f"Failed to create clustering algorithm for source type '{source_type}'"
+            )
+            return []
+        # Get centroids and capacities
         centroids = algorithm.get_cluster_centroids(clusters)
         capacities = algorithm.get_cluster_capacity(clusters)
 

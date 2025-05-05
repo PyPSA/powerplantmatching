@@ -17,9 +17,9 @@ from .cache import ElementCache
 from .client import OverpassAPIClient
 from .clustering import ClusteringManager
 from .estimation import EstimationManager
+from .extractor import CapacityExtractor
 from .geometry import GeometryHandler
 from .models import PlantPolygon, Unit
-from .processors import GeneratorProcessor, PlantProcessor, Processor
 from .rejection import ElementType, RejectedElement, RejectionReason
 from .workflow import Workflow
 
@@ -37,5 +37,6 @@ __all__ = [
     "GeometryHandler",
     "ClusteringManager",
     "EstimationManager",
+    "CapacityExtractor",
     "Workflow",
 ]

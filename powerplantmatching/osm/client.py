@@ -1,15 +1,10 @@
-"""
-Core client for accessing OpenStreetMap data via Overpass API
-"""
-
 import logging
-from functools import lru_cache
 from typing import Optional
 
-import pycountry
 import requests
 
 from .cache import ElementCache
+from .utils import get_country_code
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +55,6 @@ class OverpassAPIClient:
             if "traceback" in locals():
                 traceback.print_exc()
 
-    @lru_cache(maxsize=100)
     def get_country_code(self, country: str) -> str:
         """
         Get the ISO 3166-1 alpha-2 country code for a country
@@ -80,11 +74,7 @@ class OverpassAPIClient:
         ValueError
             If the country name is invalid
         """
-        try:
-            country_obj = pycountry.countries.lookup(country)
-            return country_obj.alpha_2
-        except LookupError:
-            raise ValueError(f"Invalid country name: {country}")
+        return get_country_code(country)
 
     def query_overpass(self, query: str) -> dict:
         """

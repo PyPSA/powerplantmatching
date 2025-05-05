@@ -1,7 +1,3 @@
-"""
-Caching system for OSM elements to reduce API calls
-"""
-
 import json
 import logging
 import os
