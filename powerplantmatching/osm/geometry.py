@@ -4,7 +4,9 @@ from dataclasses import dataclass
 from typing import Any, Optional, Union
 
 from .client import OverpassAPIClient
-from .models import PlantPolygon
+from .models import ElementType, PlantPolygon, RejectionReason
+from .rejection import RejectionTracker
+from .utils import get_element_coordinates
 
 logger = logging.getLogger(__name__)
 
@@ -468,3 +470,63 @@ class GeometryHandler:
         except ShapelyError as e:
             logger.debug(f"Error checking if point is in polygon: {str(e)}")
             return False
+
+
+def process_element_coordinates(
+    element: dict[str, Any],
+    geometry_handler: GeometryHandler,
+    rejection_tracker: Optional[RejectionTracker] = None,
+    category: str = "geometry",
+) -> tuple[Optional[float], Optional[float]]:
+    """
+    Process an element to extract its coordinates using various fallback methods
+
+    Parameters
+    ----------
+    element : dict[str, Any]
+        OSM element data
+    geometry_handler : GeometryHandler
+        Handler for geometry operations
+    rejection_tracker : Optional[RejectionTracker]
+        Tracker for rejected elements
+    category : str
+        Category for rejection tracking
+
+    Returns
+    -------
+    tuple[Optional[float], Optional[float]]
+        (lat, lon) coordinates or (None, None) if not found
+    """
+    # Try to get geometry
+    geometry = geometry_handler.get_element_geometry(element)
+
+    # Get coordinates from geometry
+    lat, lon = None, None
+    if geometry:
+        lat, lon = geometry_handler.get_geometry_centroid(geometry)
+
+    # For relations with no coordinates, try special processing
+    if element["type"] == "relation" and (lat is None or lon is None):
+        # Try to get centroid from members
+        lat, lon = geometry_handler.get_relation_centroid_from_members(element)
+
+        if lat is not None and lon is not None:
+            logger.info(
+                f"Found coordinates for relation {element['id']} from members: {lat}, {lon}"
+            )
+
+    # Fall back to direct coordinates if geometry failed
+    if lat is None or lon is None:
+        lat, lon = get_element_coordinates(element)
+
+    # Track rejection if coordinates not found
+    if rejection_tracker and (lat is None or lon is None):
+        rejection_tracker.add_rejection(
+            element_id=f"{element['type']}/{element['id']}",
+            element_type=ElementType(element["type"]),
+            reason=RejectionReason.COORDINATES_NOT_FOUND,
+            details="Could not determine coordinates for element",
+            category=category,
+        )
+
+    return lat, lon

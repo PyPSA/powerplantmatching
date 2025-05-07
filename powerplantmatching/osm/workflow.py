@@ -10,17 +10,10 @@ from .client import OverpassAPIClient
 from .clustering import ClusteringManager
 from .estimation import EstimationManager
 from .extractor import CapacityExtractor
-from .geometry import GeometryHandler
-from .models import PlantPolygon, Unit
+from .geometry import GeometryHandler, process_element_coordinates
+from .models import ElementType, PlantPolygon, Unit
 from .rejection import RejectionReason, RejectionTracker
-from .utils import (
-    create_rejection_entry,
-    extract_source_from_tags,
-    extract_technology_from_tags,
-    get_element_coordinates,
-    is_valid_generator,
-    is_valid_plant,
-)
+from .utils import is_valid_unit
 
 logger = logging.getLogger(__name__)
 
@@ -45,8 +38,217 @@ class ElementProcessor(ABC):
             Tracker for rejected elements
         """
         self.client = client
-        self.rejection_tracker = rejection_tracker or RejectionTracker()
         self.config = config or {}
+        self.rejection_tracker = rejection_tracker or RejectionTracker()
+        self.geometry_handler = GeometryHandler(self.client)
+        self.capacity_extractor = CapacityExtractor(self.config, self.rejection_tracker)
+        self.estimation_manager = EstimationManager(
+            self.client, self.geometry_handler, self.config, self.rejection_tracker
+        )
+
+    def extract_name_from_tags(self, element: dict[str, Any]) -> Optional[str]:
+        """
+        Extract name from OSM tags
+
+        Parameters
+        ----------
+        element : dict[str, Any]
+            OSM element data
+
+        Returns
+        -------
+        Optional[str]
+            Name if found, None otherwise
+        """
+        tags = element.get("tags", {})
+        name = tags.get("name")
+        if name:
+            return name
+
+        # TODO: Perform a research to find the name
+
+        if not name:
+            self.rejection_tracker.add_rejection(
+                element_id=f"{element['type']}/{element['id']}",
+                element_type=ElementType(element["type"]),
+                reason=RejectionReason.MISSING_REQUIRED_FIELD,
+                details="Missing name tag",
+                category="extract_name_from_tags",
+            )
+
+        return None
+
+    def extract_source_from_tags(
+        self, element: dict[str, Any], unit_type: str
+    ) -> Optional[str]:
+        """
+        Extract power source from OSM tags
+
+        Parameters
+        ----------
+        tags : dict[str, str]
+            OSM element tags
+
+        Returns
+        -------
+        Optional[str]
+            Power source if found, None otherwise
+        """
+        assert unit_type in ["plant", "generator"], "Invalid unit type"
+
+        tags = element.get("tags", {})
+
+        unit_type_tags_keys = {
+            "plant": "plant_tags",
+            "generator": "generator_tags",
+        }
+
+        default_source = {
+            "plant_tags": ["plant:source"],
+            "generator_tags": ["generator:source"],
+        }
+
+        source_keys = self.config.get(unit_type_tags_keys[unit_type], {}).get(
+            "source_tags_keys", default_source[unit_type_tags_keys[unit_type]]
+        )
+        source_mapping = self.config.get("source_mapping", {})
+
+        store_element_source = ""
+
+        for key in source_keys:
+            if key in tags:
+                element_source = tags[key].lower()
+                store_element_source = element_source
+                for config_source in source_mapping:
+                    if element_source in source_mapping[config_source]:
+                        return config_source
+
+        self.rejection_tracker.add_rejection(
+            element_id=f"{element['type']}/{element['id']}",
+            element_type=ElementType(element["type"]),
+            reason=RejectionReason.MISSING_REQUIRED_FIELD,
+            details=store_element_source,
+            category="extract_source_from_tags",
+        )
+
+        return None
+
+    def extract_technology_from_tags(
+        self, element: dict[str, Any], unit_type: str
+    ) -> Optional[str]:
+        """
+        Extract technology information from OSM tags
+
+        Parameters
+        ----------
+        element : dict[str, Any]
+            OSM element data
+
+        unit_type : str
+            Type of unit ("plant" or "generator")
+
+        Returns
+        -------
+        Optional[str]
+            Technology if found, None otherwise
+        """
+        assert unit_type in ["plant", "generator"], "Invalid unit type"
+
+        tags = element.get("tags", {})
+
+        unit_type_tags_keys = {
+            "plant": "plant_tags",
+            "generator": "generator_tags",
+        }
+        default_technology = {
+            "plant_tags": ["plant:method"],
+            "generator_tags": ["generator:method"],
+        }
+
+        technology_keys = self.config.get(unit_type_tags_keys[unit_type], {}).get(
+            "technology_tags_keys", default_technology[unit_type_tags_keys[unit_type]]
+        )
+        technology_mapping = self.config.get("technology_mapping", {})
+
+        store_element_technology = ""
+
+        for key in technology_keys:
+            if key in tags:
+                element_technology = tags[key].lower()
+                store_element_technology = element_technology
+                for config_technology in technology_mapping:
+                    if element_technology in technology_mapping[config_technology]:
+                        return config_technology
+
+        # TODO: Fallback to default technology if not found in mapping. For now, just return None
+
+        self.rejection_tracker.add_rejection(
+            element_id=f"{element['type']}/{element['id']}",
+            element_type=ElementType(element["type"]),
+            reason=RejectionReason.MISSING_REQUIRED_FIELD,
+            details=store_element_technology,
+            category="extract_technology_from_tags",
+        )
+
+        return None
+
+    def extract_output_key_from_tags(
+        self, element: dict[str, Any], unit_type: str, source_type: Optional[str] = None
+    ) -> Optional[str]:
+        """
+        Extract output electricity information from OSM tags
+
+        Parameters
+        ----------
+        element : dict[str, Any]
+            OSM element data
+
+        unit_type : str
+            Type of unit ("plant" or "generator")
+
+        Returns
+        -------
+        Optional[str]
+            Output if found, None otherwise
+        """
+        assert unit_type in ["plant", "generator"], "Invalid unit type"
+
+        tags = element.get("tags", {})
+
+        unit_type_tags_keys = {
+            "plant": "plant_tags",
+            "generator": "generator_tags",
+        }
+
+        default_output = {
+            "plant_tags": ["plant:output:electricity"],
+            "generator_tags": ["generator:output:electricity"],
+        }
+
+        output_keys = self.config.get(unit_type_tags_keys[unit_type], {}).get(
+            "output_tags_keys", default_output[unit_type_tags_keys[unit_type]]
+        )
+        if source_type:
+            source_output_keys = (
+                self.config.get("sources", {})
+                .get(source_type, {})
+                .get("capacity_extraction", {})
+                .get("additional_tags", [])
+            )
+            output_keys.extend(source_output_keys)
+
+        for key in output_keys:
+            if key in tags:
+                return key
+
+        self.rejection_tracker.add_rejection(
+            element_id=f"{element['type']}/{element['id']}",
+            element_type=ElementType(element["type"]),
+            reason=RejectionReason.MISSING_REQUIRED_FIELD,
+            details=f"Current element tags :={';'.join(sorted(tags.keys()))}",
+            category="extract_output_key_from_tags",
+        )
+        return None
 
     @abstractmethod
     def process_element(
@@ -69,193 +271,49 @@ class ElementProcessor(ABC):
         """
         pass
 
-    def reject_element(
-        self,
-        element: dict[str, Any],
-        reason: RejectionReason,
-        details: Optional[str] = None,
-        category: str = "processor",
-    ) -> None:
+    def _process_capacity(
+        self, element: dict[str, Any], source_type: Optional[str], output_key: str
+    ) -> tuple[Optional[float], str]:
         """
-        Track a rejected element
+        Process capacity using extraction and estimation
 
         Parameters
         ----------
         element : dict[str, Any]
-            OSM element data
-        reason : RejectionReason
-            Reason for rejection
-        details : Optional[str]
-            Additional details about the rejection
-        category : str
-            Category for grouping rejections
-        """
-        # Create rejection entry using the utility function
-        rejection_entry = create_rejection_entry(element, reason, details, category)
-
-        # Add to tracker
-        self.rejection_tracker.add_rejection(
-            element_id=rejection_entry["element_id"],
-            element_type=rejection_entry["element_type"],
-            reason=reason,
-            details=details,
-            category=category,
-        )
-
-        logger.debug(
-            f"Rejected element {rejection_entry['element_id']}: {reason.value} - {details or ''}"
-        )
-
-    def get_rejection_summary(self) -> dict[str, int]:
-        """
-        Get a summary of element rejections by reason
+            Element data
+        source_type : Optional[str]
+            Source type
 
         Returns
         -------
-        dict[str, int]
-            Count of rejected elements by reason
+        tuple[Optional[float], str]
+            (capacity_mw, info)
         """
-        # Get summary from the tracker
-        category_summary = self.rejection_tracker.get_summary().get("processor", {})
-        return category_summary
-
-
-class PlantParser(ElementProcessor):
-    """Plant processor with integrated features"""
-
-    def __init__(
-        self,
-        client: OverpassAPIClient,
-        geometry_handler: GeometryHandler,
-        capacity_extractor: CapacityExtractor,
-        estimation_manager: EstimationManager,
-        rejection_tracker: Optional[RejectionTracker] = None,
-        config: Optional[dict[str, Any]] = None,
-    ):
-        """
-        Initialize the integrated plant processor
-
-        Parameters
-        ----------
-        client : OverpassAPIClient
-            Client for accessing OSM data
-        geometry_handler : GeometryHandler
-            Handler for geometry operations
-        capacity_extractor : CapacityExtractor
-            Extractor for capacity values
-        estimation_manager : EstimationManager
-            Manager for capacity estimation
-        rejection_tracker : Optional[RejectionTracker]
-            Tracker for rejected elements
-        """
-        super().__init__(client, rejection_tracker, config)
-        self.geometry_handler = geometry_handler
-        self.capacity_extractor = capacity_extractor
-        self.estimation_manager = estimation_manager
-        self.plant_polygons: list[PlantPolygon] = []
-
-    def process_element(
-        self, element: dict[str, Any], country: Optional[str] = None
-    ) -> Optional[Unit]:
-        """
-        Process a plant element using all integrated features
-
-        Parameters
-        ----------
-        element : dict[str, Any]
-            OSM element data
-        country : Optional[str]
-            Country code
-
-        Returns
-        -------
-        Optional[Unit]
-            Unit object if processing succeeded, None otherwise
-        """
-        # Check if element is a valid plant
-        if not is_valid_plant(element):
-            self.reject_element(
-                element,
-                RejectionReason.INVALID_ELEMENT_TYPE,
-                f"Expected power=plant, got power={element.get('tags', {}).get('power')}",
-                category="plant",
-            )
-            return None
-
-        # Get tags for later use
-        tags = element.get("tags", {})
-
-        # Try to get geometry
-        geometry = self.geometry_handler.get_element_geometry(element)
-
-        # Store polygon if applicable
-        if geometry and isinstance(geometry, PlantPolygon):
-            self.plant_polygons.append(geometry)
-
-        # Get coordinates from geometry
-        lat, lon = None, None
-        if geometry:
-            lat, lon = self.geometry_handler.get_geometry_centroid(geometry)
-
-        # For relations with no coordinates, try special processing
-        if element["type"] == "relation" and (lat is None or lon is None):
-            # Try to get centroid from members
-            lat, lon = self.geometry_handler.get_relation_centroid_from_members(element)
-
-            if lat is not None and lon is not None:
-                logger.info(
-                    f"Found coordinates for relation {element['id']} from members: {lat}, {lon}"
-                )
-
-        # Fall back to direct coordinates if geometry failed
-        if lat is None or lon is None:
-            lat, lon = get_element_coordinates(element)
-
-        # Check if we have valid coordinates
-        if lat is None or lon is None:
-            self.reject_element(
-                element,
-                RejectionReason.COORDINATES_NOT_FOUND,
-                "Could not determine coordinates for plant",
-                category="plant",
-            )
-            return None
-
-        # Extract source type
-        source = extract_source_from_tags(tags)
-
-        # Process capacity
-        capacity, capacity_source = self._process_capacity(element, source)
-
-        # For relations with no capacity, try to get from members
-        if element["type"] == "relation" and capacity is None:
-            capacity, capacity_source = self._get_relation_member_capacity(
-                element, source
-            )
-
-        # Create ID and name
-        element_id = f"OSM_plant:{element['type']}/{element['id']}"
-        name = tags.get("name")
-
-        # Extract technology
-        technology = extract_technology_from_tags(tags)
-
-        # Create plant object
-        plant = Unit(
-            id=element_id,
-            type=f"plant:{element['type']}",
-            source=source,
-            lat=lat,
-            lon=lon,
-            capacity_mw=capacity,
-            capacity_source=capacity_source,
-            country=country,
-            name=name,
-            case="plant",
-            technology=technology,
+        # 1. Basic extraction (always attempted)
+        is_valid, capacity, info = self.capacity_extractor.basic_extraction(
+            element, output_key
         )
 
-        return plant
+        # 2. If basic extraction fails, try advanced extraction (if enabled)
+        advanced_extraction_enabled = self.config.get("capacity_extraction", {}).get(
+            "enabled", False
+        )
+
+        if not is_valid and advanced_extraction_enabled and info != "placeholder_value":
+            is_valid, capacity, info = self.capacity_extractor.advanced_extraction(
+                element, output_key
+            )
+
+        # 3. If extraction fails, try estimation (if enabled)
+        capacity_estimation_enabled = self.config.get("capacity_estimation", {}).get(
+            "enabled", False
+        )
+        if not is_valid and capacity_estimation_enabled:
+            capacity, info = self.estimation_manager.estimate_capacity(
+                element, source_type
+            )
+
+        return capacity, info
 
     def _get_relation_member_capacity(
         self, relation: dict[str, Any], source_type: Optional[str]
@@ -298,9 +356,27 @@ class PlantParser(ElementProcessor):
             if not member_elem or "tags" not in member_elem:
                 continue
 
-            # Try to extract capacity using the full process with source_type
-            # This will try basic, advanced, and estimation as configured
-            capacity, capacity_source = self._process_capacity(member_elem, source_type)
+            has_power_tag = False
+            has_output_tag = False
+            store_keys = []
+            for key in member_elem["tags"]:
+                if key.startswith("power:"):
+                    has_power_tag = True
+                if "output" in key:
+                    has_output_tag = True
+                    store_keys.append(key)
+            if not has_power_tag and not has_output_tag:
+                continue
+            else:
+                if len(store_keys) == 1:
+                    output_key = store_keys[0]
+                else:
+                    for key in store_keys:
+                        if "output:electricity" in key:
+                            output_key = key
+                            break
+
+            capacity, _ = self._process_capacity(member_elem, source_type, output_key)
 
             if capacity is not None:
                 members_with_capacity.append((member_elem, capacity))
@@ -317,48 +393,142 @@ class PlantParser(ElementProcessor):
         total_capacity = sum(capacity for _, capacity in members_with_capacity)
         return total_capacity, "aggregated_member_capacity"
 
-    def _process_capacity(
-        self, element: dict[str, Any], source_type: Optional[str]
-    ) -> tuple[Optional[float], str]:
+    def get_rejection_summary(self) -> dict[str, int]:
         """
-        Process capacity using extraction and estimation
+        Get a summary of element rejections by reason
+
+        Returns
+        -------
+        dict[str, int]
+            Count of rejected elements by reason
+        """
+        # Get summary from the tracker
+        category_summary = self.rejection_tracker.get_summary().get("processor", {})
+        return category_summary
+
+
+class PlantParser(ElementProcessor):
+    """Plant processor with integrated features"""
+
+    def __init__(
+        self,
+        client: OverpassAPIClient,
+        rejection_tracker: Optional[RejectionTracker] = None,
+        config: Optional[dict[str, Any]] = None,
+    ):
+        """
+        Initialize the integrated plant processor
+
+        Parameters
+        ----------
+        client : OverpassAPIClient
+            Client for accessing OSM data
+        geometry_handler : GeometryHandler
+            Handler for geometry operations
+        capacity_extractor : CapacityExtractor
+            Extractor for capacity values
+        estimation_manager : EstimationManager
+            Manager for capacity estimation
+        rejection_tracker : Optional[RejectionTracker]
+            Tracker for rejected elements
+        """
+        super().__init__(client, rejection_tracker, config)
+        self.plant_polygons: list[PlantPolygon] = []
+
+    def process_element(
+        self, element: dict[str, Any], country: Optional[str] = None
+    ) -> Optional[Unit]:
+        """
+        Process a plant element using all integrated features
 
         Parameters
         ----------
         element : dict[str, Any]
-            Element data
-        source_type : Optional[str]
-            Source type
+            OSM element data
+        country : Optional[str]
+            Country code
 
         Returns
         -------
-        tuple[Optional[float], str]
-            (capacity_mw, capacity_source)
+        Optional[Unit]
+            Unit object if processing succeeded, None otherwise
         """
-        # 1. Basic extraction (always attempted)
-        capacity, capacity_source = self.capacity_extractor.basic_extraction(element)
-
-        # 2. If basic extraction fails, try advanced extraction (if enabled)
-        advanced_extraction = (
-            self.config.get("capacity_extraction", {})
-            .get("advanced_extraction", {})
-            .get("enabled", False)
-        )
-        if capacity is None and advanced_extraction:
-            capacity, capacity_source = self.capacity_extractor.advanced_extraction(
-                element, source_type
+        # Check if element is a valid plant
+        if not is_valid_unit(element, "plant"):
+            self.rejection_tracker.add_rejection(
+                element_id=f"{element['type']}/{element['id']}",
+                element_type=ElementType(element["type"]),
+                reason=RejectionReason.INVALID_ELEMENT_TYPE,
+                details=f"Expected power=plant, got power={element.get('tags', {}).get('power')}",
+                category="plant",
             )
+            return None
 
-        # 3. If extraction fails, try estimation (if enabled)
-        capacity_estimation = self.config.get("capacity_estimation", {}).get(
-            "enabled", False
+        # Extract source type
+        source = self.extract_source_from_tags(element, "plant")
+        if source is None:
+            return None
+
+        # Extract technology
+        technology = self.extract_technology_from_tags(element, "plant")
+        if technology is None:
+            return None
+
+        # Extract name
+        name = self.extract_name_from_tags(element)
+        if name is None:
+            return None
+
+        # Extract output key
+        output_key = self.extract_output_key_from_tags(element, "plant", source)
+        if output_key is None:
+            return None
+
+        # Get geometry
+        geometry = self.geometry_handler.get_element_geometry(element)
+
+        # Store polygon if applicable
+        if geometry and isinstance(geometry, PlantPolygon):
+            self.plant_polygons.append(geometry)
+
+        # Get coordinates with fallbacks
+        lat, lon = process_element_coordinates(
+            element, self.geometry_handler, self.rejection_tracker, category="plant"
         )
-        if capacity is None and capacity_estimation:
-            capacity, capacity_source = self.estimation_manager.estimate_capacity(
-                element, source_type
-            )
+        # Check if we have valid coordinates
+        if lat is None or lon is None:
+            return None
 
-        return capacity, capacity_source
+        # Process capacity
+        capacity, info = self._process_capacity(element, source, output_key)
+        if capacity is None:
+            if element["type"] == "relation":
+                # If relation, try to get capacity from members
+                capacity, info = self._get_relation_member_capacity(element, source)
+                if capacity is None:
+                    return None
+            else:
+                return None
+
+        # Create ID and name
+        element_id = f"OSM_plant:{element['type']}/{element['id']}"
+
+        # Create plant object
+        unit = Unit(
+            id=element_id,
+            type=f"plant:{element['type']}",
+            source=source,
+            lat=lat,
+            lon=lon,
+            capacity_mw=capacity,
+            capacity_source=info,
+            country=country,
+            name=name,
+            case="plant",
+            technology=technology,
+        )
+
+        return unit
 
 
 class GeneratorParser(ElementProcessor):
@@ -367,9 +537,6 @@ class GeneratorParser(ElementProcessor):
     def __init__(
         self,
         client: OverpassAPIClient,
-        geometry_handler: GeometryHandler,
-        capacity_extractor: CapacityExtractor,
-        estimation_manager: EstimationManager,
         rejection_tracker: Optional[RejectionTracker] = None,
         config: Optional[dict[str, Any]] = None,
     ):
@@ -390,9 +557,6 @@ class GeneratorParser(ElementProcessor):
             Tracker for rejected elements
         """
         super().__init__(client, rejection_tracker, config)
-        self.geometry_handler = geometry_handler
-        self.capacity_extractor = capacity_extractor
-        self.estimation_manager = estimation_manager
 
     def process_element(
         self,
@@ -418,103 +582,75 @@ class GeneratorParser(ElementProcessor):
             Unit object if processing succeeded, None otherwise
         """
         # Check if element is a valid generator
-        if not is_valid_generator(element):
-            self.reject_element(
-                element,
-                RejectionReason.INVALID_ELEMENT_TYPE,
-                f"Expected power=generator, got power={element.get('tags', {}).get('power')}",
+        if not is_valid_unit(element, "generator"):
+            # Reject invalid elements (no tags or invalid power type)
+            self.rejection_tracker.add_rejection(
+                element_id=f"{element['type']}/{element['id']}",
+                element_type=ElementType(element["type"]),
+                reason=RejectionReason.INVALID_ELEMENT_TYPE,
+                details=f"Expected power=generator, got power={element.get('tags', {}).get('power')}",
                 category="generator",
             )
             return None
-
-        # Get tags for later use
-        tags = element.get("tags", {})
-
-        # Try to get geometry
-        geometry = self.geometry_handler.get_element_geometry(element)
-
-        # Get coordinates from geometry
-        lat, lon = None, None
-        if geometry:
-            lat, lon = self.geometry_handler.get_geometry_centroid(geometry)
-
-        # Fall back to direct coordinates if geometry failed
-        if lat is None or lon is None:
-            lat, lon = get_element_coordinates(element)
-
-        # Check if we have valid coordinates
-        if lat is None or lon is None:
-            self.reject_element(
-                element,
-                RejectionReason.COORDINATES_NOT_FOUND,
-                "Could not determine coordinates for generator",
-                category="generator",
-            )
-            return None
-
-        # Check if generator is inside any plant polygon
-        if plant_polygons:
-            for polygon in plant_polygons:
-                if self.geometry_handler.is_point_in_polygon((lat, lon), polygon):
-                    self.reject_element(
-                        element,
-                        RejectionReason.INSIDE_PLANT_POLYGON,
-                        f"Generator is inside plant polygon {polygon.id}",
-                        category="generator",
-                    )
-                    return None
 
         # Extract source type
-        source = extract_source_from_tags(tags)
+        source = self.extract_source_from_tags(element, "generator")
+        if source is None:
+            return None
 
-        # Sequential capacity determination with clear fallbacks:
+        # Extract technology
+        technology = self.extract_technology_from_tags(element, "generator")
+        if technology is None:
+            return None
 
-        # 1. Basic extraction (always attempted)
-        capacity, capacity_source = self.capacity_extractor.basic_extraction(element)
+        # Extract name
+        name = self.extract_name_from_tags(element)
+        if name is None:
+            return None
 
-        # 2. If basic extraction fails, try advanced extraction (if enabled)
-        advanced_extraction = (
-            self.config.get("capacity_extraction", {})
-            .get("advanced_extraction", {})
-            .get("enabled", False)
+        # Extract output key
+        output_key = self.extract_output_key_from_tags(element, "generator", source)
+        if output_key is None:
+            return None
+
+        # Get coordinates with fallbacks
+        lat, lon = process_element_coordinates(
+            element, self.geometry_handler, self.rejection_tracker, category="generator"
         )
-        if capacity is None and advanced_extraction:
-            capacity, capacity_source = self.capacity_extractor.advanced_extraction(
-                element, source
-            )
+        # Check if we have valid coordinates
+        if lat is None or lon is None:
+            return None
 
-        # 3. If extraction fails, try estimation (if enabled)
-        capacity_estimation = self.config.get("capacity_estimation", {}).get(
-            "enabled", False
-        )
-        if capacity is None and capacity_estimation:
-            capacity, capacity_source = self.estimation_manager.estimate_capacity(
-                element, source
-            )
+        # Process capacity
+        capacity, info = self._process_capacity(element, source, output_key)
+        if capacity is None:
+            if element["type"] == "relation":
+                # If relation, try to get capacity from members
+                capacity, info = self._get_relation_member_capacity(element, source)
+                if capacity is None:
+                    return None
+            else:
+                return None
 
         # Create ID and name
         element_id = f"OSM_generator:{element['type']}/{element['id']}"
-        name = tags.get("name")
-
-        # Extract technology
-        technology = extract_technology_from_tags(tags)
 
         # Create plant object (generators are treated as individual plants)
-        plant = Unit(
+        unit = Unit(
             id=element_id,
             type=f"generator:{element['type']}",
             source=source,
             lat=lat,
             lon=lon,
             capacity_mw=capacity,
-            capacity_source=capacity_source,
+            capacity_source=info,
             country=country,
             name=name,
             case="generator",
             technology=technology,
         )
 
-        return plant
+        return unit
 
 
 class Workflow:
@@ -546,28 +682,16 @@ class Workflow:
         # Create rejection tracker
         self.rejection_tracker = rejection_tracker or RejectionTracker()
 
-        # Create components
-        self.geometry_handler = GeometryHandler(client)
-        self.capacity_extractor = CapacityExtractor(self.config, self.rejection_tracker)
-        self.estimation_manager = EstimationManager(
-            client, self.geometry_handler, self.config, self.rejection_tracker
-        )
         self.clustering_manager = ClusteringManager(client, self.config)
 
         # Create processors
         self.plant_parser = PlantParser(
             client,
-            self.geometry_handler,
-            self.capacity_extractor,
-            self.estimation_manager,
             self.rejection_tracker,
             self.config,
         )
         self.generator_parser = GeneratorParser(
             client,
-            self.geometry_handler,
-            self.capacity_extractor,
-            self.estimation_manager,
             self.rejection_tracker,
             self.config,
         )
@@ -615,9 +739,9 @@ class Workflow:
                 rejected_ids.add(raw_id)
 
         # Filter out rejected units
-        valid_units = [unit for unit in all_units if unit.id not in rejected_ids]
+        # valid_units = [unit for unit in all_units if unit.id not in rejected_ids]
 
-        return valid_units
+        return all_units
 
     def process_country_data(
         self,
@@ -643,11 +767,11 @@ class Workflow:
             (list of valid units, rejection summary)
         """
         plants_only = self.config.get("plants_only", True)
+
         # Get country data
         plants_data, generators_data = self.client.get_country_data(
             country, plants_only=plants_only
         )
-
         # Initialize tracking attributes
         self.processed_plants = []
         self.processed_generators = []
@@ -744,6 +868,8 @@ class Workflow:
 
             # Export to CSV
             self._export_rejections_to_csv(rejections_file)
+
+        self.client.close()
 
         return valid_units, rejection_summary
 

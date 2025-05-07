@@ -222,17 +222,57 @@ OSM:
   force_refresh: false
   plants_only: false
   capacity_extraction:
-    tags:
-      - plant:output:electricity
-      - generator:output:electricity
-    advanced_extraction:
-      enabled: true
-      regex_patterns:
-        - ^(\d+(?:\.\d+)?)\s*([a-zA-Z]+p?)$
+    enabled: true
+    regex_patterns:
+      - ^(\d+(?:\.\d+)?)\s*([a-zA-Z]+p?)$
   capacity_estimation:
     enabled: false
   units_clustering:
     enabled: false
+  plant_tags:
+    source_tags_keys:
+      - plant:source
+    technology_tags_keys:
+      - plant:method
+    output_tags_keys:
+      - plant:output:electricity
+  generator_tags:
+    source_tags_keys:
+      - generator:source
+    technology_tags_keys:
+      - generator:method
+    output_tags_keys:
+      - generator:output:electricity
+  source_mapping:
+    solar: [solar, solar_power]
+    wind: [wind, wind_power]
+    hydro: [hydro, hydropower]
+    nuclear: [nuclear, nuclear_power]
+    coal: [coal, coal_power]
+    gas: [gas, gas_power]
+    biomass: [biomass, biomass_power]
+    geothermal: [geothermal, geothermal_power]
+    oil: [oil, oil_power]
+    diesel: [diesel, diesel_power]
+    battery: [battery, battery_storage]
+    pumped_storage: [pumped_storage, pumped_hydro]
+    hydrogen: [hydrogen, hydrogen_storage]
+  technology_mapping:
+    pv: [pv, photovoltaic, solar_photovoltaic]
+    wind: [wind, wind_turbine, wind_turbines]
+    run-of-the-river: [run-of-the-river]
+    nuclear: [nuclear, nuclear_power]
+    coal: [coal, coal_power]
+    gas: [gas, gas_power]
+    biomass: [biomass, biomass_power]
+    geothermal: [geothermal, geothermal_power]
+    oil: [oil, oil_power]
+    diesel: [diesel, diesel_power]
+    battery: [battery, battery_storage]
+    pumped_storage: [pumped_storage, pumped_hydro]
+    hydrogen: [hydrogen, hydrogen_storage]
+    combustion: [combustion]
+    water-storage: [water-storage, water-pumped-storage]
   sources:
     solar:
       units_clustering:
@@ -274,7 +314,6 @@ OSM:
         method: dbscan
         eps: 0.01
         min_samples: 2
-      capacity_extraction:
       capacity_estimation:
         method: default_value
         default_capacity: 500

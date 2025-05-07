@@ -27,6 +27,7 @@ class RejectionReason(Enum):
     CAPACITY_FORMAT_UNSUPPORTED = "No valid advanced capacity format found"
     CAPACITY_REGEX_NO_MATCH = "Capacity regex did not match"
     CAPACITY_ZERO = "Capacity is zero or negative"
+    CAPACITY_REGEX_ERROR = "Error in capacity regex parsing"
 
     # Source-related rejections
     SOURCE_TYPE_MISSING = "Source type missing or unknown"

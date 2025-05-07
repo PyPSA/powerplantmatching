@@ -1,10 +1,10 @@
 import logging
 from typing import Optional
 
+import pycountry
 import requests
 
 from .cache import ElementCache
-from .utils import get_country_code
 
 logger = logging.getLogger(__name__)
 
@@ -27,19 +27,19 @@ class OverpassAPIClient:
         self.cache = ElementCache(cache_dir)
         self.cache.load_all_caches()
 
-    def __del__(self):
-        """Save caches when object is destroyed"""
-        # Import modules explicitly to avoid issues during interpreter shutdown
-        try:
-            import logging
-            import traceback
+    def __enter__(self):
+        """Enter context manager"""
+        return self
 
-            # Use direct module attribute access for logging
-            # to avoid issues with missing 'logger' during shutdown
-            logging.getLogger(__name__).info("Saving caches in __del__ method")
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Exit context manager and save caches"""
+        self.close()
 
+    def close(self):
+        """Save caches and clean up resources"""
+        if hasattr(self, "cache"):
             # Only save if there are modifications
-            if hasattr(self, "cache") and any(
+            if any(
                 [
                     self.cache.plants_modified,
                     self.cache.generators_modified,
@@ -48,12 +48,11 @@ class OverpassAPIClient:
                     self.cache.relations_modified,
                 ]
             ):
-                self.cache.save_all_caches(force=False)
-
-        except Exception:
-            # Cannot use logger here as it might be already destroyed
-            if "traceback" in locals():
-                traceback.print_exc()
+                logging.getLogger(__name__).info("Saving caches")
+                try:
+                    self.cache.save_all_caches(force=False)
+                except Exception as e:
+                    logging.getLogger(__name__).error(f"Error saving caches: {e}")
 
     def get_country_code(self, country: str) -> str:
         """
@@ -74,7 +73,11 @@ class OverpassAPIClient:
         ValueError
             If the country name is invalid
         """
-        return get_country_code(country)
+        try:
+            country_obj = pycountry.countries.lookup(country)
+            return country_obj.alpha_2
+        except LookupError:
+            raise ValueError(f"Invalid country name: {country}")
 
     def query_overpass(self, query: str) -> dict:
         """
