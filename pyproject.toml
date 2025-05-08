@@ -44,6 +44,8 @@ dependencies = [
     "deprecation",
     "tqdm",
     "openpyxl",
+    "scikit-learn",
+    "shapely",
 ]
 
 [project.urls]

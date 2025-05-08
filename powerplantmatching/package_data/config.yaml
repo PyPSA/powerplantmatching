@@ -212,6 +212,132 @@ MASTR:
   fn: bnetza_open_mastr_2025-02-09.zip
   url: https://zenodo.org/records/14783581/files/bnetza_open_mastr_2025-02-09.zip
 
+OSM:
+  reliability_score: 3
+  net_capacity: false
+  fn: osm_data.csv # Filename for saving OSM data
+  api_url: zenodo.org
+
+  # OSM Global configurations
+  force_refresh: false
+  plants_only: false
+  missing_name_allowed: false
+  capacity_extraction:
+    enabled: true
+    regex_patterns:
+      - ^(\d+(?:\.\d+)?)\s*([a-zA-Z]+p?)$
+  capacity_estimation:
+    enabled: false
+  units_clustering:
+    enabled: false
+  plant_tags:
+    source_tags_keys:
+      - plant:source
+    technology_tags_keys:
+      - plant:method
+    output_tags_keys:
+      - plant:output:electricity
+  generator_tags:
+    source_tags_keys:
+      - generator:source
+    technology_tags_keys:
+      - generator:method
+    output_tags_keys:
+      - generator:output:electricity
+  source_mapping:
+    Nuclear: [nuclear]
+    Solid Biomass: [biomass]
+    Biogas: [biogas]
+    Wind: [wind]
+    Hydro: [hydro]
+    Solar: [solar]
+    Oil: [oil, diesel]
+    Natural Gas: [gas]
+    Hard Coal: [coal]
+    Lignite: [placeholder]
+    Geothermal: [placeholder]
+    Marine: [placeholder]
+    Waste: [placeholder]
+    Battery: [placeholder]
+  technology_mapping:
+    Boiled Water Reactor: [fission]
+    Pressurized Water Reactor: [fission]
+    Combustion Engine: [combustion]
+    Steam Turbine: [combustion, gasification]
+    OCGT: [combustion]
+    CCGT: [combustion, thermal]
+    Run-Of-River: [run-of-the-river]
+    Reservoir: [water-storage]
+    Pumped Storage: [water-pumped-storage]
+    Offshore: [offshore]
+    Onshore: [wind_turbine]
+    PV: [photovoltaic, thermal;photovoltaic]
+    CSP: [thermal]
+  source_technology_mapping:
+    Nuclear: [Boiled Water Reactor, Pressurized Water Reactor]
+    Solid Biomass: [Steam Turbine]
+    Biogas: [Combustion Engine]
+    Wind: [Offshore, Onshore]
+    Hydro: [Run-Of-River, Reservoir, Pumped Storage]
+    Solar: [PV, CSP]
+    Oil: [Combustion Engine]
+    Natural Gas: [OCGT, CCGT]
+    Hard Coal: [Steam Turbine]
+    Lignite: [Steam Turbine]
+    Geothermal: [Steam Turbine]
+    Marine: []
+    Waste: []
+    Battery: []
+  sources:
+    Solar:
+      units_clustering:
+        method: dbscan
+        eps: 0.005
+        min_samples: 2
+      capacity_extraction:
+        additional_tags:
+          - solar:output
+      capacity_estimation:
+        method: area_based
+        efficiency: 150
+    Wind:
+      units_clustering:
+        method: dbscan
+        eps: 0.02
+        min_samples: 2
+      capacity_extraction:
+        additional_tags:
+          - wind:output
+      capacity_estimation:
+        method: unit_size
+        unit_capacity: 2
+    Hydro:
+      capacity_extraction:
+        additional_tags:
+          - hydro:output
+  rejection_handling:
+    log_rejections: true
+    save_rejections: true
+    format: "csv"
+    rejections_file: "{country}_rejections.csv"
+  overpass_api:
+    url: https://overpass-api.de/api/interpreter  # Default Overpass API endpoint https://overpass.private.coffee/api/interpreter   https://overpass-api.de/api/interpreter
+    timeout: 300
+    max_retries: 3
+    retry_delay: 5
+
+  # Algorithm parameters (for reference)
+  algorithm_params:
+    dbscan:
+      - eps
+      - min_samples
+      - metric
+      - metric_params
+      - algorithm
+      - leaf_size
+      - p
+      - n_jobs
+
 # ---------------------------------------------------------------------------- #
 #                             Data Structure Config                            #
 # ---------------------------------------------------------------------------- #
