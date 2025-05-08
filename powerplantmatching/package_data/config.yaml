@@ -221,6 +221,7 @@ OSM:
   # OSM Global configurations
   force_refresh: false
   plants_only: false
+  missing_name_allowed: false
   capacity_extraction:
     enabled: true
     regex_patterns:
@@ -244,37 +245,51 @@ OSM:
     output_tags_keys:
       - generator:output:electricity
   source_mapping:
-    solar: [solar, solar_power]
-    wind: [wind, wind_power]
-    hydro: [hydro, hydropower]
-    nuclear: [nuclear, nuclear_power]
-    coal: [coal, coal_power]
-    gas: [gas, gas_power]
-    biomass: [biomass, biomass_power]
-    geothermal: [geothermal, geothermal_power]
-    oil: [oil, oil_power]
-    diesel: [diesel, diesel_power]
-    battery: [battery, battery_storage]
-    pumped_storage: [pumped_storage, pumped_hydro]
-    hydrogen: [hydrogen, hydrogen_storage]
+    Nuclear: [nuclear]
+    Solid Biomass: [biomass]
+    Biogas: [biogas]
+    Wind: [wind]
+    Hydro: [hydro]
+    Solar: [solar]
+    Oil: [oil, diesel]
+    Natural Gas: [gas]
+    Hard Coal: [coal]
+    Lignite: [placeholder]
+    Geothermal: [placeholder]
+    Marine: [placeholder]
+    Waste: [placeholder]
+    Battery: [placeholder]
   technology_mapping:
-    pv: [pv, photovoltaic, solar_photovoltaic]
-    wind: [wind, wind_turbine, wind_turbines]
-    run-of-the-river: [run-of-the-river]
-    nuclear: [nuclear, nuclear_power]
-    coal: [coal, coal_power]
-    gas: [gas, gas_power]
-    biomass: [biomass, biomass_power]
-    geothermal: [geothermal, geothermal_power]
-    oil: [oil, oil_power]
-    diesel: [diesel, diesel_power]
-    battery: [battery, battery_storage]
-    pumped_storage: [pumped_storage, pumped_hydro]
-    hydrogen: [hydrogen, hydrogen_storage]
-    combustion: [combustion]
-    water-storage: [water-storage, water-pumped-storage]
+    Boiled Water Reactor: [fission]
+    Pressurized Water Reactor: [fission]
+    Combustion Engine: [combustion]
+    Steam Turbine: [combustion, gasification]
+    OCGT: [combustion]
+    CCGT: [combustion, thermal]
+    Run-Of-River: [run-of-the-river]
+    Reservoir: [water-storage]
+    Pumped Storage: [water-pumped-storage]
+    Offshore: [offshore]
+    Onshore: [wind_turbine]
+    PV: [photovoltaic, thermal;photovoltaic]
+    CSP: [thermal]
+  source_technology_mapping:
+    Nuclear: [Boiled Water Reactor, Pressurized Water Reactor]
+    Solid Biomass: [Steam Turbine]
+    Biogas: [Combustion Engine]
+    Wind: [Offshore, Onshore]
+    Hydro: [Run-Of-River, Reservoir, Pumped Storage]
+    Solar: [PV, CSP]
+    Oil: [Combustion Engine]
+    Natural Gas: [OCGT, CCGT]
+    Hard Coal: [Steam Turbine]
+    Lignite: [Steam Turbine]
+    Geothermal: [Steam Turbine]
+    Marine: []
+    Waste: []
+    Battery: []
   sources:
-    solar:
+    Solar:
       units_clustering:
         method: dbscan
         eps: 0.005
@@ -282,11 +297,10 @@ OSM:
       capacity_extraction:
         additional_tags:
           - solar:output
-          - pv:output
       capacity_estimation:
         method: area_based
         efficiency: 150
-    wind:
+    Wind:
       units_clustering:
         method: dbscan
         eps: 0.02
@@ -294,77 +308,13 @@ OSM:
       capacity_extraction:
         additional_tags:
           - wind:output
-          - turbine:output
       capacity_estimation:
         method: unit_size
         unit_capacity: 2
-    hydro:
-      units_clustering:
-        method: dbscan
-        eps: 0.01
-        min_samples: 2
+    Hydro:
       capacity_extraction:
         additional_tags:
           - hydro:output
-      capacity_estimation:
-        method: default_value
-        default_capacity: 1
-    nuclear:
-      units_clustering:
-        method: dbscan
-        eps: 0.01
-        min_samples: 2
-      capacity_estimation:
-        method: default_value
-        default_capacity: 500
-    coal:
-      units_clustering:
-        method: dbscan
-        eps: 0.01
-        min_samples: 2
-      capacity_estimation:
-        method: default_value
-        default_capacity: 300
-    gas:
-      units_clustering:
-        method: dbscan
-        eps: 0.01
-        min_samples: 2
-      capacity_estimation:
-        method: default_value
-        default_capacity: 100
-    biomass:
-      units_clustering:
-        method: dbscan
-        eps: 0.01
-        min_samples: 2
-      capacity_estimation:
-        method: default_value
-        default_capacity: 10
-    geothermal:
-      units_clustering:
-        method: dbscan
-        eps: 0.01
-        min_samples: 2
-      capacity_estimation:
-        method: default_value
-        default_capacity: 20
-    oil:
-      units_clustering:
-        method: dbscan
-        eps: 0.01
-        min_samples: 2
-      capacity_estimation:
-        method: default_value
-        default_capacity: 75
-    diesel:
-      units_clustering:
-        method: dbscan
-        eps: 0.01
-        min_samples: 2
-      capacity_estimation:
-        method: default_value
-        default_capacity: 30
   rejection_handling:
     log_rejections: true
     save_rejections: true
