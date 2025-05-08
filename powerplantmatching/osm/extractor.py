@@ -29,95 +29,6 @@ class CapacityExtractor:
         self.config = config
         self.rejection_tracker = rejection_tracker or RejectionTracker()
 
-    def _validate_capacity_value(
-        self,
-        element: dict[str, Any],
-        tag: str,
-        value_str: str,
-        category: str = "validation",
-    ) -> tuple[bool, Optional[float], str]:
-        """
-        Validate a capacity value string and convert to float if valid
-
-        Parameters
-        ----------
-        element : dict[str, Any]
-            OSM element data
-        tag : str
-            Tag name containing the capacity value
-        value_str : str
-            Value string to validate
-        category : str
-            Category for rejection tracking
-
-        Returns
-        -------
-        tuple[bool, Optional[float], str]
-            (is_valid, capacity_mw, identifier, details)
-        """
-        # Check for placeholder values (yes, true)
-        if value_str.lower() in ["yes", "true"]:
-            self.rejection_tracker.add_rejection(
-                element_id=f"{element['type']}/{element['id']}",
-                element_type=ElementType(element["type"]),
-                reason=RejectionReason.CAPACITY_PLACEHOLDER,
-                details=f"Tag '{tag}' contains placeholder value '{value_str}'",
-                category=category,
-            )
-            return False, None, "placeholder_value"
-
-        # Check for comma as decimal separator
-        if "," in value_str and not "." in value_str:
-            self.rejection_tracker.add_rejection(
-                element_id=f"{element['type']}/{element['id']}",
-                element_type=ElementType(element["type"]),
-                reason=RejectionReason.CAPACITY_DECIMAL_FORMAT,
-                details=f"Capacity value '{value_str}' uses comma as decimal separator",
-                category=category,
-            )
-            return False, None, "decimal_comma_format"
-
-        # Regular parsing attempt
-        is_valid, value, unit_or_note = parse_capacity_value(
-            value_str, advanced_extraction=False
-        )
-
-        if is_valid and value > 0:
-            return True, value, "valid"
-        else:
-            # Determine specific rejection reason
-            if not is_valid:
-                if unit_or_note == "value_error":
-                    reason = RejectionReason.CAPACITY_NON_NUMERIC
-                elif unit_or_note == "unknown_unit":
-                    reason = RejectionReason.CAPACITY_UNSUPPORTED_UNIT
-                elif unit_or_note == "placeholder_value":
-                    reason = RejectionReason.CAPACITY_PLACEHOLDER
-                elif unit_or_note == "decimal_comma_format":
-                    reason = RejectionReason.CAPACITY_DECIMAL_FORMAT
-                elif unit_or_note == "regex_no_match":
-                    reason = RejectionReason.CAPACITY_REGEX_NO_MATCH
-                else:
-                    reason = RejectionReason.OTHER
-
-                self.rejection_tracker.add_rejection(
-                    element_id=f"{element['type']}/{element['id']}",
-                    element_type=ElementType(element["type"]),
-                    reason=reason,
-                    details=f"Failed to parse capacity '{value_str}' from tag '{tag}': {unit_or_note}",
-                    category=category,
-                )
-            elif value <= 0:
-                self.rejection_tracker.add_rejection(
-                    element_id=f"{element['type']}/{element['id']}",
-                    element_type=ElementType(element["type"]),
-                    reason=RejectionReason.CAPACITY_ZERO,
-                    details=f"Capacity value from tag '{tag}' is zero or negative: {value}",
-                    category=category,
-                )
-
-            return False, None, unit_or_note
-
     def basic_extraction(
         self, element: dict[str, Any], output_key: str
     ) -> tuple[bool, Optional[float], str]:
@@ -153,7 +64,7 @@ class CapacityExtractor:
                 element_id=f"{element['type']}/{element['id']}",
                 element_type=ElementType(element["type"]),
                 reason=RejectionReason.CAPACITY_DECIMAL_FORMAT,
-                details=f"Capacity value '{value_str.replace(',', '..', 1)}' uses comma as decimal separator (replaced with '..') as report is of csv format",
+                details=f"Capacity value '{value_str.replace(',', '..', 1)}' with comma as decimal (replaced with '..')",
                 category="basic_extraction",
             )
             return False, None, "decimal_comma_format"

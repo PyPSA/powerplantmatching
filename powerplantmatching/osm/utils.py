@@ -106,6 +106,7 @@ def parse_capacity_value(
     """
     # Normalize the input string - trim and convert to lowercase
     value_str = value.strip().lower()
+    original_value_str = value_str
 
     # Proceed with normal parsing
     if not advanced_extraction:
@@ -119,12 +120,17 @@ def parse_capacity_value(
             # Try with comma replacement
             value_str = value_str.replace(",", ".")
 
-        # Advanced extraction with multiple configurable regex patterns
-        match = None
-        for pattern in regex_patterns:
-            match = re.match(pattern, value_str)
-            if match:
-                break
+        try:
+            # Check if it is a number. We assume it is megawatts if no unit is provided
+            number = float(value_str)
+            return True, number, original_value_str
+        except ValueError:
+            # Advanced extraction with multiple configurable regex patterns
+            match = None
+            for pattern in regex_patterns:
+                match = re.match(pattern, value_str)
+                if match:
+                    break
 
     if match:
         number_str, unit = match.groups()
@@ -134,13 +140,13 @@ def parse_capacity_value(
             # Convert to MW based on unit
             unit_lower = unit.lower()
             if unit_lower in ["w", "wp", "watt", "watts"]:
-                return True, number * 0.000001, unit
+                return True, number * 0.000001, original_value_str
             elif unit_lower in ["kw", "kwp", "kilowatt", "kilowatts"]:
-                return True, number * 0.001, unit
+                return True, number * 0.001, original_value_str
             elif unit_lower in ["mw", "mwp", "megawatt", "megawatts"]:
-                return True, number, unit
+                return True, number, original_value_str
             elif unit_lower in ["gw", "gwp", "gigawatt", "gigawatts"]:
-                return True, number * 1000, unit
+                return True, number * 1000, original_value_str
             else:
                 return False, None, "unknown_unit"
         except ValueError:

@@ -21,13 +21,16 @@ if __name__ == "__main__":
     config = config_main["OSM"]
 
     # Initialize client and rejection tracker
-    cache_dir = "osm_cache"
     output_dir = "outputs"
+    cache_dir = os.path.join(output_dir, "osm_cache")
     os.makedirs(cache_dir, exist_ok=True)
-    os.makedirs(output_dir, exist_ok=True)
 
     # List of countries to process
-    countries = ["Ecuador"]  # "Uruguay", "Costa Rica", "Kenya", "Zambia"
+    countries = [
+        "Ecuador",
+        "Uruguay",
+        "Chile",
+    ]  # "Uruguay", "Costa Rica", "Kenya", "Zambia"
 
     for country_name in countries:
         with OverpassAPIClient(

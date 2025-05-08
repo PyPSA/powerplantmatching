@@ -62,17 +62,17 @@ class OSMElement:
 @dataclass
 class Unit:
     id: str
-    type: str
-    source: Optional[str] = None
+    country: Optional[str] = None
     lat: Optional[float] = None
     lon: Optional[float] = None
+    type: Optional[str] = None
+    source: Optional[str] = None
+    technology: Optional[str] = None
     capacity_mw: Optional[float] = None
-    capacity_source: Optional[str] = None
-    country: Optional[str] = None
     name: Optional[str] = None
     generator_count: Optional[int] = None
     case: Optional[str] = None
-    technology: Optional[str] = None
+    capacity_source: Optional[str] = None
 
     def to_dict(self) -> dict[str, Any]:
         return {k: v for k, v in asdict(self).items() if v is not None}

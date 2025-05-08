@@ -40,10 +40,9 @@ class ElementProcessor(ABC):
         self.client = client
         self.config = config or {}
         self.rejection_tracker = rejection_tracker or RejectionTracker()
-        self.geometry_handler = GeometryHandler(self.client)
         self.capacity_extractor = CapacityExtractor(self.config, self.rejection_tracker)
         self.estimation_manager = EstimationManager(
-            self.client, self.geometry_handler, self.config, self.rejection_tracker
+            self.client, self.config, self.rejection_tracker
         )
 
     def extract_name_from_tags(self, element: dict[str, Any]) -> Optional[str]:
@@ -64,6 +63,8 @@ class ElementProcessor(ABC):
         name = tags.get("name")
         if name:
             return name
+        if self.config.get("missing_name_allowed", False):
+            return "no name found"
 
         # TODO: Perform a research to find the name
 
@@ -123,18 +124,27 @@ class ElementProcessor(ABC):
                     if element_source in source_mapping[config_source]:
                         return config_source
 
-        self.rejection_tracker.add_rejection(
-            element_id=f"{element['type']}/{element['id']}",
-            element_type=ElementType(element["type"]),
-            reason=RejectionReason.MISSING_REQUIRED_FIELD,
-            details=store_element_source,
-            category="extract_source_from_tags",
-        )
+        if not store_element_source:
+            self.rejection_tracker.add_rejection(
+                element_id=f"{element['type']}/{element['id']}",
+                element_type=ElementType(element["type"]),
+                reason=RejectionReason.MISSING_REQUIRED_FIELD,
+                details="Missing source tag in element",
+                category="extract_source_from_tags",
+            )
+        else:
+            self.rejection_tracker.add_rejection(
+                element_id=f"{element['type']}/{element['id']}",
+                element_type=ElementType(element["type"]),
+                reason=RejectionReason.SOURCE_TYPE_MISSING,
+                details=f"""'{store_element_source}' not found in source_mapping""",
+                category="extract_source_from_tags",
+            )
 
         return None
 
     def extract_technology_from_tags(
-        self, element: dict[str, Any], unit_type: str
+        self, element: dict[str, Any], unit_type: str, source_type: str
     ) -> Optional[str]:
         """
         Extract technology information from OSM tags
@@ -146,6 +156,9 @@ class ElementProcessor(ABC):
 
         unit_type : str
             Type of unit ("plant" or "generator")
+
+        source_type : str
+            Type of power source
 
         Returns
         -------
@@ -161,14 +174,15 @@ class ElementProcessor(ABC):
             "generator": "generator_tags",
         }
         default_technology = {
-            "plant_tags": ["plant:method"],
-            "generator_tags": ["generator:method"],
+            "plant_tags": ["plant:method", "plant:type"],
+            "generator_tags": ["generator:method", "generator:type"],
         }
 
         technology_keys = self.config.get(unit_type_tags_keys[unit_type], {}).get(
             "technology_tags_keys", default_technology[unit_type_tags_keys[unit_type]]
         )
         technology_mapping = self.config.get("technology_mapping", {})
+        source_tech_mapping = self.config.get("source_technology_mapping", {})
 
         store_element_technology = ""
 
@@ -177,18 +191,26 @@ class ElementProcessor(ABC):
                 element_technology = tags[key].lower()
                 store_element_technology = element_technology
                 for config_technology in technology_mapping:
-                    if element_technology in technology_mapping[config_technology]:
-                        return config_technology
+                    if config_technology in source_tech_mapping[source_type]:
+                        if element_technology in technology_mapping[config_technology]:
+                            return config_technology
 
-        # TODO: Fallback to default technology if not found in mapping. For now, just return None
-
-        self.rejection_tracker.add_rejection(
-            element_id=f"{element['type']}/{element['id']}",
-            element_type=ElementType(element["type"]),
-            reason=RejectionReason.MISSING_REQUIRED_FIELD,
-            details=store_element_technology,
-            category="extract_technology_from_tags",
-        )
+        if not store_element_technology:
+            self.rejection_tracker.add_rejection(
+                element_id=f"{element['type']}/{element['id']}",
+                element_type=ElementType(element["type"]),
+                reason=RejectionReason.MISSING_REQUIRED_FIELD,
+                details="Missing technology tag in element",
+                category="extract_technology_from_tags",
+            )
+        else:
+            self.rejection_tracker.add_rejection(
+                element_id=f"{element['type']}/{element['id']}",
+                element_type=ElementType(element["type"]),
+                reason=RejectionReason.MISSING_REQUIRED_FIELD,
+                details=f'''"{store_element_technology}" not found in technology_mapping. Ensure updating source_technology_mapping with "{source_type}"''',
+                category="extract_technology_from_tags",
+            )
 
         return None
 
@@ -245,7 +267,7 @@ class ElementProcessor(ABC):
             element_id=f"{element['type']}/{element['id']}",
             element_type=ElementType(element["type"]),
             reason=RejectionReason.MISSING_REQUIRED_FIELD,
-            details=f"Current element tags :={';'.join(sorted(tags.keys()))}",
+            details=f"Current element tags :={'|'.join(sorted(tags.keys()))}",
             category="extract_output_key_from_tags",
         )
         return None
@@ -423,16 +445,13 @@ class PlantParser(ElementProcessor):
         ----------
         client : OverpassAPIClient
             Client for accessing OSM data
-        geometry_handler : GeometryHandler
-            Handler for geometry operations
-        capacity_extractor : CapacityExtractor
-            Extractor for capacity values
-        estimation_manager : EstimationManager
-            Manager for capacity estimation
         rejection_tracker : Optional[RejectionTracker]
             Tracker for rejected elements
+        config : Optional[dict[str, Any]]
+            Configuration for processing
         """
         super().__init__(client, rejection_tracker, config)
+        self.geometry_handler = GeometryHandler(client)
         self.plant_polygons: list[PlantPolygon] = []
 
     def process_element(
@@ -470,7 +489,7 @@ class PlantParser(ElementProcessor):
             return None
 
         # Extract technology
-        technology = self.extract_technology_from_tags(element, "plant")
+        technology = self.extract_technology_from_tags(element, "plant", source)
         if technology is None:
             return None
 
@@ -547,16 +566,11 @@ class GeneratorParser(ElementProcessor):
         ----------
         client : OverpassAPIClient
             Client for accessing OSM data
-        geometry_handler : GeometryHandler
-            Handler for geometry operations
-        capacity_extractor : CapacityExtractor
-            Extractor for capacity values
-        estimation_manager : EstimationManager
-            Manager for capacity estimation
         rejection_tracker : Optional[RejectionTracker]
             Tracker for rejected elements
         """
         super().__init__(client, rejection_tracker, config)
+        self.geometry_handler = GeometryHandler(client)
 
     def process_element(
         self,
@@ -599,7 +613,7 @@ class GeneratorParser(ElementProcessor):
             return None
 
         # Extract technology
-        technology = self.extract_technology_from_tags(element, "generator")
+        technology = self.extract_technology_from_tags(element, "generator", source)
         if technology is None:
             return None
 

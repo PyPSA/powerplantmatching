@@ -16,7 +16,6 @@ class CapacityEstimator:
     def __init__(
         self,
         client: OverpassAPIClient,
-        geometry_handler: GeometryHandler,
         config: dict[str, Any],
     ):
         """
@@ -26,13 +25,11 @@ class CapacityEstimator:
         ----------
         client : OverpassAPIClient
             Client for accessing OSM data
-        geometry_handler : GeometryHandler
-            Handler for geometry operations
         config : dict[str, Any]
             Configuration for estimation
         """
         self.client = client
-        self.geometry_handler = geometry_handler
+        self.geometry_handler = GeometryHandler(client)
         self.config = config
 
     def estimate_capacity(
@@ -86,9 +83,7 @@ class DefaultValueEstimator(CapacityEstimator):
         if source_config.get("method") != "default_value":
             return None, "unknown"
 
-        # Get default capacity (in kW, convert to MW)
-        default_capacity_kw = source_config.get("default_capacity", 0)
-        default_capacity_mw = default_capacity_kw / 1000
+        default_capacity_mw = source_config.get("default_capacity", 0)
 
         return default_capacity_mw, "estimated_default"
 
@@ -144,9 +139,6 @@ class AreaBasedEstimator(CapacityEstimator):
             if len(coords) >= 3:
                 area_m2 = self.geometry_handler.calculate_area(coords)
 
-        # For relations, we would need more complex handling
-        # This is simplified for now
-
         if area_m2:
             # Calculate capacity: area (m²) * efficiency (W/m²) / 1e6 = MW
             capacity_mw = (area_m2 * efficiency) / 1e6
@@ -155,73 +147,12 @@ class AreaBasedEstimator(CapacityEstimator):
         return None, "unknown"
 
 
-class UnitSizeEstimator(CapacityEstimator):
-    """Estimator that uses the size of units or generators"""
-
-    def estimate_capacity(
-        self, element: dict[str, Any], source_type: str
-    ) -> tuple[Optional[float], str]:
-        """
-        Estimate capacity based on number of units
-
-        Parameters
-        ----------
-        element : dict[str, Any]
-            OSM element data
-        source_type : str
-            Type of power source
-
-        Returns
-        -------
-        tuple[Optional[float], str]
-            (estimated_capacity_mw, capacity_source)
-        """
-        # Get source-specific config for estimation
-        source_config = get_source_config(
-            self.config, source_type, "capacity_estimation"
-        )
-
-        # Check if method is unit_size
-        if source_config.get("method") != "unit_size":
-            return None, "unknown"
-
-        # Check for unit count tags
-        tags = element.get("tags", {})
-        unit_count = None
-
-        # Try different tags for unit count
-        for tag in [
-            "generator:count",
-            "generator:units",
-            "turbine:count",
-            "solar:panel:count",
-        ]:
-            if tag in tags and tags[tag]:
-                try:
-                    unit_count = int(tags[tag])
-                    break
-                except ValueError:
-                    pass
-
-        if unit_count is None:
-            return None, "unknown"
-
-        # Get unit capacity (in kW, convert to MW)
-        unit_capacity_kw = source_config.get("unit_capacity", 0)
-
-        # Calculate total capacity
-        capacity_mw = (unit_count * unit_capacity_kw) / 1000
-
-        return capacity_mw, "estimated_units"
-
-
 class EstimationManager:
     """Manager for capacity estimation methods"""
 
     def __init__(
         self,
         client: OverpassAPIClient,
-        geometry_handler: GeometryHandler,
         config: dict[str, Any],
         rejection_tracker: Optional[RejectionTracker] = None,
     ):
@@ -232,27 +163,23 @@ class EstimationManager:
         ----------
         client : OverpassAPIClient
             Client for accessing OSM data
-        geometry_handler : GeometryHandler
-            Handler for geometry operations
         config : dict[str, Any]
             Configuration for estimation
         rejection_tracker : Optional[RejectionTracker]
             Tracker for rejected elements
         """
         self.client = client
-        self.geometry_handler = geometry_handler
         self.config = config
         self.rejection_tracker = rejection_tracker or RejectionTracker()
 
         # Create estimators
         self.estimators = [
-            DefaultValueEstimator(client, geometry_handler, config),
-            AreaBasedEstimator(client, geometry_handler, config),
-            UnitSizeEstimator(client, geometry_handler, config),
+            DefaultValueEstimator(client, config),
+            AreaBasedEstimator(client, config),
         ]
 
     def estimate_capacity(
-        self, element: dict[str, Any], source_type: Optional[str] = None
+        self, element: dict[str, Any], source_type: str
     ) -> tuple[Optional[float], str]:
         """
         Estimate capacity based on element properties and source type
@@ -269,17 +196,6 @@ class EstimationManager:
         tuple[Optional[float], str]
             (estimated_capacity_mw, capacity_source)
         """
-        # Need source type for estimation
-        if not source_type:
-            self.rejection_tracker.add_rejection(
-                element_id=f"{element['type']}/{element['id']}",
-                element_type=ElementType(element["type"]),
-                reason=RejectionReason.SOURCE_TYPE_MISSING,
-                details="Source type missing for capacity estimation",
-                category="capacity_estimation",
-            )
-            return None, "unknown"
-
         # Get source-specific config
         source_config = get_source_config(
             self.config, source_type, "capacity_estimation"
@@ -288,21 +204,11 @@ class EstimationManager:
 
         if estimation_method == "default_value":
             # Default value estimation
-            estimator = DefaultValueEstimator(
-                self.client, self.geometry_handler, self.config
-            )
+            estimator = DefaultValueEstimator(self.client, self.config)
             return estimator.estimate_capacity(element, source_type)
         elif estimation_method == "area_based":
             # Area-based estimation
-            estimator = AreaBasedEstimator(
-                self.client, self.geometry_handler, self.config
-            )
-            return estimator.estimate_capacity(element, source_type)
-        elif estimation_method == "unit_size":
-            # Unit size estimation
-            estimator = UnitSizeEstimator(
-                self.client, self.geometry_handler, self.config
-            )
+            estimator = AreaBasedEstimator(self.client, self.config)
             return estimator.estimate_capacity(element, source_type)
         else:
             self.rejection_tracker.add_rejection(
