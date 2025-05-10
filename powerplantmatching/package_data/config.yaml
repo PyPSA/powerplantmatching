@@ -237,6 +237,9 @@ OSM:
       - plant:method
     output_tags_keys:
       - plant:output:electricity
+    name_tags_keys:
+      - name:en
+      - name
   generator_tags:
     source_tags_keys:
       - generator:source
@@ -244,6 +247,9 @@ OSM:
       - generator:method
     output_tags_keys:
       - generator:output:electricity
+    name_tags_keys:
+      - name:en
+      - name
   source_mapping:
     Nuclear: [nuclear]
     Solid Biomass: [biomass]
@@ -315,11 +321,6 @@ OSM:
       capacity_extraction:
         additional_tags:
           - hydro:output
-  rejection_handling:
-    log_rejections: true
-    save_rejections: true
-    format: "csv"
-    rejections_file: "{country}_rejections.csv"
   overpass_api:
     url: https://overpass-api.de/api/interpreter  # Default Overpass API endpoint https://overpass.private.coffee/api/interpreter   https://overpass-api.de/api/interpreter
     timeout: 300

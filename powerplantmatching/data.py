@@ -19,10 +19,12 @@ from .cleaning import (
     gather_set_info,
     gather_specifications,
 )
-from .core import _package_data, get_config
+from .core import _data_in, _package_data, get_config
 from .heuristics import scale_to_net_capacities
-
-# from .osm import PowerPlantExtractor
+from .osm import (
+    clean_and_format_data,
+    process_countries,
+)
 from .utils import (
     config_filter,
     convert_to_short_name,
@@ -2251,109 +2253,35 @@ def OSM(raw=False, update=False, config=None):
         Power plant data from OpenStreetMap formatted according to
         powerplantmatching standards
     """
-    from .core import _data_in
+    config = get_config() if config is None else config
 
-    if config is None:
-        config = get_config()
-    else:
-        config = get_config(**config)
-
-    fn = _data_in(config.get("OSM", {}).get("fn", "osm_data.csv"))
-
+    # Get countries list and target columns
     countries = config["target_countries"]
+    if isinstance(countries, str):
+        countries = [countries]
+    target_columns = config["target_columns"]
 
-    update_needed = update
+    # Set up paths
+    fn = _data_in(config.get("OSM", {}).get("fn", "osm_data.csv"))
+    cache_dir = os.path.join(os.path.dirname(fn), "osm_cache")
 
-    if not update_needed and os.path.exists(fn):
-        df = pd.read_csv(fn)
-        update_needed = not set(countries).issubset(df["country"].unique())
+    # Process all countries and get combined data
+    all_valid_data = process_countries(countries, fn, cache_dir, update, config)
 
-    if update_needed or not os.path.exists(fn):
-        extractor = None  # PowerPlantExtractor(custom_config=config)
-        df = extractor.extract_plants(countries, force_refresh=update)
-        if os.path.exists(fn):
-            full_df = pd.read_csv(fn)
-            df = pd.concat(
-                [df, full_df[~full_df["country"].isin(countries)]], ignore_index=True
-            )
-        df.to_csv(fn, index=False)
-    else:
-        full_df = pd.read_csv(fn)
-        df = full_df[full_df["country"].isin(countries)]
+    # Handle empty dataset case
+    if all_valid_data.empty:
+        logger.warning("No OSM power plant data found for the specified countries")
+        if raw:
+            return pd.DataFrame()
+        return pd.DataFrame(columns=target_columns).pipe(set_column_name, "OSM")
 
+    # Return raw data if requested
     if raw:
-        return df
+        return all_valid_data
 
-    # Map OSM generator:source/plant:source to powerplantmatching fueltypes
-    fueltype_map = {
-        "nuclear": "Nuclear",
-        "coal": "Hard Coal",
-        "lignite": "Lignite",
-        "gas": "Natural Gas",
-        "oil": "Oil",
-        "biomass": "Solid Biomass",
-        "wood": "Solid Biomass",
-        "hydro": "Hydro",
-        "wind": "Wind",
-        "solar": "Solar",
-        "geothermal": "Geothermal",
-        "waste": "Waste",
-        "biogas": "Biogas",
-        "diesel": "Oil",
-        "coal;gas": "Hard Coal",
-        "gas;coal": "Natural Gas",
-        "gas;diesel": "Natural Gas",
-        "diesel;gas": "Oil",
-    }
-
-    # Map OSM method/technology to powerplantmatching technologies
-    technology_map = {
-        "wind_turbine": "Onshore",
-        "water-storage": "Reservoir",
-        "run-of-river": "Run-Of-River",
-        "water-pumped-storage": "Pumped Storage",
-        "combustion": "Steam Turbine",
-        "combined_cycle": "CCGT",
-        "steam_turbine": "Steam Turbine",
-        "gas_turbine": "OCGT",
-        "photovoltaic": "PV",
-        "concentrated_solar": "CSP",
-        "run-of-the-river": "Run-Of-River",
-        "thermal;photovoltaic": "PV",
-        "photovoltaic;wind_turbine": "PV",
-        "francis_turbine": "Reservoir",
-        "pelton_turbine": "Reservoir",
-    }
-
-    df = df.copy()
-    df["Fueltype"] = df["source"].map(fueltype_map)
-    df["Technology"] = df["technology"].map(technology_map)
-
-    # Rename columns to match powerplantmatching standards
-    df = df.rename(
-        columns={
-            "id": "projectID",
-            "name": "Name",
-            "capacity_mw": "Capacity",
-            "country": "Country",
-            "lat": "lat",
-            "lon": "lon",
-        }
-    )
-
-    # Select only the columns we need
-    columns = config["target_columns"]
-    # there are some target columns that are not present in the df. Add all missing columns with nan
-    for col in columns:
-        if col not in df.columns:
-            df[col] = np.nan
-
-    df = df[columns]
-
-    # filter name not nan and capacity not nan
-    df = df[~df["Name"].isna() & ~df["Capacity"].isna()]
-
-    return df.pipe(set_column_name, "OSM").pipe(config_filter, config)
+    # Apply standard powerplantmatching formatting
+    cleaned_data = clean_and_format_data(all_valid_data, target_columns)
+    return cleaned_data.pipe(set_column_name, "OSM")
 
 
 # deprecated alias for GGPT

@@ -3,31 +3,16 @@ import math
 from dataclasses import dataclass
 from typing import Any, Optional, Union
 
+from shapely.errors import ShapelyError
+from shapely.geometry import MultiPolygon, Point, Polygon
+from shapely.ops import unary_union
+
 from .client import OverpassAPIClient
 from .models import ElementType, PlantPolygon, RejectionReason
 from .rejection import RejectionTracker
 from .utils import get_element_coordinates
 
 logger = logging.getLogger(__name__)
-
-try:
-    from shapely.errors import ShapelyError
-    from shapely.geometry import MultiPolygon, Point, Polygon
-    from shapely.ops import unary_union
-
-    SHAPELY_AVAILABLE = True
-except ImportError:
-    logger.warning("Shapely not installed, geometry functionality will be limited")
-    SHAPELY_AVAILABLE = False
-
-    class Point:
-        pass
-
-    class Polygon:
-        pass
-
-    class MultiPolygon:
-        pass
 
 
 @dataclass
@@ -66,10 +51,6 @@ class GeometryHandler:
         Optional[PlantPolygon]
             Polygon if successful, None otherwise
         """
-        if not SHAPELY_AVAILABLE:
-            logger.warning("Shapely not available, cannot create polygon from way")
-            return None
-
         # Check if way has nodes
         if "nodes" not in way:
             logger.debug(f"Way {way['id']} does not have nodes")
@@ -117,10 +98,6 @@ class GeometryHandler:
         Optional[PlantPolygon]
             Polygon if successful, None otherwise
         """
-        if not SHAPELY_AVAILABLE:
-            logger.warning("Shapely not available, cannot create polygon from relation")
-            return None
-
         # Check if relation has members
         if "members" not in relation:
             logger.debug(f"Relation {relation['id']} does not have members")
@@ -225,8 +202,6 @@ class GeometryHandler:
         element_type = element["type"]
 
         if element_type == "node":
-            if not SHAPELY_AVAILABLE:
-                return Coordinate(element["lat"], element["lon"])
             return Point(element["lon"], element["lat"])  # GIS standard is (lon, lat)
         elif element_type == "way":
             return self.create_way_polygon(element)
@@ -252,12 +227,6 @@ class GeometryHandler:
         tuple[Optional[float], Optional[float]]
             (lat, lon) coordinates of centroid
         """
-        if not SHAPELY_AVAILABLE:
-            if isinstance(geometry, Coordinate):
-                return geometry.lat, geometry.lon
-            logger.warning("Shapely not available, cannot calculate centroid")
-            return None, None
-
         # Handle PlantPolygon case
         if isinstance(geometry, PlantPolygon):
             geometry = geometry.geometry
@@ -457,10 +426,6 @@ class GeometryHandler:
         bool
             True if point is in polygon, False otherwise
         """
-        if not SHAPELY_AVAILABLE:
-            logger.warning("Shapely not available, cannot check if point is in polygon")
-            return False
-
         # Create point with (lon, lat) as shapely uses (x, y)
         point_obj = Point(point[1], point[0])
 
@@ -476,7 +441,7 @@ def process_element_coordinates(
     element: dict[str, Any],
     geometry_handler: GeometryHandler,
     rejection_tracker: Optional[RejectionTracker] = None,
-    category: str = "geometry",
+    unit_type: str = "plant",
 ) -> tuple[Optional[float], Optional[float]]:
     """
     Process an element to extract its coordinates using various fallback methods
@@ -504,6 +469,7 @@ def process_element_coordinates(
     lat, lon = None, None
     if geometry:
         lat, lon = geometry_handler.get_geometry_centroid(geometry)
+        return lat, lon
 
     # For relations with no coordinates, try special processing
     if element["type"] == "relation" and (lat is None or lon is None):
@@ -514,19 +480,21 @@ def process_element_coordinates(
             logger.info(
                 f"Found coordinates for relation {element['id']} from members: {lat}, {lon}"
             )
+        return lat, lon
 
     # Fall back to direct coordinates if geometry failed
     if lat is None or lon is None:
         lat, lon = get_element_coordinates(element)
+        return lat, lon
 
     # Track rejection if coordinates not found
     if rejection_tracker and (lat is None or lon is None):
         rejection_tracker.add_rejection(
-            element_id=f"{element['type']}/{element['id']}",
+            element_id=element["id"],
             element_type=ElementType(element["type"]),
             reason=RejectionReason.COORDINATES_NOT_FOUND,
             details="Could not determine coordinates for element",
-            category=category,
+            category=f"{'PlantParser' if unit_type == 'plant' else 'GeneratorParser'}.process_element_coordinates",
         )
 
-    return lat, lon
+    return None, None

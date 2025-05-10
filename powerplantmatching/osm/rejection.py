@@ -1,4 +1,5 @@
 import logging
+from collections.abc import Iterator
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
@@ -10,6 +11,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class RejectedElement:
+    id: str
     element_id: str
     element_type: ElementType
     reason: RejectionReason
@@ -26,8 +28,9 @@ class RejectionTracker:
 
     def __init__(self):
         """Initialize the rejection tracker"""
-        self.rejected_elements: list[RejectedElement] = []
-        self.categories: dict[str, list[RejectedElement]] = {}
+        self.rejected_elements: dict[str, list[RejectedElement]] = {}
+        self.ids: set[str] = set()
+        self.categories: set[str] = set()
 
     def add_rejection(
         self,
@@ -53,7 +56,9 @@ class RejectionTracker:
         category : str
             Category for grouping rejections (e.g., 'plant', 'generator')
         """
+        identification = f"{element_type.value}/{element_id}"
         rejected = RejectedElement(
+            id=identification,
             element_id=element_id,
             element_type=element_type,
             reason=reason,
@@ -61,17 +66,55 @@ class RejectionTracker:
         )
 
         # Add to main list
-        self.rejected_elements.append(rejected)
+        if identification not in self.rejected_elements:
+            self.rejected_elements[identification] = []
+        self.rejected_elements[identification].append(rejected)
 
-        # Add to category
-        if category not in self.categories:
-            self.categories[category] = []
-        self.categories[category].append(rejected)
+        # Add to id set
+        self.ids.add(rejected.id)
 
         # Log rejection
         logger.debug(
             f"Rejected element {element_id} ({category}): {reason.value} - {details or ''}"
         )
+
+    def get_rejection(self, id: str) -> list[RejectedElement] | None:
+        """
+        Get rejected elements by ID
+        Parameters
+        ----------
+        id : str
+            ID of the rejected element
+
+        Returns
+        -------
+        list[RejectedElement] | None
+            List of rejected elements with the given ID, or None if not found
+        """
+        return self.rejected_elements.get(id, None)
+
+    def delete_rejection(self, id: str) -> bool:
+        """
+        Delete a rejected element by ID
+
+        Parameters
+        ----------
+        id : str
+            ID of the rejected element
+        """
+        success = False
+        if id in self.rejected_elements:
+            del self.rejected_elements[id]
+            success = True
+            logger.debug(f"Deleted rejection with ID: {id}")
+        else:
+            logger.debug(f"Rejection with ID {id} not found for deletion.")
+
+        # Remove from ids
+        if id in self.ids:
+            self.ids.remove(id)
+
+        return success
 
     def get_all_rejections(self) -> list[RejectedElement]:
         """
@@ -84,7 +127,7 @@ class RejectionTracker:
         """
         return self.rejected_elements
 
-    def get_category_rejections(self, category: str) -> list[RejectedElement]:
+    def get_rejections_by_category(self, category: str) -> Iterator[RejectedElement]:
         """
         Get rejected elements for a specific category
 
@@ -95,10 +138,13 @@ class RejectionTracker:
 
         Returns
         -------
-        list[RejectedElement]
-            list of rejected elements in the category
+        Iterator[RejectedElement]
+            Iterator over rejected elements in the category
         """
-        return self.categories.get(category, [])
+        for rejections in self.rejected_elements.values():
+            for rejection in rejections:
+                if rejection.category == category:
+                    yield rejection
 
     def get_summary(self) -> dict[str, dict[str, int]]:
         """
@@ -110,14 +156,12 @@ class RejectionTracker:
             Summary of rejections by category and reason
         """
         summary = {}
-
-        # Add summary for each category
-        for category, rejections in self.categories.items():
-            category_summary = {}
-            for rejection in rejections:
-                reason = rejection.reason.value
-                category_summary[reason] = category_summary.get(reason, 0) + 1
-            summary[category] = category_summary
+        for category in self.categories:
+            summary[category] = {}
+            for rejection in self.get_rejections_by_category(category):
+                summary[category][rejection.reason.value] = (
+                    summary[category].get(rejection.reason.value, 0) + 1
+                )
 
         return summary
 
@@ -146,26 +190,10 @@ class RejectionTracker:
         int
             Number of rejections in the category
         """
-        return len(self.categories.get(category, []))
+        return len(self.get_rejections_by_category(category))
 
     def clear(self) -> None:
         """Clear all rejection data"""
-        self.rejected_elements = []
-        self.categories = {}
-
-    def clear_category(self, category: str) -> None:
-        """
-        Clear rejection data for a specific category
-
-        Parameters
-        ----------
-        category : str
-            Category to clear
-        """
-        if category in self.categories:
-            # Remove from main list
-            self.rejected_elements = [
-                r for r in self.rejected_elements if r not in self.categories[category]
-            ]
-            # Remove category
-            del self.categories[category]
+        self.rejected_elements = {}
+        self.categories = set()
+        self.ids = set()

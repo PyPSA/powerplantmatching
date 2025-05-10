@@ -1,7 +1,8 @@
 import json
 import logging
 import os
-from typing import Optional
+
+from .models import Unit
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +28,7 @@ class ElementCache:
         self.ways_cache: dict[str, dict] = {}
         self.nodes_cache: dict[str, dict] = {}
         self.relations_cache: dict[str, dict] = {}
+        self.units_cache: dict[str, list[Unit]] = {}
 
         # Cache file paths
         self.plants_cache_file = os.path.join(self.cache_dir, "plants_power.json")
@@ -36,6 +38,7 @@ class ElementCache:
         self.ways_cache_file = os.path.join(self.cache_dir, "ways_data.json")
         self.nodes_cache_file = os.path.join(self.cache_dir, "nodes_data.json")
         self.relations_cache_file = os.path.join(self.cache_dir, "relations_data.json")
+        self.units_cache_file = os.path.join(self.cache_dir, "processed_units.json")
 
         # Tracking modified state
         self.plants_modified = False
@@ -43,6 +46,7 @@ class ElementCache:
         self.ways_modified = False
         self.nodes_modified = False
         self.relations_modified = False
+        self.units_modified = False
 
     def load_all_caches(self) -> None:
         """Load all caches from disk"""
@@ -51,6 +55,7 @@ class ElementCache:
         self.ways_cache = self._load_cache(self.ways_cache_file)
         self.nodes_cache = self._load_cache(self.nodes_cache_file)
         self.relations_cache = self._load_cache(self.relations_cache_file)
+        self.units_cache = self._load_units_cache(self.units_cache_file)
 
     def save_all_caches(self, force: bool = False) -> None:
         """Save all caches to disk"""
@@ -81,6 +86,10 @@ class ElementCache:
             self._save_cache(self.relations_cache_file, self.relations_cache)
             self.relations_modified = False
 
+        if self.units_modified or force:
+            self._save_units_cache(self.units_cache_file, self.units_cache)
+            self.units_modified = False
+
         # Verify files exist (but only log at debug level)
         cache_files = {
             "plants": (self.plants_cache_file, self.plants_modified),
@@ -88,6 +97,7 @@ class ElementCache:
             "ways": (self.ways_cache_file, self.ways_modified),
             "nodes": (self.nodes_cache_file, self.nodes_modified),
             "relations": (self.relations_cache_file, self.relations_modified),
+            "units": (self.units_cache_file, self.units_modified),
         }
 
         for cache_name, (file_path, modified) in cache_files.items():
@@ -121,23 +131,23 @@ class ElementCache:
         except Exception as e:
             logger.error(f"Failed to save cache to {cache_path}: {str(e)}")
 
-    def get_node(self, node_id: int) -> Optional[dict]:
+    def get_node(self, node_id: int) -> dict | None:
         """Get a node from cache"""
         return self.nodes_cache.get(str(node_id))
 
-    def get_way(self, way_id: int) -> Optional[dict]:
+    def get_way(self, way_id: int) -> dict | None:
         """Get a way from cache"""
         return self.ways_cache.get(str(way_id))
 
-    def get_relation(self, relation_id: int) -> Optional[dict]:
+    def get_relation(self, relation_id: int) -> dict | None:
         """Get a relation from cache"""
         return self.relations_cache.get(str(relation_id))
 
-    def get_plants(self, country_code: str) -> Optional[dict]:
+    def get_plants(self, country_code: str) -> dict | None:
         """Get plants for a country from cache"""
         return self.plants_cache.get(country_code)
 
-    def get_generators(self, country_code: str) -> Optional[dict]:
+    def get_generators(self, country_code: str) -> dict | None:
         """Get generators for a country from cache"""
         return self.generators_cache.get(country_code)
 
@@ -195,3 +205,45 @@ class ElementCache:
                 modified = True
         if modified:
             self.relations_modified = True
+
+    def _load_units_cache(self, cache_path: str) -> dict[str, list[Unit]]:
+        """Load processed units from cache file."""
+        if os.path.exists(cache_path):
+            try:
+                with open(cache_path) as f:
+                    units_data = json.load(f)
+
+                # Convert dict back to Units
+                units_cache = {}
+                for country, units in units_data.items():
+                    units_cache[country] = [Unit(**unit_dict) for unit_dict in units]
+                return units_cache
+            except (json.JSONDecodeError, KeyError) as e:
+                logger.warning(f"Failed to load units cache {cache_path}: {str(e)}")
+                return {}
+        return {}
+
+    def _save_units_cache(self, cache_path: str, data: dict[str, list[Unit]]) -> None:
+        """Save processed units to cache file."""
+        try:
+            # Convert Units to dicts
+            units_data = {}
+            for country, units in data.items():
+                units_data[country] = [unit.to_dict() for unit in units]
+
+            # Make sure directory exists
+            os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+            with open(cache_path, "w") as f:
+                json.dump(units_data, f, indent=2)
+            logger.info(f"Successfully saved units cache to {cache_path}")
+        except Exception as e:
+            logger.error(f"Failed to save units cache to {cache_path}: {str(e)}")
+
+    def get_units(self, country_code: str) -> list[Unit]:
+        """Get processed units for a country from cache."""
+        return self.units_cache.get(country_code, [])
+
+    def store_units(self, country_code: str, units: list[Unit]) -> None:
+        """Store processed units for a country in cache."""
+        self.units_cache[country_code] = units
+        self.units_modified = True

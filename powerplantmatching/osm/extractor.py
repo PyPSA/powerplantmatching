@@ -50,22 +50,22 @@ class CapacityExtractor:
         # Check for placeholder values (yes, true)
         if value_str.lower() in ["yes", "true"]:
             self.rejection_tracker.add_rejection(
-                element_id=f"{element['type']}/{element['id']}",
+                element_id=element["id"],
                 element_type=ElementType(element["type"]),
                 reason=RejectionReason.CAPACITY_PLACEHOLDER,
-                details=f"Tag '{output_key}' contains placeholder value '{value_str}'",
-                category="basic_extraction",
+                details=f"Placeholder: '{value_str}'",
+                category="CapacityExtractor:basic_extraction",
             )
             return False, None, "placeholder_value"
 
         # Check for comma as decimal separator
         if "," in value_str and not "." in value_str:
             self.rejection_tracker.add_rejection(
-                element_id=f"{element['type']}/{element['id']}",
+                element_id=element["id"],
                 element_type=ElementType(element["type"]),
                 reason=RejectionReason.CAPACITY_DECIMAL_FORMAT,
-                details=f"Capacity value '{value_str.replace(',', '..', 1)}' with comma as decimal (replaced with '..')",
-                category="basic_extraction",
+                details=f"Value: '{value_str.replace(',', ';', 1)}'",
+                category="CapacityExtractor:basic_extraction",
             )
             return False, None, "decimal_comma_format"
 
@@ -110,11 +110,11 @@ class CapacityExtractor:
             value = None
             identifier = "regex_error"
             self.rejection_tracker.add_rejection(
-                element_id=f"{element['type']}/{element['id']}",
+                element_id=element["id"],
                 element_type=ElementType(element["type"]),
                 reason=RejectionReason.CAPACITY_REGEX_ERROR,
-                details=f"Error parsing capacity value '{value_str}' with regex: {e}",
-                category="advanced_extraction",
+                details=f"Value: '{value_str}' with regex: {e}",
+                category="CapacityExtractor:advanced_extraction",
             )
             return False, None, identifier
 
@@ -166,19 +166,19 @@ class CapacityExtractor:
                     reason = RejectionReason.OTHER
 
                 self.rejection_tracker.add_rejection(
-                    element_id=f"{element['type']}/{element['id']}",
+                    element_id=element["id"],
                     element_type=ElementType(element["type"]),
                     reason=reason,
-                    details=f"Failed to parse capacity '{element['tags'][output_key]}' from tag '{output_key}': {identifier}",
-                    category=function_name,
+                    details=f"Failed: '{output_key}':'{element['tags'][output_key]}'",
+                    category=f"CapacityExtractor:{function_name}",
                 )
             elif value <= 0:
                 self.rejection_tracker.add_rejection(
-                    element_id=f"{element['type']}/{element['id']}",
+                    element_id=element["id"],
                     element_type=ElementType(element["type"]),
                     reason=RejectionReason.CAPACITY_ZERO,
                     details=f"Capacity value from tag '{output_key}' is zero or negative: {value}",
-                    category=function_name,
+                    category=f"CapacityExtractor:{function_name}",
                 )
 
             return False, None, identifier

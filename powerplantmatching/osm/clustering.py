@@ -373,13 +373,7 @@ class ClusteringManager:
             list of plant objects representing clusters
         """
         # Get centroids and capacities
-        success, algorithm = self.create_algorithm(source_type)
-        if not success:
-            logger.warning(
-                f"Failed to create clustering algorithm for source type '{source_type}'"
-            )
-            return []
-        # Get centroids and capacities
+        _, algorithm = self.create_algorithm(source_type)
         centroids = algorithm.get_cluster_centroids(clusters)
         capacities = algorithm.get_cluster_capacity(clusters)
 
@@ -405,18 +399,19 @@ class ClusteringManager:
 
                 # Create cluster plant
                 cluster_plant = Unit(
-                    id=f"OSM_cluster_{source_type}_{cluster_id}",
+                    projectID=f"OSM_cluster:{source_type}/{cluster_id}",
                     type="generator:cluster",
-                    source=source_type,
+                    Fueltype=source_type,
                     lat=centroid[0],
                     lon=centroid[1],
-                    capacity_mw=capacity,
+                    Capacity=capacity,
                     capacity_source="aggregated",
-                    country=template.country,
-                    name=f"Cluster of {len(plants)} {source_type} generators",
+                    Country=template.Country,
+                    Name=f"Cluster of {len(plants)} {source_type} generators",
                     generator_count=len(plants),
-                    case="cluster",
-                    technology=template.technology,
+                    Set="PP",
+                    Technology=template.Technology,
+                    id=f"cluster:{source_type}/{cluster_id}",
                 )
 
                 cluster_plants.append(cluster_plant)

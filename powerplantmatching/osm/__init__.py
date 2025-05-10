@@ -10,7 +10,7 @@ Requirements:
     pandas
     shapely
     scikit-learn
-
+    numpy
 """
 
 from .cache import ElementCache
@@ -19,9 +19,21 @@ from .clustering import ClusteringManager
 from .estimation import EstimationManager
 from .extractor import CapacityExtractor
 from .geometry import GeometryHandler
-from .models import PlantPolygon, Unit
-from .rejection import ElementType, RejectedElement, RejectionReason
-from .workflow import Workflow
+from .interface import (
+    VALID_FUELTYPES,
+    VALID_TECHNOLOGIES,
+    check_csv_cache,
+    check_units_cache,
+    clean_and_format_data,
+    process_countries,
+    process_from_api,
+    process_single_country,
+    update_csv_cache,
+    validate_and_standardize_df,
+)
+from .models import ElementType, PlantPolygon, RejectionReason, Unit
+from .rejection import RejectedElement, RejectionTracker
+from .workflow import GeneratorParser, PlantParser, Workflow
 
 __all__ = [
     "OverpassAPIClient",
@@ -31,12 +43,22 @@ __all__ = [
     "ElementType",
     "RejectionReason",
     "RejectedElement",
-    "Processor",
-    "PlantProcessor",
-    "GeneratorProcessor",
+    "RejectionTracker",
+    "PlantParser",
+    "GeneratorParser",
     "GeometryHandler",
     "ClusteringManager",
     "EstimationManager",
     "CapacityExtractor",
     "Workflow",
+    "process_countries",
+    "process_single_country",
+    "check_csv_cache",
+    "check_units_cache",
+    "process_from_api",
+    "update_csv_cache",
+    "validate_and_standardize_df",
+    "clean_and_format_data",
+    "VALID_FUELTYPES",
+    "VALID_TECHNOLOGIES",
 ]

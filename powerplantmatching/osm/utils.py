@@ -1,6 +1,8 @@
 import re
 from typing import Any, Optional
 
+import pycountry
+
 
 # Element processing utilities
 def get_element_coordinates(
@@ -153,3 +155,29 @@ def parse_capacity_value(
             return False, None, "value_error"
     else:
         return False, None, "regex_no_match"
+
+
+def get_country_code(country: str) -> str:
+    """
+    Get the ISO 3166-1 alpha-2 country code for a country
+
+    Parameters
+    ----------
+    country : str
+        Country name
+
+    Returns
+    -------
+    str
+        Two-letter country code
+
+    Raises
+    ------
+    ValueError
+        If the country name is invalid
+    """
+    try:
+        country_obj = pycountry.countries.lookup(country)
+        return country_obj.alpha_2
+    except LookupError:
+        raise ValueError(f"Invalid country name: {country}")

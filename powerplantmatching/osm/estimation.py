@@ -212,10 +212,10 @@ class EstimationManager:
             return estimator.estimate_capacity(element, source_type)
         else:
             self.rejection_tracker.add_rejection(
-                element_id=f"{element['type']}/{element['id']}",
+                element_id=element["id"],
                 element_type=ElementType(element["type"]),
-                reason=RejectionReason.ESTIMATION_FAILED,
-                details=f"Unknown estimation method: {estimation_method}",
-                category="capacity_estimation",
+                reason=RejectionReason.ESTIMATION_METHOD_UNKNOWN,
+                details=f"Method: {estimation_method}",
+                category="EstimationManager:estimate_capacity",
             )
             return None, "unknown"

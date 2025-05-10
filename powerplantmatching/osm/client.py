@@ -1,10 +1,10 @@
 import logging
 from typing import Optional
 
-import pycountry
 import requests
 
 from .cache import ElementCache
+from .utils import get_country_code
 
 logger = logging.getLogger(__name__)
 
@@ -54,31 +54,6 @@ class OverpassAPIClient:
                 except Exception as e:
                     logging.getLogger(__name__).error(f"Error saving caches: {e}")
 
-    def get_country_code(self, country: str) -> str:
-        """
-        Get the ISO 3166-1 alpha-2 country code for a country
-
-        Parameters
-        ----------
-        country : str
-            Country name
-
-        Returns
-        -------
-        str
-            Two-letter country code
-
-        Raises
-        ------
-        ValueError
-            If the country name is invalid
-        """
-        try:
-            country_obj = pycountry.countries.lookup(country)
-            return country_obj.alpha_2
-        except LookupError:
-            raise ValueError(f"Invalid country name: {country}")
-
     def query_overpass(self, query: str) -> dict:
         """
         Execute a query against the Overpass API
@@ -121,7 +96,7 @@ class OverpassAPIClient:
         dict
             Power plant data
         """
-        country_code = self.get_country_code(country)
+        country_code = get_country_code(country)
 
         # Check cache first
         if not force_refresh:
@@ -166,7 +141,7 @@ class OverpassAPIClient:
         dict
             Power generator data
         """
-        country_code = self.get_country_code(country)
+        country_code = get_country_code(country)
 
         # Check cache first
         if not force_refresh:

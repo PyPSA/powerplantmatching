@@ -1,43 +1,26 @@
 from dataclasses import asdict, dataclass
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 
 class RejectionReason(Enum):
-    # Required field and validation rejections
-    MISSING_REQUIRED_FIELD = "Missing required field"
     INVALID_ELEMENT_TYPE = "Invalid element type"
-
-    # Geometry-related rejections
-    INVALID_GEOMETRY = "Failed to create valid geometry"
     COORDINATES_NOT_FOUND = "Could not determine coordinates"
-
-    # Hierarchy and duplication rejections
-    IN_HIGHER_HIERARCHY = "Element is part of a higher hierarchy element"
-    INSIDE_PLANT_POLYGON = "Generator is inside a plant polygon"
-    DUPLICATE_NAME = "Duplicate name"
-
-    # Capacity extraction rejections - refined based on Ecuador data
-    CAPACITY_TAG_MISSING = "No capacity tags found"
-    CAPACITY_DECIMAL_FORMAT = "Capacity uses non-standard decimal format"
-    CAPACITY_NON_NUMERIC = "Capacity value is not a valid number"
-    CAPACITY_VALUE_NOT_NUMERIC = "Failed to parse capacity value"
-    CAPACITY_PLACEHOLDER = "Capacity tag contains placeholder value"
-    CAPACITY_UNSUPPORTED_UNIT = "Capacity unit is not supported"
-    CAPACITY_FORMAT_UNSUPPORTED = "No valid advanced capacity format found"
-    CAPACITY_REGEX_NO_MATCH = "Capacity regex did not match"
-    CAPACITY_ZERO = "Capacity is zero or negative"
-    CAPACITY_REGEX_ERROR = "Error in capacity regex parsing"
-
-    # Source-related rejections
-    SOURCE_TYPE_MISSING = "Source type missing or unknown"
-
-    # Estimation rejections
-    ESTIMATION_FAILED = "Capacity estimation failed"
-    CAPACITY_ESTIMATION_DISABLED = "Capacity estimation disabled"
-    ESTIMATION_MISSING_PARAMETERS = "Missing parameters for estimation"
-
-    # Other
+    MISSING_TECHNOLOGY_TAG = "Missing technology tag"
+    MISSING_TECHNOLOGY_TYPE = "Missing technology type"
+    MISSING_SOURSE_TAG = "Missing source tag"
+    MISSING_SOURCE_TYPE = "Missing source type"
+    CAPACITY_PLACEHOLDER = "Capacity placeholder value"
+    MISSING_OUTPUT_TAG = "Missing output tag"
+    MISSING_NAME_TAG = "Missing name tag"
+    CAPACITY_REGEX_NO_MATCH = "Capacity regex no match"
+    ESTIMATION_METHOD_UNKNOWN = "Unknown estimation method"
+    CAPACITY_DECIMAL_FORMAT = "Capacity decimal format"
+    CAPACITY_REGEX_ERROR = "Capacity regex error"
+    CAPACITY_NON_NUMERIC = "Capacity non-numeric"
+    CAPACITY_UNSUPPORTED_UNIT = "Unsupported capacity unit"
+    CAPACITY_ZERO = "Capacity zero"
+    ELEMENT_ALREADY_PROCESSED = "Element already processed"
     OTHER = "Other reason"
 
 
@@ -48,34 +31,62 @@ class ElementType(Enum):
 
 
 @dataclass
-class OSMElement:
-    id: str
-    type: ElementType
-    tags: dict[str, str]
-    lat: Optional[float] = None
-    lon: Optional[float] = None
-
-    def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
-
-
-@dataclass
 class Unit:
-    id: str
-    country: Optional[str] = None
-    lat: Optional[float] = None
-    lon: Optional[float] = None
-    type: Optional[str] = None
-    source: Optional[str] = None
-    technology: Optional[str] = None
-    capacity_mw: Optional[float] = None
-    name: Optional[str] = None
-    generator_count: Optional[int] = None
-    case: Optional[str] = None
-    capacity_source: Optional[str] = None
+    # Using PowerPlantMatching column names directly
+    projectID: str
+    Country: str | None = None
+    lat: float | None = None
+    lon: float | None = None
+    type: str | None = None
+    Fueltype: str | None = None
+    Technology: str | None = None
+    Capacity: float | None = None
+    Name: str | None = None
+    generator_count: int | None = None
+    Set: str | None = None
+    capacity_source: str | None = None
+    id: str | None = None
+
+    # Metadata fields for caching
+    created_at: str | None = None
+    config_hash: str | None = None
+    config_version: str | None = None
+    processing_parameters: dict | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {k: v for k, v in asdict(self).items() if v is not None}
+
+    def is_valid_for_config(self, current_config: dict) -> bool:
+        """Check if this unit is valid for the current configuration."""
+        if not self.config_hash:
+            return False
+
+        # Generate hash of relevant parts of current config
+        current_hash = self._generate_config_hash(current_config)
+        return current_hash == self.config_hash
+
+    @staticmethod
+    def _generate_config_hash(config: dict) -> str:
+        """Generate a hash from configuration parameters that affect processing."""
+        import hashlib
+        import json
+
+        # Extract the config keys that affect processing
+        relevant_keys = [
+            "capacity_extraction",
+            "capacity_estimation",
+            "units_clustering",
+            "source_mapping",
+            "technology_mapping",
+            "source_technology_mapping",
+        ]
+
+        # Create a subset of the config with only the relevant keys
+        relevant_config = {k: config.get(k) for k in relevant_keys if k in config}
+
+        # Generate a hash
+        config_str = json.dumps(relevant_config, sort_keys=True)
+        return hashlib.md5(config_str.encode()).hexdigest()
 
 
 @dataclass

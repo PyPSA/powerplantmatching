@@ -2,9 +2,10 @@
 Integrated processor combining geometry, clustering, and estimation
 """
 
+import datetime
 import logging
 from abc import ABC, abstractmethod
-from typing import Any, Optional
+from typing import Any
 
 from .client import OverpassAPIClient
 from .clustering import ClusteringManager
@@ -13,7 +14,7 @@ from .extractor import CapacityExtractor
 from .geometry import GeometryHandler, process_element_coordinates
 from .models import ElementType, PlantPolygon, Unit
 from .rejection import RejectionReason, RejectionTracker
-from .utils import is_valid_unit
+from .utils import get_country_code, is_valid_unit
 
 logger = logging.getLogger(__name__)
 
@@ -24,8 +25,8 @@ class ElementProcessor(ABC):
     def __init__(
         self,
         client: OverpassAPIClient,
-        rejection_tracker: Optional[RejectionTracker] = None,
-        config: Optional[dict[str, Any]] = None,
+        rejection_tracker: RejectionTracker | None = None,
+        config: dict[str, Any] | None = None,
     ):
         """
         Initialize the element processor
@@ -34,7 +35,7 @@ class ElementProcessor(ABC):
         ----------
         client : OverpassAPIClient
             Client for accessing OSM data
-        rejection_tracker : Optional[RejectionTracker]
+        rejection_tracker : RejectionTracker | None
             Tracker for rejected elements
         """
         self.client = client
@@ -45,7 +46,9 @@ class ElementProcessor(ABC):
             self.client, self.config, self.rejection_tracker
         )
 
-    def extract_name_from_tags(self, element: dict[str, Any]) -> Optional[str]:
+    def extract_name_from_tags(
+        self, element: dict[str, Any], unit_type: str
+    ) -> str | None:
         """
         Extract name from OSM tags
 
@@ -56,32 +59,55 @@ class ElementProcessor(ABC):
 
         Returns
         -------
-        Optional[str]
+        str | None
             Name if found, None otherwise
         """
+        assert unit_type in ["plant", "generator"], "Invalid unit type"
+
         tags = element.get("tags", {})
-        name = tags.get("name")
-        if name:
-            return name
-        if self.config.get("missing_name_allowed", False):
-            return "no name found"
+
+        unit_type_tags_keys = {
+            "plant": "plant_tags",
+            "generator": "generator_tags",
+        }
+
+        default_name = {
+            "plant_tags": ["name:en", "name"],
+            "generator_tags": ["name:en", "name"],
+        }
+
+        name_keys = self.config.get(unit_type_tags_keys[unit_type], {}).get(
+            "name_tags_keys", default_name[unit_type_tags_keys[unit_type]]
+        )
+
+        # Check if name is in tags
+        name = None
+        for key in name_keys:
+            if key in tags:
+                name = tags[key]
+                if name:
+                    return name
+
+        missing_name_allowed = self.config.get("missing_name_allowed", False)
+        if missing_name_allowed:
+            return ""
 
         # TODO: Perform a research to find the name
 
         if not name:
             self.rejection_tracker.add_rejection(
-                element_id=f"{element['type']}/{element['id']}",
+                element_id=element["id"],
                 element_type=ElementType(element["type"]),
-                reason=RejectionReason.MISSING_REQUIRED_FIELD,
-                details="Missing name tag",
-                category="extract_name_from_tags",
+                reason=RejectionReason.MISSING_NAME_TAG,
+                details=f"Tags: {tags}",
+                category=f"{'PlantParser' if unit_type == 'plant' else 'GeneratorParser'}:extract_name_from_tags",
             )
 
         return None
 
     def extract_source_from_tags(
         self, element: dict[str, Any], unit_type: str
-    ) -> Optional[str]:
+    ) -> str | None:
         """
         Extract power source from OSM tags
 
@@ -92,7 +118,7 @@ class ElementProcessor(ABC):
 
         Returns
         -------
-        Optional[str]
+        str | None
             Power source if found, None otherwise
         """
         assert unit_type in ["plant", "generator"], "Invalid unit type"
@@ -126,26 +152,26 @@ class ElementProcessor(ABC):
 
         if not store_element_source:
             self.rejection_tracker.add_rejection(
-                element_id=f"{element['type']}/{element['id']}",
+                element_id=element["id"],
                 element_type=ElementType(element["type"]),
-                reason=RejectionReason.MISSING_REQUIRED_FIELD,
+                reason=RejectionReason.MISSING_SOURSE_TAG,
                 details="Missing source tag in element",
-                category="extract_source_from_tags",
+                category=f"{'PlantParser' if unit_type == 'plant' else 'GeneratorParser'}:extract_source_from_tags",
             )
         else:
             self.rejection_tracker.add_rejection(
-                element_id=f"{element['type']}/{element['id']}",
+                element_id=element["id"],
                 element_type=ElementType(element["type"]),
-                reason=RejectionReason.SOURCE_TYPE_MISSING,
+                reason=RejectionReason.MISSING_SOURCE_TYPE,
                 details=f"""'{store_element_source}' not found in source_mapping""",
-                category="extract_source_from_tags",
+                category=f"{'PlantParser' if unit_type == 'plant' else 'GeneratorParser'}:extract_source_from_tags",
             )
 
         return None
 
     def extract_technology_from_tags(
         self, element: dict[str, Any], unit_type: str, source_type: str
-    ) -> Optional[str]:
+    ) -> str | None:
         """
         Extract technology information from OSM tags
 
@@ -162,7 +188,7 @@ class ElementProcessor(ABC):
 
         Returns
         -------
-        Optional[str]
+        str | None
             Technology if found, None otherwise
         """
         assert unit_type in ["plant", "generator"], "Invalid unit type"
@@ -197,26 +223,26 @@ class ElementProcessor(ABC):
 
         if not store_element_technology:
             self.rejection_tracker.add_rejection(
-                element_id=f"{element['type']}/{element['id']}",
+                element_id=element["id"],
                 element_type=ElementType(element["type"]),
-                reason=RejectionReason.MISSING_REQUIRED_FIELD,
+                reason=RejectionReason.MISSING_TECHNOLOGY_TAG,
                 details="Missing technology tag in element",
-                category="extract_technology_from_tags",
+                category=f"{'PlantParser' if unit_type == 'plant' else 'GeneratorParser'}:extract_technology_from_tags",
             )
         else:
             self.rejection_tracker.add_rejection(
-                element_id=f"{element['type']}/{element['id']}",
+                element_id=element["id"],
                 element_type=ElementType(element["type"]),
-                reason=RejectionReason.MISSING_REQUIRED_FIELD,
+                reason=RejectionReason.MISSING_TECHNOLOGY_TYPE,
                 details=f'''"{store_element_technology}" not found in technology_mapping. Ensure updating source_technology_mapping with "{source_type}"''',
-                category="extract_technology_from_tags",
+                category=f"{'PlantParser' if unit_type == 'plant' else 'GeneratorParser'}:extract_technology_from_tags",
             )
 
         return None
 
     def extract_output_key_from_tags(
-        self, element: dict[str, Any], unit_type: str, source_type: Optional[str] = None
-    ) -> Optional[str]:
+        self, element: dict[str, Any], unit_type: str, source_type: str | None = None
+    ) -> str | None:
         """
         Extract output electricity information from OSM tags
 
@@ -230,7 +256,7 @@ class ElementProcessor(ABC):
 
         Returns
         -------
-        Optional[str]
+        str | None
             Output if found, None otherwise
         """
         assert unit_type in ["plant", "generator"], "Invalid unit type"
@@ -264,18 +290,18 @@ class ElementProcessor(ABC):
                 return key
 
         self.rejection_tracker.add_rejection(
-            element_id=f"{element['type']}/{element['id']}",
+            element_id=element["id"],
             element_type=ElementType(element["type"]),
-            reason=RejectionReason.MISSING_REQUIRED_FIELD,
-            details=f"Current element tags :={'|'.join(sorted(tags.keys()))}",
-            category="extract_output_key_from_tags",
+            reason=RejectionReason.MISSING_OUTPUT_TAG,
+            details=f"tags: {tags}",
+            category=f"{'PlantParser' if unit_type == 'plant' else 'GeneratorParser'}:extract_output_key_from_tags",
         )
         return None
 
     @abstractmethod
     def process_element(
-        self, element: dict[str, Any], country: Optional[str] = None
-    ) -> Optional[Unit]:
+        self, element: dict[str, Any], country: str | None = None
+    ) -> Unit | None:
         """
         Process a single OSM element into a Unit object
 
@@ -283,19 +309,19 @@ class ElementProcessor(ABC):
         ----------
         element : dict[str, Any]
             OSM element data
-        country : Optional[str]
+        country : str | None
             Country code
 
         Returns
         -------
-        Optional[Unit]
+        Unit | None
             Unit object if processing succeeded, None otherwise
         """
         pass
 
     def _process_capacity(
-        self, element: dict[str, Any], source_type: Optional[str], output_key: str
-    ) -> tuple[Optional[float], str]:
+        self, element: dict[str, Any], source_type: str | None, output_key: str
+    ) -> tuple[float | None, str]:
         """
         Process capacity using extraction and estimation
 
@@ -303,12 +329,12 @@ class ElementProcessor(ABC):
         ----------
         element : dict[str, Any]
             Element data
-        source_type : Optional[str]
+        source_type : str | None
             Source type
 
         Returns
         -------
-        tuple[Optional[float], str]
+        tuple[float | None, str]
             (capacity_mw, info)
         """
         # 1. Basic extraction (always attempted)
@@ -338,8 +364,8 @@ class ElementProcessor(ABC):
         return capacity, info
 
     def _get_relation_member_capacity(
-        self, relation: dict[str, Any], source_type: Optional[str]
-    ) -> tuple[Optional[float], str]:
+        self, relation: dict[str, Any], source_type: str | None
+    ) -> tuple[float | None, str]:
         """
         Get capacity from relation members
 
@@ -347,12 +373,12 @@ class ElementProcessor(ABC):
         ----------
         relation : dict[str, Any]
             Relation element data
-        source_type : Optional[str]
+        source_type : str | None
             Source type
 
         Returns
         -------
-        tuple[Optional[float], str]
+        tuple[float | None, str]
             (capacity_mw, capacity_source)
         """
         if "members" not in relation:
@@ -402,6 +428,21 @@ class ElementProcessor(ABC):
 
             if capacity is not None:
                 members_with_capacity.append((member_elem, capacity))
+            else:
+                # estimation if allowed
+                estimation_enabled = self.config.get("capacity_estimation", {}).get(
+                    "enabled", False
+                )
+                if estimation_enabled:
+                    capacity, _ = self.estimation_manager.estimate_capacity(
+                        member_elem, source_type
+                    )
+                    if capacity is not None:
+                        members_with_capacity.append((member_elem, capacity))
+                    else:
+                        continue
+                else:
+                    continue
 
         # If no members with capacity, return None
         if not members_with_capacity:
@@ -413,20 +454,7 @@ class ElementProcessor(ABC):
 
         # If multiple members with capacity, sum them
         total_capacity = sum(capacity for _, capacity in members_with_capacity)
-        return total_capacity, "aggregated_member_capacity"
-
-    def get_rejection_summary(self) -> dict[str, int]:
-        """
-        Get a summary of element rejections by reason
-
-        Returns
-        -------
-        dict[str, int]
-            Count of rejected elements by reason
-        """
-        # Get summary from the tracker
-        category_summary = self.rejection_tracker.get_summary().get("processor", {})
-        return category_summary
+        return total_capacity, "aggregated_capacity"
 
 
 class PlantParser(ElementProcessor):
@@ -435,8 +463,8 @@ class PlantParser(ElementProcessor):
     def __init__(
         self,
         client: OverpassAPIClient,
-        rejection_tracker: Optional[RejectionTracker] = None,
-        config: Optional[dict[str, Any]] = None,
+        rejection_tracker: RejectionTracker | None = None,
+        config: dict[str, Any] | None = None,
     ):
         """
         Initialize the integrated plant processor
@@ -445,9 +473,9 @@ class PlantParser(ElementProcessor):
         ----------
         client : OverpassAPIClient
             Client for accessing OSM data
-        rejection_tracker : Optional[RejectionTracker]
+        rejection_tracker : RejectionTracker | None
             Tracker for rejected elements
-        config : Optional[dict[str, Any]]
+        config : dict[str, Any] | None
             Configuration for processing
         """
         super().__init__(client, rejection_tracker, config)
@@ -455,8 +483,8 @@ class PlantParser(ElementProcessor):
         self.plant_polygons: list[PlantPolygon] = []
 
     def process_element(
-        self, element: dict[str, Any], country: Optional[str] = None
-    ) -> Optional[Unit]:
+        self, element: dict[str, Any], country: str | None = None
+    ) -> Unit | None:
         """
         Process a plant element using all integrated features
 
@@ -464,22 +492,22 @@ class PlantParser(ElementProcessor):
         ----------
         element : dict[str, Any]
             OSM element data
-        country : Optional[str]
+        country : str | None
             Country code
 
         Returns
         -------
-        Optional[Unit]
+        Unit | None
             Unit object if processing succeeded, None otherwise
         """
         # Check if element is a valid plant
         if not is_valid_unit(element, "plant"):
             self.rejection_tracker.add_rejection(
-                element_id=f"{element['type']}/{element['id']}",
+                element_id=element["id"],
                 element_type=ElementType(element["type"]),
                 reason=RejectionReason.INVALID_ELEMENT_TYPE,
                 details=f"Expected power=plant, got power={element.get('tags', {}).get('power')}",
-                category="plant",
+                category="PlantParser:process_element",
             )
             return None
 
@@ -494,7 +522,7 @@ class PlantParser(ElementProcessor):
             return None
 
         # Extract name
-        name = self.extract_name_from_tags(element)
+        name = self.extract_name_from_tags(element, "plant")
         if name is None:
             return None
 
@@ -512,7 +540,7 @@ class PlantParser(ElementProcessor):
 
         # Get coordinates with fallbacks
         lat, lon = process_element_coordinates(
-            element, self.geometry_handler, self.rejection_tracker, category="plant"
+            element, self.geometry_handler, self.rejection_tracker, unit_type="plant"
         )
         # Check if we have valid coordinates
         if lat is None or lon is None:
@@ -529,22 +557,19 @@ class PlantParser(ElementProcessor):
             else:
                 return None
 
-        # Create ID and name
-        element_id = f"OSM_plant:{element['type']}/{element['id']}"
-
-        # Create plant object
         unit = Unit(
-            id=element_id,
+            projectID=f"OSM_plant:{element['type']}/{element['id']}",
             type=f"plant:{element['type']}",
-            source=source,
+            Fueltype=source,
             lat=lat,
             lon=lon,
-            capacity_mw=capacity,
+            Capacity=capacity,
             capacity_source=info,
-            country=country,
-            name=name,
-            case="plant",
-            technology=technology,
+            Country=country,
+            Name=name,
+            Set="PP",
+            Technology=technology,
+            id=f"{element['type']}/{element['id']}",
         )
 
         return unit
@@ -556,8 +581,8 @@ class GeneratorParser(ElementProcessor):
     def __init__(
         self,
         client: OverpassAPIClient,
-        rejection_tracker: Optional[RejectionTracker] = None,
-        config: Optional[dict[str, Any]] = None,
+        rejection_tracker: RejectionTracker | None = None,
+        config: dict[str, Any] | None = None,
     ):
         """
         Initialize the integrated generator processor
@@ -566,7 +591,7 @@ class GeneratorParser(ElementProcessor):
         ----------
         client : OverpassAPIClient
             Client for accessing OSM data
-        rejection_tracker : Optional[RejectionTracker]
+        rejection_tracker : RejectionTracker | None
             Tracker for rejected elements
         """
         super().__init__(client, rejection_tracker, config)
@@ -575,9 +600,9 @@ class GeneratorParser(ElementProcessor):
     def process_element(
         self,
         element: dict[str, Any],
-        country: Optional[str] = None,
-        plant_polygons: Optional[list[PlantPolygon]] = None,
-    ) -> Optional[Unit]:
+        country: str | None = None,
+        plant_polygons: list[PlantPolygon] | None = None,
+    ) -> Unit | None:
         """
         Process a generator element using integrated features
 
@@ -585,25 +610,25 @@ class GeneratorParser(ElementProcessor):
         ----------
         element : dict[str, Any]
             OSM element data
-        country : Optional[str]
+        country : str | None
             Country code
-        plant_polygons : Optional[list[PlantPolygon]]
+        plant_polygons : list[PlantPolygon] | None
             list of plant polygons to check if generator is within any
 
         Returns
         -------
-        Optional[Unit]
+        Unit | None
             Unit object if processing succeeded, None otherwise
         """
         # Check if element is a valid generator
         if not is_valid_unit(element, "generator"):
             # Reject invalid elements (no tags or invalid power type)
             self.rejection_tracker.add_rejection(
-                element_id=f"{element['type']}/{element['id']}",
+                element_id=element["id"],
                 element_type=ElementType(element["type"]),
                 reason=RejectionReason.INVALID_ELEMENT_TYPE,
                 details=f"Expected power=generator, got power={element.get('tags', {}).get('power')}",
-                category="generator",
+                category="GeneratorParser:process_element",
             )
             return None
 
@@ -618,7 +643,7 @@ class GeneratorParser(ElementProcessor):
             return None
 
         # Extract name
-        name = self.extract_name_from_tags(element)
+        name = self.extract_name_from_tags(element, "generator")
         if name is None:
             return None
 
@@ -629,7 +654,10 @@ class GeneratorParser(ElementProcessor):
 
         # Get coordinates with fallbacks
         lat, lon = process_element_coordinates(
-            element, self.geometry_handler, self.rejection_tracker, category="generator"
+            element,
+            self.geometry_handler,
+            self.rejection_tracker,
+            unit_type="generator",
         )
         # Check if we have valid coordinates
         if lat is None or lon is None:
@@ -646,22 +674,19 @@ class GeneratorParser(ElementProcessor):
             else:
                 return None
 
-        # Create ID and name
-        element_id = f"OSM_generator:{element['type']}/{element['id']}"
-
-        # Create plant object (generators are treated as individual plants)
         unit = Unit(
-            id=element_id,
+            projectID=f"OSM_generator:{element['type']}/{element['id']}",
             type=f"generator:{element['type']}",
-            source=source,
+            Fueltype=source,
             lat=lat,
             lon=lon,
-            capacity_mw=capacity,
+            Capacity=capacity,
             capacity_source=info,
-            country=country,
-            name=name,
-            case="generator",
-            technology=technology,
+            Country=country,
+            Name=name,
+            Set="PP",
+            Technology=technology,
+            id=f"{element['type']}/{element['id']}",
         )
 
         return unit
@@ -675,8 +700,8 @@ class Workflow:
     def __init__(
         self,
         client: OverpassAPIClient,
-        config: Optional[dict[str, Any]] = None,
-        rejection_tracker: Optional[RejectionTracker] = None,
+        config: dict[str, Any] | None = None,
+        rejection_tracker: RejectionTracker | None = None,
     ):
         """
         Initialize the integrated processor
@@ -685,9 +710,9 @@ class Workflow:
         ----------
         client : OverpassAPIClient
             Client for accessing OSM data
-        config : Optional[dict[str, Any]]
+        config : dict[str, Any] | None
             Configuration for processing
-        rejection_tracker : Optional[RejectionTracker]
+        rejection_tracker : RejectionTracker | None
             Tracker for rejected elements
         """
         self.client = client
@@ -710,93 +735,76 @@ class Workflow:
             self.config,
         )
 
+        # Generate config hash for validation
+        self.config_hash = Unit._generate_config_hash(self.config)
+
         # Tracking processed elements
         self.processed_elements: set[str] = set()
 
-    def get_valid_units(self) -> list[Unit]:
+    def delete_rejections(self, units: list[Unit]) -> None:
         """
-        Get list of valid (non-rejected) units
-
-        Returns
-        -------
-        list[Unit]
-            List of units that were not rejected
+        Remove rejections from the rejection tracker of valid units
         """
-        # Get all processed plants and generators
-        all_units = []
+        deleted = 0
+        for unit in units:
+            success = self.rejection_tracker.delete_rejection(unit.id)
+            if success:
+                deleted += 1
 
-        # Add all plants and generators from both parsers
-        for plant in getattr(self, "processed_plants", []):
-            all_units.append(plant)
-        for generator in getattr(self, "processed_generators", []):
-            all_units.append(generator)
-
-        # Get all rejected element IDs (need to massage them to match Unit.id format)
-        rejected_ids = set()
-        for rejection in self.rejection_tracker.get_all_rejections():
-            # Most common format is "type/id"
-            raw_id = rejection.element_id
-            if "/" in raw_id:
-                elem_type, elem_id = raw_id.split("/", 1)
-                # Convert to Unit.id format
-                if elem_type == "node":
-                    rejected_ids.add(f"OSM_plant:node/{elem_id}")
-                    rejected_ids.add(f"OSM_generator:node/{elem_id}")
-                elif elem_type == "way":
-                    rejected_ids.add(f"OSM_plant:way/{elem_id}")
-                    rejected_ids.add(f"OSM_generator:way/{elem_id}")
-                elif elem_type == "relation":
-                    rejected_ids.add(f"OSM_plant:relation/{elem_id}")
-                    rejected_ids.add(f"OSM_generator:relation/{elem_id}")
-            else:
-                # Just add the raw ID in case format is different
-                rejected_ids.add(raw_id)
-
-        # Filter out rejected units
-        # valid_units = [unit for unit in all_units if unit.id not in rejected_ids]
-
-        return all_units
+        logger.info(f"Deleted {deleted} rejections")
 
     def process_country_data(
         self,
         country: str,
-        export_rejections: bool = True,
-        rejections_file: Optional[str] = None,
-    ) -> tuple[list[Unit], dict[str, dict[str, int]]]:
+        force_process: bool = False,
+    ) -> tuple[list[Unit], RejectionTracker]:
         """
-        Process OSM data for a country
+        Process OSM data for a country, using cached units if valid.
 
         Parameters
         ----------
         country : str
             Country name
-        export_rejections : bool
-            Whether to export rejections to CSV
-        rejections_file : Optional[str]
-            File path for rejections CSV
+        force_process : bool
+            Whether to force processing even if cache is valid
 
         Returns
         -------
-        tuple[list[Unit], dict[str, dict[str, int]]]
-            (list of valid units, rejection summary)
+        tuple[list[Unit], RejectionTracker]
+            (list of valid units, rejection tracker)
         """
+        country_code = get_country_code(country)
+
+        # Check for cached units
+        cached_units = []
+        if not force_process:
+            cached_units = self.client.cache.get_units(country_code)
+
+            # Filter only valid units for current config
+            cached_units = [
+                unit for unit in cached_units if unit.is_valid_for_config(self.config)
+            ]
+
+            if cached_units:
+                logger.info(
+                    f"Found {len(cached_units)} valid cached units for {country}"
+                )
+                return cached_units, {}
+
+        # If no valid cached units or force processing, process from raw data
         plants_only = self.config.get("plants_only", True)
 
         # Get country data
         plants_data, generators_data = self.client.get_country_data(
-            country, plants_only=plants_only
+            country, force_refresh=force_process, plants_only=plants_only
         )
         # Initialize tracking attributes
         self.processed_plants = []
         self.processed_generators = []
-        self.processed_elements = set()
 
         # Process plants
         for element in plants_data.get("elements", []):
-            # Skip already processed elements
             element_id = f"{element['type']}/{element['id']}"
-            if element_id in self.processed_elements:
-                continue
 
             # Process element
             plant = self.plant_parser.process_element(element, country)
@@ -816,6 +824,13 @@ class Workflow:
                 # Skip already processed elements
                 element_id = f"{element['type']}/{element['id']}"
                 if element_id in self.processed_elements:
+                    self.rejection_tracker.add_rejection(
+                        element_id=element["id"],
+                        element_type=ElementType(element["type"]),
+                        reason=RejectionReason.ELEMENT_ALREADY_PROCESSED,
+                        details="Element processed already in plants processing",
+                        category="Workflow:process_country_data",
+                    )
                     continue
 
                 # Process element
@@ -868,65 +883,37 @@ class Workflow:
                         )
                         self.processed_generators.extend(source_generators)
 
-        # Get only valid (non-rejected) units
-        valid_units = self.get_valid_units()
+        # Get all processed plants and generators
+        all_units = []
 
-        # Create rejection summary
-        rejection_summary = self.get_rejected_summary()
+        # Add all plants and generators from both parsers
+        for plant in getattr(self, "processed_plants", []):
+            all_units.append(plant)
+        for generator in getattr(self, "processed_generators", []):
+            all_units.append(generator)
 
-        # Export rejections if requested
-        if export_rejections:
-            if rejections_file is None:
-                # Use default file name
-                rejections_file = f"{country.lower()}_rejections.csv"
+        self.delete_rejections(all_units)
 
-            # Export to CSV
-            self._export_rejections_to_csv(rejections_file)
+        # Enhance units with metadata before storing
+        for unit in all_units:
+            unit.created_at = datetime.datetime.now().isoformat()
+            unit.config_hash = self.config_hash
+            unit.config_version = "1.0"  # Could be derived from a version constant
 
-        self.client.close()
+            # Store key processing parameters
+            unit.processing_parameters = {
+                "capacity_extraction_enabled": self.config.get(
+                    "capacity_extraction", {}
+                ).get("enabled", False),
+                "capacity_estimation_enabled": self.config.get(
+                    "capacity_estimation", {}
+                ).get("enabled", False),
+                "clustering_enabled": self.config.get("units_clustering", {}).get(
+                    "enabled", False
+                ),
+            }
 
-        return valid_units, rejection_summary
+        # Store processed units in cache
+        self.client.cache.store_units(country_code, all_units)
 
-    def _export_rejections_to_csv(self, file_path: str) -> None:
-        """
-        Export rejection data to CSV
-
-        Parameters
-        ----------
-        file_path : str
-            Path to CSV file
-        """
-        with open(file_path, "w") as f:
-            # Write header
-            f.write("element_id,element_type,reason,details,timestamp,category\n")
-
-            # Write each rejection
-            for rejection in self.rejection_tracker.get_all_rejections():
-                element_type = rejection.element_type.value
-                reason = rejection.reason.value
-                details = rejection.details or ""
-                timestamp = rejection.timestamp
-
-                # Find category
-                category = ""
-                for cat, rejections in self.rejection_tracker.categories.items():
-                    if rejection in rejections:
-                        category = cat
-                        break
-
-                # Write row
-                f.write(
-                    f"{rejection.element_id},{element_type},{reason},{details},{timestamp},{category}\n"
-                )
-
-    def get_rejected_summary(self) -> dict[str, dict[str, int]]:
-        """
-        Get a summary of rejected elements
-
-        Returns
-        -------
-        dict[str, dict[str, int]]
-            Summary of rejected elements by category and reason
-        """
-        # Get summary from centralized rejection tracker
-        return self.rejection_tracker.get_summary()
+        return all_units, self.rejection_tracker

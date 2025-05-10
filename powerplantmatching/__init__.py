@@ -23,7 +23,7 @@ power plant databases.
 
 from importlib.metadata import version
 
-from . import core, data, heuristics, plot, utils
+from . import core, data, heuristics, osm, plot, utils
 from .accessor import PowerPlantAccessor
 from .collection import powerplants
 from .core import get_config, package_config
@@ -48,4 +48,5 @@ __all__ = [
     "heuristics",
     "plot",
     "utils",
+    "osm",
 ]
