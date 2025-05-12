@@ -1,47 +1,27 @@
 import inspect
 import logging
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 
-from .client import OverpassAPIClient
 from .models import Unit
 
 logger = logging.getLogger(__name__)
-
-try:
-    from sklearn.cluster import DBSCAN, KMeans
-
-    SKLEARN_AVAILABLE = True
-except ImportError:
-    logger.warning(
-        "scikit-learn not installed, clustering functionality will be limited"
-    )
-    SKLEARN_AVAILABLE = False
-
-    # Dummy class for type checking
-    class DBSCAN:
-        pass
-
-    class KMeans:
-        pass
+from sklearn.cluster import DBSCAN, KMeans
 
 
 class ClusteringAlgorithm:
     """Base class for clustering algorithms"""
 
-    def __init__(self, client: OverpassAPIClient, config: dict[str, Any]):
+    def __init__(self, config: dict[str, Any]):
         """
         Initialize the clustering algorithm
 
         Parameters
         ----------
-        client : OverpassAPIClient
-            Client for accessing OSM data
         config : dict[str, Any]
             Configuration for clustering
         """
-        self.client = client
         self.config = config
 
     def cluster(self, generators: list[Unit]) -> dict[int, list[Unit]]:
@@ -110,8 +90,7 @@ class ClusteringAlgorithm:
 
             # Sum capacities, treating None as 0
             capacity = sum(
-                plant.capacity_mw if plant.capacity_mw is not None else 0
-                for plant in plants
+                plant.Capacity if plant.Capacity is not None else 0 for plant in plants
             )
             capacities[cluster_id] = capacity
 
@@ -135,12 +114,6 @@ class DBSCANClustering(ClusteringAlgorithm):
         dict[int, list[Unit]]
             dictionary mapping cluster IDs to lists of plants
         """
-        if not SKLEARN_AVAILABLE:
-            logger.warning(
-                "scikit-learn not available, returning each generator as its own cluster"
-            )
-            return {i: [gen] for i, gen in enumerate(generators)}
-
         # Extract coordinates
         coords = []
         valid_generators = []
@@ -213,12 +186,6 @@ class KMeansClustering(ClusteringAlgorithm):
         dict[int, list[Unit]]
             dictionary mapping cluster IDs to lists of plants
         """
-        if not SKLEARN_AVAILABLE:
-            logger.warning(
-                "scikit-learn not available, returning each generator as its own cluster"
-            )
-            return {i: [gen] for i, gen in enumerate(generators)}
-
         # Extract coordinates
         coords = []
         valid_generators = []
@@ -269,23 +236,20 @@ class KMeansClustering(ClusteringAlgorithm):
 class ClusteringManager:
     """Manager for different clustering algorithms"""
 
-    def __init__(self, client: OverpassAPIClient, config: dict[str, Any]):
+    def __init__(self, config: dict[str, Any]):
         """
         Initialize the clustering manager
 
         Parameters
         ----------
-        client : OverpassAPIClient
-            Client for accessing OSM data
         config : dict[str, Any]
             Configuration for osm sources
         """
-        self.client = client
         self.config = config
 
     def create_algorithm(
         self, source_type: str
-    ) -> tuple[bool, Optional[ClusteringAlgorithm]]:
+    ) -> tuple[bool, ClusteringAlgorithm | None]:
         """
         Create a clustering algorithm based on configuration
 
@@ -296,7 +260,7 @@ class ClusteringManager:
 
         Returns
         -------
-        tuple[bool, Optional[ClusteringAlgorithm]]
+        tuple[bool, ClusteringAlgorithm | None]
             Tuple containing a boolean indicating success and the clustering algorithm
         """
         assert isinstance(source_type, str), "source_type must be a string"
@@ -311,14 +275,12 @@ class ClusteringManager:
         )
         if method == "dbscan":
             return True, DBSCANClustering(
-                self.client,
                 config=self.config.get("sources", {})
                 .get(source_type, {})
                 .get("units_clustering", {}),
             )
         elif method == "kmeans":
             return True, KMeansClustering(
-                self.client,
                 config=self.config.get("sources", {})
                 .get(source_type, {})
                 .get("units_clustering", {}),

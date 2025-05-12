@@ -215,41 +215,49 @@ MASTR:
 OSM:
   reliability_score: 3
   net_capacity: false
-  fn: osm_data.csv # Filename for saving OSM data
-  api_url: zenodo.org
+  fn: osm_data.csv
 
   # OSM Global configurations
   force_refresh: false
-  plants_only: false
+  plants_only: true
   missing_name_allowed: false
+  missing_technology_allowed: false
+  missing_start_date_allowed: false
   capacity_extraction:
     enabled: true
     regex_patterns:
       - ^(\d+(?:\.\d+)?)\s*([a-zA-Z]+p?)$
   capacity_estimation:
-    enabled: false
+    enabled: true
   units_clustering:
     enabled: false
   plant_tags:
     source_tags_keys:
       - plant:source
+      - generator:source
     technology_tags_keys:
       - plant:method
+      - plant:type
     output_tags_keys:
       - plant:output:electricity
     name_tags_keys:
       - name:en
       - name
+    start_date_tags_keys:
+      - start_date
   generator_tags:
     source_tags_keys:
       - generator:source
     technology_tags_keys:
       - generator:method
+      - generator:type
     output_tags_keys:
       - generator:output:electricity
     name_tags_keys:
       - name:en
       - name
+    start_date_tags_keys:
+      - start_date
   source_mapping:
     Nuclear: [nuclear]
     Solid Biomass: [biomass]
@@ -261,23 +269,23 @@ OSM:
     Natural Gas: [gas]
     Hard Coal: [coal]
     Lignite: [placeholder]
-    Geothermal: [placeholder]
+    Geothermal: [geothermal]
     Marine: [placeholder]
-    Waste: [placeholder]
+    Waste: [waste]
     Battery: [placeholder]
   technology_mapping:
     Boiled Water Reactor: [fission]
     Pressurized Water Reactor: [fission]
-    Combustion Engine: [combustion]
-    Steam Turbine: [combustion, gasification]
+    Combustion Engine: [combustion, reciprocating_engine, combined_cycle, gas_engine, motor_generator, steam_generator, bioreactor, gasification]
+    Steam Turbine: [combustion, gasification, steam_turbine]
     OCGT: [combustion]
     CCGT: [combustion, thermal]
     Run-Of-River: [run-of-the-river]
     Reservoir: [water-storage]
     Pumped Storage: [water-pumped-storage]
     Offshore: [offshore]
-    Onshore: [wind_turbine]
-    PV: [photovoltaic, thermal;photovoltaic]
+    Onshore: [wind_turbine, horizontal_axis]
+    PV: [photovoltaic, thermal;photovoltaic, solar_photovoltaic_panel]
     CSP: [thermal]
   source_technology_mapping:
     Nuclear: [Boiled Water Reactor, Pressurized Water Reactor]
@@ -292,7 +300,7 @@ OSM:
     Lignite: [Steam Turbine]
     Geothermal: [Steam Turbine]
     Marine: []
-    Waste: []
+    Waste: [Combustion Engine]
     Battery: []
   sources:
     Solar:
@@ -315,8 +323,8 @@ OSM:
         additional_tags:
           - wind:output
       capacity_estimation:
-        method: unit_size
-        unit_capacity: 2
+        method: default_value
+        unit_capacity: 1
     Hydro:
       capacity_extraction:
         additional_tags:

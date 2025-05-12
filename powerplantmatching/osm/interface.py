@@ -11,6 +11,7 @@ import pandas as pd
 
 from .client import OverpassAPIClient
 from .models import Unit
+from .rejection import RejectionTracker
 from .utils import get_country_code
 from .workflow import Workflow
 
@@ -52,7 +53,36 @@ VALID_TECHNOLOGIES = [
 VALID_SETS = ["PP", "CHP", "Store"]
 
 
-def process_countries(countries, csv_cache_path, cache_dir, update, config):
+def get_client_params(osm_config, api_url, cache_dir):
+    """
+    Extract client parameters from config.
+
+    Parameters
+    ----------
+    osm_config : dict
+        OSM-specific configuration dictionary
+    api_url : str
+        URL for the Overpass API
+    cache_dir : str
+        Directory for caching OSM data
+
+    Returns
+    -------
+    dict
+        Parameters for OverpassAPIClient
+    """
+    return {
+        "api_url": api_url,
+        "cache_dir": cache_dir,
+        "timeout": osm_config.get("overpass_api", {}).get("timeout", 300),
+        "max_retries": osm_config.get("overpass_api", {}).get("max_retries", 3),
+        "retry_delay": osm_config.get("overpass_api", {}).get("retry_delay", 5),
+    }
+
+
+def process_countries(
+    countries, csv_cache_path, cache_dir, update, osm_config, target_columns, raw=False
+):
     """
     Process multiple countries and combine their data.
 
@@ -66,17 +96,20 @@ def process_countries(countries, csv_cache_path, cache_dir, update, config):
         Directory for caching OSM data
     update : bool
         Whether to force refresh data
-    config : dict
-        Configuration dictionary
+    osm_config : dict
+        OSM-specific configuration dictionary
+    target_columns : list
+        List of target columns to include in the result
+    raw : bool, default False
+        Whether to return data in raw OSM format without additional formatting
 
     Returns
     -------
     pd.DataFrame
         Combined data from all countries
     """
-    api_url = config.get("OSM", {}).get("overpass_api", {}).get("url")
-    current_config_hash = Unit._generate_config_hash(config.get("OSM", {}))
-    target_columns = config["target_columns"]
+    api_url = osm_config.get("overpass_api", {}).get("url")
+    current_config_hash = Unit._generate_config_hash(osm_config)
 
     # Initialize empty DataFrame for all valid data
     all_valid_data = pd.DataFrame()
@@ -90,19 +123,20 @@ def process_countries(countries, csv_cache_path, cache_dir, update, config):
             api_url,
             current_config_hash,
             update,
-            config,
+            osm_config,
         )
 
         # Add this country's data to the overall result
         if country_data is not None and not country_data.empty:
-            # Cleanup before adding to overall results
-            country_data = validate_and_standardize_df(
-                country_data,
-                target_columns,
-                VALID_FUELTYPES,
-                VALID_TECHNOLOGIES,
-                VALID_SETS,
-            )
+            # If not in raw mode, cleanup before adding to overall results
+            if not raw:
+                country_data = validate_and_standardize_df(
+                    country_data,
+                    target_columns,
+                    VALID_FUELTYPES,
+                    VALID_TECHNOLOGIES,
+                    VALID_SETS,
+                )
             all_valid_data = pd.concat(
                 [all_valid_data, country_data], ignore_index=True
             )
@@ -111,7 +145,7 @@ def process_countries(countries, csv_cache_path, cache_dir, update, config):
 
 
 def process_single_country(
-    country, csv_cache_path, cache_dir, api_url, config_hash, update, config
+    country, csv_cache_path, cache_dir, api_url, config_hash, update, osm_config
 ):
     """
     Process a single country's data, using cache if valid.
@@ -130,27 +164,36 @@ def process_single_country(
         Hash of the current configuration
     update : bool
         Whether to force refresh data
-    config : dict
-        Configuration dictionary
+    osm_config : dict
+        OSM-specific configuration dictionary
 
     Returns
     -------
     pd.DataFrame
-        Country's data, or None if processing failed
+        Country data if processing successful, None otherwise
     """
+    force_refresh = osm_config.get("force_refresh", False)
+
+    # If update (force_refresh) is True, skip all cache checks
+    if force_refresh:
+        return process_from_api(csv_cache_path, cache_dir, api_url, country, osm_config)
+
     # First try CSV cache
     country_data = check_csv_cache(csv_cache_path, country, config_hash, update)
 
-    # If CSV cache failed, try units cache
     if country_data is None:
+        # Extract client parameters
+        client_params = get_client_params(osm_config, api_url, cache_dir)
+
+        # Check units cache
         country_data = check_units_cache(
-            csv_cache_path, cache_dir, api_url, country, config_hash
+            csv_cache_path, country, config_hash, client_params
         )
 
     # If both caches failed, process from scratch
     if country_data is None:
         country_data = process_from_api(
-            csv_cache_path, cache_dir, api_url, country, update, config
+            csv_cache_path, cache_dir, api_url, country, osm_config
         )
 
     return country_data
@@ -176,26 +219,49 @@ def check_csv_cache(cache_path, country, config_hash, update):
     pd.DataFrame or None
         Country data if valid cache found, None otherwise
     """
-    if not os.path.exists(cache_path) or update:
+    # Skip cache if update is True or cache doesn't exist
+    if update or not os.path.exists(cache_path):
         return None
 
     try:
+        # Try reading the CSV file
         csv_data = pd.read_csv(cache_path)
+
+        # Check if the CSV has any data
+        if csv_data.empty:
+            logger.debug(f"CSV cache exists but is empty: {cache_path}")
+            return None
+
         # Filter to just this country
         country_rows = csv_data[csv_data["Country"] == country]
 
-        if not country_rows.empty and "config_hash" in country_rows.columns:
-            # Check if this country's data has matching config hash
-            if country_rows["config_hash"].iloc[0] == config_hash:
-                logger.info(f"Using CSV cache for {country} (matching config)")
-                return country_rows.copy()
+        # Check if we have data for this country
+        if country_rows.empty:
+            logger.debug(f"No data for {country} in CSV cache")
+            return None
+
+        # Check if we have the config hash column
+        if "config_hash" not in country_rows.columns:
+            logger.debug(f"CSV cache for {country} missing config_hash column")
+            return None
+
+        # Check if the config hash matches
+        if country_rows["config_hash"].iloc[0] == config_hash:
+            logger.info(f"Using CSV cache for {country} (matching config)")
+            return country_rows.copy()
+        else:
+            logger.debug(f"CSV cache for {country} has outdated config_hash")
+            return None
+
+    except pd.errors.EmptyDataError:
+        logger.debug(f"CSV cache file is empty: {cache_path}")
+        return None
     except Exception as e:
         logger.debug(f"Error reading CSV cache: {str(e)}")
+        return None
 
-    return None
 
-
-def check_units_cache(csv_cache_path, cache_dir, api_url, country, config_hash):
+def check_units_cache(csv_cache_path, country, config_hash, client_params):
     """
     Check if valid data exists in the units cache.
 
@@ -203,14 +269,12 @@ def check_units_cache(csv_cache_path, cache_dir, api_url, country, config_hash):
     ----------
     csv_cache_path : str
         Path to the CSV cache file
-    cache_dir : str
-        Directory for caching OSM data
-    api_url : str
-        URL for the Overpass API
     country : str
         Country name
     config_hash : str
         Hash of the current configuration
+    client_params : dict
+        Parameters for OverpassAPIClient
 
     Returns
     -------
@@ -219,7 +283,7 @@ def check_units_cache(csv_cache_path, cache_dir, api_url, country, config_hash):
     """
     country_code = get_country_code(country)
     try:
-        with OverpassAPIClient(api_url=api_url, cache_dir=cache_dir) as client:
+        with OverpassAPIClient(**client_params) as client:
             # Get cached units for this country
             cached_units = client.cache.get_units(country_code)
 
@@ -245,7 +309,7 @@ def check_units_cache(csv_cache_path, cache_dir, api_url, country, config_hash):
     return None
 
 
-def process_from_api(csv_cache_path, cache_dir, api_url, country, update, config):
+def process_from_api(csv_cache_path, cache_dir, api_url, country, osm_config):
     """
     Process country data from the API.
 
@@ -259,10 +323,8 @@ def process_from_api(csv_cache_path, cache_dir, api_url, country, update, config
         URL for the Overpass API
     country : str
         Country name
-    update : bool
-        Whether to force refresh data
-    config : dict
-        Configuration dictionary
+    osm_config : dict
+        OSM-specific configuration dictionary
 
     Returns
     -------
@@ -272,10 +334,15 @@ def process_from_api(csv_cache_path, cache_dir, api_url, country, update, config
     logger.info(f"No valid cache for {country}, processing from API")
 
     try:
-        with OverpassAPIClient(api_url=api_url, cache_dir=cache_dir) as client:
-            workflow = Workflow(client=client, config=config["OSM"])
+        # Get client parameters
+        client_params = get_client_params(osm_config, api_url, cache_dir)
 
-            units, _ = workflow.process_country_data(country, force_process=update)
+        with OverpassAPIClient(**client_params) as client:
+            workflow = Workflow(
+                client=client, rejection_tracker=RejectionTracker(), config=osm_config
+            )
+
+            units, _ = workflow.process_country_data(country)
 
             if units:
                 logger.info(f"Processed {len(units)} units for {country}")
@@ -284,6 +351,7 @@ def process_from_api(csv_cache_path, cache_dir, api_url, country, update, config
 
                 # Save to CSV cache for faster access next time
                 update_csv_cache(csv_cache_path, country, country_data)
+
                 return country_data
             else:
                 logger.warning(f"No units found for {country}")
@@ -306,21 +374,39 @@ def update_csv_cache(cache_path, country, country_data):
     country_data : pd.DataFrame
         Data to cache
     """
-    if not country_data.empty:
-        try:
-            if os.path.exists(cache_path):
-                # Update existing CSV
+    if country_data.empty:
+        return
+
+    try:
+        # Ensure directory exists
+        os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+
+        if os.path.exists(cache_path):
+            # Update existing CSV
+            try:
                 full_csv = pd.read_csv(cache_path)
                 # Remove existing entries for this country
                 full_csv = full_csv[full_csv["Country"] != country]
                 # Append new data
                 updated_csv = pd.concat([full_csv, country_data], ignore_index=True)
                 updated_csv.to_csv(cache_path, index=False)
-            else:
-                # Create new CSV
+                logger.info(
+                    f"Updated CSV cache with {len(country_data)} entries for {country}"
+                )
+            except pd.errors.EmptyDataError:
+                # File exists but is empty or corrupted
                 country_data.to_csv(cache_path, index=False)
-        except Exception as e:
-            logger.warning(f"Error updating CSV cache: {str(e)}")
+                logger.info(
+                    f"Created new CSV cache with {len(country_data)} entries for {country}"
+                )
+        else:
+            # Create new CSV
+            country_data.to_csv(cache_path, index=False)
+            logger.info(
+                f"Created new CSV cache with {len(country_data)} entries for {country}"
+            )
+    except Exception as e:
+        logger.warning(f"Error updating CSV cache: {str(e)}")
 
 
 def validate_and_standardize_df(
@@ -339,12 +425,17 @@ def validate_and_standardize_df(
         List of valid fuel types
     valid_technologies : list, optional
         List of valid technologies
+    valid_sets : list, optional
+        List of valid set types
 
     Returns
     -------
     pd.DataFrame
         Validated data
     """
+    if df.empty:
+        return df
+
     # Use default valid types if not provided
     if valid_fueltypes is None:
         valid_fueltypes = VALID_FUELTYPES
@@ -363,9 +454,7 @@ def validate_and_standardize_df(
         "config_version",
         "processing_parameters",
     ]
-    for col in metadata_columns:
-        if col in df.columns:
-            df = df.drop(columns=[col])
+    df = df.drop(columns=[col for col in metadata_columns if col in df.columns])
 
     # Validate Fueltype values
     if "Fueltype" in df.columns:
@@ -402,40 +491,6 @@ def validate_and_standardize_df(
         logger.warning("Set column is missing")
         df["Set"] = np.nan
 
-    # Keep only target columns
-    cols_to_keep = [col for col in target_columns if col in df.columns]
-    df = df[cols_to_keep]
-
-    return df
-
-
-def clean_and_format_data(df, target_columns):
-    """
-    Remove metadata columns and format data for return.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Data to clean
-    target_columns : list
-        List of target columns to keep
-
-    Returns
-    -------
-    pd.DataFrame
-        Cleaned data
-    """
-    # Remove metadata columns
-    metadata_columns = [
-        "created_at",
-        "config_hash",
-        "config_version",
-        "processing_parameters",
-    ]
-    for col in metadata_columns:
-        if col in df.columns:
-            df = df.drop(columns=[col])
-
     # Ensure all target columns exist
     for col in target_columns:
         if col not in df.columns:
@@ -443,4 +498,6 @@ def clean_and_format_data(df, target_columns):
 
     # Keep only target columns
     cols_to_keep = [col for col in target_columns if col in df.columns]
-    return df[cols_to_keep]
+    df = df[cols_to_keep]
+
+    return df

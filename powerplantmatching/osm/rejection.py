@@ -2,7 +2,8 @@ import logging
 from collections.abc import Iterator
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional
+
+import pandas as pd
 
 from .models import ElementType, RejectionReason
 
@@ -15,12 +16,17 @@ class RejectedElement:
     element_id: str
     element_type: ElementType
     reason: RejectionReason
-    details: Optional[str] = None
+    details: str | None = None
+    category: str | None = None
     timestamp: datetime = None
+    url: str | None = None
 
     def __post_init__(self):
         if self.timestamp is None:
             self.timestamp = datetime.now()
+        if self.url is None:
+            if not "cluster" in self.id:
+                self.url = f"https://www.openstreetmap.org/{self.id}"
 
 
 class RejectionTracker:
@@ -37,8 +43,8 @@ class RejectionTracker:
         element_id: str,
         element_type: ElementType,
         reason: RejectionReason,
-        details: Optional[str] = None,
-        category: str = "default",
+        details: str | None = None,
+        category: str | None = None,
     ) -> None:
         """
         Add a rejected element to the tracker
@@ -63,6 +69,7 @@ class RejectionTracker:
             element_type=element_type,
             reason=reason,
             details=details,
+            category=category,
         )
 
         # Add to main list
@@ -197,3 +204,43 @@ class RejectionTracker:
         self.rejected_elements = {}
         self.categories = set()
         self.ids = set()
+
+    def generate_report(self) -> "pd.DataFrame":
+        """
+        Generate a detailed report of rejections as a pandas DataFrame.
+
+        Returns
+        -------
+        pd.DataFrame
+            DataFrame containing all rejections, sorted by details, reason, timestamp, and ID
+        """
+        import pandas as pd
+
+        # Create a list to store all rejection data
+        rejection_data = []
+
+        # Process all rejection entries
+        for element_id, rejections in self.rejected_elements.items():
+            for rejection in rejections:
+                rejection_data.append(
+                    {
+                        "id": rejection.id,
+                        "category": rejection.category,
+                        "reason": rejection.reason.value,
+                        "details": rejection.details if rejection.details else "",
+                        "timestamp": rejection.timestamp,
+                        "url": rejection.url,
+                    }
+                )
+
+        # If no rejections, return empty DataFrame with appropriate columns
+        if not rejection_data:
+            return pd.DataFrame(
+                columns=["id", "category", "reason", "details", "timestamp", "url"]
+            )
+
+        # Convert to DataFrame
+        df = pd.DataFrame(rejection_data)
+        df = df.sort_values(by=["timestamp", "id"], ascending=[True, True])
+
+        return df

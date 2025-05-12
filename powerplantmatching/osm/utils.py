@@ -1,3 +1,4 @@
+import math
 import re
 from typing import Any, Optional
 
@@ -181,3 +182,86 @@ def get_country_code(country: str) -> str:
         return country_obj.alpha_2
     except LookupError:
         raise ValueError(f"Invalid country name: {country}")
+
+
+def calculate_area(coordinates: list[dict[str, float]]) -> float:
+    """
+    Calculate area of a polygon in square meters using haversine formula
+
+    Parameters
+    ----------
+    coordinates : list[dict[str, float]]
+        list of {lat, lon} coordinate dictionaries
+
+    Returns
+    -------
+    float
+        Area in square meters
+    """
+    if len(coordinates) < 3:
+        return 0.0
+
+    # Reference point for flat earth approximation
+    ref_lat = coordinates[0]["lat"]
+    ref_lon = coordinates[0]["lon"]
+
+    # Convert coordinates to flat earth approximation
+    points = []
+    for coord in coordinates:
+        dy = haversine_distance(ref_lat, ref_lon, coord["lat"], ref_lon)
+        dx = haversine_distance(ref_lat, ref_lon, ref_lat, coord["lon"])
+
+        # Adjust sign based on direction
+        if coord["lat"] < ref_lat:
+            dy = -dy
+        if coord["lon"] < ref_lon:
+            dx = -dx
+
+        points.append((dx, dy))
+
+    # Calculate area using shoelace formula
+    area = 0.0
+    n = len(points)
+    for i in range(n):
+        j = (i + 1) % n
+        area += points[i][0] * points[j][1]
+        area -= points[j][0] * points[i][1]
+    area = abs(area) / 2.0
+
+    return area
+
+
+def haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """
+    Calculate the great circle distance between two points
+    on the earth specified in decimal degrees
+
+    Parameters
+    ----------
+    lat1 : float
+        Latitude of first point
+    lon1 : float
+        Longitude of first point
+    lat2 : float
+        Latitude of second point
+    lon2 : float
+        Longitude of second point
+
+    Returns
+    -------
+    float
+        Distance in meters
+    """
+    # Convert decimal degrees to radians
+    lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lon1, lat2, lon2])
+
+    # Haversine formula
+    dlat = lat2 - lat1
+    dlon = lon2 - lon1
+    a = (
+        math.sin(dlat / 2) ** 2
+        + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2) ** 2
+    )
+    c = 2 * math.asin(math.sqrt(a))
+    r = 6371000  # Radius of earth in meters
+    return c * r

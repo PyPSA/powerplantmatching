@@ -1,6 +1,4 @@
 import logging
-import math
-from dataclasses import dataclass
 from typing import Any, Optional, Union
 
 from shapely.errors import ShapelyError
@@ -15,18 +13,10 @@ from .utils import get_element_coordinates
 logger = logging.getLogger(__name__)
 
 
-@dataclass
-class Coordinate:
-    """Simple coordinate class for when shapely is not available"""
-
-    lat: float
-    lon: float
-
-
 class GeometryHandler:
     """Handles geometry operations for OSM elements"""
 
-    def __init__(self, client: OverpassAPIClient):
+    def __init__(self, client: OverpassAPIClient, rejection_tracker: RejectionTracker):
         """
         Initialize the geometry handler
 
@@ -34,8 +24,11 @@ class GeometryHandler:
         ----------
         client : OverpassAPIClient
             Client for accessing OSM data
+        rejection_tracker : RejectionTracker
+            Tracker for rejected elements
         """
         self.client = client
+        self.rejection_tracker = rejection_tracker
 
     def create_way_polygon(self, way: dict[str, Any]) -> Optional[PlantPolygon]:
         """
@@ -326,88 +319,6 @@ class GeometryHandler:
 
         return None, None
 
-    def calculate_area(self, coordinates: list[dict[str, float]]) -> float:
-        """
-        Calculate area of a polygon in square meters using haversine formula
-
-        Parameters
-        ----------
-        coordinates : list[dict[str, float]]
-            list of {lat, lon} coordinate dictionaries
-
-        Returns
-        -------
-        float
-            Area in square meters
-        """
-        if len(coordinates) < 3:
-            return 0.0
-
-        # Reference point for flat earth approximation
-        ref_lat = coordinates[0]["lat"]
-        ref_lon = coordinates[0]["lon"]
-
-        # Convert coordinates to flat earth approximation
-        points = []
-        for coord in coordinates:
-            dy = self.haversine_distance(ref_lat, ref_lon, coord["lat"], ref_lon)
-            dx = self.haversine_distance(ref_lat, ref_lon, ref_lat, coord["lon"])
-
-            # Adjust sign based on direction
-            if coord["lat"] < ref_lat:
-                dy = -dy
-            if coord["lon"] < ref_lon:
-                dx = -dx
-
-            points.append((dx, dy))
-
-        # Calculate area using shoelace formula
-        area = 0.0
-        n = len(points)
-        for i in range(n):
-            j = (i + 1) % n
-            area += points[i][0] * points[j][1]
-            area -= points[j][0] * points[i][1]
-        area = abs(area) / 2.0
-
-        return area
-
-    @staticmethod
-    def haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
-        """
-        Calculate the great circle distance between two points
-        on the earth specified in decimal degrees
-
-        Parameters
-        ----------
-        lat1 : float
-            Latitude of first point
-        lon1 : float
-            Longitude of first point
-        lat2 : float
-            Latitude of second point
-        lon2 : float
-            Longitude of second point
-
-        Returns
-        -------
-        float
-            Distance in meters
-        """
-        # Convert decimal degrees to radians
-        lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lon1, lat2, lon2])
-
-        # Haversine formula
-        dlat = lat2 - lat1
-        dlon = lon2 - lon1
-        a = (
-            math.sin(dlat / 2) ** 2
-            + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2) ** 2
-        )
-        c = 2 * math.asin(math.sqrt(a))
-        r = 6371000  # Radius of earth in meters
-        return c * r
-
     def is_point_in_polygon(
         self, point: tuple[float, float], plant_polygon: PlantPolygon
     ) -> bool:
@@ -436,65 +347,93 @@ class GeometryHandler:
             logger.debug(f"Error checking if point is in polygon: {str(e)}")
             return False
 
+    def is_element_within_any_plant(
+        self, element: dict[str, Any], plant_polygons: list[PlantPolygon]
+    ) -> tuple[bool, Optional[str]]:
+        """
+        Check if an element is within any plant polygon
 
-def process_element_coordinates(
-    element: dict[str, Any],
-    geometry_handler: GeometryHandler,
-    rejection_tracker: Optional[RejectionTracker] = None,
-    unit_type: str = "plant",
-) -> tuple[Optional[float], Optional[float]]:
-    """
-    Process an element to extract its coordinates using various fallback methods
+        Parameters
+        ----------
+        element : dict[str, Any]
+            OSM element data
+        plant_polygons : list[PlantPolygon]
+            List of plant polygons to check against
 
-    Parameters
-    ----------
-    element : dict[str, Any]
-        OSM element data
-    geometry_handler : GeometryHandler
-        Handler for geometry operations
-    rejection_tracker : Optional[RejectionTracker]
-        Tracker for rejected elements
-    category : str
-        Category for rejection tracking
+        Returns
+        -------
+        tuple[bool, Optional[str]]
+            (is_within, plant_id) - True and plant ID if within any polygon, False and None otherwise
+        """
+        # Get element coordinates
+        lat, lon = self.process_element_coordinates(element)
+        if lat is None or lon is None:
+            return False, "coordinates not found"
 
-    Returns
-    -------
-    tuple[Optional[float], Optional[float]]
-        (lat, lon) coordinates or (None, None) if not found
-    """
-    # Try to get geometry
-    geometry = geometry_handler.get_element_geometry(element)
+        # Check each polygon
+        for plant_polygon in plant_polygons:
+            if not hasattr(plant_polygon.geometry, "contains"):
+                logger.debug(
+                    f"Plant polygon '{plant_polygon.type}/{plant_polygon.id}' has no geometry"
+                )
+                continue
 
-    # Get coordinates from geometry
-    lat, lon = None, None
-    if geometry:
-        lat, lon = geometry_handler.get_geometry_centroid(geometry)
-        return lat, lon
+            if self.is_point_in_polygon((lat, lon), plant_polygon):
+                return True, f"{plant_polygon.type}/{plant_polygon.id}"
 
-    # For relations with no coordinates, try special processing
-    if element["type"] == "relation" and (lat is None or lon is None):
-        # Try to get centroid from members
-        lat, lon = geometry_handler.get_relation_centroid_from_members(element)
+        return False, "element not within any polygon"
 
-        if lat is not None and lon is not None:
-            logger.info(
-                f"Found coordinates for relation {element['id']} from members: {lat}, {lon}"
+    def process_element_coordinates(
+        self, element: dict[str, Any]
+    ) -> tuple[Optional[float], Optional[float]]:
+        """
+        Process an element to extract its coordinates using various fallback methods
+
+        Parameters
+        ----------
+        element : dict[str, Any]
+            OSM element data
+        category : str
+            Category for rejection tracking
+
+        Returns
+        -------
+        tuple[Optional[float], Optional[float]]
+            (lat, lon) coordinates or (None, None) if not found
+        """
+        # Try to get geometry
+        geometry = self.get_element_geometry(element)
+
+        # Get coordinates from geometry
+        lat, lon = None, None
+        if geometry:
+            lat, lon = self.get_geometry_centroid(geometry)
+            return lat, lon
+
+        # For relations with no coordinates, try special processing
+        if element["type"] == "relation" and (lat is None or lon is None):
+            # Try to get centroid from members
+            lat, lon = self.get_relation_centroid_from_members(element)
+
+            if lat is not None and lon is not None:
+                logger.info(
+                    f"Found coordinates for relation {element['id']} from members: {lat}, {lon}"
+                )
+            return lat, lon
+
+        # Fall back to direct coordinates if geometry failed
+        if lat is None or lon is None:
+            lat, lon = get_element_coordinates(element)
+            return lat, lon
+
+        # Track rejection if coordinates not found
+        if self.rejection_tracker and (lat is None or lon is None):
+            self.rejection_tracker.add_rejection(
+                element_id=element["id"],
+                element_type=ElementType(element["type"]),
+                reason=RejectionReason.COORDINATES_NOT_FOUND,
+                details="Could not determine coordinates for element",
+                category="GeometryHandler:process_element_coordinates",
             )
-        return lat, lon
 
-    # Fall back to direct coordinates if geometry failed
-    if lat is None or lon is None:
-        lat, lon = get_element_coordinates(element)
-        return lat, lon
-
-    # Track rejection if coordinates not found
-    if rejection_tracker and (lat is None or lon is None):
-        rejection_tracker.add_rejection(
-            element_id=element["id"],
-            element_type=ElementType(element["type"]),
-            reason=RejectionReason.COORDINATES_NOT_FOUND,
-            details="Could not determine coordinates for element",
-            category=f"{'PlantParser' if unit_type == 'plant' else 'GeneratorParser'}.process_element_coordinates",
-        )
-
-    return None, None
+        return None, None

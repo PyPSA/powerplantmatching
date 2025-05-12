@@ -1,4 +1,5 @@
 import logging
+import time
 from typing import Optional
 
 import requests
@@ -12,7 +13,14 @@ logger = logging.getLogger(__name__)
 class OverpassAPIClient:
     """Client for fetching data from the OpenStreetMap Overpass API"""
 
-    def __init__(self, api_url: Optional[str] = None, cache_dir: str = "osm_cache"):
+    def __init__(
+        self,
+        api_url: Optional[str] = None,
+        cache_dir: str = "osm_cache",
+        timeout: int = 300,
+        max_retries: int = 3,
+        retry_delay: int = 5,
+    ):
         """
         Initialize the Overpass API client
 
@@ -22,10 +30,21 @@ class OverpassAPIClient:
             URL of the Overpass API endpoint
         cache_dir : str
             Directory for caching OSM data
+        timeout : int
+            Timeout for API requests in seconds
+        max_retries : int
+            Maximum number of retries for API requests
+        retry_delay : int
+            Delay between retries in seconds
         """
         self.api_url = api_url or "https://overpass-api.de/api/interpreter"
         self.cache = ElementCache(cache_dir)
         self.cache.load_all_caches()
+
+        # Set default values
+        self.timeout = timeout
+        self.max_retries = max_retries
+        self.retry_delay = retry_delay
 
     def __enter__(self):
         """Enter context manager"""
@@ -49,14 +68,11 @@ class OverpassAPIClient:
                 ]
             ):
                 logging.getLogger(__name__).info("Saving caches")
-                try:
-                    self.cache.save_all_caches(force=False)
-                except Exception as e:
-                    logging.getLogger(__name__).error(f"Error saving caches: {e}")
+                self.cache.save_all_caches(force=False)
 
     def query_overpass(self, query: str) -> dict:
         """
-        Execute a query against the Overpass API
+        Execute a query against the Overpass API with retry logic and timeout
 
         Parameters
         ----------
@@ -71,14 +87,40 @@ class OverpassAPIClient:
         Raises
         ------
         ConnectionError
-            If the API request fails
+            If the API request fails after retries
         """
-        try:
-            response = requests.post(self.api_url, data={"data": query})
-            response.raise_for_status()
-            return response.json()
-        except requests.RequestException as e:
-            raise ConnectionError(f"Failed to query Overpass API: {str(e)}")
+        if "[timeout:" not in query:
+            # Overpass timeout is in seconds
+            query = query.replace("[out:json]", f"[out:json][timeout:{self.timeout}]")
+
+        retries = 0
+        last_error = None
+
+        while retries < self.max_retries:
+            try:
+                response = requests.post(
+                    self.api_url, data={"data": query}, timeout=self.timeout + 30
+                )
+                response.raise_for_status()
+                return response.json()
+
+            except requests.RequestException as e:
+                last_error = e
+                retries += 1
+                if retries < self.max_retries:
+                    logger.warning(
+                        f"Overpass API request failed (attempt {retries}/{self.max_retries}): {str(e)}"
+                        f" - retrying in {self.retry_delay} seconds"
+                    )
+                    time.sleep(self.retry_delay)
+                else:
+                    logger.error(
+                        f"Overpass API request failed after {self.max_retries} attempts: {str(e)}"
+                    )
+
+        raise ConnectionError(
+            f"Failed to query Overpass API after {self.max_retries} attempts: {str(last_error)}"
+        )
 
     def get_plants_data(self, country: str, force_refresh: bool = False) -> dict:
         """
@@ -106,7 +148,7 @@ class OverpassAPIClient:
 
         # Build the query
         query = f"""
-        [out:json][timeout:300];
+        [out:json][timeout:{self.timeout}];
         area["ISO3166-1"="{country_code}"][admin_level=2]->.boundaryarea;
         (
             node["power"="plant"](area.boundaryarea);
@@ -151,7 +193,7 @@ class OverpassAPIClient:
 
         # Build the query
         query = f"""
-        [out:json][timeout:300];
+        [out:json][timeout:{self.timeout}];
         area["ISO3166-1"="{country_code}"][admin_level=2]->.boundaryarea;
         (
             node["power"="generator"](area.boundaryarea);
@@ -430,6 +472,11 @@ class OverpassAPIClient:
         tuple[dict, dict]
             (plants_data, generators_data)
         """
+
+        def type_order(element):
+            order = {"relation": 0, "way": 1, "node": 2}
+            return order[element["type"]]
+
         logger.info(f"Getting OSM data for {country}")
 
         # Get plant data
@@ -514,5 +561,10 @@ class OverpassAPIClient:
             logger.info(
                 f"All {len(unique_relation_ids)} referenced relations already in cache"
             )
+
+        plants_data["elements"] = sorted(plants_data["elements"], key=type_order)
+        generators_data["elements"] = sorted(
+            generators_data["elements"], key=type_order
+        )
 
         return plants_data, generators_data

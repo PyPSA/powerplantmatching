@@ -13,8 +13,8 @@ class CapacityExtractor:
 
     def __init__(
         self,
+        rejection_tracker: RejectionTracker,
         config: dict[str, Any],
-        rejection_tracker: Optional[RejectionTracker] = None,
     ):
         """
         Initialize the capacity extractor
@@ -23,11 +23,11 @@ class CapacityExtractor:
         ----------
         config : dict[str, Any]
             Configuration for extraction
-        rejection_tracker : Optional[RejectionTracker]
+        rejection_tracker : RejectionTracker
             Tracker for rejected elements
         """
         self.config = config
-        self.rejection_tracker = rejection_tracker or RejectionTracker()
+        self.rejection_tracker = rejection_tracker
 
     def basic_extraction(
         self, element: dict[str, Any], output_key: str

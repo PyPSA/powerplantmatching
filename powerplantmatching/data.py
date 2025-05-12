@@ -21,10 +21,7 @@ from .cleaning import (
 )
 from .core import _data_in, _package_data, get_config
 from .heuristics import scale_to_net_capacities
-from .osm import (
-    clean_and_format_data,
-    process_countries,
-)
+from .osm import process_countries
 from .utils import (
     config_filter,
     convert_to_short_name,
@@ -2261,27 +2258,30 @@ def OSM(raw=False, update=False, config=None):
         countries = [countries]
     target_columns = config["target_columns"]
 
+    # Extract OSM-specific configuration
+    osm_config = config.get("OSM", {})
+
     # Set up paths
-    fn = _data_in(config.get("OSM", {}).get("fn", "osm_data.csv"))
+    fn = _data_in(osm_config.get("fn", "osm_data.csv"))
     cache_dir = os.path.join(os.path.dirname(fn), "osm_cache")
 
     # Process all countries and get combined data
-    all_valid_data = process_countries(countries, fn, cache_dir, update, config)
+    all_valid_data = process_countries(
+        countries, fn, cache_dir, update, osm_config, target_columns, raw
+    )
 
     # Handle empty dataset case
     if all_valid_data.empty:
         logger.warning("No OSM power plant data found for the specified countries")
         if raw:
-            return pd.DataFrame()
+            return all_valid_data
         return pd.DataFrame(columns=target_columns).pipe(set_column_name, "OSM")
 
     # Return raw data if requested
     if raw:
         return all_valid_data
 
-    # Apply standard powerplantmatching formatting
-    cleaned_data = clean_and_format_data(all_valid_data, target_columns)
-    return cleaned_data.pipe(set_column_name, "OSM")
+    return all_valid_data.pipe(set_column_name, "OSM")
 
 
 # deprecated alias for GGPT

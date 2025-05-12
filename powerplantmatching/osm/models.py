@@ -2,6 +2,20 @@ from dataclasses import asdict, dataclass
 from enum import Enum
 from typing import Any
 
+PROCESSING_PARAMETERS = [
+    "capacity_extraction",
+    "capacity_estimation",
+    "units_clustering",
+    "source_mapping",
+    "technology_mapping",
+    "source_technology_mapping",
+    "plants_only",
+    "missing_name_allowed",
+    "missing_technology_allowed",
+    "missing_start_date_allowed",
+    "sources",
+]
+
 
 class RejectionReason(Enum):
     INVALID_ELEMENT_TYPE = "Invalid element type"
@@ -21,6 +35,9 @@ class RejectionReason(Enum):
     CAPACITY_UNSUPPORTED_UNIT = "Unsupported capacity unit"
     CAPACITY_ZERO = "Capacity zero"
     ELEMENT_ALREADY_PROCESSED = "Element already processed"
+    WITHIN_EXISTING_PLANT = "Element within existing plant geometry"
+    INVALID_START_DATE_FORMAT = "Invalid start date format"
+    MISSING_START_DATE_TAG = "Missing start date tag"
     OTHER = "Other reason"
 
 
@@ -45,6 +62,7 @@ class Unit:
     generator_count: int | None = None
     Set: str | None = None
     capacity_source: str | None = None
+    DateIn: str | None = None
     id: str | None = None
 
     # Metadata fields for caching
@@ -71,21 +89,13 @@ class Unit:
         import hashlib
         import json
 
-        # Extract the config keys that affect processing
-        relevant_keys = [
-            "capacity_extraction",
-            "capacity_estimation",
-            "units_clustering",
-            "source_mapping",
-            "technology_mapping",
-            "source_technology_mapping",
-        ]
-
         # Create a subset of the config with only the relevant keys
-        relevant_config = {k: config.get(k) for k in relevant_keys if k in config}
+        relevant_config = {
+            k: config.get(k) for k in PROCESSING_PARAMETERS if k in config
+        }
 
         # Generate a hash
-        config_str = json.dumps(relevant_config, sort_keys=True)
+        config_str = json.dumps(relevant_config, sort_keys=True, indent=4)
         return hashlib.md5(config_str.encode()).hexdigest()
 
 

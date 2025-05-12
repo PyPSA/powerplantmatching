@@ -16,7 +16,7 @@ Requirements:
 from .cache import ElementCache
 from .client import OverpassAPIClient
 from .clustering import ClusteringManager
-from .estimation import EstimationManager
+from .estimation import CapacityEstimator
 from .extractor import CapacityExtractor
 from .geometry import GeometryHandler
 from .interface import (
@@ -24,7 +24,6 @@ from .interface import (
     VALID_TECHNOLOGIES,
     check_csv_cache,
     check_units_cache,
-    clean_and_format_data,
     process_countries,
     process_from_api,
     process_single_country,
@@ -48,7 +47,7 @@ __all__ = [
     "GeneratorParser",
     "GeometryHandler",
     "ClusteringManager",
-    "EstimationManager",
+    "CapacityEstimator",
     "CapacityExtractor",
     "Workflow",
     "process_countries",
@@ -58,7 +57,6 @@ __all__ = [
     "process_from_api",
     "update_csv_cache",
     "validate_and_standardize_df",
-    "clean_and_format_data",
     "VALID_FUELTYPES",
     "VALID_TECHNOLOGIES",
 ]
