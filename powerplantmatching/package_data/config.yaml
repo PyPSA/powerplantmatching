@@ -274,7 +274,7 @@ OSM:
     Waste: [waste]
     Battery: [placeholder]
   technology_mapping:
-    Fision Reactor: [fission]
+    Fission Reactor: [fission]
     Combustion Engine: [combustion, reciprocating_engine, combined_cycle, gas_engine, motor_generator, steam_generator, bioreactor, gasification]
     Steam Turbine: [combustion, gasification, steam_turbine]
     OCGT: [combustion]
@@ -287,7 +287,7 @@ OSM:
     PV: [photovoltaic, thermal;photovoltaic, solar_photovoltaic_panel]
     CSP: [thermal]
   source_technology_mapping:
-    Nuclear: [Fision Reactor]
+    Nuclear: [Fission Reactor]
     Solid Biomass: [Steam Turbine]
     Biogas: [Combustion Engine]
     Wind: [Offshore, Onshore]
