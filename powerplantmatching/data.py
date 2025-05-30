@@ -2282,7 +2282,9 @@ def OSM(raw=False, update=False, config=None):
         return all_valid_data
 
     # Apply final processing for powerplantmatching compatibility
-    return all_valid_data.pipe(set_column_name, "OSM").pipe(config_filter, config)
+    return all_valid_data.pipe(
+        set_column_name, "OSM"
+    )  # TODO: add .pipe(config_filter, config) to be fully aligned with other importers
 
 
 # deprecated alias for GGPT
