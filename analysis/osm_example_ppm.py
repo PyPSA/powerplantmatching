@@ -195,8 +195,15 @@ if __name__ == "__main__":
     osm_data = OSM(raw=False, update=False, config=config)
     gem_data = GEM(raw=False, update=False, config=config)
 
-    fig, axis = fueltype_totals_bar([gem_data, osm_data], keys=["GEM", "OSM"])
-    plt.savefig(os.path.join(output_dir, "osm_gem_ppm.png"))
+    fig, axis = fueltype_totals_bar(
+        [gem_data, osm_data], keys=["GEM", "OSM"], log_y=True
+    )
+    plt.savefig(os.path.join(output_dir, "osm_gem_ppm_log.png"))
+
+    fig, axis = fueltype_totals_bar(
+        [gem_data, osm_data], keys=["GEM", "OSM"], log_y=False
+    )
+    plt.savefig(os.path.join(output_dir, "osm_gem_ppm_linear.png"))
 
     fig, axis = fueltype_and_country_totals_bar(
         [gem_data, osm_data], keys=["GEM", "OSM"]
