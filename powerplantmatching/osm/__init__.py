@@ -30,7 +30,7 @@ from .interface import (
     update_csv_cache,
     validate_and_standardize_df,
 )
-from .models import ElementType, PlantPolygon, RejectionReason, Unit
+from .models import ElementType, PlantPolygon, RejectionReason, Unit, Units
 from .rejection import RejectedElement, RejectionTracker
 from .workflow import GeneratorParser, PlantParser, Workflow
 
@@ -38,6 +38,7 @@ __all__ = [
     "OverpassAPIClient",
     "ElementCache",
     "Unit",
+    "Units",
     "PlantPolygon",
     "ElementType",
     "RejectionReason",

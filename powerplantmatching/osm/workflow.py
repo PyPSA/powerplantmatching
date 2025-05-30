@@ -12,7 +12,7 @@ from .clustering import ClusteringManager
 from .estimation import CapacityEstimator
 from .extractor import CapacityExtractor
 from .geometry import GeometryHandler
-from .models import PROCESSING_PARAMETERS, ElementType, PlantPolygon, Unit
+from .models import PROCESSING_PARAMETERS, ElementType, PlantPolygon, Unit, Units
 from .rejection import RejectionReason, RejectionTracker
 from .utils import get_country_code, is_valid_unit
 
@@ -25,6 +25,7 @@ class ElementProcessor(ABC):
     def __init__(
         self,
         client: OverpassAPIClient,
+        geometry_handler: GeometryHandler,
         rejection_tracker: RejectionTracker,
         config: dict[str, Any] | None = None,
     ):
@@ -48,6 +49,7 @@ class ElementProcessor(ABC):
         self.capacity_estimator = CapacityEstimator(
             self.client, self.rejection_tracker, self.config
         )
+        self.geometry_handler = geometry_handler
 
     def extract_name_from_tags(
         self, element: dict[str, Any], unit_type: str
@@ -347,10 +349,15 @@ class ElementProcessor(ABC):
         store_raw_date = ""
         for key in start_date_keys:
             if key in tags:
-                date_string = tags[key]
+                if isinstance(tags[key], str):
+                    date_string = tags[key].strip()
+                elif isinstance(tags[key], int | float):
+                    date_string = str(int(tags[key]))
+                else:
+                    date_string = str(tags[key])
                 store_raw_date = date_string
-                dat = self._parse_date_string(date_string)
-                return dat
+                datum = self._parse_date_string(date_string)
+                return datum
 
         missing_start_date_allowed = self.config.get(
             "missing_start_date_allowed", False
@@ -449,6 +456,73 @@ class ElementProcessor(ABC):
         except (ValueError, TypeError):
             # If parsing failed, fallback to just using the year
             return f"{year}-01-01"
+
+    def setup_element_coordinates(
+        self, element: dict[str, Any]
+    ) -> tuple[float | None, float | None]:
+        """
+        Extract and store coordinates for an element early in processing.
+        This ensures coordinates are available for all subsequent rejections.
+
+        Parameters
+        ----------
+        element : dict[str, Any]
+            OSM element data
+
+        Returns
+        -------
+        tuple[float | None, float | None]
+            (lat, lon) coordinates
+        """
+        element_type = ElementType(element["type"])
+        element_id = element["id"]
+
+        lat, lon = self.geometry_handler.process_element_coordinates(element)
+
+        # Store coordinates in rejection tracker for future use
+        if lat is not None and lon is not None:
+            self.rejection_tracker.set_element_coordinates(
+                element_id, element_type, (lat, lon)
+            )
+
+        return lat, lon
+
+    def setup_element_context(
+        self, element: dict[str, Any], country: str | None = None
+    ) -> tuple[float | None, float | None]:
+        """
+        Extract and store coordinates and country for an element early in processing.
+        This ensures context is available for all subsequent rejections.
+
+        Parameters
+        ----------
+        element : dict[str, Any]
+            OSM element data
+        country : str | None
+            Country where the element is located
+
+        Returns
+        -------
+        tuple[float | None, float | None]
+            (lat, lon) coordinates
+        """
+        element_type = ElementType(element["type"])
+        element_id = element["id"]
+
+        lat, lon = self.geometry_handler.process_element_coordinates(element)
+
+        # Store coordinates and country in rejection tracker for future use
+        if lat is not None and lon is not None:
+            self.rejection_tracker.set_element_coordinates(
+                element_id, element_type, (lat, lon)
+            )
+
+        if country is not None:
+            self.rejection_tracker.set_element_country(
+                element_id, element_type, country
+            )
+
+        return lat, lon
 
     @abstractmethod
     def process_element(
@@ -637,8 +711,12 @@ class PlantParser(ElementProcessor):
         config : dict[str, Any] | None
             Configuration for processing
         """
-        super().__init__(client, rejection_tracker, config)
-        self.geometry_handler = GeometryHandler(client, rejection_tracker)
+        super().__init__(
+            client,
+            GeometryHandler(client, rejection_tracker),
+            rejection_tracker,
+            config,
+        )
         self.plant_polygons: list[PlantPolygon] = []
 
     def process_element(
@@ -659,6 +737,9 @@ class PlantParser(ElementProcessor):
         Unit | None
             Unit object if processing succeeded, None otherwise
         """
+        # EARLY COORDINATE EXTRACTION - Get coordinates first for rejection tracking
+        lat, lon = self.setup_element_context(element, country)
+
         # Check if element is a valid plant
         if not is_valid_unit(element, "plant"):
             self.rejection_tracker.add_rejection(
@@ -701,10 +782,15 @@ class PlantParser(ElementProcessor):
         if geometry and isinstance(geometry, PlantPolygon):
             self.plant_polygons.append(geometry)
 
-        # Get coordinates with fallbacks
-        lat, lon = self.geometry_handler.process_element_coordinates(element)
-        # Check if we have valid coordinates
+        # Check if we have valid coordinates (coordinates were extracted earlier)
         if lat is None or lon is None:
+            self.rejection_tracker.add_rejection(
+                element_id=element["id"],
+                element_type=ElementType(element["type"]),
+                reason=RejectionReason.COORDINATES_NOT_FOUND,
+                details="Could not determine coordinates for element",
+                category="PlantParser:process_element",
+            )
             return None
 
         # Process capacity
@@ -719,6 +805,11 @@ class PlantParser(ElementProcessor):
                     return None
             else:
                 return None
+
+        # Clear coordinates from context (cleanup)
+        self.rejection_tracker.clear_element_coordinates(
+            element["id"], ElementType(element["type"])
+        )
 
         unit = Unit(
             projectID=f"OSM_plant:{element['type']}/{element['id']}",
@@ -758,8 +849,12 @@ class GeneratorParser(ElementProcessor):
         rejection_tracker : RejectionTracker
             Tracker for rejected elements
         """
-        super().__init__(client, rejection_tracker, config)
-        self.geometry_handler = GeometryHandler(client, rejection_tracker)
+        super().__init__(
+            client,
+            GeometryHandler(client, rejection_tracker),
+            rejection_tracker,
+            config,
+        )
 
     def process_element(
         self,
@@ -784,6 +879,9 @@ class GeneratorParser(ElementProcessor):
         Unit | None
             Unit object if processing succeeded, None otherwise
         """
+        # EARLY COORDINATE EXTRACTION - Get coordinates first for rejection tracking
+        lat, lon = self.setup_element_context(element, country)
+
         # Check if element is a valid generator
         if not is_valid_unit(element, "generator"):
             # Reject invalid elements (no tags or invalid power type)
@@ -820,10 +918,6 @@ class GeneratorParser(ElementProcessor):
         if start_date is None:
             return None
 
-        # Get coordinates with fallbacks
-        lat, lon = self.geometry_handler.process_element_coordinates(element)
-        # this does not requires validation as in the previous step of the pipeline
-
         # Process capacity
         capacity, info = self._process_capacity(
             element, source, output_key, "generator"
@@ -838,6 +932,11 @@ class GeneratorParser(ElementProcessor):
                     return None
             else:
                 return None
+
+        # Clear coordinates from context (cleanup)
+        self.rejection_tracker.clear_element_coordinates(
+            element["id"], ElementType(element["type"])
+        )
 
         unit = Unit(
             projectID=f"OSM_generator:{element['type']}/{element['id']}",
@@ -867,6 +966,7 @@ class Workflow:
         self,
         client: OverpassAPIClient,
         rejection_tracker: RejectionTracker,
+        units: Units,
         config: dict[str, Any] | None = None,
     ):
         """
@@ -876,14 +976,16 @@ class Workflow:
         ----------
         client : OverpassAPIClient
             Client for accessing OSM data
-        config : dict[str, Any] | None
-            Configuration for processing
         rejection_tracker : RejectionTracker
             Tracker for rejected elements
+        units : Units
+            Units collection to store processed units
+        config : dict[str, Any] | None
+            Configuration for processing
         """
         self.client = client
         self.config = config or {}
-
+        self.units = units
         self.rejection_tracker = rejection_tracker
 
         self.clustering_manager = ClusteringManager(self.config)
@@ -934,21 +1036,21 @@ class Workflow:
         self,
         country: str,
         force_refresh: bool | None = None,
-    ) -> tuple[list[Unit], RejectionTracker]:
+    ) -> Units:
         """
-        Process OSM data for a country, using cached units if valid.
+        Process OSM data for a country and add units to the collection.
 
         Parameters
         ----------
         country : str
             Country name
-        force_process : bool
+        force_refresh : bool | None
             Whether to force processing even if cache is valid
 
         Returns
         -------
-        tuple[list[Unit], RejectionTracker]
-            (list of valid units, rejection tracker)
+        Units
+            The updated units collection
         """
         if force_refresh is None:
             force_refresh = self.config.get("force_refresh", False)
@@ -969,7 +1071,9 @@ class Workflow:
                 logger.info(
                     f"Found {len(cached_units)} valid cached units for {country}"
                 )
-                return cached_units, {}
+                # Add cached units to the collection
+                self.units.add_units(cached_units)
+                return self.units, self.rejection_tracker
 
         # If no valid cached units or force processing, process from raw data
         plants_only = self.config.get("plants_only", True)
@@ -1101,4 +1205,9 @@ class Workflow:
         # Store processed units in cache
         self.client.cache.store_units(country_code, all_units)
 
-        return all_units, self.rejection_tracker
+        # Add processed units to the collection
+        self.units.add_units(all_units)
+
+        logger.info(f"Added {len(all_units)} units for {country} to collection")
+
+        return self.units, self.rejection_tracker

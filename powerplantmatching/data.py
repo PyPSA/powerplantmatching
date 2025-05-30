@@ -2281,7 +2281,8 @@ def OSM(raw=False, update=False, config=None):
     if raw:
         return all_valid_data
 
-    return all_valid_data.pipe(set_column_name, "OSM")
+    # Apply final processing for powerplantmatching compatibility
+    return all_valid_data.pipe(set_column_name, "OSM").pipe(config_filter, config)
 
 
 # deprecated alias for GGPT

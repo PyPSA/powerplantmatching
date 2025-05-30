@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 
 from .client import OverpassAPIClient
-from .models import Unit
+from .models import Unit, Units
 from .rejection import RejectionTracker
 from .utils import get_country_code
 from .workflow import Workflow
@@ -338,16 +338,29 @@ def process_from_api(csv_cache_path, cache_dir, api_url, country, osm_config):
         client_params = get_client_params(osm_config, api_url, cache_dir)
 
         with OverpassAPIClient(**client_params) as client:
+            # Initialize Units collection and rejection tracker
+            units_collection = Units()
+            rejection_tracker = RejectionTracker()
+
+            # Create workflow with proper initialization
             workflow = Workflow(
-                client=client, rejection_tracker=RejectionTracker(), config=osm_config
+                client=client,
+                rejection_tracker=rejection_tracker,
+                units=units_collection,
+                config=osm_config,
             )
 
-            units, _ = workflow.process_country_data(country)
+            # Process country data - returns (units_collection, rejection_tracker)
+            updated_units_collection, _ = workflow.process_country_data(country)
 
-            if units:
-                logger.info(f"Processed {len(units)} units for {country}")
+            # Filter to get only units from the current country
+            # This is important because the Units collection may accumulate data
+            country_units = updated_units_collection.filter_by_country(country)
+
+            if len(country_units) > 0:
+                logger.info(f"Processed {len(country_units)} units for {country}")
                 # Convert units to DataFrame
-                country_data = pd.DataFrame([unit.to_dict() for unit in units])
+                country_data = pd.DataFrame([unit.to_dict() for unit in country_units])
 
                 # Save to CSV cache for faster access next time
                 update_csv_cache(csv_cache_path, country, country_data)
