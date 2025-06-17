@@ -182,12 +182,14 @@ if __name__ == "__main__":
     config = get_config()
     config["main_query"] = ""
     config["target_countries"] = countries
-    config["OSM"]["force_refresh"] = False
-    config["OSM"]["plants_only"] = False
-    config["OSM"]["units_clustering"]["enabled"] = False
+    config["OSM"]["force_refresh"] = True  # True to test rejection tracker logic
+    config["OSM"]["plants_only"] = True
     config["OSM"]["missing_name_allowed"] = False
     config["OSM"]["missing_technology_allowed"] = False
     config["OSM"]["missing_start_date_allowed"] = True
+    config["OSM"]["capacity_estimation"]["enabled"] = True
+    config["OSM"]["units_clustering"]["enabled"] = False
+    config["OSM"]["units_reconstruction"]["enabled"] = True
 
     # Set target countries to process all countries at once
 
@@ -206,6 +208,6 @@ if __name__ == "__main__":
     plt.savefig(os.path.join(output_dir, "osm_gem_ppm_linear.png"))
 
     fig, axis = fueltype_and_country_totals_bar(
-        [gem_data, osm_data], keys=["GEM", "OSM"]
+        [gem_data, osm_data], keys=["GEM", "OSM"], log_y=False
     )
     plt.savefig(os.path.join(output_dir, "osm_gem_ppm_country.png"))

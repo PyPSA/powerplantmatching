@@ -274,9 +274,8 @@ OSM:
     Hard Coal: [coal]
     Lignite: [placeholder]
     Geothermal: [geothermal]
-    Marine: [placeholder]
     Waste: [waste]
-    Battery: [placeholder]
+    Other: [placeholder]
   technology_mapping:
     Combustion Engine: [combustion, reciprocating_engine, combined_cycle, gas_engine, motor_generator, steam_generator, bioreactor, gasification]
     Steam Turbine: [combustion, gasification, steam_turbine, fission]
@@ -289,6 +288,7 @@ OSM:
     Onshore: [wind_turbine, horizontal_axis]
     PV: [photovoltaic, thermal;photovoltaic, solar_photovoltaic_panel]
     CSP: [thermal]
+    Marine: [placeholder]
   source_technology_mapping:
     Nuclear: [Steam Turbine]
     Solid Biomass: [Steam Turbine]
@@ -301,9 +301,8 @@ OSM:
     Hard Coal: [Steam Turbine]
     Lignite: [Steam Turbine]
     Geothermal: [Steam Turbine]
-    Marine: []
     Waste: [Combustion Engine]
-    Battery: []
+    Other: [Marine]
   sources:
     Solar:
       units_clustering:

@@ -35,8 +35,6 @@ VALID_FUELTYPES = [
 ]
 
 VALID_TECHNOLOGIES = [
-    "Boiled Water Reactor",
-    "Pressurized Water Reactor",
     "Steam Turbine",
     "OCGT",
     "CCGT",
@@ -48,6 +46,7 @@ VALID_TECHNOLOGIES = [
     "PV",
     "CSP",
     "Combustion Engine",
+    "Marine",
 ]
 
 VALID_SETS = ["PP", "CHP", "Store"]

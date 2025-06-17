@@ -560,7 +560,7 @@ def main():
     ppm_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     output_dir = os.path.join(
         ppm_root,
-        "output",
+        "outputs",
         "reconstruction_demo",
         datetime.now().strftime("%Y%m%d_%H%M%S"),
     )
