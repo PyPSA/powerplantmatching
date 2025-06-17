@@ -347,6 +347,36 @@ class GeometryHandler:
             logger.debug(f"Error checking if point is in polygon: {str(e)}")
             return False
 
+    def check_point_within_polygons(
+        self, lat: float, lon: float, polygons: dict[str, PlantPolygon]
+    ) -> str | None:
+        """
+        Check if a point is within any of the given polygons.
+
+        Parameters
+        ----------
+        lat : float
+            Latitude of the point
+        lon : float
+            Longitude of the point
+        polygons : dict[str, PlantPolygon]
+            Dictionary mapping IDs to plant polygons
+
+        Returns
+        -------
+        str | None
+            ID of the containing polygon, or None if not within any polygon
+        """
+        point = Point(lon, lat)
+
+        for polygon_id, polygon in polygons.items():
+            if hasattr(polygon.geometry, "contains") and polygon.geometry.contains(
+                point
+            ):
+                return polygon_id
+
+        return None
+
     def is_element_within_any_plant(
         self, element: dict[str, Any], plant_polygons: list[PlantPolygon]
     ) -> tuple[bool, Optional[str]]:

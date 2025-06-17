@@ -5,6 +5,7 @@ from typing import Any
 import numpy as np
 
 from .models import Unit
+from .unit_factory import UnitFactory
 
 logger = logging.getLogger(__name__)
 from sklearn.cluster import DBSCAN, KMeans
@@ -246,6 +247,7 @@ class ClusteringManager:
             Configuration for osm sources
         """
         self.config = config
+        self.unit_factory = UnitFactory(config)
 
     def create_algorithm(
         self, source_type: str
@@ -359,21 +361,18 @@ class ClusteringManager:
                 # Use first plant as template
                 template = plants[0]
 
-                # Create cluster plant
-                cluster_plant = Unit(
-                    projectID=f"OSM_cluster:{source_type}/{cluster_id}",
-                    type="generator:cluster",
-                    Fueltype=source_type,
+                # Create cluster plant using factory
+                cluster_plant = self.unit_factory.create_cluster_plant(
+                    cluster_id=str(cluster_id),
+                    country=template.Country,
                     lat=centroid[0],
                     lon=centroid[1],
-                    Capacity=capacity,
-                    capacity_source="aggregated",
-                    Country=template.Country,
-                    Name=f"Cluster of {len(plants)} {source_type} generators",
+                    name=f"Cluster of {len(plants)} {source_type} generators",
+                    source=source_type,
+                    technology=template.Technology,
+                    capacity=capacity,
                     generator_count=len(plants),
-                    Set="PP",
-                    Technology=template.Technology,
-                    id=f"cluster:{source_type}/{cluster_id}",
+                    start_date=template.DateIn,
                 )
 
                 cluster_plants.append(cluster_plant)

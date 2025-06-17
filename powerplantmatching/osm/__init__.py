@@ -31,7 +31,13 @@ from .interface import (
     validate_and_standardize_df,
 )
 from .models import ElementType, PlantPolygon, RejectionReason, Unit, Units
+from .reconstruction import (
+    NameAggregator,
+    OrphanedGeneratorSalvager,
+    PlantReconstructor,
+)
 from .rejection import RejectedElement, RejectionTracker
+from .unit_factory import UnitFactory
 from .workflow import GeneratorParser, PlantParser, Workflow
 
 __all__ = [
@@ -60,4 +66,8 @@ __all__ = [
     "validate_and_standardize_df",
     "VALID_FUELTYPES",
     "VALID_TECHNOLOGIES",
+    "NameAggregator",
+    "PlantReconstructor",
+    "OrphanedGeneratorSalvager",
+    "UnitFactory",
 ]

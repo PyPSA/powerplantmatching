@@ -1,6 +1,8 @@
 import logging
 import os
 
+import pandas as pd
+
 from powerplantmatching.core import _data_in, get_config
 from powerplantmatching.osm.client import OverpassAPIClient
 from powerplantmatching.osm.models import Units
@@ -19,14 +21,14 @@ if __name__ == "__main__":
     # Load configuration
     config_main = get_config()
     config = config_main["OSM"]
-    config["force_refresh"] = (
-        True  # To test rejection tracker logic this should be True
-    )
-    config["plants_only"] = False
-    config["units_clustering"]["enabled"] = False
+    config["force_refresh"] = True  # True to test rejection tracker logic
+    config["plants_only"] = True
     config["missing_name_allowed"] = False
     config["missing_technology_allowed"] = False
     config["missing_start_date_allowed"] = True
+    config["capacity_estimation"]["enabled"] = False
+    config["units_clustering"]["enabled"] = False
+    config["units_reconstruction"]["enabled"] = True
 
     # Initialize organized directory structure
     output_dir = "outputs"
@@ -195,7 +197,6 @@ if __name__ == "__main__":
     rejection_stats_csv = os.path.join(
         subdirs["rejections"], "rejection_statistics.csv"
     )
-    import pandas as pd
 
     # Create rejection statistics summary
     rejection_summary_data = []

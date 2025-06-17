@@ -231,6 +231,10 @@ OSM:
     enabled: true
   units_clustering:
     enabled: false
+  units_reconstruction:
+    enabled: false
+    min_generators_for_reconstruction: 2
+    name_similarity_threshold: 0.7
   plant_tags:
     source_tags_keys:
       - plant:source
@@ -274,9 +278,8 @@ OSM:
     Waste: [waste]
     Battery: [placeholder]
   technology_mapping:
-    Fission Reactor: [fission]
     Combustion Engine: [combustion, reciprocating_engine, combined_cycle, gas_engine, motor_generator, steam_generator, bioreactor, gasification]
-    Steam Turbine: [combustion, gasification, steam_turbine]
+    Steam Turbine: [combustion, gasification, steam_turbine, fission]
     OCGT: [combustion]
     CCGT: [combustion, thermal]
     Run-Of-River: [run-of-the-river]
@@ -287,7 +290,7 @@ OSM:
     PV: [photovoltaic, thermal;photovoltaic, solar_photovoltaic_panel]
     CSP: [thermal]
   source_technology_mapping:
-    Nuclear: [Fission Reactor]
+    Nuclear: [Steam Turbine]
     Solid Biomass: [Steam Turbine]
     Biogas: [Combustion Engine]
     Wind: [Offshore, Onshore]

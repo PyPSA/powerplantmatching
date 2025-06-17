@@ -20,6 +20,7 @@ PROCESSING_PARAMETERS = [
     "missing_technology_allowed",
     "missing_start_date_allowed",
     "sources",
+    "units_reconstruction",
 ]
 
 
@@ -110,6 +111,26 @@ class PlantPolygon:
     id: str
     type: str
     geometry: Any  # This would be a shapely Polygon in practice
+
+
+@dataclass
+class RejectedPlantInfo:
+    """Store info about rejected plants that might be completed from members"""
+
+    element_id: str
+    polygon: PlantPolygon
+    missing_fields: dict[str, bool]  # e.g., {'name': True, 'source': False}
+    member_generators: list[dict]  # Store generator members
+
+
+@dataclass
+class GeneratorGroup:
+    """Group of generators that belong to the same rejected plant"""
+
+    plant_id: str
+    generators: list[dict]
+    plant_polygon: PlantPolygon
+    aggregated_name: str | None = None
 
 
 class Units:
