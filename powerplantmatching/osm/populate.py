@@ -13,8 +13,7 @@ from typing import Optional, Union
 import pycountry
 from tqdm import tqdm
 
-from powerplantmatching.core import get_config
-from powerplantmatching.data import _data_in
+from powerplantmatching.core import _data_in, get_config
 
 from .client import OverpassAPIClient
 from .coverage import get_continent_mapping
