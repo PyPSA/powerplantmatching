@@ -123,9 +123,11 @@ class OverpassAPIClient:
                         f"Overpass API request failed after {self.max_retries} attempts: {str(e)}"
                     )
 
-        raise ConnectionError(
+        logger.error(
             f"Failed to query Overpass API after {self.max_retries} attempts: {str(last_error)}"
         )
+        # Return empty result instead of raising
+        return {"elements": [], "error": f"API connection failed: {str(last_error)}"}
 
     def count_country_elements(
         self, country: str, element_type: str = "both"
@@ -218,7 +220,17 @@ out count;"""
             poly_str = poly_str.strip() + '"'
             area_filter = f"({poly_str})"
         else:
-            raise ValueError(f"Unknown region type: {region['type']}")
+            logger.warning(
+                f"Unknown region type: {region['type']}' for region '{region.get('name', 'unnamed')}' - returning zero count"
+            )
+            area_filter = None
+
+        # If area_filter is None (invalid region type), return zero counts
+        if area_filter is None:
+            counts["plants"] = 0
+            if element_type in ["generators", "both"]:
+                counts["generators"] = 0
+            return counts
 
         queries = {}
         if element_type in ["plants", "both"]:

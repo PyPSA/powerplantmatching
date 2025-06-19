@@ -165,19 +165,42 @@ def region_download(
         # Convert single region to list
         regions = [regions]
 
-    # Validate regions
+    # Validate regions and filter out invalid ones
+    valid_regions = []
     for i, region in enumerate(regions):
         if "name" not in region:
             region["name"] = f"Region_{i + 1}"
 
         if "type" not in region:
-            raise ValueError(f"Region '{region['name']}' missing required 'type' field")
+            logger.warning(
+                f"Region '{region['name']}' missing required 'type' field - skipping this region"
+            )
+            continue
 
         if region["type"] not in ["bbox", "radius", "polygon"]:
-            raise ValueError(
+            logger.warning(
                 f"Region '{region['name']}' has invalid type '{region['type']}'. "
-                "Must be one of: bbox, radius, polygon"
+                "Must be one of: bbox, radius, polygon - skipping this region"
             )
+            continue
+
+        valid_regions.append(region)
+
+    # Check if we have any valid regions left
+    if not valid_regions:
+        logger.warning("No valid regions found after validation")
+        return {
+            "success": False,
+            "regions_processed": 0,
+            "regions_failed": len(regions),
+            "results": {},
+            "total_elements_updated": 0,
+            "total_elements_added": 0,
+            "error": "No valid regions to process",
+        }
+
+    # Use valid_regions from here on
+    regions = valid_regions
 
     # Set up cache directory
     if cache_dir is None:
@@ -434,6 +457,13 @@ def _download_single_region(
     # Build area filter based on region type
     area_filter = _build_area_filter(region)
 
+    # If area_filter is empty, log and return empty results
+    if not area_filter:
+        logger.warning(
+            f"Empty area filter for region '{region.get('name', 'unnamed')}' - skipping download"
+        )
+        return results
+
     # Download plants if requested
     if download_type in ["plants", "both"]:
         query = f"""
@@ -559,7 +589,10 @@ def _build_area_filter(region: dict[str, Any]) -> str:
         return f"({poly_str})"
 
     else:
-        raise ValueError(f"Unknown region type: {region['type']}")
+        logger.warning(
+            f"Unknown region type: {region['type']}' for region '{region.get('name', 'unnamed')}' - returning empty filter"
+        )
+        return ""
 
 
 def _update_caches_with_regional_data(
@@ -777,7 +810,10 @@ def _determine_countries_for_region(
             center_lat = sum(lats) / len(lats)
             test_points.append((center_lat, center_lon))
         else:
-            raise ValueError(f"Unknown region type: {region['type']}")
+            logger.warning(
+                f"Unknown region type: {region['type']}' in _determine_countries_for_region - skipping"
+            )
+            return []
 
         # Query each test point to find countries
         countries = set()
