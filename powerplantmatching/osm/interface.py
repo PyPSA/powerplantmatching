@@ -76,6 +76,7 @@ def get_client_params(osm_config, api_url, cache_dir):
         "timeout": osm_config.get("overpass_api", {}).get("timeout", 300),
         "max_retries": osm_config.get("overpass_api", {}).get("max_retries", 3),
         "retry_delay": osm_config.get("overpass_api", {}).get("retry_delay", 5),
+        "show_progress": osm_config.get("show_progress", True),
     }
 
 

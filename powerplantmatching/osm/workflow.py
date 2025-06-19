@@ -373,7 +373,9 @@ class ElementProcessor(ABC):
                 else:
                     date_string = str(tags[key])
                 store_raw_date = date_string
-                datum = self._parse_date_string(date_string)
+                datum = self._parse_date_string(
+                    element=element, date_string=date_string
+                )
                 if datum:
                     return datum
                 else:
@@ -411,7 +413,7 @@ class ElementProcessor(ABC):
 
         return None
 
-    def _parse_date_string(self, date_string: str) -> str:
+    def _parse_date_string(self, element: dict[str, Any], date_string: str) -> str:
         """
         Parse date string from OSM tags into a standardized format.
         Handles various date formats including incomplete dates.
@@ -432,7 +434,9 @@ class ElementProcessor(ABC):
 
         # Strip whitespace and handle empty strings
         if not date_string or not date_string.strip():
-            logger.warning("Empty date string provided")
+            logger.warning(
+                f"Empty date string provided for plant {element['type']}/{element['id']}"
+            )
             return ""
 
         date_string = date_string.strip()
@@ -440,7 +444,9 @@ class ElementProcessor(ABC):
         # Try to extract year from the string (for fallback)
         year_match = re.search(r"\b(1[0-9]{3}|2[0-9]{3})\b", date_string)
         if not year_match:
-            logger.warning(f"No valid year found in '{date_string}'")
+            logger.warning(
+                f"No valid year found for plant {element['type']}/{element['id']} in '{date_string}'"
+            )
             return ""
 
         year = int(year_match.group(1))
@@ -484,7 +490,9 @@ class ElementProcessor(ABC):
 
         except (ValueError, TypeError) as e:
             # If parsing failed, fallback to just using the year
-            logger.warning(f"Date parsing failed for '{date_string}': {str(e)}")
+            logger.warning(
+                f"Date parsing failed for plant {element['type']}/{element['id']} in '{date_string}': {str(e)}"
+            )
             return f"{year}-01-01"
 
     def setup_element_coordinates(
@@ -1092,7 +1100,7 @@ class PlantParser(ElementProcessor):
                 )
                 if mismatch_ratio > 0.2:  # More than 20% difference
                     logger.warning(
-                        f"Capacity mismatch for plant {relation['id']}: "
+                        f"Capacity mismatch for plant relation/{relation['id']}: "
                         f"Plant declares {existing_capacity} MW, "
                         f"but {valid_generator_count} generators sum to {generator_capacity:.1f} MW "
                         f"({mismatch_ratio * 100:.1f}% difference)"

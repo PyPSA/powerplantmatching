@@ -3,6 +3,7 @@ import time
 from typing import Optional
 
 import requests
+from tqdm import tqdm
 
 from .cache import ElementCache
 from .utils import get_country_code
@@ -20,6 +21,7 @@ class OverpassAPIClient:
         timeout: int = 300,
         max_retries: int = 3,
         retry_delay: int = 5,
+        show_progress: bool = True,
     ):
         """
         Initialize the Overpass API client
@@ -36,6 +38,8 @@ class OverpassAPIClient:
             Maximum number of retries for API requests
         retry_delay : int
             Delay between retries in seconds
+        show_progress : bool
+            Whether to show progress bars during downloads
         """
         self.api_url = api_url or "https://overpass-api.de/api/interpreter"
         self.cache = ElementCache(cache_dir)
@@ -45,6 +49,7 @@ class OverpassAPIClient:
         self.timeout = timeout
         self.max_retries = max_retries
         self.retry_delay = retry_delay
+        self.show_progress = show_progress
 
     def __enter__(self):
         """Enter context manager"""
@@ -121,6 +126,131 @@ class OverpassAPIClient:
         raise ConnectionError(
             f"Failed to query Overpass API after {self.max_retries} attempts: {str(last_error)}"
         )
+
+    def count_country_elements(
+        self, country: str, element_type: str = "both"
+    ) -> dict[str, int]:
+        """
+        Count power plants and/or generators in a country.
+
+        Parameters
+        ----------
+        country : str
+            Country name
+        element_type : str
+            "plants", "generators", or "both"
+
+        Returns
+        -------
+        dict
+            {"plants": N, "generators": M}
+        """
+        country_code = get_country_code(country)
+        counts = {}
+
+        queries = {}
+        if element_type in ["plants", "both"]:
+            queries["plants"] = f"""[out:json][timeout:{self.timeout}];
+area["ISO3166-1"="{country_code}"][admin_level=2]->.boundaryarea;
+(node["power"="plant"](area.boundaryarea);
+way["power"="plant"](area.boundaryarea);
+relation["power"="plant"](area.boundaryarea););
+out count;"""
+
+        if element_type in ["generators", "both"]:
+            queries["generators"] = f"""[out:json][timeout:{self.timeout}];
+area["ISO3166-1"="{country_code}"][admin_level=2]->.boundaryarea;
+(node["power"="generator"](area.boundaryarea);
+way["power"="generator"](area.boundaryarea);
+relation["power"="generator"](area.boundaryarea););
+out count;"""
+
+        for elem_type, query in queries.items():
+            try:
+                data = self.query_overpass(query)
+                total = 0
+                for elem in data.get("elements", []):
+                    if elem.get("type") == "count" and "tags" in elem:
+                        count_val = elem["tags"].get("total", 0)
+                        if isinstance(count_val, str):
+                            count_val = int(count_val)
+                        total += count_val
+                counts[elem_type] = total
+            except Exception as e:
+                logger.error(f"Error counting {elem_type} in {country}: {e}")
+                counts[elem_type] = -1
+
+        return counts
+
+    def count_region_elements(
+        self, region: dict, element_type: str = "both"
+    ) -> dict[str, int]:
+        """
+        Count power plants and/or generators in a region.
+
+        Parameters
+        ----------
+        region : dict
+            Region specification with type (bbox, radius, polygon)
+        element_type : str
+            "plants", "generators", or "both"
+
+        Returns
+        -------
+        dict
+            {"plants": N, "generators": M}
+        """
+        counts = {}
+
+        # Build queries based on region type
+        if region["type"] == "bbox":
+            lat_min, lon_min, lat_max, lon_max = region["bounds"]
+            area_filter = f"({lat_min},{lon_min},{lat_max},{lon_max})"
+        elif region["type"] == "radius":
+            lat, lon = region["center"]
+            radius_m = region["radius_km"] * 1000
+            area_filter = f"(around:{radius_m},{lat},{lon})"
+        elif region["type"] == "polygon":
+            # Convert to Overpass polygon format
+            poly_str = 'poly:"'
+            for lon, lat in region["coordinates"]:
+                poly_str += f"{lat} {lon} "
+            poly_str = poly_str.strip() + '"'
+            area_filter = f"({poly_str})"
+        else:
+            raise ValueError(f"Unknown region type: {region['type']}")
+
+        queries = {}
+        if element_type in ["plants", "both"]:
+            queries["plants"] = f"""[out:json][timeout:{self.timeout}];
+(node["power"="plant"]{area_filter};
+way["power"="plant"]{area_filter};
+relation["power"="plant"]{area_filter};);
+out count;"""
+
+        if element_type in ["generators", "both"]:
+            queries["generators"] = f"""[out:json][timeout:{self.timeout}];
+(node["power"="generator"]{area_filter};
+way["power"="generator"]{area_filter};
+relation["power"="generator"]{area_filter};);
+out count;"""
+
+        for elem_type, query in queries.items():
+            try:
+                data = self.query_overpass(query)
+                total = 0
+                for elem in data.get("elements", []):
+                    if elem.get("type") == "count" and "tags" in elem:
+                        count_val = elem["tags"].get("total", 0)
+                        if isinstance(count_val, str):
+                            count_val = int(count_val)
+                        total += count_val
+                counts[elem_type] = total
+            except Exception as e:
+                logger.error(f"Error counting {elem_type} in region: {e}")
+                counts[elem_type] = -1
+
+        return counts
 
     def get_plants_data(self, country: str, force_refresh: bool = False) -> dict:
         """
@@ -479,92 +609,130 @@ class OverpassAPIClient:
 
         logger.info(f"Getting OSM data for {country}")
 
-        # Get plant data
-        plants_data = self.get_plants_data(country, force_refresh)
-
-        # Get generator data if needed
-        if plants_only:
-            generators_data = {"elements": []}
-        else:
-            generators_data = self.get_generators_data(country, force_refresh)
-
-        # Extract node, way, and relation IDs from responses for resolution
-        way_ids = []
-        relation_ids = []
-        node_ids = []
-
-        # Extract from plants data
-        for element in plants_data.get("elements", []):
-            if element["type"] == "way":
-                way_ids.append(element["id"])
-                # Extract node IDs from ways if they exist
-                if "nodes" in element:
-                    node_ids.extend(element["nodes"])
-            elif element["type"] == "relation":
-                relation_ids.append(element["id"])
-            elif element["type"] == "node":
-                node_ids.append(element["id"])
-
-        # Extract from generators data
-        for element in generators_data.get("elements", []):
-            if element["type"] == "way":
-                way_ids.append(element["id"])
-                # Extract node IDs from ways if they exist
-                if "nodes" in element:
-                    node_ids.extend(element["nodes"])
-            elif element["type"] == "relation":
-                relation_ids.append(element["id"])
-            elif element["type"] == "node":
-                node_ids.append(element["id"])
-
-        # Filter out duplicates
-        unique_node_ids = list(set(node_ids))
-        unique_way_ids = list(set(way_ids))
-        unique_relation_ids = list(set(relation_ids))
-
-        # Only fetch elements that aren't already in the cache
-        uncached_node_ids = [
-            node_id for node_id in unique_node_ids if not self.cache.get_node(node_id)
-        ]
-        uncached_way_ids = [
-            way_id for way_id in unique_way_ids if not self.cache.get_way(way_id)
-        ]
-        uncached_relation_ids = [
-            rel_id
-            for rel_id in unique_relation_ids
-            if not self.cache.get_relation(rel_id)
-        ]
-
-        # Fetch and cache the uncached elements
-        if uncached_node_ids:
-            logger.info(
-                f"Resolving {len(uncached_node_ids)} uncached nodes out of {len(unique_node_ids)} referenced"
+        # Count elements first if showing progress
+        pbar = None
+        if self.show_progress:
+            logger.info(f"Counting elements in {country}...")
+            counts = self.count_country_elements(
+                country, "plants" if plants_only else "both"
             )
-            self.get_nodes(uncached_node_ids)
-        elif unique_node_ids:
-            logger.info(f"All {len(unique_node_ids)} referenced nodes already in cache")
+            total_expected = counts.get("plants", 0)
+            if not plants_only:
+                total_expected += counts.get("generators", 0)
 
-        if uncached_way_ids:
-            logger.info(
-                f"Resolving {len(uncached_way_ids)} uncached ways out of {len(unique_way_ids)} referenced"
-            )
-            self.get_ways(uncached_way_ids)
-        elif unique_way_ids:
-            logger.info(f"All {len(unique_way_ids)} referenced ways already in cache")
+            if total_expected > 0:
+                pbar = tqdm(
+                    total=total_expected, desc=f"Downloading {country}", unit="elements"
+                )
 
-        if uncached_relation_ids:
-            logger.info(
-                f"Resolving {len(uncached_relation_ids)} uncached relations out of {len(unique_relation_ids)} referenced"
-            )
-            self.get_relations(uncached_relation_ids)
-        elif unique_relation_ids:
-            logger.info(
-                f"All {len(unique_relation_ids)} referenced relations already in cache"
+        try:
+            # Get plant data
+            plants_data = self.get_plants_data(country, force_refresh)
+            if pbar:
+                pbar.update(len(plants_data.get("elements", [])))
+
+            # Get generator data if needed
+            if plants_only:
+                generators_data = {"elements": []}
+            else:
+                generators_data = self.get_generators_data(country, force_refresh)
+                if pbar:
+                    pbar.update(len(generators_data.get("elements", [])))
+
+            # Extract node, way, and relation IDs from responses for resolution
+            way_ids = []
+            relation_ids = []
+            node_ids = []
+
+            # Extract from plants data
+            for element in plants_data.get("elements", []):
+                if element["type"] == "way":
+                    way_ids.append(element["id"])
+                    # Extract node IDs from ways if they exist
+                    if "nodes" in element:
+                        node_ids.extend(element["nodes"])
+                elif element["type"] == "relation":
+                    relation_ids.append(element["id"])
+                elif element["type"] == "node":
+                    node_ids.append(element["id"])
+
+            # Extract from generators data
+            for element in generators_data.get("elements", []):
+                if element["type"] == "way":
+                    way_ids.append(element["id"])
+                    # Extract node IDs from ways if they exist
+                    if "nodes" in element:
+                        node_ids.extend(element["nodes"])
+                elif element["type"] == "relation":
+                    relation_ids.append(element["id"])
+                elif element["type"] == "node":
+                    node_ids.append(element["id"])
+
+            # Filter out duplicates
+            unique_node_ids = list(set(node_ids))
+            unique_way_ids = list(set(way_ids))
+            unique_relation_ids = list(set(relation_ids))
+
+            # Only fetch elements that aren't already in the cache
+            uncached_node_ids = [
+                node_id
+                for node_id in unique_node_ids
+                if not self.cache.get_node(node_id)
+            ]
+            uncached_way_ids = [
+                way_id for way_id in unique_way_ids if not self.cache.get_way(way_id)
+            ]
+            uncached_relation_ids = [
+                rel_id
+                for rel_id in unique_relation_ids
+                if not self.cache.get_relation(rel_id)
+            ]
+
+            # Update progress bar description for reference resolution
+            if pbar:
+                pbar.set_description(f"{country} - resolving references")
+
+            # Fetch and cache the uncached elements
+            if uncached_node_ids:
+                logger.info(
+                    f"Resolving {len(uncached_node_ids)} uncached nodes out of {len(unique_node_ids)} referenced"
+                )
+                self.get_nodes(uncached_node_ids)
+            elif unique_node_ids:
+                logger.info(
+                    f"All {len(unique_node_ids)} referenced nodes already in cache"
+                )
+
+            if uncached_way_ids:
+                logger.info(
+                    f"Resolving {len(uncached_way_ids)} uncached ways out of {len(unique_way_ids)} referenced"
+                )
+                self.get_ways(uncached_way_ids)
+            elif unique_way_ids:
+                logger.info(
+                    f"All {len(unique_way_ids)} referenced ways already in cache"
+                )
+
+            if uncached_relation_ids:
+                logger.info(
+                    f"Resolving {len(uncached_relation_ids)} uncached relations out of {len(unique_relation_ids)} referenced"
+                )
+                self.get_relations(uncached_relation_ids)
+            elif unique_relation_ids:
+                logger.info(
+                    f"All {len(unique_relation_ids)} referenced relations already in cache"
+                )
+
+            plants_data["elements"] = sorted(plants_data["elements"], key=type_order)
+            generators_data["elements"] = sorted(
+                generators_data["elements"], key=type_order
             )
 
-        plants_data["elements"] = sorted(plants_data["elements"], key=type_order)
-        generators_data["elements"] = sorted(
-            generators_data["elements"], key=type_order
-        )
+            if pbar:
+                pbar.set_description(f"{country} - complete")
+
+        finally:
+            if pbar:
+                pbar.close()
 
         return plants_data, generators_data

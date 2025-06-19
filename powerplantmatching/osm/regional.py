@@ -20,6 +20,7 @@ def region_download(
     regions: Optional[Union[list[dict[str, Any]], dict[str, Any]]] = None,
     download_type: str = "both",
     update_country_caches: bool = True,
+    show_element_counts: bool = True,
     config: Optional[dict] = None,
     api_url: Optional[str] = None,
     cache_dir: Optional[str] = None,
@@ -53,6 +54,9 @@ def region_download(
 
     update_country_caches : bool, default True
         Whether to update the country caches with the downloaded data
+
+    show_element_counts : bool, default True
+        Whether to show element counts before downloading
 
     config : dict, optional
         Custom configuration. If None, uses powerplantmatching.get_config()
@@ -130,6 +134,7 @@ def region_download(
             regions=regions,
             download_type=download_type,
             update_country_caches=update_country_caches,
+            show_element_counts=show_element_counts,
         )
 
     # Get configuration
@@ -216,6 +221,7 @@ def region_download(
                 regions=regions,
                 download_type=download_type,
                 update_country_caches=update_country_caches,
+                show_element_counts=show_element_counts,
             )
 
             # Log summary
@@ -315,6 +321,7 @@ def _region_download_with_client(
     regions: list[dict[str, Any]],
     download_type: str = "both",
     update_country_caches: bool = True,
+    show_element_counts: bool = True,
 ) -> dict[str, Any]:
     """
     Core function that performs the actual regional download with an existing client.
@@ -337,6 +344,16 @@ def _region_download_with_client(
         logger.info(f"Processing region {i + 1}/{len(regions)}: {region_name}")
 
         try:
+            # Count elements first if requested
+            if show_element_counts and hasattr(client, "count_region_elements"):
+                logger.info(f"Counting elements in {region_name}...")
+                expected_counts = client.count_region_elements(region, download_type)
+                logger.info(
+                    f"Expected elements in {region_name}: "
+                    f"{expected_counts.get('plants', 0)} plants, "
+                    f"{expected_counts.get('generators', 0)} generators"
+                )
+
             # Download data for this region
             region_data = _download_single_region(client, region, download_type)
 
