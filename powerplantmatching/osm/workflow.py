@@ -1506,7 +1506,7 @@ class Workflow:
         self,
         country: str,
         force_refresh: bool | None = None,
-    ) -> Units:
+    ) -> tuple[Unit, RejectionTracker]:
         """
         Process OSM data for a country and add units to the collection.
 
@@ -1519,8 +1519,8 @@ class Workflow:
 
         Returns
         -------
-        Units
-            The updated units collection
+        tuple[Units, RejectionTracker]
+            Units collection and rejection tracker
         """
         if force_refresh is None:
             force_refresh = self.config.get("force_refresh", False)

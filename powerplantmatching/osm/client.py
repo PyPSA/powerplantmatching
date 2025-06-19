@@ -148,6 +148,10 @@ class OverpassAPIClient:
             {"plants": N, "generators": M}
         """
         country_code = get_country_code(country)
+        if country_code is None:
+            logger.error(f"Invalid country name: {country}")
+            return {"plants": -1, "generators": -1}
+
         counts = {}
 
         queries = {}
@@ -281,6 +285,9 @@ out count;"""
             Power plant data
         """
         country_code = get_country_code(country)
+        if country_code is None:
+            logger.error(f"Invalid country name: {country}")
+            return {"elements": [], "error": f"Invalid country: {country}"}
 
         # Check cache first
         if not force_refresh:
@@ -326,6 +333,9 @@ out count;"""
             Power generator data
         """
         country_code = get_country_code(country)
+        if country_code is None:
+            logger.error(f"Invalid country name: {country}")
+            return {"elements": [], "error": f"Invalid country: {country}"}
 
         # Check cache first
         if not force_refresh:

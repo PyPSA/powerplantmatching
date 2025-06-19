@@ -16,6 +16,13 @@ Requirements:
 from .cache import ElementCache
 from .client import OverpassAPIClient
 from .clustering import ClusteringManager
+
+# Import utility functions
+from .coverage import (
+    find_outdated_caches,
+    get_continent_mapping,
+    show_country_coverage,
+)
 from .estimation import CapacityEstimator
 from .extractor import CapacityExtractor
 from .geometry import GeometryHandler
@@ -31,6 +38,7 @@ from .interface import (
     validate_and_standardize_df,
 )
 from .models import ElementType, PlantPolygon, RejectionReason, Unit, Units
+from .populate import populate_cache
 from .reconstruction import (
     NameAggregator,
     OrphanedGeneratorSalvager,
@@ -72,4 +80,9 @@ __all__ = [
     "OrphanedGeneratorSalvager",
     "UnitFactory",
     "region_download",
+    # Utility functions
+    "populate_cache",
+    "show_country_coverage",
+    "find_outdated_caches",
+    "get_continent_mapping",
 ]

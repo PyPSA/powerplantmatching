@@ -71,7 +71,7 @@ if __name__ == "__main__":
         for country_name in countries:
             logger.info(f"Processing {country_name}...")
             workflow = Workflow(client, rejection_tracker, all_units, config)
-            updated_units = workflow.process_country_data(country=country_name)
+            _, _ = workflow.process_country_data(country=country_name)
 
             # Save individual country CSV in by_country folder
             country_units = all_units.filter_by_country(country_name)
