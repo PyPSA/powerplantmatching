@@ -36,6 +36,7 @@ from .reconstruction import (
     OrphanedGeneratorSalvager,
     PlantReconstructor,
 )
+from .regional import region_download
 from .rejection import RejectedElement, RejectionTracker
 from .unit_factory import UnitFactory
 from .workflow import GeneratorParser, PlantParser, Workflow
@@ -70,4 +71,5 @@ __all__ = [
     "PlantReconstructor",
     "OrphanedGeneratorSalvager",
     "UnitFactory",
+    "region_download",
 ]
