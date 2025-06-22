@@ -8,7 +8,7 @@ import logging
 import os
 import time
 from datetime import timedelta
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 import pycountry
 from tqdm import tqdm
@@ -41,10 +41,10 @@ def get_all_countries(sort_by_continent: bool = True) -> list[dict[str, str]]:
 
     for country in pycountry.countries:
         country_data = {
-            "name": country.name,
-            "code": country.alpha_2,
-            "alpha3": country.alpha_3,
-            "continent": continent_map.get(country.alpha_2, "Unknown"),
+            "name": country.name,  # type: ignore[attr-defined]
+            "code": country.alpha_2,  # type: ignore[attr-defined]
+            "alpha3": country.alpha_3,  # type: ignore[attr-defined]
+            "continent": continent_map.get(country.alpha_2, "Unknown"),  # type: ignore[attr-defined]
         }
         countries.append(country_data)
 
@@ -78,7 +78,7 @@ def populate_cache(
     dry_run: bool = False,
     show_progress: bool = True,
     sort_by_continent: bool = True,
-) -> dict[str, any]:
+) -> dict[str, Any]:
     """
     Populate OSM cache with raw data for specified countries.
 
@@ -236,7 +236,8 @@ def populate_cache(
                     and country_continent != current_continent
                 ):
                     current_continent = country_continent
-                    iterator.set_description(f"{current_continent}")
+                    if hasattr(iterator, "set_description"):
+                        iterator.set_description(f"{current_continent}")  # type: ignore[attr-defined]
 
                 try:
                     # Check if we already have data (unless force refresh)
@@ -288,18 +289,19 @@ def populate_cache(
                     remaining = len(all_countries) - (i + 1)
                     eta = remaining / rate if rate > 0 else 0
 
-                    iterator.set_postfix(
-                        {
-                            "OK": succeeded,
-                            "Skip": skipped,
-                            "Fail": failed,
-                            "ETA": str(timedelta(seconds=int(eta))),
-                        }
-                    )
+                    if hasattr(iterator, "set_postfix"):
+                        iterator.set_postfix(  # type: ignore[attr-defined]
+                            {
+                                "OK": succeeded,
+                                "Skip": skipped,
+                                "Fail": failed,
+                                "ETA": str(timedelta(seconds=int(eta))),
+                            }
+                        )
 
             # Close progress bar if using tqdm
             if show_progress and hasattr(iterator, "close"):
-                iterator.close()
+                iterator.close()  # type: ignore[attr-defined]
 
     except Exception as e:
         logger.error(f"Fatal error during cache population: {str(e)}", exc_info=True)

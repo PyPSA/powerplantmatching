@@ -39,7 +39,7 @@ class UnitFactory:
         name: str,
         source: str,
         technology: str,
-        capacity: float,
+        capacity: float | None,
         capacity_source: str,
         start_date: str | None = None,
         generator_count: int | None = None,
@@ -112,7 +112,7 @@ class UnitFactory:
         name: str,
         source: str,
         technology: str,
-        capacity: float,
+        capacity: float | None,
         generator_count: int,
         start_date: str | None = None,
     ) -> Unit:

@@ -6,7 +6,7 @@ This example uses Portugal (small country, manageable data size).
 
 from datetime import datetime
 
-from powerplantmatching.osm import region_download
+from powerplantmatching.osm.regional import region_download
 
 
 def example_1_single_region():

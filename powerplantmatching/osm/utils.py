@@ -54,7 +54,7 @@ def is_valid_unit(element: dict[str, Any], unit_type: str) -> bool:
     if "tags" not in element:
         return False
 
-    tags = element.get("tags")
+    tags: dict[str, str] = element["tags"]
     if "power" not in tags:
         return False
 
@@ -92,7 +92,7 @@ def parse_capacity_value(
     value: str,
     advanced_extraction: bool,
     regex_patterns: list[str] = [r"^(\d+(?:\.\d+)?)\s*([a-zA-Z]+p?)$"],
-) -> tuple[bool, Optional[float], str]:
+) -> tuple[bool, float | None, str]:
     """
     Parse capacity value from string with improved error reporting
 
@@ -107,7 +107,7 @@ def parse_capacity_value(
 
     Returns
     -------
-    tuple[bool, Optional[float], str]
+    tuple[bool, float | None, str]
         (success, parsed_value, unit_or_error_info)
     """
     # Normalize the input string - trim and convert to lowercase
@@ -118,8 +118,11 @@ def parse_capacity_value(
     if not advanced_extraction:
         # Basic extraction with simple pattern
         pattern = r"(\d+(?:\.\d+)?)\s*(mw|mwp)"
-        match = re.match(pattern, value_str)
-
+        try:
+            match = re.match(pattern, value_str)
+        except Exception as e:
+            logger.error(f"Error parsing capacity value '{value_str}' with regex: {e}")
+            return False, None, "regex_error"
     else:
         # Try to handle comma as decimal separator
         if "," in value_str and not "." in value_str:
@@ -133,10 +136,16 @@ def parse_capacity_value(
         except ValueError:
             # Advanced extraction with multiple configurable regex patterns
             match = None
-            for pattern in regex_patterns:
-                match = re.match(pattern, value_str)
-                if match:
-                    break
+            try:
+                for pattern in regex_patterns:
+                    match = re.match(pattern, value_str)
+                    if match:
+                        break
+            except Exception as e:
+                logger.error(
+                    f"Error parsing capacity value '{value_str}' with regex: {e}"
+                )
+                return False, None, "regex_error"
 
     if match:
         number_str, unit = match.groups()
@@ -161,7 +170,7 @@ def parse_capacity_value(
         return False, None, "regex_no_match"
 
 
-def get_country_code(country: str) -> str:
+def get_country_code(country: str) -> str | None:
     """
     Get the ISO 3166-1 alpha-2 country code for a country
 

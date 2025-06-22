@@ -1,14 +1,13 @@
 import logging
-from typing import Any, Optional, Union
+from typing import Any, Optional
 
 from shapely.errors import ShapelyError
-from shapely.geometry import MultiPolygon, Point, Polygon
+from shapely.geometry import Point, Polygon
 from shapely.ops import unary_union
 
 from .client import OverpassAPIClient
-from .models import ElementType, PlantPolygon, RejectionReason
+from .models import PlantGeometry, create_plant_geometry
 from .rejection import RejectionTracker
-from .utils import get_element_coordinates
 
 logger = logging.getLogger(__name__)
 
@@ -30,9 +29,36 @@ class GeometryHandler:
         self.client = client
         self.rejection_tracker = rejection_tracker
 
-    def create_way_polygon(self, way: dict[str, Any]) -> Optional[PlantPolygon]:
+    def create_node_geometry(self, node: dict[str, Any]) -> Optional[PlantGeometry]:
         """
-        Create a polygon from a way
+        Create a PlantGeometry for a node element.
+
+        Parameters
+        ----------
+        node : dict[str, Any]
+            OSM node data
+
+        Returns
+        -------
+        Optional[PlantGeometry]
+            PlantGeometry with Point geometry
+        """
+        if "lat" not in node or "lon" not in node:
+            logger.debug(f"Node {node.get('id', 'unknown')} missing coordinates")
+            return None
+
+        try:
+            point = Point(node["lon"], node["lat"])  # GIS standard is (lon, lat)
+            return create_plant_geometry(node, point)
+        except Exception as e:
+            logger.debug(
+                f"Error creating point geometry for node {node.get('id')}: {str(e)}"
+            )
+            return None
+
+    def create_way_geometry(self, way: dict[str, Any]) -> Optional[PlantGeometry]:
+        """
+        Create a PlantGeometry for a way element.
 
         Parameters
         ----------
@@ -41,8 +67,8 @@ class GeometryHandler:
 
         Returns
         -------
-        Optional[PlantPolygon]
-            Polygon if successful, None otherwise
+        Optional[PlantGeometry]
+            PlantGeometry with Polygon geometry
         """
         # Check if way has nodes
         if "nodes" not in way:
@@ -70,16 +96,16 @@ class GeometryHandler:
                 logger.debug(f"Invalid polygon for way {way['id']}")
                 return None
 
-            return PlantPolygon(id=str(way["id"]), type=way["type"], geometry=polygon)
+            return create_plant_geometry(way, polygon)
         except ShapelyError as e:
             logger.debug(f"Error creating polygon for way {way['id']}: {str(e)}")
             return None
 
-    def create_relation_polygon(
+    def create_relation_geometry(
         self, relation: dict[str, Any]
-    ) -> Optional[PlantPolygon]:
+    ) -> Optional[PlantGeometry]:
         """
-        Create a polygon from a relation with improved member handling
+        Create a PlantGeometry for a relation element.
 
         Parameters
         ----------
@@ -88,8 +114,8 @@ class GeometryHandler:
 
         Returns
         -------
-        Optional[PlantPolygon]
-            Polygon if successful, None otherwise
+        Optional[PlantGeometry]
+            PlantGeometry with appropriate geometry type
         """
         # Check if relation has members
         if "members" not in relation:
@@ -111,13 +137,9 @@ class GeometryHandler:
             way_id = way_member["ref"]
             way = self.client.cache.get_way(way_id)
             if way:
-                way_polygon = self.create_way_polygon(way)
-                if (
-                    way_polygon
-                    and hasattr(way_polygon.geometry, "is_valid")
-                    and way_polygon.geometry.is_valid
-                ):
-                    polygons.append(way_polygon.geometry)
+                way_geom = self.create_way_geometry(way)
+                if way_geom and isinstance(way_geom.geometry, Polygon):
+                    polygons.append(way_geom.geometry)
 
         # If no polygons from ways, try to create from nodes
         if not polygons and node_members:
@@ -128,29 +150,26 @@ class GeometryHandler:
                 if node and "lat" in node and "lon" in node:
                     points.append(Point(node["lon"], node["lat"]))
 
-            if len(points) > 0:
-                # Create a geometric representation of the node cluster
-                if len(points) >= 3:
-                    # With 3+ points, create convex hull as polygon
-                    try:
-                        from shapely.geometry import MultiPoint
+            if len(points) == 1:
+                # Single node relation - return as point
+                return create_plant_geometry(relation, points[0])
+            elif len(points) == 2:
+                # Two nodes - create a line buffer or just use first point
+                # For power plants, we'll use the first point as representative
+                return create_plant_geometry(relation, points[0])
+            elif len(points) >= 3:
+                # With 3+ points, create convex hull as polygon
+                try:
+                    from shapely.geometry import MultiPoint
 
-                        hull = MultiPoint(points).convex_hull
-                        return PlantPolygon(
-                            id=str(relation["id"]), type=relation["type"], geometry=hull
-                        )
-                    except Exception as e:
-                        logger.debug(
-                            f"Error creating hull for relation {relation['id']}: {str(e)}"
-                        )
-                        return None
-                else:
-                    # With 1-2 points, just return first point as centroid marker
-                    return PlantPolygon(
-                        id=str(relation["id"]),
-                        type=relation["type"],
-                        geometry=points[0],
+                    hull = MultiPoint(points).convex_hull
+                    return create_plant_geometry(relation, hull)
+                except Exception as e:
+                    logger.debug(
+                        f"Error creating hull for relation {relation['id']}: {str(e)}"
                     )
+                    # Fallback to first point
+                    return create_plant_geometry(relation, points[0])
 
         # Process polygons from ways if any
         if polygons:
@@ -165,9 +184,7 @@ class GeometryHandler:
                     logger.debug(f"Invalid union polygon for relation {relation['id']}")
                     return None
 
-                return PlantPolygon(
-                    id=str(relation["id"]), type=relation["type"], geometry=union
-                )
+                return create_plant_geometry(relation, union)
             except ShapelyError as e:
                 logger.debug(
                     f"Error creating union polygon for relation {relation['id']}: {str(e)}"
@@ -176,11 +193,9 @@ class GeometryHandler:
 
         return None
 
-    def get_element_geometry(
-        self, element: dict[str, Any]
-    ) -> Optional[Union[PlantPolygon, Point]]:
+    def get_element_geometry(self, element: dict[str, Any]) -> Optional[PlantGeometry]:
         """
-        Get geometry for an OSM element
+        Get PlantGeometry for any OSM element type.
 
         Parameters
         ----------
@@ -189,48 +204,47 @@ class GeometryHandler:
 
         Returns
         -------
-        Optional[Union[PlantPolygon, Point]]
-            Geometry object if successful, None otherwise
+        Optional[PlantGeometry]
+            PlantGeometry object if successful, None otherwise
         """
-        element_type = element["type"]
+        element_type = element.get("type")
 
         if element_type == "node":
-            return Point(element["lon"], element["lat"])  # GIS standard is (lon, lat)
+            return self.create_node_geometry(element)
         elif element_type == "way":
-            return self.create_way_polygon(element)
+            return self.create_way_geometry(element)
         elif element_type == "relation":
-            return self.create_relation_polygon(element)
+            return self.create_relation_geometry(element)
         else:
             logger.warning(f"Unknown element type: {element_type}")
             return None
 
-    def get_geometry_centroid(
-        self, geometry: Union[PlantPolygon, Point, Polygon, MultiPolygon]
+    def process_element_coordinates(
+        self, element: dict[str, Any]
     ) -> tuple[Optional[float], Optional[float]]:
         """
-        Get centroid coordinates for a geometry
+        Extract coordinates from an OSM element.
 
         Parameters
         ----------
-        geometry : Union[PlantPolygon, Point, Polygon, MultiPolygon]
-            Geometry object
+        element : dict[str, Any]
+            OSM element data
 
         Returns
         -------
         tuple[Optional[float], Optional[float]]
-            (lat, lon) coordinates of centroid
+            (lat, lon) coordinates or (None, None) if not found
         """
-        # Handle PlantPolygon case
-        if isinstance(geometry, PlantPolygon):
-            geometry = geometry.geometry
+        # Get the element's geometry
+        plant_geometry = self.get_element_geometry(element)
+        if plant_geometry:
+            return plant_geometry.get_centroid()
 
-        try:
-            # Get centroid
-            centroid = geometry.centroid
-            return centroid.y, centroid.x  # Return as (lat, lon)
-        except (AttributeError, ShapelyError) as e:
-            logger.debug(f"Error calculating centroid: {str(e)}")
-            return None, None
+        # Fallback for direct coordinate extraction if geometry creation failed
+        if element.get("type") == "node" and "lat" in element and "lon" in element:
+            return (element["lat"], element["lon"])
+
+        return (None, None)
 
     def get_relation_centroid_from_members(
         self, relation: dict[str, Any]
@@ -290,9 +304,9 @@ class GeometryHandler:
                 lat, lon = member_elem["lat"], member_elem["lon"]
             elif member_type == "way":
                 # For ways, try to get centroid
-                way_geom = self.create_way_polygon(member_elem)
+                way_geom = self.create_way_geometry(member_elem)
                 if way_geom:
-                    lat, lon = self.get_geometry_centroid(way_geom)
+                    lat, lon = way_geom.get_centroid()
 
             if lat is not None and lon is not None:
                 # Add to appropriate list
@@ -319,39 +333,71 @@ class GeometryHandler:
 
         return None, None
 
-    def is_point_in_polygon(
-        self, point: tuple[float, float], plant_polygon: PlantPolygon
-    ) -> bool:
+    def is_element_within_plant_geometries(
+        self,
+        element: dict[str, Any],
+        plant_geometries: list[PlantGeometry],
+        buffer_meters: Optional[float] = None,
+    ) -> tuple[bool, Optional[str]]:
         """
-        Check if a point is inside a polygon
+        Check if an element is within any plant geometry.
+
+        This method handles all geometry type combinations properly:
+        - Node vs Node: distance check with buffer
+        - Node vs Polygon: point-in-polygon check
+        - Polygon vs Polygon: intersection check
 
         Parameters
         ----------
-        point : tuple[float, float]
-            Point coordinates as (lat, lon)
-        plant_polygon : PlantPolygon
-            Polygon to check
+        element : dict[str, Any]
+            OSM element data to check
+        plant_geometries : list[PlantGeometry]
+            List of plant geometries to check against
+        buffer_meters : float, optional
+            Buffer distance for node comparisons (default 50m)
 
         Returns
         -------
-        bool
-            True if point is in polygon, False otherwise
+        tuple[bool, Optional[str]]
+            (is_within, plant_id) - True and plant ID if within any geometry
         """
-        # Create point with (lon, lat) as shapely uses (x, y)
-        point_obj = Point(point[1], point[0])
+        # Get geometry for the element
+        element_geometry = self.get_element_geometry(element)
+        if not element_geometry:
+            return False, None
 
-        try:
-            # Check if point is in polygon
-            return plant_polygon.geometry.contains(point_obj)
-        except ShapelyError as e:
-            logger.debug(f"Error checking if point is in polygon: {str(e)}")
-            return False
+        # Get coordinates for the element (for point checks)
+        lat, lon = element_geometry.get_centroid()
+        if lat is None or lon is None:
+            return False, None
 
-    def check_point_within_polygons(
-        self, lat: float, lon: float, polygons: dict[str, PlantPolygon]
-    ) -> str | None:
+        # Check against each plant geometry
+        for plant_geom in plant_geometries:
+            try:
+                # Use the PlantGeometry's contains_point method which handles all cases
+                if plant_geom.contains_point(lat, lon, buffer_meters):
+                    return True, f"{plant_geom.type}/{plant_geom.id}"
+
+                # For polygon elements, also check intersection
+                if not isinstance(element_geometry.geometry, Point):
+                    if element_geometry.intersects(plant_geom, buffer_meters):
+                        return True, f"{plant_geom.type}/{plant_geom.id}"
+
+            except Exception as e:
+                logger.debug(f"Error checking geometry containment: {str(e)}")
+                continue
+
+        return False, None
+
+    def check_point_within_geometries(
+        self,
+        lat: float,
+        lon: float,
+        plant_geometries: dict[str, PlantGeometry],
+        buffer_meters: Optional[float] = None,
+    ) -> Optional[str]:
         """
-        Check if a point is within any of the given polygons.
+        Check if a point is within any of the given plant geometries.
 
         Parameters
         ----------
@@ -359,111 +405,17 @@ class GeometryHandler:
             Latitude of the point
         lon : float
             Longitude of the point
-        polygons : dict[str, PlantPolygon]
-            Dictionary mapping IDs to plant polygons
+        plant_geometries : dict[str, PlantGeometry]
+            Dictionary mapping IDs to plant geometries
+        buffer_meters : float, optional
+            Buffer distance for node comparisons
 
         Returns
         -------
         str | None
-            ID of the containing polygon, or None if not within any polygon
+            ID of the containing geometry, or None if not within any
         """
-        point = Point(lon, lat)
-
-        for polygon_id, polygon in polygons.items():
-            if hasattr(polygon.geometry, "contains") and polygon.geometry.contains(
-                point
-            ):
-                return polygon_id
-
+        for geom_id, plant_geom in plant_geometries.items():
+            if plant_geom.contains_point(lat, lon, buffer_meters):
+                return geom_id
         return None
-
-    def is_element_within_any_plant(
-        self, element: dict[str, Any], plant_polygons: list[PlantPolygon]
-    ) -> tuple[bool, Optional[str]]:
-        """
-        Check if an element is within any plant polygon
-
-        Parameters
-        ----------
-        element : dict[str, Any]
-            OSM element data
-        plant_polygons : list[PlantPolygon]
-            List of plant polygons to check against
-
-        Returns
-        -------
-        tuple[bool, Optional[str]]
-            (is_within, plant_id) - True and plant ID if within any polygon, False and None otherwise
-        """
-        # Get element coordinates
-        lat, lon = self.process_element_coordinates(element)
-        if lat is None or lon is None:
-            return False, "coordinates not found"
-
-        # Check each polygon
-        for plant_polygon in plant_polygons:
-            if not hasattr(plant_polygon.geometry, "contains"):
-                logger.debug(
-                    f"Plant polygon '{plant_polygon.type}/{plant_polygon.id}' has no geometry"
-                )
-                continue
-
-            if self.is_point_in_polygon((lat, lon), plant_polygon):
-                return True, f"{plant_polygon.type}/{plant_polygon.id}"
-
-        return False, "element not within any polygon"
-
-    def process_element_coordinates(
-        self, element: dict[str, Any]
-    ) -> tuple[Optional[float], Optional[float]]:
-        """
-        Process an element to extract its coordinates using various fallback methods
-
-        Parameters
-        ----------
-        element : dict[str, Any]
-            OSM element data
-        category : str
-            Category for rejection tracking
-
-        Returns
-        -------
-        tuple[Optional[float], Optional[float]]
-            (lat, lon) coordinates or (None, None) if not found
-        """
-        # Try to get geometry
-        geometry = self.get_element_geometry(element)
-
-        # Get coordinates from geometry
-        lat, lon = None, None
-        if geometry:
-            lat, lon = self.get_geometry_centroid(geometry)
-            return lat, lon
-
-        # For relations with no coordinates, try special processing
-        if element["type"] == "relation" and (lat is None or lon is None):
-            # Try to get centroid from members
-            lat, lon = self.get_relation_centroid_from_members(element)
-
-            if lat is not None and lon is not None:
-                logger.info(
-                    f"Found coordinates for relation {element['id']} from members: {lat}, {lon}"
-                )
-            return lat, lon
-
-        # Fall back to direct coordinates if geometry failed
-        if lat is None or lon is None:
-            lat, lon = get_element_coordinates(element)
-            return lat, lon
-
-        # Track rejection if coordinates not found
-        if self.rejection_tracker and (lat is None or lon is None):
-            self.rejection_tracker.add_rejection(
-                element_id=element["id"],
-                element_type=ElementType(element["type"]),
-                reason=RejectionReason.COORDINATES_NOT_FOUND,
-                details="Could not determine coordinates for element",
-                category="GeometryHandler:process_element_coordinates",
-            )
-
-        return None, None

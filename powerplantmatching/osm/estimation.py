@@ -2,7 +2,7 @@ import logging
 from typing import Any, Optional
 
 from .client import OverpassAPIClient
-from .models import ElementType, RejectionReason
+from .models import RejectionReason
 from .rejection import RejectionTracker
 from .utils import calculate_area, get_source_config
 
@@ -35,7 +35,7 @@ class CapacityEstimator:
         self.config = config
 
     def estimate_capacity(
-        self, element: dict[str, Any], source_type: str, unit_type: str | None = None
+        self, element: dict[str, Any], source_type: str, unit_type: str
     ) -> tuple[Optional[float], str]:
         """
         Estimate capacity
@@ -64,11 +64,14 @@ class CapacityEstimator:
             return self.estimate_capacity_area_based(element, source_type, unit_type)
         else:
             self.rejection_tracker.add_rejection(
-                element_id=element["id"],
-                element_type=ElementType(element["type"]),
+                element=element,
                 reason=RejectionReason.ESTIMATION_METHOD_UNKNOWN,
                 details=estimation_method,
-                category="CapacityEstimator:estimate_capacity",
+                keywords={
+                    "keyword": None,
+                    "value": None,
+                    "comment": None,
+                },
             )
             return None, "unknown"
 

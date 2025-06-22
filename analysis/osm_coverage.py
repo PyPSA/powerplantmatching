@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import logging
 import os
+import sys
 from datetime import datetime
 
 import powerplantmatching as pm
@@ -9,6 +10,27 @@ from powerplantmatching.osm import (
     populate_cache,
     show_country_coverage,
 )
+
+
+class TeeOutput:
+    """Duplicate stdout to both console and file."""
+
+    def __init__(self, filename):
+        self.terminal = sys.stdout
+        self.log_file = open(filename, "w", encoding="utf-8")
+
+    def write(self, message):
+        self.terminal.write(message)
+        self.log_file.write(message)
+        self.log_file.flush()  # Ensure immediate write
+
+    def flush(self):
+        self.terminal.flush()
+        self.log_file.flush()
+
+    def close(self):
+        self.log_file.close()
+
 
 # Configure logging
 logging.basicConfig(
@@ -190,24 +212,66 @@ def example_diagnostic():
         logger.error(f"Error in diagnostic: {e}")
 
 
-def main():
-    """Run all examples."""
-    print("=" * 80)
-    print("POWERPLANTMATCHING OSM MODULE EXAMPLES")
-    print("=" * 80)
-    print(f"Started at: {datetime.now()}")
+def main(save_output=True, output_filename=None):
+    """
+    Run all examples.
 
-    # Run examples
-    example_basic_usage()
-    example_cache_population()
-    example_cache_coverage()
-    example_find_outdated()
-    example_diagnostic()
+    Parameters
+    ----------
+    save_output : bool, default True
+        Whether to save output to a file
+    output_filename : str, optional
+        Custom filename for output. If None, uses timestamp-based name.
+    """
+    # Set up output redirection if requested
+    tee_output = None
+    if save_output:
+        if output_filename is None:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            output_filename = f"osm_coverage_output_{timestamp}.txt"
 
-    print("\n" + "=" * 80)
-    print(f"Completed at: {datetime.now()}")
-    print("=" * 80)
+        print(f"Saving output to: {output_filename}")
+        tee_output = TeeOutput(output_filename)
+        sys.stdout = tee_output
+
+    try:
+        print("=" * 80)
+        print("POWERPLANTMATCHING OSM MODULE EXAMPLES")
+        print("=" * 80)
+        print(f"Started at: {datetime.now()}")
+
+        # Run examples
+        example_basic_usage()
+        example_cache_population()
+        example_cache_coverage()
+        example_find_outdated()
+        example_diagnostic()
+
+        print("\n" + "=" * 80)
+        print(f"Completed at: {datetime.now()}")
+        print("=" * 80)
+
+        if save_output:
+            print(f"\nOutput saved to: {output_filename}")
+
+    finally:
+        # Restore stdout and close file
+        if tee_output:
+            sys.stdout = tee_output.terminal
+            tee_output.close()
 
 
 if __name__ == "__main__":
-    main()
+    import argparse
+
+    parser = argparse.ArgumentParser(description="OSM Coverage Analysis Examples")
+    parser.add_argument(
+        "--no-save", action="store_true", help="Don't save output to file"
+    )
+    parser.add_argument(
+        "--output", type=str, help="Custom output filename", default=None
+    )
+
+    args = parser.parse_args()
+
+    main(save_output=not args.no_save, output_filename=args.output)

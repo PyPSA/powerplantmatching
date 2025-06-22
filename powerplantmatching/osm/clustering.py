@@ -319,6 +319,11 @@ class ClusteringManager:
                 f"Failed to create clustering algorithm for source type '{source_type}'"
             )
             return success, {}
+
+        if algorithm is None:
+            logger.error(f"Algorithm is None for source type '{source_type}'")
+            return False, {}
+
         return success, algorithm.cluster(generators)
 
     def create_cluster_plants(
@@ -341,6 +346,10 @@ class ClusteringManager:
         """
         # Get centroids and capacities
         _, algorithm = self.create_algorithm(source_type)
+        if algorithm is None:
+            logger.error(f"No clustering algorithm available for {source_type}")
+            return []
+
         centroids = algorithm.get_cluster_centroids(clusters)
         capacities = algorithm.get_cluster_capacity(clusters)
 
@@ -363,6 +372,13 @@ class ClusteringManager:
             if centroid:
                 # Use first plant as template
                 template = plants[0]
+
+                # Validate country before creating cluster
+                if template.Country is None:
+                    logger.warning(
+                        f"Template for cluster {cluster_id} has no country, skipping"
+                    )
+                    continue
 
                 # Create cluster plant using factory
                 cluster_plant = self.unit_factory.create_cluster_plant(

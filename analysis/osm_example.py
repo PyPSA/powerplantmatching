@@ -111,7 +111,7 @@ if __name__ == "__main__":
 
     # Save main units GeoJSON in geojson folder
     units_geojson_path = os.path.join(subdirs["geojson"], "power_plants.geojson")
-    all_units.save_geojson_report(units_geojson_path, styled=True)
+    all_units.save_geojson_report(units_geojson_path)
     print(f"Saved units GeoJSON: {units_geojson_path}")
 
     # Save main rejections reports in rejections folder
@@ -141,7 +141,7 @@ if __name__ == "__main__":
             fuel_geojson_path = os.path.join(
                 subdirs["by_fuel_type"], f"{fuel_name}_power_plants.geojson"
             )
-            fuel_units.save_geojson_report(fuel_geojson_path, styled=True)
+            fuel_units.save_geojson_report(fuel_geojson_path)
 
             print(
                 f"  - {fuel_type}: {len(fuel_units)} units → CSV & GeoJSON in by_fuel_type/"
@@ -161,7 +161,7 @@ if __name__ == "__main__":
             country_geojson_path = os.path.join(
                 subdirs["by_country"], f"{country_name}_power_plants.geojson"
             )
-            country_units.save_geojson_report(country_geojson_path, styled=True)
+            country_units.save_geojson_report(country_geojson_path)
 
             print(
                 f"  - {country}: {len(country_units)} units → CSV & GeoJSON in by_country/"
@@ -170,20 +170,21 @@ if __name__ == "__main__":
     # Generate rejection reason specific files in by_rejection_reason folder
     print("\nGenerating rejection reason specific files...")
     rejection_stats = rejection_tracker.get_rejection_statistics()
+    rejection_summary = rejection_stats["by_reason"]  # Get the by_reason dictionary
     country_stats = rejection_tracker.get_country_statistics()
 
     print(
-        f"Found {len(rejection_stats)} different rejection reasons across {len(country_stats)} countries:"
+        f"Found {len(rejection_summary)} different rejection reasons across {len(country_stats)} countries:"
     )
 
     # Show top rejection reasons
-    for reason, count in list(rejection_stats.items())[:10]:  # Top 10 reasons
+    for reason, count in list(rejection_summary.items())[:10]:  # Top 10 reasons
         print(f"  - {reason}: {count:,} rejections")
 
-    if len(rejection_stats) > 10:
-        remaining_count = sum(list(rejection_stats.values())[10:])
+    if len(rejection_summary) > 10:
+        remaining_count = sum(list(rejection_summary.values())[10:])
         print(
-            f"  - ... and {len(rejection_stats) - 10} more reasons ({remaining_count:,} rejections)"
+            f"  - ... and {len(rejection_summary) - 10} more reasons ({remaining_count:,} rejections)"
         )
 
     print("\nRejections by country:")
@@ -202,12 +203,12 @@ if __name__ == "__main__":
 
     # Create rejection statistics summary
     rejection_summary_data = []
-    for reason, count in rejection_stats.items():
+    for reason, count in rejection_summary.items():
         rejection_summary_data.append(
             {
                 "rejection_reason": reason,
                 "count": count,
-                "percentage": round(count / sum(rejection_stats.values()) * 100, 2),
+                "percentage": round(count / sum(rejection_summary.values()) * 100, 2),
             }
         )
 

@@ -2,11 +2,52 @@ import json
 import logging
 from dataclasses import asdict, dataclass
 from enum import Enum
-from typing import Any
+from typing import TYPE_CHECKING, Any, Literal, Optional, Union
 
 import pandas as pd
 
+# Import shapely types for proper type hints
+if TYPE_CHECKING:
+    from shapely.geometry import MultiPolygon, Point, Polygon
+
 logger = logging.getLogger(__name__)
+
+# Define literal types for OSM elements
+OSMElementType = Literal["node", "way", "relation"]
+
+# Define literal types for power plant attributes
+FuelType = Literal[
+    "Nuclear",
+    "Solid Biomass",
+    "Biogas",
+    "Wind",
+    "Hydro",
+    "Solar",
+    "Oil",
+    "Natural Gas",
+    "Hard Coal",
+    "Lignite",
+    "Geothermal",
+    "Waste",
+    "Other",
+]
+
+TechnologyType = Literal[
+    "Steam Turbine",
+    "OCGT",
+    "CCGT",
+    "Run-Of-River",
+    "Reservoir",
+    "Pumped Storage",
+    "Offshore",
+    "Onshore",
+    "PV",
+    "CSP",
+    "Combustion Engine",
+    "Marine",
+]
+
+SetType = Literal["PP", "CHP", "Store"]
 
 PROCESSING_PARAMETERS = [
     "capacity_extraction",
@@ -58,19 +99,19 @@ class ElementType(Enum):
 class Unit:
     # Using PowerPlantMatching column names directly
     projectID: str
-    Country: str | None = None
-    lat: float | None = None
-    lon: float | None = None
-    type: str | None = None
-    Fueltype: str | None = None
-    Technology: str | None = None
-    Capacity: float | None = None
-    Name: str | None = None
-    generator_count: int | None = None
-    Set: str | None = None
-    capacity_source: str | None = None
-    DateIn: str | None = None
-    id: str | None = None
+    Country: Optional[str] = None
+    lat: Optional[float] = None
+    lon: Optional[float] = None
+    type: Optional[str] = None  # Reverted to str for compatibility
+    Fueltype: Optional[str] = None  # Reverted to str for compatibility
+    Technology: Optional[str] = None  # Reverted to str for compatibility
+    Capacity: Optional[float] = None
+    Name: Optional[str] = None
+    generator_count: Optional[int] = None
+    Set: Optional[str] = None  # Reverted to str for compatibility
+    capacity_source: Optional[str] = None
+    DateIn: Optional[str] = None
+    id: Optional[str] = None
 
     # Metadata fields for caching
     created_at: str | None = None
@@ -107,10 +148,266 @@ class Unit:
 
 
 @dataclass
-class PlantPolygon:
+class PlantGeometry:
+    """
+    Unified geometry representation for OSM power plant elements.
+
+    This class provides a consistent interface for spatial operations
+    across different OSM element types (node, way, relation).
+    """
+
     id: str
-    type: str
-    geometry: Any  # This would be a shapely Polygon in practice
+    type: Literal["node", "way", "relation"]  # Using literal type directly
+    geometry: Union["Point", "Polygon", "MultiPolygon"]  # Shapely geometry types
+
+    # Optional metadata
+    element_data: Optional[dict[str, Any]] = None
+
+    def contains_point(
+        self, lat: float, lon: float, buffer_meters: Optional[float] = None
+    ) -> bool:
+        """
+        Check if this geometry contains a point.
+
+        For nodes: checks if the point is within buffer_meters (default 50m)
+        For ways/relations: checks if point is within the polygon
+
+        Parameters
+        ----------
+        lat : float
+            Latitude of the point to check
+        lon : float
+            Longitude of the point to check
+        buffer_meters : float, optional
+            Buffer distance in meters for node comparisons (default 50m)
+
+        Returns
+        -------
+        bool
+            True if the point is contained within this geometry
+        """
+        from shapely.errors import ShapelyError
+        from shapely.geometry import MultiPolygon, Point, Polygon
+
+        point = Point(lon, lat)  # Shapely uses (x, y) = (lon, lat)
+
+        try:
+            if isinstance(self.geometry, Point):
+                # For nodes, check distance
+                if buffer_meters is None:
+                    buffer_meters = 50.0  # Default 50m buffer
+
+                # Convert buffer from meters to degrees (approximate)
+                # At equator: 1 degree ≈ 111,320 meters
+                # This is a rough approximation that varies by latitude
+                buffer_degrees = buffer_meters / 111320.0
+
+                # For more accurate distance calculation at higher latitudes
+                # we adjust by the cosine of latitude
+                from math import cos, radians
+
+                if lat != 0:
+                    lon_correction = abs(cos(radians(lat)))
+                    # Use average of lat/lon corrections for circular buffer
+                    buffer_degrees = buffer_meters / (
+                        111320.0 * ((1 + lon_correction) / 2)
+                    )
+
+                distance = self.geometry.distance(point)
+                return distance <= buffer_degrees
+
+            elif isinstance(self.geometry, (Polygon, MultiPolygon)):
+                # For polygons, use standard contains check
+                return self.geometry.contains(point)
+
+            else:
+                logger.warning(
+                    f"Unknown geometry type for element {self.id}: {type(self.geometry)}"
+                )
+                return False
+
+        except ShapelyError as e:
+            logger.debug(f"Error checking containment for {self.id}: {str(e)}")
+            return False
+
+    def intersects(
+        self, other: "PlantGeometry", buffer_meters: Optional[float] = None
+    ) -> bool:
+        """
+        Check if this geometry intersects with another PlantGeometry.
+
+        Parameters
+        ----------
+        other : PlantGeometry
+            The other geometry to check intersection with
+        buffer_meters : float, optional
+            Buffer distance in meters for node comparisons
+
+        Returns
+        -------
+        bool
+            True if the geometries intersect
+        """
+        from shapely.errors import ShapelyError
+        from shapely.geometry import MultiPolygon, Point, Polygon
+
+        try:
+            # Handle node-to-node intersection
+            if isinstance(self.geometry, Point) and isinstance(other.geometry, Point):
+                if buffer_meters is None:
+                    buffer_meters = 50.0
+                buffer_degrees = buffer_meters / 111320.0
+                distance = self.geometry.distance(other.geometry)
+                return distance <= buffer_degrees
+
+            # Handle node-to-polygon intersection
+            elif isinstance(self.geometry, Point) and isinstance(
+                other.geometry, (Polygon, MultiPolygon)
+            ):
+                if buffer_meters is None:
+                    buffer_meters = 0  # No buffer for point-in-polygon
+                if buffer_meters > 0:
+                    buffer_degrees = buffer_meters / 111320.0
+                    buffered_point = self.geometry.buffer(buffer_degrees)
+                    return other.geometry.intersects(buffered_point)
+                else:
+                    return other.geometry.contains(self.geometry)
+
+            # Handle polygon-to-node intersection (reverse of above)
+            elif isinstance(self.geometry, (Polygon, MultiPolygon)) and isinstance(
+                other.geometry, Point
+            ):
+                return other.intersects(self, buffer_meters)  # Delegate to reverse case
+
+            # Handle polygon-to-polygon intersection
+            else:
+                return self.geometry.intersects(other.geometry)
+
+        except ShapelyError as e:
+            logger.debug(
+                f"Error checking intersection between {self.id} and {other.id}: {str(e)}"
+            )
+            return False
+
+    def get_centroid(self) -> tuple[float, float]:
+        """
+        Get the centroid coordinates of this geometry.
+
+        Returns
+        -------
+        tuple[float, float]
+            (lat, lon) coordinates of the centroid
+        """
+        from shapely.errors import ShapelyError
+        from shapely.geometry import Point
+
+        try:
+            centroid = self.geometry.centroid
+            return (centroid.y, centroid.x)  # Return as (lat, lon)
+        except (AttributeError, ShapelyError) as e:
+            # For points, return the point itself
+            if isinstance(self.geometry, Point):
+                return (self.geometry.y, self.geometry.x)
+            logger.debug(f"Error calculating centroid for {self.id}: {str(e)}")
+            return (None, None)  # type: ignore[return-value]
+
+    def get_area_sq_meters(self) -> Optional[float]:
+        """
+        Get the area of this geometry in square meters.
+
+        Returns
+        -------
+        float or None
+            Area in square meters, or None for point geometries
+        """
+        from math import cos, radians
+
+        from shapely.geometry import Point
+
+        if isinstance(self.geometry, Point):
+            return None
+
+        try:
+            # Note: This is approximate as we're using unprojected coordinates
+            # For more accurate area calculation, project to a local coordinate system
+            area_degrees = self.geometry.area
+
+            # Get centroid latitude for area correction
+            lat, _ = self.get_centroid()
+            if lat is not None:
+                # Correct for latitude distortion
+                # At latitude, 1 degree longitude = 111320 * cos(lat) meters
+                # 1 degree latitude = 111320 meters
+                lat_correction = 111320.0
+                lon_correction = 111320.0 * abs(cos(radians(lat)))
+                # Use average for area calculation
+                avg_correction = (lat_correction + lon_correction) / 2
+                return area_degrees * (avg_correction**2)
+            else:
+                # Fallback to equator approximation
+                return area_degrees * (111320.0**2)
+        except Exception as e:
+            logger.debug(f"Error calculating area for {self.id}: {str(e)}")
+            return None
+
+    def buffer(self, distance_meters: float) -> "PlantGeometry":
+        """
+        Create a buffered version of this geometry.
+
+        Parameters
+        ----------
+        distance_meters : float
+            Buffer distance in meters
+
+        Returns
+        -------
+        PlantGeometry
+            New PlantGeometry with buffered geometry
+        """
+        from shapely.errors import ShapelyError
+
+        try:
+            # Convert meters to degrees (approximate)
+            buffer_degrees = distance_meters / 111320.0
+            buffered_geom = self.geometry.buffer(buffer_degrees)
+
+            return PlantGeometry(
+                id=f"{self.id}_buffered",
+                type=self.type,
+                geometry=buffered_geom,
+                element_data=self.element_data,
+            )
+        except ShapelyError as e:
+            logger.error(f"Error buffering geometry for {self.id}: {str(e)}")
+            # Return original geometry if buffering fails
+            return self
+
+    @property
+    def bounds(self) -> tuple[float, float, float, float]:
+        """
+        Get the bounding box of this geometry.
+
+        Returns
+        -------
+        tuple[float, float, float, float]
+            (min_lon, min_lat, max_lon, max_lat)
+        """
+        bounds = self.geometry.bounds  # (minx, miny, maxx, maxy)
+        return (bounds[0], bounds[1], bounds[2], bounds[3])
+
+    def __repr__(self) -> str:
+        from shapely.geometry import MultiPolygon, Point, Polygon
+
+        if isinstance(self.geometry, Point):
+            geom_type = "Point"
+        elif isinstance(self.geometry, Polygon):
+            geom_type = "Polygon"
+        elif isinstance(self.geometry, MultiPolygon):
+            geom_type = "MultiPolygon"
+        else:
+            geom_type = type(self.geometry).__name__
+
+        return f"PlantGeometry(id='{self.id}', type='{self.type}', geometry_type='{geom_type}')"
 
 
 @dataclass
@@ -118,7 +415,7 @@ class RejectedPlantInfo:
     """Store info about rejected plants that might be completed from members"""
 
     element_id: str
-    polygon: PlantPolygon
+    polygon: PlantGeometry
     missing_fields: dict[str, bool]  # e.g., {'name': True, 'source': False}
     member_generators: list[dict]  # Store generator members
 
@@ -129,7 +426,7 @@ class GeneratorGroup:
 
     plant_id: str
     generators: list[dict]
-    plant_polygon: PlantPolygon
+    plant_polygon: PlantGeometry
     aggregated_name: str | None = None
 
 
@@ -285,106 +582,7 @@ class Units:
         )
         return geojson
 
-    def generate_styled_geojson_report(self) -> dict[str, Any]:
-        """
-        Generate a styled GeoJSON report optimized for web mapping applications
-
-        Returns
-        -------
-        dict[str, Any]
-            GeoJSON FeatureCollection with styling properties for web maps
-        """
-        features = []
-
-        for unit in self.units:
-            # Skip units without coordinates
-            if unit.lat is None or unit.lon is None:
-                continue
-
-            # Determine marker properties based on fuel type
-            fueltype_colors = {
-                "Solar": "#FFD700",  # Gold
-                "Wind": "#87CEEB",  # Sky Blue
-                "Hydro": "#00CED1",  # Dark Turquoise
-                "Nuclear": "#9370DB",  # Medium Purple
-                "Natural Gas": "#FF6347",  # Tomato
-                "Hard Coal": "#2F4F4F",  # Dark Slate Gray
-                "Oil": "#000000",  # Black
-                "Biogas": "#9ACD32",  # Yellow Green
-                "Solid Biomass": "#228B22",  # Forest Green
-                "Geothermal": "#DAA520",  # Goldenrod
-                "Waste": "#808000",  # Olive
-                "Other": "#D3D3D3",  # Light Gray
-            }
-
-            # Get color for fuel type
-            color = fueltype_colors.get(unit.Fueltype, "#808080")  # Default gray
-
-            # Determine marker size based on capacity
-            if unit.Capacity:
-                if unit.Capacity >= 1000:
-                    marker_size = "large"
-                    radius = 12
-                elif unit.Capacity >= 100:
-                    marker_size = "medium"
-                    radius = 8
-                else:
-                    marker_size = "small"
-                    radius = 5
-            else:
-                marker_size = "unknown"
-                radius = 6
-
-            # Create clean properties with styling
-            properties = {
-                # Core data
-                "name": unit.Name or f"Unnamed {unit.Fueltype or 'Power'} Plant",
-                "fuel_type": unit.Fueltype,
-                "technology": unit.Technology,
-                "capacity_mw": unit.Capacity,
-                "country": unit.Country,
-                # Styling properties for mapping
-                "marker-color": color,
-                "marker-size": marker_size,
-                "marker-symbol": self._get_fuel_symbol(unit.Fueltype),
-                "stroke": "#555555",
-                "stroke-width": 2,
-                "fill": color,
-                "fill-opacity": 0.7,
-                "radius": radius,
-            }
-
-            feature = {
-                "type": "Feature",
-                "geometry": {"type": "Point", "coordinates": [unit.lon, unit.lat]},
-                "properties": properties,
-            }
-            features.append(feature)
-
-        geojson = {"type": "FeatureCollection", "features": features}
-
-        logger.info(f"Generated styled GeoJSON report with {len(features)} features")
-        return geojson
-
-    def _get_fuel_symbol(self, fueltype: str | None) -> str:
-        """Get map symbol for fuel type"""
-        fuel_symbols = {
-            "Solar": "solar",
-            "Wind": "wind",
-            "Hydro": "water",
-            "Nuclear": "nuclear",
-            "Natural Gas": "gas-station",
-            "Hard Coal": "mine",
-            "Oil": "fuel",
-            "Biogas": "leaf",
-            "Solid Biomass": "tree",
-            "Geothermal": "volcano",
-            "Waste": "waste-basket",
-            "Other": "circle",
-        }
-        return fuel_symbols.get(fueltype, "industrial")
-
-    def save_geojson_report(self, filepath: str, styled: bool = False) -> None:
+    def save_geojson_report(self, filepath: str) -> None:
         """
         Generate and save a GeoJSON report to file
 
@@ -395,17 +593,13 @@ class Units:
         styled : bool, default False
             If True, include styling properties for web mapping
         """
-        if styled:
-            geojson_data = self.generate_styled_geojson_report()
-        else:
-            geojson_data = self.generate_geojson_report()
+        geojson_data = self.generate_geojson_report()
 
         with open(filepath, "w", encoding="utf-8") as f:
             json.dump(geojson_data, f, indent=2, ensure_ascii=False)
 
         stats = self.get_statistics()
-        report_type = "styled" if styled else "clean"
-        logger.info(f"Saved {report_type} GeoJSON report to {filepath}")
+        logger.info(f"Saved GeoJSON report to {filepath}")
         logger.info(
             f"Report contains {stats['units_with_coordinates']} units with coordinates out of {stats['total_units']} total units"
         )
@@ -424,3 +618,30 @@ class Units:
         df = self.to_dataframe()
         df.to_csv(filepath, index=False)
         logger.info(f"Saved {len(self.units)} units to CSV: {filepath}")
+
+
+def create_plant_geometry(
+    element: dict[str, Any],
+    geometry: Any,  # Union[Point, Polygon, MultiPolygon]
+) -> PlantGeometry:
+    """
+    Factory function to create a PlantGeometry from an OSM element and its geometry.
+
+    Parameters
+    ----------
+    element : dict[str, Any]
+        OSM element data
+    geometry : Any
+        The shapely geometry object (Point, Polygon, or MultiPolygon)
+
+    Returns
+    -------
+    PlantGeometry
+        New PlantGeometry instance
+    """
+    return PlantGeometry(
+        id=str(element.get("id", "unknown")),
+        type=element.get("type", "unknown"),
+        geometry=geometry,
+        element_data=element,
+    )

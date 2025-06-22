@@ -35,9 +35,17 @@ from .interface import (
     process_from_api,
     process_single_country,
     update_csv_cache,
+    validate_all_countries,
     validate_and_standardize_df,
 )
-from .models import ElementType, PlantPolygon, RejectionReason, Unit, Units
+from .models import (
+    ElementType,
+    PlantGeometry,
+    RejectionReason,
+    Unit,
+    Units,
+    create_plant_geometry,
+)
 from .populate import populate_cache
 from .reconstruction import (
     NameAggregator,
@@ -54,7 +62,8 @@ __all__ = [
     "ElementCache",
     "Unit",
     "Units",
-    "PlantPolygon",
+    "PlantGeometry",
+    "create_plant_geometry",
     "ElementType",
     "RejectionReason",
     "RejectedElement",
@@ -72,6 +81,7 @@ __all__ = [
     "check_units_cache",
     "process_from_api",
     "update_csv_cache",
+    "validate_all_countries",
     "validate_and_standardize_df",
     "VALID_FUELTYPES",
     "VALID_TECHNOLOGIES",

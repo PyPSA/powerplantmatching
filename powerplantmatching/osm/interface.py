@@ -118,9 +118,9 @@ def validate_all_countries(countries: list[str]) -> tuple[list[str], dict[str, s
     # If we have invalid countries, provide detailed error with suggestions
     if invalid_countries:
         # Get all valid country names for suggestions
-        all_country_names = [c.name for c in pycountry.countries]
-        all_country_names.extend([c.alpha_2 for c in pycountry.countries])
-        all_country_names.extend([c.alpha_3 for c in pycountry.countries])
+        all_country_names = [c.name for c in pycountry.countries]  # type: ignore[attr-defined]
+        all_country_names.extend([c.alpha_2 for c in pycountry.countries])  # type: ignore[attr-defined]
+        all_country_names.extend([c.alpha_3 for c in pycountry.countries])  # type: ignore[attr-defined]
 
         # Add common variations
         country_variations = {
@@ -420,6 +420,10 @@ def check_units_cache(csv_cache_path, country, config_hash, client_params):
         Country data if valid cache found, None otherwise
     """
     country_code = get_country_code(country)
+    if country_code is None:
+        logger.warning(f"Invalid country name: {country}, skipping units cache check")
+        return None
+
     try:
         with OverpassAPIClient(**client_params) as client:
             # Get cached units for this country

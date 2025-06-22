@@ -249,7 +249,7 @@ class ElementCache:
         """Get processed units for a country from cache."""
         return self.units_cache.get(country_code, [])
 
-    def store_units(self, country_code: str, units: list[Unit]) -> None:
+    def store_units(self, country_code: str | None, units: list[Unit]) -> None:
         """Store processed units for a country in cache."""
         if country_code is None:
             logger.error("Attempted to store units with None country_code")

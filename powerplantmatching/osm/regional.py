@@ -129,6 +129,11 @@ def region_download(
     """
     # If client is provided, use it directly (for backward compatibility)
     if client is not None:
+        # Ensure regions is a list
+        if regions is None:
+            regions = []
+        elif isinstance(regions, dict):
+            regions = [regions]
         return _region_download_with_client(
             client=client,
             regions=regions,
@@ -140,6 +145,18 @@ def region_download(
     # Get configuration
     if config is None:
         config = ppm.get_config()
+
+    if config is None:
+        logger.error("Unable to get configuration")
+        return {
+            "success": False,
+            "regions_processed": 0,
+            "regions_failed": 0,
+            "results": {},
+            "total_elements_updated": 0,
+            "total_elements_added": 0,
+            "error": "Configuration not available",
+        }
 
     osm_config = config.get("OSM", {})
 
@@ -168,6 +185,13 @@ def region_download(
     # Validate regions and filter out invalid ones
     valid_regions = []
     for i, region in enumerate(regions):
+        # Ensure region is a dictionary
+        if not isinstance(region, dict):
+            logger.warning(
+                f"Region at index {i} is not a dictionary (type: {type(region)}), skipping"
+            )
+            continue
+
         if "name" not in region:
             region["name"] = f"Region_{i + 1}"
 
@@ -234,9 +258,9 @@ def region_download(
         with OverpassAPIClient(
             api_url=api_url,
             cache_dir=cache_dir,
-            timeout=timeout,
-            max_retries=max_retries,
-            retry_delay=retry_delay,
+            timeout=timeout if timeout is not None else 300,
+            max_retries=max_retries if max_retries is not None else 3,
+            retry_delay=retry_delay if retry_delay is not None else 5,
         ) as client:
             # Call the core download function
             results = _region_download_with_client(
@@ -598,7 +622,7 @@ def _build_area_filter(region: dict[str, Any]) -> str:
 def _update_caches_with_regional_data(
     client: OverpassAPIClient,
     region_data: dict[str, list[dict]],
-    region: dict[str, Any] = None,
+    region: Optional[dict[str, Any]] = None,
 ) -> dict[str, Any]:
     """
     Update the main caches with regional data, merging by element ID.
@@ -678,7 +702,9 @@ def _update_caches_with_regional_data(
 
 
 def _group_elements_by_country(
-    client: OverpassAPIClient, elements: list[dict], region: dict[str, Any] = None
+    client: OverpassAPIClient,
+    elements: list[dict],
+    region: Optional[dict[str, Any]] = None,
 ) -> dict[str, list[dict]]:
     """
     Group elements by their country using an efficient two-step process.
@@ -921,9 +947,12 @@ def _determine_country_from_coordinates(
     """
     # Simple in-memory cache to avoid repeated API calls for nearby coordinates
     # In production, this could be more sophisticated (e.g., grid-based)
-    if use_cache and hasattr(client, "_country_cache"):
+    if use_cache:
+        if not hasattr(client, "_country_cache"):
+            client._country_cache = {}  # type: ignore[attr-defined]
+
         # Check if we have a cached result for nearby coordinates
-        for (cached_lat, cached_lon), country in client._country_cache.items():
+        for (cached_lat, cached_lon), country in client._country_cache.items():  # type: ignore[attr-defined]
             # If coordinates are within ~1km, reuse the cached country
             if abs(lat - cached_lat) < 0.01 and abs(lon - cached_lon) < 0.01:
                 return country
@@ -947,14 +976,14 @@ def _determine_country_from_coordinates(
             # Cache the result
             if use_cache:
                 if not hasattr(client, "_country_cache"):
-                    client._country_cache = {}
-                client._country_cache[(lat, lon)] = country_code
+                    client._country_cache = {}  # type: ignore[attr-defined]
+                client._country_cache[(lat, lon)] = country_code  # type: ignore[attr-defined]
 
                 # Limit cache size to prevent memory issues
-                if len(client._country_cache) > 1000:
+                if len(client._country_cache) > 1000:  # type: ignore[attr-defined]
                     # Remove oldest entries (simple FIFO)
-                    items = list(client._country_cache.items())
-                    client._country_cache = dict(items[-500:])
+                    items = list(client._country_cache.items())  # type: ignore[attr-defined]
+                    client._country_cache = dict(items[-500:])  # type: ignore[attr-defined]
 
             return country_code if country_code else None
 

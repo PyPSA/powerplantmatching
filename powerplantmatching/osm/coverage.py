@@ -8,7 +8,7 @@ including comparison with live Overpass API counts to detect outdated entries.
 import logging
 import os
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Any, Optional
 
 import pycountry
 from tqdm import tqdm
@@ -312,7 +312,7 @@ def show_country_coverage(
     countries_to_check: Optional[list[str]] = None,
     show_outdated_only: bool = False,
     outdated_threshold: float = 0.95,
-) -> Optional[dict[str, any]]:
+) -> Optional[dict[str, Any]]:
     """
     Show countries present in cache with element counts and percentages.
 
@@ -339,7 +339,7 @@ def show_country_coverage(
 
     Returns
     -------
-    Optional[dict[str, any]]
+    Optional[dict[str, Any]]
         If return_data is True, returns a dictionary with coverage statistics.
         Otherwise returns None and prints the coverage report.
 
@@ -375,7 +375,7 @@ def show_country_coverage(
     cache.load_all_caches()
 
     # Get all possible countries
-    all_countries = {c.alpha_2: c.name for c in pycountry.countries}
+    all_countries = {c.alpha_2: c.name for c in pycountry.countries}  # type: ignore[attr-defined]
     total_possible_countries = len(all_countries)
 
     # Analyze cached data
@@ -828,7 +828,7 @@ def find_outdated_caches(
     cache_dir: Optional[str] = None,
     threshold: float = 0.95,
     check_specific_countries: Optional[list[str]] = None,
-) -> list[dict[str, any]]:
+) -> list[dict[str, Any]]:
     """
     Find countries where the cache appears to be outdated.
 
@@ -843,7 +843,7 @@ def find_outdated_caches(
 
     Returns
     -------
-    list[dict[str, any]]
+    list[dict[str, Any]]
         List of outdated countries with details about the discrepancy.
 
     Examples
@@ -866,8 +866,11 @@ def find_outdated_caches(
 
     outdated_countries = []
 
+    if coverage_data is None:
+        return outdated_countries
+
     for code, data in coverage_data["cached_countries"].items():
-        if data.get("cache_status") == "outdated":
+        if data and data.get("cache_status") == "outdated":
             outdated_info = {
                 "code": code,
                 "name": data["name"],

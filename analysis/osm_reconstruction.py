@@ -217,17 +217,11 @@ def analyze_reconstruction_impact(results_by_scenario, country, output_dir):
         print(f"\n{scenario_name}:")
         summary = rejections.get_summary()
 
-        # Aggregate all rejection reasons
-        all_reasons = defaultdict(int)
-        for category, reasons in summary.items():
-            for reason, count in reasons.items():
-                all_reasons[reason] += count
-
         # Show top rejection reasons
-        if all_reasons:
+        if summary:
             print("  Top rejection reasons:")
             for reason, count in sorted(
-                all_reasons.items(), key=lambda x: x[1], reverse=True
+                summary.items(), key=lambda x: x[1], reverse=True
             )[:5]:
                 print(f"    - {reason}: {count}")
         else:

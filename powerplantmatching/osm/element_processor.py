@@ -1,0 +1,686 @@
+"""
+Base element processor for OSM power plant data extraction.
+Contains the abstract base class and common extraction methods.
+"""
+
+import logging
+from abc import ABC, abstractmethod
+from typing import Any
+
+from .client import OverpassAPIClient
+from .estimation import CapacityEstimator
+from .extractor import CapacityExtractor
+from .geometry import GeometryHandler
+from .models import Unit
+from .rejection import RejectionReason, RejectionTracker
+
+logger = logging.getLogger(__name__)
+
+
+class ElementProcessor(ABC):
+    """Base class for processing OSM elements"""
+
+    def __init__(
+        self,
+        client: OverpassAPIClient,
+        geometry_handler: GeometryHandler,
+        rejection_tracker: RejectionTracker,
+        config: dict[str, Any] | None = None,
+    ):
+        """
+        Initialize the element processor
+
+        Parameters
+        ----------
+        client : OverpassAPIClient
+            Client for accessing OSM data
+        rejection_tracker : RejectionTracker
+            Tracker for rejected elements
+        """
+        self.client = client
+        self.config = config or {}
+        self.rejection_tracker = rejection_tracker
+        self.capacity_extractor = CapacityExtractor(
+            self.rejection_tracker,
+            self.config,
+        )
+        self.capacity_estimator = CapacityEstimator(
+            self.client, self.rejection_tracker, self.config
+        )
+        self.geometry_handler = geometry_handler
+
+    def extract_name_from_tags(
+        self, element: dict[str, Any], unit_type: str
+    ) -> str | None:
+        """
+        Extract name from OSM tags
+
+        Parameters
+        ----------
+        element : dict[str, Any]
+            OSM element data
+
+        Returns
+        -------
+        str | None
+            Name if found, None otherwise
+        """
+        assert unit_type in ["plant", "generator"], "Invalid unit type"
+
+        tags = element.get("tags", {})
+
+        unit_type_tags_keys = {
+            "plant": "plant_tags",
+            "generator": "generator_tags",
+        }
+
+        default_name = {
+            "plant_tags": ["name:en", "name"],
+            "generator_tags": ["name:en", "name"],
+        }
+
+        name_keys = self.config.get(unit_type_tags_keys[unit_type], {}).get(
+            "name_tags_keys", default_name[unit_type_tags_keys[unit_type]]
+        )
+
+        # Check if name is in tags
+        name = None
+        for key in name_keys:
+            if key in tags:
+                name = tags[key]
+                if name:
+                    return name
+
+        missing_name_allowed = self.config.get("missing_name_allowed", False)
+        if missing_name_allowed:
+            return ""
+
+        if not name:
+            self.rejection_tracker.add_rejection(
+                element=element,
+                reason=RejectionReason.MISSING_NAME_TAG,
+                details=f"tags: {tags}",
+                keywords={
+                    "keyword": "name",
+                    "value": None,
+                    "comment": None,
+                },
+            )
+
+        return None
+
+    def extract_source_from_tags(
+        self, element: dict[str, Any], unit_type: str
+    ) -> str | None:
+        """
+        Extract power source from OSM tags
+
+        Parameters
+        ----------
+        tags : dict[str, str]
+            OSM element tags
+
+        Returns
+        -------
+        str | None
+            Power source if found, None otherwise
+        """
+        assert unit_type in ["plant", "generator"], "Invalid unit type"
+
+        tags = element.get("tags", {})
+
+        unit_type_tags_keys = {
+            "plant": "plant_tags",
+            "generator": "generator_tags",
+        }
+
+        default_source = {
+            "plant_tags": ["plant:source"],
+            "generator_tags": ["generator:source"],
+        }
+
+        source_keys = self.config.get(unit_type_tags_keys[unit_type], {}).get(
+            "source_tags_keys", default_source[unit_type_tags_keys[unit_type]]
+        )
+        source_mapping = self.config.get("source_mapping", {})
+
+        store_element_source = ""
+
+        for key in source_keys:
+            if key in tags:
+                element_source = tags[key].lower()
+                store_element_source = element_source
+                for config_source in source_mapping:
+                    if element_source in source_mapping[config_source]:
+                        return config_source
+
+        if not store_element_source:
+            self.rejection_tracker.add_rejection(
+                element=element,
+                reason=RejectionReason.MISSING_SOURSE_TAG,
+                details=f"tags: {tags}",
+                keywords={
+                    "keyword": source_keys[0] if source_keys else f"{unit_type}:source",
+                    "value": None,
+                    "comment": None,
+                },
+            )
+        else:
+            self.rejection_tracker.add_rejection(
+                element=element,
+                reason=RejectionReason.MISSING_SOURCE_TYPE,
+                details=f"Source value '{store_element_source}' from tag '{key}' is not recognized",
+                keywords={
+                    "keyword": key,
+                    "value": store_element_source,
+                    "comment": None,
+                },
+            )
+
+        return None
+
+    def extract_technology_from_tags(
+        self, element: dict[str, Any], unit_type: str, source_type: str
+    ) -> str | None:
+        """
+        Extract technology information from OSM tags
+
+        Parameters
+        ----------
+        element : dict[str, Any]
+            OSM element data
+
+        unit_type : str
+            Type of unit ("plant" or "generator")
+
+        source_type : str
+            Type of power source
+
+        Returns
+        -------
+        str | None
+            Technology if found, None otherwise
+        """
+        assert unit_type in ["plant", "generator"], "Invalid unit type"
+
+        tags = element.get("tags", {})
+
+        unit_type_tags_keys = {
+            "plant": "plant_tags",
+            "generator": "generator_tags",
+        }
+        default_technology = {
+            "plant_tags": ["plant:method", "plant:type"],
+            "generator_tags": ["generator:method", "generator:type"],
+        }
+
+        technology_keys = self.config.get(unit_type_tags_keys[unit_type], {}).get(
+            "technology_tags_keys", default_technology[unit_type_tags_keys[unit_type]]
+        )
+        technology_mapping = self.config.get("technology_mapping", {})
+        source_tech_mapping = self.config.get("source_technology_mapping", {})
+
+        store_element_technology = ""
+        technology_key_used = None
+
+        for key in technology_keys:
+            if key in tags:
+                element_technology = tags[key].lower()
+                store_element_technology = element_technology
+                technology_key_used = key
+                for config_technology in technology_mapping:
+                    if config_technology in source_tech_mapping[source_type]:
+                        if element_technology in technology_mapping[config_technology]:
+                            return config_technology
+
+        missing_technology_allowed = self.config.get(
+            "missing_technology_allowed", False
+        )
+        if missing_technology_allowed:
+            return ""
+
+        if not store_element_technology:
+            self.rejection_tracker.add_rejection(
+                element=element,
+                reason=RejectionReason.MISSING_TECHNOLOGY_TAG,
+                details=f"No technology tag found. Element has {len(tags)} tags but none specify technology",
+                keywords={
+                    "keyword": "plant:method"
+                    if unit_type == "plant"
+                    else "generator:method",
+                    "value": None,
+                    "comment": None,
+                },
+            )
+        else:
+            self.rejection_tracker.add_rejection(
+                element=element,
+                reason=RejectionReason.MISSING_TECHNOLOGY_TYPE,
+                details=f'''"{store_element_technology}" not found in technology_mapping. Ensure updating source_technology_mapping with "{source_type}"''',
+                keywords={
+                    "keyword": technology_key_used,
+                    "value": store_element_technology,
+                    "comment": None,
+                },
+            )
+
+        return None
+
+    def extract_output_key_from_tags(
+        self, element: dict[str, Any], unit_type: str, source_type: str | None = None
+    ) -> str | None:
+        """
+        Extract output electricity information from OSM tags
+
+        Parameters
+        ----------
+        element : dict[str, Any]
+            OSM element data
+
+        unit_type : str
+            Type of unit ("plant" or "generator")
+
+        Returns
+        -------
+        str | None
+            Output if found, None otherwise
+        """
+        assert unit_type in ["plant", "generator"], "Invalid unit type"
+
+        tags = element.get("tags", {})
+
+        unit_type_tags_keys = {
+            "plant": "plant_tags",
+            "generator": "generator_tags",
+        }
+
+        default_output = {
+            "plant_tags": ["plant:output:electricity"],
+            "generator_tags": ["generator:output:electricity"],
+        }
+
+        output_keys = self.config.get(unit_type_tags_keys[unit_type], {}).get(
+            "output_tags_keys", default_output[unit_type_tags_keys[unit_type]]
+        )
+        if source_type:
+            source_output_keys = (
+                self.config.get("sources", {})
+                .get(source_type, {})
+                .get("capacity_extraction", {})
+                .get("additional_tags", [])
+            )
+            output_keys.extend(source_output_keys)
+
+        for key in output_keys:
+            if key in tags:
+                return key
+
+        self.rejection_tracker.add_rejection(
+            element=element,
+            reason=RejectionReason.MISSING_OUTPUT_TAG,
+            details=f"tags: {tags}",
+            keywords={
+                "keyword": output_keys[0]
+                if output_keys
+                else f"{unit_type}:output:electricity",
+                "value": None,
+                "comment": None,
+            },
+        )
+        return None
+
+    def extract_start_date_key_from_tags(
+        self, element: dict[str, Any], unit_type: str
+    ) -> str | None:
+        """
+        Extract start date information from OSM tags
+
+        Parameters
+        ----------
+        element : dict[str, Any]
+            OSM element data
+
+        unit_type : str
+            Type of unit ("plant" or "generator")
+
+        Returns
+        -------
+        str | None
+            Start date if found, None otherwise
+        """
+        assert unit_type in ["plant", "generator"], "Invalid unit type"
+
+        tags = element.get("tags", {})
+
+        unit_type_tags_keys = {
+            "plant": "plant_tags",
+            "generator": "generator_tags",
+        }
+
+        default_start_date = {
+            "plant_tags": ["start_date", "year"],
+            "generator_tags": ["start_date", "year"],
+        }
+
+        start_date_keys = self.config.get(unit_type_tags_keys[unit_type], {}).get(
+            "start_date_tags_keys", default_start_date[unit_type_tags_keys[unit_type]]
+        )
+
+        missing_start_date_allowed = self.config.get(
+            "missing_start_date_allowed", False
+        )
+        store_raw_date = ""
+        datum = ""
+        for key in start_date_keys:
+            if key in tags:
+                if isinstance(tags[key], str):
+                    date_string = tags[key].strip()
+                elif isinstance(tags[key], int | float):
+                    date_string = str(int(tags[key]))
+                else:
+                    date_string = str(tags[key])
+                store_raw_date = date_string
+                datum = self._parse_date_string(
+                    element=element, date_string=date_string
+                )
+                if datum:
+                    return datum
+                else:
+                    if missing_start_date_allowed:
+                        return ""
+                    else:
+                        self.rejection_tracker.add_rejection(
+                            element=element,
+                            reason=RejectionReason.INVALID_START_DATE_FORMAT,
+                            details=f"Date value '{store_raw_date}' in tag '{key}' could not be parsed to standard format",
+                            keywords={
+                                "keyword": key,
+                                "value": store_raw_date,
+                                "comment": None,
+                            },
+                        )
+                        return None
+
+        if missing_start_date_allowed:
+            return ""
+
+        if not store_raw_date:
+            self.rejection_tracker.add_rejection(
+                element=element,
+                reason=RejectionReason.MISSING_START_DATE_TAG,
+                details=f"tags: {tags}",
+                keywords={
+                    "keyword": start_date_keys[0]
+                    if start_date_keys
+                    else f"{unit_type}:start_date",
+                    "value": None,
+                    "comment": None,
+                },
+            )
+        else:
+            self.rejection_tracker.add_rejection(
+                element=element,
+                reason=RejectionReason.INVALID_START_DATE_FORMAT,
+                details=f"Date value '{store_raw_date}' could not be parsed to standard format",
+                keywords={
+                    "keyword": None,  # Key not available here since no valid date was found
+                    "value": store_raw_date,
+                    "comment": None,
+                },
+            )
+
+        return None
+
+    def _parse_date_string(self, element: dict[str, Any], date_string: str) -> str:
+        """
+        Parse date string from OSM tags into a standardized format.
+        Handles various date formats including incomplete dates.
+
+        Parameters
+        ----------
+        date_string : str
+            Date string from OSM tags
+
+        Returns
+        -------
+        str
+            Standardized date string in ISO format (YYYY-MM-DD)
+        """
+        import re
+
+        from dateutil import parser
+
+        # Strip whitespace and handle empty strings
+        if not date_string or not date_string.strip():
+            logger.warning(
+                f"Empty date string provided for plant {element['type']}/{element['id']}"
+            )
+            return ""
+
+        date_string = date_string.strip()
+
+        # Try to extract year from the string (for fallback)
+        year_match = re.search(r"\b(1[0-9]{3}|2[0-9]{3})\b", date_string)
+        if not year_match:
+            logger.warning(
+                f"No valid year found for plant {element['type']}/{element['id']} in '{date_string}'"
+            )
+            return ""
+
+        year = int(year_match.group(1))
+
+        try:
+            # Try to parse the date string
+            date_obj = parser.parse(date_string, fuzzy=True)
+
+            # Return full date if it was fully specified
+            if date_string.count(str(date_obj.year)) > 0:
+                # Check if month and day were part of the original string or defaults
+                month_detected = any(
+                    m in date_string.lower()
+                    for m in [
+                        "jan",
+                        "feb",
+                        "mar",
+                        "apr",
+                        "may",
+                        "jun",
+                        "jul",
+                        "aug",
+                        "sep",
+                        "oct",
+                        "nov",
+                        "dec",
+                    ]
+                ) or re.search(r"\b\d{1,2}[/.-]\d{1,2}\b", date_string)
+
+                day_detected = re.search(r"\b\d{1,2}\b", date_string) and month_detected
+
+                if month_detected and day_detected:
+                    return date_obj.strftime("%Y-%m-%d")
+                elif month_detected:
+                    return f"{date_obj.year}-{date_obj.month:02d}-01"
+                else:
+                    return f"{date_obj.year}-01-01"
+
+            # Fallback to just the year
+            return f"{year}-01-01"
+
+        except (ValueError, TypeError) as e:
+            # If parsing failed, fallback to just using the year
+            logger.warning(
+                f"Date parsing failed for plant {element['type']}/{element['id']} in '{date_string}': {str(e)}"
+            )
+            return f"{year}-01-01"
+
+    @abstractmethod
+    def process_element(
+        self, element: dict[str, Any], country: str | None = None
+    ) -> Unit | None:
+        """
+        Process a single OSM element into a Unit object
+
+        Parameters
+        ----------
+        element : dict[str, Any]
+            OSM element data
+        country : str | None
+            Country code
+
+        Returns
+        -------
+        Unit | None
+            Unit object if processing succeeded, None otherwise
+        """
+        pass
+
+    def _process_capacity(
+        self,
+        element: dict[str, Any],
+        source_type: str,
+        output_key: str,
+        unit_type: str,
+    ) -> tuple[float | None, str]:
+        """
+        Process capacity using extraction and estimation
+
+        Parameters
+        ----------
+        element : dict[str, Any]
+            Element data
+        source_type : str | None
+            Source type
+
+        Returns
+        -------
+        tuple[float | None, str]
+            (capacity_mw, info)
+        """
+        assert unit_type in ["plant", "generator"], "Invalid unit type"
+        # 1. Basic extraction (always attempted)
+        is_valid, capacity, info = self.capacity_extractor.basic_extraction(
+            element, output_key
+        )
+
+        # 2. If basic extraction fails, try advanced extraction (if enabled)
+        advanced_extraction_enabled = self.config.get("capacity_extraction", {}).get(
+            "enabled", False
+        )
+
+        if not is_valid and advanced_extraction_enabled and info != "placeholder_value":
+            is_valid, capacity, info = self.capacity_extractor.advanced_extraction(
+                element, output_key
+            )
+
+        # 3. If extraction fails, try estimation (if enabled)
+        capacity_estimation_enabled = self.config.get("capacity_estimation", {}).get(
+            "enabled", False
+        )
+        if not is_valid and capacity_estimation_enabled:
+            capacity, info = self.capacity_estimator.estimate_capacity(
+                element, source_type, unit_type=unit_type
+            )
+
+        return capacity, info
+
+    def _get_relation_member_capacity(
+        self, relation: dict[str, Any], source_type: str, unit_type: str
+    ) -> tuple[float | None, str]:
+        """
+        Get capacity from relation members
+
+        Parameters
+        ----------
+        relation : dict[str, Any]
+            Relation element data
+        source_type : str | None
+            Source type
+
+        Returns
+        -------
+        tuple[float | None, str]
+            (capacity_mw, capacity_source)
+        """
+        if "members" not in relation:
+            return None, "unknown"
+
+        # Get country from relation for member context
+        relation_country = relation.get("_country")
+
+        # Collect members with capacity information
+        members_with_capacity = []
+
+        for member in relation["members"]:
+            member_type = member["type"]
+            member_id = member["ref"]
+
+            # Get member element
+            member_elem = None
+            if member_type == "node":
+                member_elem = self.client.cache.get_node(member_id)
+            elif member_type == "way":
+                member_elem = self.client.cache.get_way(member_id)
+            elif member_type == "relation":
+                # Skip nested relations to avoid recursion
+                continue
+
+            if not member_elem or "tags" not in member_elem:
+                continue
+
+            # IMPORTANT: Add country to member element if not present
+            if relation_country and "_country" not in member_elem:
+                member_elem["_country"] = relation_country
+
+            has_power_tag = False
+            has_output_tag = False
+            store_keys = []
+            for key in member_elem["tags"]:
+                if key.startswith("power:"):
+                    has_power_tag = True
+                if "output" in key:
+                    has_output_tag = True
+                    store_keys.append(key)
+            if not has_power_tag and not has_output_tag:
+                continue
+            else:
+                if len(store_keys) == 1:
+                    output_key = store_keys[0]
+                else:
+                    for key in store_keys:
+                        if "output:electricity" in key:
+                            output_key = key
+                            break
+
+            capacity, _ = self._process_capacity(
+                member_elem, source_type, output_key, unit_type
+            )
+
+            if capacity is not None:
+                members_with_capacity.append((member_elem, capacity))
+            else:
+                # estimation if allowed
+                estimation_enabled = self.config.get("capacity_estimation", {}).get(
+                    "enabled", False
+                )
+                if estimation_enabled:
+                    capacity, _ = self.capacity_estimator.estimate_capacity(
+                        member_elem, source_type, unit_type
+                    )
+                    if capacity is not None:
+                        members_with_capacity.append((member_elem, capacity))
+                    else:
+                        continue
+                else:
+                    continue
+
+        # If no members with capacity, return None
+        if not members_with_capacity:
+            return None, "unknown"
+
+        # If only one member with capacity, use that
+        if len(members_with_capacity) == 1:
+            return members_with_capacity[0][1], "member_capacity"
+
+        # If multiple members with capacity, sum them
+        total_capacity = sum(capacity for _, capacity in members_with_capacity)
+        return total_capacity, "aggregated_capacity"

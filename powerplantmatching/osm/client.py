@@ -293,6 +293,10 @@ out count;"""
         if not force_refresh:
             cached_data = self.cache.get_plants(country_code)
             if cached_data:
+                # Ensure all cached elements have country info
+                for element in cached_data.get("elements", []):
+                    if "_country" not in element:
+                        element["_country"] = country_code
                 return cached_data
 
         # Build the query
@@ -310,6 +314,10 @@ out count;"""
         # Execute the query
         logger.info(f"Fetching power plants for {country}")
         data = self.query_overpass(query)
+
+        # Add country to all elements before caching
+        for element in data.get("elements", []):
+            element["_country"] = country_code
 
         # Cache the results
         self.cache.store_plants(country_code, data)
@@ -341,6 +349,10 @@ out count;"""
         if not force_refresh:
             cached_data = self.cache.get_generators(country_code)
             if cached_data:
+                # Ensure all cached elements have country info
+                for element in cached_data.get("elements", []):
+                    if "_country" not in element:
+                        element["_country"] = country_code
                 return cached_data
 
         # Build the query
@@ -359,13 +371,21 @@ out count;"""
         logger.info(f"Fetching power generators for {country}")
         data = self.query_overpass(query)
 
+        # Add country to all elements before caching
+        for element in data.get("elements", []):
+            element["_country"] = country_code
+
         # Cache the results
         self.cache.store_generators(country_code, data)
 
         return data
 
     def get_elements(
-        self, element_type: str, element_ids: list[int], recursion_level: int = 0
+        self,
+        element_type: str,
+        element_ids: list[int],
+        recursion_level: int = 0,
+        country_code: Optional[str] = None,
     ) -> list[dict]:
         """
         Get details of specific elements
@@ -378,6 +398,8 @@ out count;"""
             list of element IDs
         recursion_level : int, default 0
             Current recursion level for nested element fetching
+        country_code : str, optional
+            Country code to add to fetched elements
 
         Returns
         -------
@@ -405,6 +427,9 @@ out count;"""
                 element = self.cache.get_relation(element_id)
 
             if element:
+                # Add country to cached element if missing and country_code provided
+                if country_code and "_country" not in element:
+                    element["_country"] = country_code
                 cached_elements.append(element)
             else:
                 uncached_ids.append(element_id)
@@ -456,9 +481,19 @@ out count;"""
 
         # Cache the elements
         if element_type == "node":
+            # Add country to nodes if provided
+            if country_code:
+                for node in nodes:
+                    node["_country"] = country_code
             self.cache.store_nodes_bulk(nodes)
             fetched_elements = nodes
         elif element_type == "way":
+            # Add country to ways and nodes if provided
+            if country_code:
+                for way in ways:
+                    way["_country"] = country_code
+                for node in nodes:
+                    node["_country"] = country_code
             self.cache.store_ways_bulk(ways)
             self.cache.store_nodes_bulk(nodes)
             fetched_elements = ways
@@ -478,7 +513,9 @@ out count;"""
                                 f"Resolving {len(uncached_nodes)} missing nodes from way {way['id']} (recursion level {recursion_level + 1})"
                             )
                             self.get_nodes(
-                                uncached_nodes, recursion_level=recursion_level + 1
+                                uncached_nodes,
+                                recursion_level=recursion_level + 1,
+                                country_code=country_code,
                             )
                         elif way["nodes"]:
                             logger.debug(
@@ -489,6 +526,14 @@ out count;"""
                     f"Recursion limit reached when processing way nodes (level {recursion_level})"
                 )
         elif element_type == "relation":
+            # Add country to relations, ways, and nodes if provided
+            if country_code:
+                for relation in relations:
+                    relation["_country"] = country_code
+                for way in ways:
+                    way["_country"] = country_code
+                for node in nodes:
+                    node["_country"] = country_code
             self.cache.store_relations_bulk(relations)
             self.cache.store_ways_bulk(ways)
             self.cache.store_nodes_bulk(nodes)
@@ -516,7 +561,9 @@ out count;"""
                                 f"Resolving {len(uncached_ways)} missing ways from relation {relation['id']} (recursion level {recursion_level + 1})"
                             )
                             self.get_ways(
-                                uncached_ways, recursion_level=recursion_level + 1
+                                uncached_ways,
+                                recursion_level=recursion_level + 1,
+                                country_code=country_code,
                             )
                         elif way_members:
                             logger.debug(
@@ -534,7 +581,9 @@ out count;"""
                                 f"Resolving {len(uncached_nodes)} missing nodes from relation {relation['id']} (recursion level {recursion_level + 1})"
                             )
                             self.get_nodes(
-                                uncached_nodes, recursion_level=recursion_level + 1
+                                uncached_nodes,
+                                recursion_level=recursion_level + 1,
+                                country_code=country_code,
                             )
                         elif node_members:
                             logger.debug(
@@ -548,7 +597,12 @@ out count;"""
         # Combine cached and newly fetched elements
         return cached_elements + fetched_elements
 
-    def get_nodes(self, node_ids: list[int], recursion_level: int = 0) -> list[dict]:
+    def get_nodes(
+        self,
+        node_ids: list[int],
+        recursion_level: int = 0,
+        country_code: Optional[str] = None,
+    ) -> list[dict]:
         """
         Get node details
 
@@ -558,15 +612,22 @@ out count;"""
             list of node IDs to fetch
         recursion_level : int, default 0
             Current recursion level
+        country_code : str, optional
+            Country code to add to fetched elements
 
         Returns
         -------
         list[dict]
             Node elements
         """
-        return self.get_elements("node", node_ids, recursion_level)
+        return self.get_elements("node", node_ids, recursion_level, country_code)
 
-    def get_ways(self, way_ids: list[int], recursion_level: int = 0) -> list[dict]:
+    def get_ways(
+        self,
+        way_ids: list[int],
+        recursion_level: int = 0,
+        country_code: Optional[str] = None,
+    ) -> list[dict]:
         """
         Get way details including their nodes
 
@@ -576,16 +637,21 @@ out count;"""
             list of way IDs to fetch
         recursion_level : int, default 0
             Current recursion level
+        country_code : str, optional
+            Country code to add to fetched elements
 
         Returns
         -------
         list[dict]
             Way elements and their referenced nodes
         """
-        return self.get_elements("way", way_ids, recursion_level)
+        return self.get_elements("way", way_ids, recursion_level, country_code)
 
     def get_relations(
-        self, relation_ids: list[int], recursion_level: int = 0
+        self,
+        relation_ids: list[int],
+        recursion_level: int = 0,
+        country_code: Optional[str] = None,
     ) -> list[dict]:
         """
         Get relation details including their members
@@ -596,13 +662,17 @@ out count;"""
             list of relation IDs to fetch
         recursion_level : int, default 0
             Current recursion level
+        country_code : str, optional
+            Country code to add to fetched elements
 
         Returns
         -------
         list[dict]
             Relation elements and their referenced members
         """
-        return self.get_elements("relation", relation_ids, recursion_level)
+        return self.get_elements(
+            "relation", relation_ids, recursion_level, country_code
+        )
 
     def get_country_data(
         self, country: str, force_refresh: bool = False, plants_only: bool = False
@@ -630,6 +700,12 @@ out count;"""
             return order[element["type"]]
 
         logger.info(f"Getting OSM data for {country}")
+
+        # Get country code to use for tracking
+        country_code = get_country_code(country)
+        if country_code is None:
+            logger.error(f"Invalid country name: {country}")
+            return {"elements": []}, {"elements": []}
 
         # Count elements first if showing progress
         pbar = None
@@ -714,12 +790,12 @@ out count;"""
             if pbar:
                 pbar.set_description(f"{country} - resolving references")
 
-            # Fetch and cache the uncached elements
+            # Fetch and cache the uncached elements with country context
             if uncached_node_ids:
                 logger.info(
                     f"Resolving {len(uncached_node_ids)} uncached nodes out of {len(unique_node_ids)} referenced"
                 )
-                self.get_nodes(uncached_node_ids)
+                self.get_nodes(uncached_node_ids, country_code=country_code)
             elif unique_node_ids:
                 logger.info(
                     f"All {len(unique_node_ids)} referenced nodes already in cache"
@@ -729,7 +805,7 @@ out count;"""
                 logger.info(
                     f"Resolving {len(uncached_way_ids)} uncached ways out of {len(unique_way_ids)} referenced"
                 )
-                self.get_ways(uncached_way_ids)
+                self.get_ways(uncached_way_ids, country_code=country_code)
             elif unique_way_ids:
                 logger.info(
                     f"All {len(unique_way_ids)} referenced ways already in cache"
@@ -739,7 +815,7 @@ out count;"""
                 logger.info(
                     f"Resolving {len(uncached_relation_ids)} uncached relations out of {len(unique_relation_ids)} referenced"
                 )
-                self.get_relations(uncached_relation_ids)
+                self.get_relations(uncached_relation_ids, country_code=country_code)
             elif unique_relation_ids:
                 logger.info(
                     f"All {len(unique_relation_ids)} referenced relations already in cache"

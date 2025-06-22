@@ -1,7 +1,7 @@
 import logging
 from typing import Any, Optional
 
-from .models import ElementType, RejectionReason
+from .models import RejectionReason
 from .rejection import RejectionTracker
 from .utils import parse_capacity_value
 
@@ -50,31 +50,35 @@ class CapacityExtractor:
         # Check for placeholder values (yes, true)
         if value_str.lower() in ["yes", "true"]:
             self.rejection_tracker.add_rejection(
-                element_id=element["id"],
-                element_type=ElementType(element["type"]),
+                element=element,
                 reason=RejectionReason.CAPACITY_PLACEHOLDER,
-                details=f"Placeholder: '{value_str}'",
-                category="CapacityExtractor:basic_extraction",
+                details=f"Tag '{output_key}' contains placeholder value '{value_str}' instead of actual capacity",
+                keywords={
+                    "keyword": output_key,
+                    "value": value_str,
+                    "comment": None,  # No automatic suggestion for placeholders
+                },
             )
             return False, None, "placeholder_value"
 
         # Check for comma as decimal separator
         if "," in value_str and not "." in value_str:
             self.rejection_tracker.add_rejection(
-                element_id=element["id"],
-                element_type=ElementType(element["type"]),
+                element=element,
                 reason=RejectionReason.CAPACITY_DECIMAL_FORMAT,
-                details=f"Value: '{value_str.replace(',', ';', 1)}'",
-                category="CapacityExtractor:basic_extraction",
+                details=f"Tag '{output_key}' uses comma as decimal separator in value '{value_str}'",
+                keywords={
+                    "keyword": output_key,
+                    "value": value_str,
+                    "comment": value_str.replace(",", "."),
+                },
             )
             return False, None, "decimal_comma_format"
 
         is_valid, value, identifier = parse_capacity_value(
             value_str, advanced_extraction=False
         )
-        return self.parse_and_track(
-            element, output_key, is_valid, value, identifier, "basic_extraction"
-        )
+        return self.parse_and_track(element, output_key, is_valid, value, identifier)
 
     def advanced_extraction(
         self, element: dict[str, Any], output_key: str
@@ -101,7 +105,7 @@ class CapacityExtractor:
                 value_str, advanced_extraction=True, regex_patterns=regex_patterns
             )
             return self.parse_and_track(
-                element, output_key, is_valid, value, identifier, "advanced_extraction"
+                element, output_key, is_valid, value, identifier
             )
 
         except Exception as e:
@@ -110,11 +114,14 @@ class CapacityExtractor:
             value = None
             identifier = "regex_error"
             self.rejection_tracker.add_rejection(
-                element_id=element["id"],
-                element_type=ElementType(element["type"]),
+                element=element,
                 reason=RejectionReason.CAPACITY_REGEX_ERROR,
-                details=f"Value: '{value_str}' with regex: {e}",
-                category="CapacityExtractor:advanced_extraction",
+                details=f"Regex parsing failed for tag '{output_key}' with value '{value_str}': {str(e)}",
+                keywords={
+                    "keyword": output_key,
+                    "value": value_str,
+                    "comment": None,
+                },
             )
             return False, None, identifier
 
@@ -123,10 +130,9 @@ class CapacityExtractor:
         element: dict[str, Any],
         output_key: str,
         is_valid: bool,
-        value: float,
+        value: float | None,
         identifier: str,
-        function_name: str,
-    ) -> tuple[bool, Optional[float], str]:
+    ) -> tuple[bool, float | None, str]:
         """
         Parse capacity value and track rejections
 
@@ -151,34 +157,54 @@ class CapacityExtractor:
             (is_valid, capacity_mw, identifier)
 
         """
-        if is_valid and value > 0:
-            return True, value, identifier
-        else:
-            # Determine specific rejection reason
-            if not is_valid:
-                if identifier == "value_error":
-                    reason = RejectionReason.CAPACITY_NON_NUMERIC
-                elif identifier == "unknown_unit":
-                    reason = RejectionReason.CAPACITY_UNSUPPORTED_UNIT
-                elif identifier == "regex_no_match":
-                    reason = RejectionReason.CAPACITY_REGEX_NO_MATCH
-                else:
-                    reason = RejectionReason.OTHER
-
-                self.rejection_tracker.add_rejection(
-                    element_id=element["id"],
-                    element_type=ElementType(element["type"]),
-                    reason=reason,
-                    details=f"Failed: '{output_key}':'{element['tags'][output_key]}'",
-                    category=f"CapacityExtractor:{function_name}",
-                )
+        if is_valid and value is not None:
+            if value > 0:
+                return True, value, identifier
             elif value <= 0:
                 self.rejection_tracker.add_rejection(
-                    element_id=element["id"],
-                    element_type=ElementType(element["type"]),
+                    element=element,
                     reason=RejectionReason.CAPACITY_ZERO,
-                    details=f"Capacity value from tag '{output_key}' is zero or negative: {value}",
-                    category=f"CapacityExtractor:{function_name}",
+                    details=f"Tag '{output_key}' parsed to zero capacity from value '{element['tags'][output_key]}'",
+                    keywords={
+                        "keyword": output_key,
+                        "value": element["tags"][output_key],
+                        "comment": None,
+                    },
                 )
+                return False, None, identifier
 
+        elif not is_valid:
+            if identifier == "value_error":
+                reason = RejectionReason.CAPACITY_NON_NUMERIC
+            elif identifier == "unknown_unit":
+                reason = RejectionReason.CAPACITY_UNSUPPORTED_UNIT
+            elif identifier == "regex_no_match":
+                reason = RejectionReason.CAPACITY_REGEX_NO_MATCH
+            elif identifier == "regex_error":
+                reason = RejectionReason.CAPACITY_REGEX_ERROR
+            else:
+                reason = RejectionReason.OTHER
+
+            self.rejection_tracker.add_rejection(
+                element=element,
+                reason=reason,
+                details=f"Tag '{output_key}' has value '{element['tags'][output_key]}' which could not be parsed",
+                keywords={
+                    "keyword": output_key,
+                    "value": element["tags"][output_key],
+                    "comment": None,
+                },
+            )
             return False, None, identifier
+
+        self.rejection_tracker.add_rejection(
+            element=element,
+            reason=RejectionReason.OTHER,
+            details=f"Unexpected error parsing tag '{output_key}' with value '{element['tags'][output_key]}'",
+            keywords={
+                "keyword": output_key,
+                "value": element["tags"][output_key],
+                "comment": None,
+            },
+        )
+        return False, None, identifier
