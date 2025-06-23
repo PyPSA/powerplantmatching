@@ -5,6 +5,7 @@ import pandas as pd
 
 from powerplantmatching.core import _data_in, get_config
 from powerplantmatching.osm.client import OverpassAPIClient
+from powerplantmatching.osm.interface import validate_all_countries
 from powerplantmatching.osm.models import Units
 from powerplantmatching.osm.rejection import RejectionTracker
 from powerplantmatching.osm.workflow import Workflow
@@ -66,10 +67,11 @@ if __name__ == "__main__":
     with OverpassAPIClient(
         api_url=config["overpass_api"]["url"], cache_dir=cache_dir
     ) as client:
+        validate_all_countries(countries)
         for country_name in countries:
             logger.info(f"Processing {country_name}...")
             workflow = Workflow(client, rejection_tracker, all_units, config)
-            updated_units = workflow.process_country_data(country=country_name)
+            _, _ = workflow.process_country_data(country=country_name)
 
             # Save individual country CSV in by_country folder
             country_units = all_units.filter_by_country(country_name)

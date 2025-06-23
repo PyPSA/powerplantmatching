@@ -220,6 +220,7 @@ OSM:
   # OSM Global configurations
   force_refresh: false
   plants_only: true
+  show_progress: true
   missing_name_allowed: false
   missing_technology_allowed: false
   missing_start_date_allowed: false

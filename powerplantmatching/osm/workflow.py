@@ -359,7 +359,11 @@ class ElementProcessor(ABC):
             "start_date_tags_keys", default_start_date[unit_type_tags_keys[unit_type]]
         )
 
+        missing_start_date_allowed = self.config.get(
+            "missing_start_date_allowed", False
+        )
         store_raw_date = ""
+        datum = ""
         for key in start_date_keys:
             if key in tags:
                 if isinstance(tags[key], str):
@@ -369,12 +373,24 @@ class ElementProcessor(ABC):
                 else:
                     date_string = str(tags[key])
                 store_raw_date = date_string
-                datum = self._parse_date_string(date_string)
-                return datum
+                datum = self._parse_date_string(
+                    element=element, date_string=date_string
+                )
+                if datum:
+                    return datum
+                else:
+                    if missing_start_date_allowed:
+                        return ""
+                    else:
+                        self.rejection_tracker.add_rejection(
+                            element_id=element["id"],
+                            element_type=ElementType(element["type"]),
+                            reason=RejectionReason.INVALID_START_DATE_FORMAT,
+                            details=f"tags: {tags.keys()} - '{key}':'{store_raw_date}'",
+                            category=f"{'PlantParser' if unit_type == 'plant' else 'GeneratorParser'}:extract_start_date_key_from_tags",
+                        )
+                        return None
 
-        missing_start_date_allowed = self.config.get(
-            "missing_start_date_allowed", False
-        )
         if missing_start_date_allowed:
             return ""
 
@@ -397,7 +413,7 @@ class ElementProcessor(ABC):
 
         return None
 
-    def _parse_date_string(self, date_string: str) -> str:
+    def _parse_date_string(self, element: dict[str, Any], date_string: str) -> str:
         """
         Parse date string from OSM tags into a standardized format.
         Handles various date formats including incomplete dates.
@@ -418,14 +434,20 @@ class ElementProcessor(ABC):
 
         # Strip whitespace and handle empty strings
         if not date_string or not date_string.strip():
-            raise ValueError("Empty date string")
+            logger.warning(
+                f"Empty date string provided for plant {element['type']}/{element['id']}"
+            )
+            return ""
 
         date_string = date_string.strip()
 
         # Try to extract year from the string (for fallback)
-        year_match = re.search(r"\b(19\d{2}|20\d{2})\b", date_string)
+        year_match = re.search(r"\b(1[0-9]{3}|2[0-9]{3})\b", date_string)
         if not year_match:
-            raise ValueError(f"No valid year found in '{date_string}'")
+            logger.warning(
+                f"No valid year found for plant {element['type']}/{element['id']} in '{date_string}'"
+            )
+            return ""
 
         year = int(year_match.group(1))
 
@@ -466,8 +488,11 @@ class ElementProcessor(ABC):
             # Fallback to just the year
             return f"{year}-01-01"
 
-        except (ValueError, TypeError):
+        except (ValueError, TypeError) as e:
             # If parsing failed, fallback to just using the year
+            logger.warning(
+                f"Date parsing failed for plant {element['type']}/{element['id']} in '{date_string}': {str(e)}"
+            )
             return f"{year}-01-01"
 
     def setup_element_coordinates(
@@ -1075,7 +1100,7 @@ class PlantParser(ElementProcessor):
                 )
                 if mismatch_ratio > 0.2:  # More than 20% difference
                     logger.warning(
-                        f"Capacity mismatch for plant {relation['id']}: "
+                        f"Capacity mismatch for plant relation/{relation['id']}: "
                         f"Plant declares {existing_capacity} MW, "
                         f"but {valid_generator_count} generators sum to {generator_capacity:.1f} MW "
                         f"({mismatch_ratio * 100:.1f}% difference)"
@@ -1481,7 +1506,7 @@ class Workflow:
         self,
         country: str,
         force_refresh: bool | None = None,
-    ) -> Units:
+    ) -> tuple[Unit, RejectionTracker]:
         """
         Process OSM data for a country and add units to the collection.
 
@@ -1494,8 +1519,8 @@ class Workflow:
 
         Returns
         -------
-        Units
-            The updated units collection
+        tuple[Units, RejectionTracker]
+            Units collection and rejection tracker
         """
         if force_refresh is None:
             force_refresh = self.config.get("force_refresh", False)

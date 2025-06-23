@@ -1,8 +1,11 @@
+import logging
 import math
 import re
 from typing import Any, Optional
 
 import pycountry
+
+logger = logging.getLogger(__name__)
 
 
 # Element processing utilities
@@ -181,7 +184,8 @@ def get_country_code(country: str) -> str:
         country_obj = pycountry.countries.lookup(country)
         return country_obj.alpha_2
     except LookupError:
-        raise ValueError(f"Invalid country name: {country}")
+        logger.warning(f"Invalid country name: {country}")
+        return None
 
 
 def calculate_area(coordinates: list[dict[str, float]]) -> float:

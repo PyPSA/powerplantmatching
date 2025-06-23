@@ -39,7 +39,10 @@ class ClusteringAlgorithm:
         dict[int, list[Unit]]
             dictionary mapping cluster IDs to lists of plants
         """
-        raise NotImplementedError("Subclasses must implement this method")
+        logger.warning(
+            f"cluster method not implemented for {self.__class__.__name__} - returning empty clusters"
+        )
+        return {}
 
     def get_cluster_centroids(
         self, clusters: dict[int, list[Unit]]

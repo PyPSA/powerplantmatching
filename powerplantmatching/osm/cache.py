@@ -168,11 +168,17 @@ class ElementCache:
 
     def store_plants(self, country_code: str, data: dict) -> None:
         """Store plants for a country in cache"""
+        if country_code is None:
+            logger.error("Attempted to store plants with None country_code")
+            return
         self.plants_cache[country_code] = data
         self.plants_modified = True
 
     def store_generators(self, country_code: str, data: dict) -> None:
         """Store generators for a country in cache"""
+        if country_code is None:
+            logger.error("Attempted to store generators with None country_code")
+            return
         self.generators_cache[country_code] = data
         self.generators_modified = True
 
@@ -245,5 +251,8 @@ class ElementCache:
 
     def store_units(self, country_code: str, units: list[Unit]) -> None:
         """Store processed units for a country in cache."""
+        if country_code is None:
+            logger.error("Attempted to store units with None country_code")
+            return
         self.units_cache[country_code] = units
         self.units_modified = True

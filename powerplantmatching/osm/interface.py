@@ -5,6 +5,7 @@ Provides high-level functions to interact with OSM data for powerplantmatching.
 
 import logging
 import os
+from difflib import get_close_matches
 
 import numpy as np
 import pandas as pd
@@ -76,7 +77,123 @@ def get_client_params(osm_config, api_url, cache_dir):
         "timeout": osm_config.get("overpass_api", {}).get("timeout", 300),
         "max_retries": osm_config.get("overpass_api", {}).get("max_retries", 3),
         "retry_delay": osm_config.get("overpass_api", {}).get("retry_delay", 5),
+        "show_progress": osm_config.get("show_progress", True),
     }
+
+
+def validate_all_countries(countries: list[str]) -> tuple[list[str], dict[str, str]]:
+    """
+    Validate all countries before processing begins.
+
+    Parameters
+    ----------
+    countries : list[str]
+        List of country names to validate
+
+    Returns
+    -------
+    tuple[list[str], dict[str, str]]
+        (valid_countries, country_code_map)
+
+    Raises
+    ------
+    ValueError
+        If any countries are invalid, with helpful error message
+    """
+    import pycountry
+
+    valid_countries = []
+    invalid_countries = []
+    country_code_map = {}
+
+    # First pass: validate all countries
+    for country in countries:
+        country_code = get_country_code(country)
+        if country_code is not None:
+            valid_countries.append(country)
+            country_code_map[country] = country_code
+        else:
+            invalid_countries.append(country)
+
+    # If we have invalid countries, provide detailed error with suggestions
+    if invalid_countries:
+        # Get all valid country names for suggestions
+        all_country_names = [c.name for c in pycountry.countries]
+        all_country_names.extend([c.alpha_2 for c in pycountry.countries])
+        all_country_names.extend([c.alpha_3 for c in pycountry.countries])
+
+        # Add common variations
+        country_variations = {
+            "USA": "United States",
+            "UK": "United Kingdom",
+            "South Korea": "Korea, Republic of",
+            "North Korea": "Korea, Democratic People's Republic of",
+            "Russia": "Russian Federation",
+            "Iran": "Iran, Islamic Republic of",
+            "Syria": "Syrian Arab Republic",
+            "Venezuela": "Venezuela, Bolivarian Republic of",
+            "Bolivia": "Bolivia, Plurinational State of",
+            "Tanzania": "Tanzania, United Republic of",
+            "Vietnam": "Viet Nam",
+            "Czech Republic": "Czechia",
+            "Macedonia": "North Macedonia",
+            "Turkey": "Türkiye",  # Recent name change
+        }
+        all_country_names.extend(country_variations.keys())
+
+        error_parts = [
+            f"❌ Invalid country names detected: {len(invalid_countries)} out of {len(countries)} countries",
+            "\nInvalid entries:",
+        ]
+
+        for invalid in invalid_countries:
+            error_parts.append(f"  ❌ '{invalid}'")
+
+            # Get suggestions
+            suggestions = get_close_matches(invalid, all_country_names, n=3, cutoff=0.6)
+            if suggestions:
+                strings = []
+                for suggestion in suggestions:
+                    strings.append(f"'{suggestion}'")
+                error_parts.append(f"     ℹ️  Did you mean: {', '.join(strings)}")
+
+            # Check if it's a common variation
+            if invalid in country_variations:
+                error_parts.append(
+                    f"     ℹ️  Try using: '{country_variations[invalid]}'"
+                )
+
+        error_parts.extend(
+            [
+                "\n✅ Valid entries:",
+                *[
+                    f"  ✅ '{valid}' → {country_code_map[valid]}"
+                    for valid in valid_countries[:5]
+                ],
+                f"  ... and {len(valid_countries) - 5} more"
+                if len(valid_countries) > 5
+                else "",
+                "\n📝 Accepted formats:",
+                "  - Full name: 'Germany', 'United States'",
+                "  - ISO 3166-1 alpha-2: 'DE', 'US'",
+                "  - ISO 3166-1 alpha-3: 'DEU', 'USA'",
+                "  - Common names: 'USA', 'UK', 'South Korea'",
+                "\n⚠️  All countries must be valid before processing can begin.",
+                "Please correct the invalid entries and try again.",
+            ]
+        )
+
+        error_msg = "\n".join(filter(None, error_parts))
+        logger.error(error_msg)
+        raise ValueError(error_msg)
+
+    # Log successful validation
+    logger.info(f"✅ Successfully validated all {len(valid_countries)} countries")
+    logger.debug(
+        f"Country codes: {', '.join(f'{c}={code}' for c, code in country_code_map.items())}"
+    )
+
+    return valid_countries, country_code_map
 
 
 def process_countries(
@@ -107,14 +224,35 @@ def process_countries(
     pd.DataFrame
         Combined data from all countries
     """
+    # VALIDATE ALL COUNTRIES FIRST - This is the key addition!
+    logger.info(f"Starting country validation for {len(countries)} countries...")
+    try:
+        valid_countries, country_code_map = validate_all_countries(countries)
+    except ValueError as e:
+        # Re-raise with additional context
+        raise ValueError(
+            f"Country validation failed. Cannot proceed with OSM data processing.\n{str(e)}"
+        ) from e
+
+    # Log the processing plan
+    logger.info(
+        f"Country validation successful! Processing OSM data for {len(valid_countries)} countries: "
+        f"{', '.join(valid_countries[:5])}"
+        f"{f' and {len(valid_countries) - 5} more' if len(valid_countries) > 5 else ''}"
+    )
+
     api_url = osm_config.get("overpass_api", {}).get("url")
     current_config_hash = Unit._generate_config_hash(osm_config)
 
     # Initialize empty DataFrame for all valid data
     all_valid_data = pd.DataFrame()
 
-    # Process each country individually
-    for country in countries:
+    # Process each country individually (using validated country list)
+    for i, country in enumerate(valid_countries, 1):
+        logger.info(
+            f"Processing country {i}/{len(valid_countries)}: {country} ({country_code_map[country]})"
+        )
+
         country_data = process_single_country(
             country,
             csv_cache_path,
@@ -140,6 +278,7 @@ def process_countries(
                 [all_valid_data, country_data], ignore_index=True
             )
 
+    logger.info(f"✅ Successfully processed all {len(valid_countries)} countries")
     return all_valid_data
 
 
