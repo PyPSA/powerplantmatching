@@ -220,20 +220,20 @@ OSM:
   # OSM Global configurations
   force_refresh: false
   plants_only: true
-  show_progress: true
-  missing_name_allowed: false
+  missing_name_allowed: true
   missing_technology_allowed: false
-  missing_start_date_allowed: false
+  missing_start_date_allowed: true
   capacity_extraction:
     enabled: true
-    regex_patterns:
-      - ^(\d+(?:\.\d+)?)\s*([a-zA-Z]+p?)$
+    # regex_patterns:
+    #   - ^(\d+(?:\.\d+)?)([a-zA-Z]+(?:p|el|e)?)$
+    #   - ^(\d+(?:\.\d+)?)\s*([a-zA-Z]+(?:p|el|e)?)$
   capacity_estimation:
     enabled: true
   units_clustering:
     enabled: false
   units_reconstruction:
-    enabled: false
+    enabled: true
     min_generators_for_reconstruction: 2
     name_similarity_threshold: 0.7
   plant_tags:
@@ -243,6 +243,7 @@ OSM:
     technology_tags_keys:
       - plant:method
       - plant:type
+      - site
     output_tags_keys:
       - plant:output:electricity
     name_tags_keys:
@@ -256,6 +257,7 @@ OSM:
     technology_tags_keys:
       - generator:method
       - generator:type
+      - site
     output_tags_keys:
       - generator:output:electricity
     name_tags_keys:
@@ -264,45 +266,45 @@ OSM:
     start_date_tags_keys:
       - start_date
   source_mapping:
-    Nuclear: [nuclear]
-    Solid Biomass: [biomass]
-    Biogas: [biogas]
-    Wind: [wind]
-    Hydro: [hydro]
-    Solar: [solar]
-    Oil: [oil, diesel]
-    Natural Gas: [gas]
-    Hard Coal: [coal]
-    Lignite: [placeholder]
-    Geothermal: [geothermal]
-    Waste: [waste]
-    Other: [placeholder]
+    Nuclear: [nuclear, nuclear;oil]
+    Solid Biomass: [biomass, wood, firewood, дрова, woodchips, древесная_кора, hay, peat, biofuel, ethanol, biomass;gas, biomass;oil, biomass;coal, biomass;waste, biomass;solar, biomass;electricity, biomass;peat, biofuel;gas, biofuel;oil, biofuel;electricity, wood;gas]
+    Biogas: [biogas, landfill_gas, abandoned_mine_methane, coalbed_methane, methane, sludge, biogas;gas, biogas;solar, biogas;oil]
+    Wind: [wind, wind;solar, wind;biogas, wind;diesel]
+    Hydro: [hydro, hydro;oil, hydro;solar]
+    Solar: [solar, solar;battery, solar;wind, solar;diesel, solar;gas, solar;biomass, solar;steam, solar;geothermal, solar;coal]
+    Oil: [oil, diesel, gasoline, mazut, fuel_oil, petrolio, мазут, petroleum_coke, asphaltite, oil;gas, oil;coal, oil;biomass, oil;diesel, oil;solar, oil;waste, oil;biogas, oil;battery, diesel;gas, diesel;oil, diesel;solar, diesel;wind]
+    Natural Gas: [gas, природный_газ, попутный нефтяной газ, gas_natural, gas;oil, gas;coal, gas;biomass, gas;diesel, gas;solar, gas;waste, gas;electricity, gas;waste_heat, gas;woodchips, gas;mazut, gas;fuel_oil, gas;firewood, gas;geothermal, gas;steam, gas;other, gas;hydrogen, gas;battery, gas;nuclear, gas;gasoline, gas;wood, gas;peat, gasoline;gas]
+    Hard Coal: [coal, coal;gas, coal gas, coal;biomass, coal;oil, coal;waste, coal;wood, coal;other, coal;abandoned_mine_methane, coal;petroleum_coke, coal;diesel]
+    Lignite: []
+    Geothermal: [geothermal, geothermal;gas, geothermal;steam, geothermal;biomass]
+    Waste: [waste, waste_heat, waste_gas, waste;gas, waste;biomass, waste;coal, waste;oil, waste;solar, waste;gasification, waste_heat;gas, wastewater;gas]
+    Other: [tidal, wave, osmotic]
   technology_mapping:
-    Combustion Engine: [combustion, reciprocating_engine, combined_cycle, gas_engine, motor_generator, steam_generator, bioreactor, gasification]
-    Steam Turbine: [combustion, gasification, steam_turbine, fission]
-    OCGT: [combustion]
-    CCGT: [combustion, thermal]
-    Run-Of-River: [run-of-the-river]
-    Reservoir: [water-storage]
-    Pumped Storage: [water-pumped-storage]
-    Offshore: [offshore]
-    Onshore: [wind_turbine, horizontal_axis]
-    PV: [photovoltaic, thermal;photovoltaic, solar_photovoltaic_panel]
-    CSP: [thermal]
-    Marine: [placeholder]
+    Combustion Engine: [combustion, reciprocating_engine, gas_engine, internal_combustion, anaerobic_digestion, bioreactor, gasification, combustion;thermal, combustion;anaerobic_digestion, cogeneration]
+    Steam Turbine: [steam_turbine, steam_generator, thermal, boiler, condensing_turbine, fission, geothermal, hydrothermal, steam, combustion;thermal, combustion;steam, combustion]
+    OCGT: [gas_turbine, open_cycle]
+    CCGT: [combined_cycle, ccpp, thermal\uff1bcombined_cycle, thermal;combined_cycle, ccgt]
+    Run-Of-River: [run-of-the-river, stream, hydrodynamic_screw, mini_hydro, francis_turbine, kaplan_turbine, pelton_turbine, pelton_wheel, vlh, crossflow_turbine, water_turbine, horizontal_axis, vertical_axis, kaplan, three-level]
+    Reservoir: [water-storage, barrage, horizontal_axis, vertical_axis, water-storage;run-of-the-river]
+    Pumped Storage: [water-pumped-storage, air-pumped-storage]
+    Offshore: []
+    Onshore: [horizontal_axis, vertical_axis, wind_turbine, nordex energy n 149, vestas_v_90, e_101, vestas_v90, "horizontal:_axis", wind_turbine;photovoltaic, wind_farm]
+    PV: [photovoltaic, solar_photovoltaic_panel, ground_mounted, solar, photovoltaic;battery, photovoltaic;thermal, solar_photovoltaic_panel, condensing_turbine;solar_photovoltaic_panel]
+    CSP: [solar_thermal_collector, solar_updraft_tower]
+    Marine: []
   source_technology_mapping:
     Nuclear: [Steam Turbine]
-    Solid Biomass: [Steam Turbine]
+    Solid Biomass: [Steam Turbine, Combustion Engine]
     Biogas: [Combustion Engine]
     Wind: [Offshore, Onshore]
     Hydro: [Run-Of-River, Reservoir, Pumped Storage]
     Solar: [PV, CSP]
-    Oil: [Combustion Engine]
-    Natural Gas: [OCGT, CCGT]
-    Hard Coal: [Steam Turbine]
+    Oil: [Combustion Engine, OCGT, Steam Turbine]
+    Natural Gas: [OCGT, CCGT, Combustion Engine, Steam Turbine]
+    Hard Coal: [Steam Turbine, CCGT, OCGT]
     Lignite: [Steam Turbine]
     Geothermal: [Steam Turbine]
-    Waste: [Combustion Engine]
+    Waste: [Combustion Engine, Steam Turbine]
     Other: [Marine]
   sources:
     Solar:
@@ -324,18 +326,30 @@ OSM:
       capacity_extraction:
         additional_tags:
           - wind:output
-      capacity_estimation:
-        method: default_value
-        unit_capacity: 1
-    Hydro:
-      capacity_extraction:
-        additional_tags:
-          - hydro:output
+    #   capacity_estimation:
+    #     method: default_value
+    #     unit_capacity: 2.0
+    # Hydro:
+    #   capacity_extraction:
+    #     additional_tags:
+    #       - hydro:output
+    #   capacity_estimation:
+    #     method: default_value
+    #     unit_capacity: 10.0
+    # Natural Gas:
+    #   capacity_estimation:
+    #     method: default_value
+    #     unit_capacity: 50.0
+    # Solid Biomass:
+    #   capacity_estimation:
+    #     method: default_value
+    #     unit_capacity: 10.0
   overpass_api:
-    url: https://overpass-api.de/api/interpreter  # Default Overpass API endpoint https://overpass.private.coffee/api/interpreter   https://overpass-api.de/api/interpreter
-    timeout: 300
+    api_url: https://overpass-api.de/api/interpreter  # Default Overpass API endpoint https://overpass.private.coffee/api/interpreter   https://overpass-api.de/api/interpreter
+    timeout: 1200
     max_retries: 3
-    retry_delay: 5
+    retry_delay: 60
+    show_progress: true
 
   # Algorithm parameters (for reference)
   algorithm_params:
