@@ -280,7 +280,7 @@ OSM:
     Waste: [waste, waste_heat, waste_gas, waste;gas, waste;biomass, waste;coal, waste;oil, waste;solar, waste;gasification, waste_heat;gas, wastewater;gas]
     Other: [tidal, wave, osmotic]
   technology_mapping:
-    Combustion Engine: [combustion, reciprocating_engine, gas_engine, internal_combustion, anaerobic_digestion, bioreactor, gasification, combustion;thermal, combustion;anaerobic_digestion, cogeneration]
+    Combustion Engine: [combustion, reciprocating_engine, gas_engine, internal_combustion, motor_generator, anaerobic_digestion, bioreactor, gasification, combustion;thermal, combustion;anaerobic_digestion, cogeneration]
     Steam Turbine: [steam_turbine, steam_generator, thermal, boiler, condensing_turbine, fission, geothermal, hydrothermal, steam, combustion;thermal, combustion;steam, combustion]
     OCGT: [gas_turbine, open_cycle]
     CCGT: [combined_cycle, ccpp, thermal\uff1bcombined_cycle, thermal;combined_cycle, ccgt]
