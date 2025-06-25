@@ -2,7 +2,7 @@ import logging
 from typing import Any, Optional
 
 from shapely.errors import ShapelyError
-from shapely.geometry import Point, Polygon
+from shapely.geometry import MultiPoint, Point, Polygon
 from shapely.ops import unary_union
 
 from .client import OverpassAPIClient
@@ -82,24 +82,27 @@ class GeometryHandler:
             if node and "lat" in node and "lon" in node:
                 coords.append((node["lon"], node["lat"]))  # GIS standard is (lon, lat)
 
-        # Check if we have enough coordinates
-        if len(coords) < 3:
-            logger.debug(
-                f"Way {way['id']} does not have enough coordinates to form a polygon"
-            )
-            return None
+        if len(coords) == 1:
+            # Single point - use it directly
+            return create_plant_geometry(way, Point(coords[0]))
+        elif len(coords) == 2:
+            # Two points - use the midpoint
+            mid_lon = (coords[0][0] + coords[1][0]) / 2
+            mid_lat = (coords[0][1] + coords[1][1]) / 2
+            return create_plant_geometry(way, Point(mid_lon, mid_lat))
 
-        try:
-            # Create polygon
-            polygon = Polygon(coords)
-            if not polygon.is_valid:
-                logger.debug(f"Invalid polygon for way {way['id']}")
+        else:
+            try:
+                # Create polygon
+                polygon = Polygon(coords)
+                if not polygon.is_valid:
+                    logger.debug(f"Invalid polygon for way {way['id']}")
+                    return None
+
+                return create_plant_geometry(way, polygon)
+            except ShapelyError as e:
+                logger.debug(f"Error creating polygon for way/{way['id']}: {str(e)}")
                 return None
-
-            return create_plant_geometry(way, polygon)
-        except ShapelyError as e:
-            logger.debug(f"Error creating polygon for way {way['id']}: {str(e)}")
-            return None
 
     def create_relation_geometry(
         self, relation: dict[str, Any]
@@ -151,25 +154,12 @@ class GeometryHandler:
                     points.append(Point(node["lon"], node["lat"]))
 
             if len(points) == 1:
-                # Single node relation - return as point
                 return create_plant_geometry(relation, points[0])
             elif len(points) == 2:
-                # Two nodes - create a line buffer or just use first point
-                # For power plants, we'll use the first point as representative
                 return create_plant_geometry(relation, points[0])
             elif len(points) >= 3:
-                # With 3+ points, create convex hull as polygon
-                try:
-                    from shapely.geometry import MultiPoint
-
-                    hull = MultiPoint(points).convex_hull
-                    return create_plant_geometry(relation, hull)
-                except Exception as e:
-                    logger.debug(
-                        f"Error creating hull for relation {relation['id']}: {str(e)}"
-                    )
-                    # Fallback to first point
-                    return create_plant_geometry(relation, points[0])
+                hull = MultiPoint(points).convex_hull
+                return create_plant_geometry(relation, hull)
 
         # Process polygons from ways if any
         if polygons:
@@ -243,6 +233,22 @@ class GeometryHandler:
         # Fallback for direct coordinate extraction if geometry creation failed
         if element.get("type") == "node" and "lat" in element and "lon" in element:
             return (element["lat"], element["lon"])
+
+        # Additional fallback for ways - try to get ANY coordinate from nodes
+        if element.get("type") == "way" and "nodes" in element:
+            for node_id in element["nodes"]:
+                node = self.client.cache.get_node(node_id)
+                if node and "lat" in node and "lon" in node:
+                    logger.debug(
+                        f"Using first available node coordinate for way {element['id']}"
+                    )
+                    return (node["lat"], node["lon"])
+
+        # Additional fallback for relations
+        if element.get("type") == "relation":
+            lat, lon = self.get_relation_centroid_from_members(element)
+            if lat is not None and lon is not None:
+                return (lat, lon)
 
         return (None, None)
 

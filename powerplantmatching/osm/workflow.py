@@ -49,16 +49,17 @@ class Workflow:
 
         self.clustering_manager = ClusteringManager(self.config)
 
-        # Create processors
-        self.plant_parser = PlantParser(
-            client,
-            self.rejection_tracker,
-            self.config,
-        )
+        # Create processors with cross-references
         self.generator_parser = GeneratorParser(
             client,
             self.rejection_tracker,
             self.config,
+        )
+        self.plant_parser = PlantParser(
+            client,
+            self.rejection_tracker,
+            self.config,
+            generator_parser=self.generator_parser,
         )
 
         # Store key processing parameters
@@ -143,8 +144,15 @@ class Workflow:
         for element in plants_data.get("elements", []):
             element_id = f"{element['type']}/{element['id']}"
 
+            # Skip already processed elements
+            if element_id in self.processed_elements:
+                # No need for rejection tracking for already processed elements
+                continue
+
             # Process element
-            plant = self.plant_parser.process_element(element, country)
+            plant = self.plant_parser.process_element(
+                element, country, self.processed_elements
+            )
             if plant:
                 self.processed_plants.append(plant)
                 self.processed_elements.add(element_id)
@@ -159,10 +167,10 @@ class Workflow:
             # Pass rejected plant info to generator parser if salvage feature is enabled
             reconstruct_config = self.config.get("units_reconstruction", {})
             if reconstruct_config.get("enabled", False) and hasattr(
-                self.plant_parser, "orphaned_salvager"
+                self.plant_parser, "rejected_plant_info"
             ):
                 self.generator_parser.set_rejected_plant_info(
-                    self.plant_parser.orphaned_salvager.rejected_plant_info
+                    self.plant_parser.rejected_plant_info
                 )
 
             # Process generators
@@ -174,13 +182,13 @@ class Workflow:
                         element=element,
                         reason=RejectionReason.ELEMENT_ALREADY_PROCESSED,
                         details="Element processed already in plants processing",
-                        keywords={"keyword": None, "value": None, "comment": None},
+                        keywords="none",
                     )
                     continue
 
                 # Check if generator coordinates are within any existing plant geometry
                 if plant_polygons:
-                    is_within, plant_id = (
+                    is_within, _ = (
                         self.generator_parser.geometry_handler.is_element_within_plant_geometries(
                             element, plant_polygons
                         )
@@ -190,16 +198,14 @@ class Workflow:
                             element=element,
                             reason=RejectionReason.WITHIN_EXISTING_PLANT,
                             details="Generator is located within existing plant boundary",
-                            keywords={
-                                "keyword": None,
-                                "value": None,
-                                "comment": f"geometry_issue: within_plant_{plant_id}",
-                            },
+                            keywords="none",
                         )
                         continue
 
                 # Process element
-                generator = self.generator_parser.process_element(element, country)
+                generator = self.generator_parser.process_element(
+                    element, country, self.processed_elements
+                )
                 if generator:
                     self.processed_generators.append(generator)
                     self.processed_elements.add(element_id)
@@ -212,7 +218,7 @@ class Workflow:
                 self.generator_parser, "finalize_generator_groups"
             ):
                 aggregated_units = self.generator_parser.finalize_generator_groups(
-                    country
+                    country, self.processed_elements
                 )
                 if aggregated_units:
                     self.processed_generators.extend(aggregated_units)
@@ -267,26 +273,14 @@ class Workflow:
         for plant in getattr(self, "processed_plants", []):
             all_units.append(plant)
 
-        # Add salvaged plants if salvage feature is enabled
-        reconstruct_config = self.config.get("units_reconstruction", {})
-        if reconstruct_config.get("enabled", False) and hasattr(
-            self.plant_parser, "salvaged_plants"
-        ):
-            for salvaged_plant in self.plant_parser.salvaged_plants:
-                all_units.append(salvaged_plant)
-            if self.plant_parser.salvaged_plants:
-                logger.info(
-                    f"Added {len(self.plant_parser.salvaged_plants)} salvaged plants"
-                )
-
         for generator in getattr(self, "processed_generators", []):
             all_units.append(generator)
 
         # Use the rejection tracker's method for deleting rejections
-        self.rejection_tracker.delete_rejections_for_units(all_units)
+        self.rejection_tracker.delete_for_units(all_units)
 
         # Log rejection summary
-        logger.info(self.rejection_tracker.get_rejection_summary_string())
+        logger.info(self.rejection_tracker.get_summary_string())
 
         # Store processed units in cache
         self.client.cache.store_units(country_code, all_units)

@@ -305,64 +305,6 @@ def region_download(
         }
 
 
-def download_and_integrate(
-    regions: Optional[Union[list[dict[str, Any]], dict[str, Any]]] = None, **kwargs
-) -> dict[str, Any]:
-    """
-    Download regional data and immediately integrate it with OSM data.
-
-    This is a convenience function that downloads regional data and shows
-    how it integrates with the standard OSM() function.
-
-    Parameters
-    ----------
-    regions : list[dict] or dict, optional
-        Region(s) to download. Same format as region_download()
-    **kwargs
-        Additional keyword arguments passed to region_download()
-
-    Returns
-    -------
-    dict[str, Any]
-        Dictionary with download results and integration info:
-        {
-            "download_results": dict,  # Results from region_download
-            "total_osm_plants": int,   # Total plants after integration
-            "regional_plants": int     # Plants in downloaded regions
-        }
-
-    Examples
-    --------
-    >>> from powerplantmatching.osm import download_and_integrate
-    >>>
-    >>> region = {"type": "radius", "name": "Test", "center": [52.52, 13.405], "radius_km": 10}
-    >>> info = download_and_integrate(region)
-    >>> print(f"Downloaded {info['regional_plants']} plants in the region")
-    """
-    # Perform the download
-    results = region_download(regions, **kwargs)
-
-    # Get OSM data (which now includes the regional updates)
-    from powerplantmatching.data import OSM
-
-    osm_data = OSM()
-
-    # Count plants in the affected regions
-    regional_plants = 0
-    if results["success"] and not osm_data.empty:
-        # Get bounds of all downloaded regions
-        for region_name, region_result in results["results"].items():
-            if region_result.get("status") == "success":
-                # This is approximate - actual count would need region bounds
-                regional_plants += region_result.get("plants_count", 0)
-
-    return {
-        "download_results": results,
-        "total_osm_plants": len(osm_data) if not osm_data.empty else 0,
-        "regional_plants": regional_plants,
-    }
-
-
 def _region_download_with_client(
     client: OverpassAPIClient,
     regions: list[dict[str, Any]],

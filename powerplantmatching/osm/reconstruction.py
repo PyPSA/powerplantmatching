@@ -8,9 +8,10 @@ This module handles the reconstruction of incomplete plant data by:
 
 import logging
 import re
-from typing import Any
+from typing import TYPE_CHECKING, Any, Optional
 
-from .models import GeneratorGroup, RejectedPlantInfo, Unit
+if TYPE_CHECKING:
+    from .generator_parser import GeneratorParser
 
 logger = logging.getLogger(__name__)
 
@@ -131,7 +132,12 @@ class NameAggregator:
 class PlantReconstructor:
     """Handles reconstruction of incomplete plant data from generators."""
 
-    def __init__(self, config: dict[str, Any], name_aggregator: NameAggregator):
+    def __init__(
+        self,
+        config: dict[str, Any],
+        name_aggregator: NameAggregator,
+        generator_parser: Optional["GeneratorParser"] = None,
+    ):
         """
         Initialize the plant reconstructor.
 
@@ -141,9 +147,12 @@ class PlantReconstructor:
             Configuration dictionary
         name_aggregator : NameAggregator
             Name aggregator instance
+        generator_parser : GeneratorParser, optional
+            Generator parser instance for processing generators
         """
         self.config = config
         self.name_aggregator = name_aggregator
+        self.generator_parser = generator_parser
         self.min_generators = config.get("units_reconstruction", {}).get(
             "min_generators_for_reconstruction", 2
         )
@@ -164,56 +173,132 @@ class PlantReconstructor:
         """
         return generator_count >= self.min_generators
 
-    def aggregate_generator_info(
-        self, generators: list[dict[str, Any]]
-    ) -> dict[str, Any]:
+    def process_generators_for_reconstruction(
+        self, generators: list[dict[str, Any]], country: str
+    ) -> list[dict[str, Any]]:
         """
-        Aggregate information from multiple generators.
+        Process generators using the generator parser to extract all information.
 
         Parameters
         ----------
         generators : list[dict[str, Any]]
             List of generator elements
+        country : str
+            Country code for processing
+
+        Returns
+        -------
+        list[dict[str, Any]]
+            List of processed generator info dictionaries
+        """
+        if not self.generator_parser:
+            raise ValueError("Generator parser required for reconstruction")
+
+        processed_info = []
+
+        for generator in generators:
+            # Use generator parser's extraction methods
+            source = self.generator_parser.extract_source_from_tags(
+                generator, "generator"
+            )
+            if not source:
+                continue
+
+            technology = self.generator_parser.extract_technology_from_tags(
+                generator, "generator", source
+            )
+            name = self.generator_parser.extract_name_from_tags(generator, "generator")
+            start_date = self.generator_parser.extract_start_date_key_from_tags(
+                generator, "generator"
+            )
+
+            # Extract capacity using generator parser's sophisticated logic
+            output_key = self.generator_parser.extract_output_key_from_tags(
+                generator, "generator", source
+            )
+            capacity = None
+            capacity_source = None
+
+            if output_key:
+                capacity, capacity_source = self.generator_parser._process_capacity(
+                    generator, source, output_key, "generator"
+                )
+
+                # Handle relation members if needed
+                if capacity is None and generator["type"] == "relation":
+                    capacity, capacity_source, _ = (
+                        self.generator_parser._get_relation_member_capacity(
+                            generator, source, "generator"
+                        )
+                    )
+
+            processed_info.append(
+                {
+                    "element": generator,
+                    "source": source,
+                    "technology": technology,
+                    "name": name,
+                    "start_date": start_date,
+                    "capacity": capacity,
+                    "capacity_source": capacity_source,
+                    "output_key": output_key,
+                }
+            )
+
+        return processed_info
+
+    def aggregate_generator_info(
+        self, generators: list[dict[str, Any]], country: str
+    ) -> dict[str, Any]:
+        """
+        Aggregate information from multiple generators using generator parser.
+
+        Parameters
+        ----------
+        generators : list[dict[str, Any]]
+            List of generator elements
+        country : str
+            Country code for processing
 
         Returns
         -------
         dict[str, Any]
             Aggregated information including names, sources, technologies, etc.
         """
+        # Process all generators through generator parser
+        processed_generators = self.process_generators_for_reconstruction(
+            generators, country
+        )
+
+        # Aggregate the results
         aggregated_info = {
             "names": set(),
             "sources": set(),
             "technologies": set(),
             "start_dates": set(),
-            "capacities": [],
+            "total_capacity": 0.0,
+            "capacity_count": 0,
+            "valid_generators": [],
             "output_keys": set(),
         }
 
-        # Aggregate data from all generators
-        for generator in generators:
-            tags = generator.get("tags", {})
+        for gen_info in processed_generators:
+            if gen_info["source"]:  # Only include valid generators
+                aggregated_info["valid_generators"].append(gen_info)
 
-            # Extract various fields from tags
-            if "name" in tags or "name:en" in tags:
-                name = tags.get("name:en", tags.get("name", ""))
-                if name:
-                    aggregated_info["names"].add(name)
-
-            if "generator:source" in tags:
-                aggregated_info["sources"].add(tags["generator:source"])
-
-            if "generator:method" in tags or "generator:type" in tags:
-                tech = tags.get("generator:method", tags.get("generator:type", ""))
-                if tech:
-                    aggregated_info["technologies"].add(tech)
-
-            if "start_date" in tags or "year" in tags:
-                date = tags.get("start_date", tags.get("year", ""))
-                if date:
-                    aggregated_info["start_dates"].add(date)
-
-            if "generator:output:electricity" in tags:
-                aggregated_info["output_keys"].add("generator:output:electricity")
+                if gen_info["name"]:
+                    aggregated_info["names"].add(gen_info["name"])
+                if gen_info["source"]:
+                    aggregated_info["sources"].add(gen_info["source"])
+                if gen_info["technology"]:
+                    aggregated_info["technologies"].add(gen_info["technology"])
+                if gen_info["start_date"]:
+                    aggregated_info["start_dates"].add(gen_info["start_date"])
+                if gen_info["capacity"] is not None and gen_info["capacity"] > 0:
+                    aggregated_info["total_capacity"] += gen_info["capacity"]
+                    aggregated_info["capacity_count"] += 1
+                if gen_info["output_key"]:
+                    aggregated_info["output_keys"].add(gen_info["output_key"])
 
         return aggregated_info
 
@@ -226,7 +311,7 @@ class PlantReconstructor:
         Parameters
         ----------
         aggregated_info : dict[str, Any]
-            Aggregated information from generators
+            Aggregated information from generators (already processed and mapped)
         existing_values : dict[str, Any]
             Existing values from the plant (may be None)
 
@@ -245,12 +330,12 @@ class PlantReconstructor:
         else:
             final_values["name"] = existing_values.get("name", "")
 
-        # Source - use voting (most common)
+        # Source - use voting (most common) from already mapped sources
         if aggregated_info["sources"]:
             if len(aggregated_info["sources"]) == 1:
                 final_values["source"] = list(aggregated_info["sources"])[0]
             else:
-                # Vote for most common
+                # Vote for most common mapped source
                 source_counts = {}
                 for source in aggregated_info["sources"]:
                     source_counts[source] = source_counts.get(source, 0) + 1
@@ -260,11 +345,12 @@ class PlantReconstructor:
         else:
             final_values["source"] = existing_values.get("source")
 
-        # Technology - similar voting mechanism
+        # Technology - use voting (most common) from already mapped technologies
         if aggregated_info["technologies"]:
             if len(aggregated_info["technologies"]) == 1:
                 final_values["technology"] = list(aggregated_info["technologies"])[0]
             else:
+                # Vote for most common
                 tech_counts = {}
                 for tech in aggregated_info["technologies"]:
                     tech_counts[tech] = tech_counts.get(tech, 0) + 1
@@ -280,172 +366,12 @@ class PlantReconstructor:
         else:
             final_values["start_date"] = existing_values.get("start_date", "")
 
+        # Capacity - use total if available
+        if aggregated_info["capacity_count"] > 0:
+            final_values["capacity"] = aggregated_info["total_capacity"]
+            final_values["capacity_source"] = "aggregated_from_generators"
+        else:
+            final_values["capacity"] = existing_values.get("capacity")
+            final_values["capacity_source"] = existing_values.get("capacity_source")
+
         return final_values
-
-
-class OrphanedGeneratorSalvager:
-    """Handles creation of plants from orphaned generators."""
-
-    def __init__(self, config: dict[str, Any], name_aggregator: NameAggregator):
-        """
-        Initialize the salvager.
-
-        Parameters
-        ----------
-        config : dict[str, Any]
-            Configuration dictionary
-        name_aggregator : NameAggregator
-            Name aggregator instance
-        """
-        self.config = config
-        self.name_aggregator = name_aggregator
-        self.rejected_plant_info: dict[str, RejectedPlantInfo] = {}
-        self.generator_groups: dict[str, GeneratorGroup] = {}
-
-    def store_rejected_plant(self, plant_info: RejectedPlantInfo):
-        """
-        Store information about a rejected plant for later generator matching.
-
-        Parameters
-        ----------
-        plant_info : RejectedPlantInfo
-            Information about the rejected plant
-        """
-        self.rejected_plant_info[plant_info.element_id] = plant_info
-
-    def add_generator_to_group(self, generator: dict[str, Any], plant_id: str):
-        """
-        Add a generator to a group for a rejected plant.
-
-        Parameters
-        ----------
-        generator : dict[str, Any]
-            Generator element
-        plant_id : str
-            ID of the rejected plant
-        """
-        if plant_id not in self.generator_groups:
-            if plant_id not in self.rejected_plant_info:
-                logger.warning(f"No rejected plant info for {plant_id}")
-                return
-
-            plant_info = self.rejected_plant_info[plant_id]
-            self.generator_groups[plant_id] = GeneratorGroup(
-                plant_id=plant_id,
-                generators=[],
-                plant_polygon=plant_info.polygon,
-            )
-
-        self.generator_groups[plant_id].generators.append(generator)
-
-    def create_salvaged_units(self, unit_factory) -> list[Unit]:
-        """
-        Create salvaged units from generator groups.
-
-        Parameters
-        ----------
-        unit_factory : callable
-            Factory function to create Unit objects
-
-        Returns
-        -------
-        list[Unit]
-            List of salvaged units
-        """
-        salvaged_units = []
-
-        for plant_id, group in self.generator_groups.items():
-            if len(group.generators) > 0:
-                unit = self._create_unit_from_group(group, unit_factory)
-                if unit:
-                    salvaged_units.append(unit)
-
-        return salvaged_units
-
-    def _create_unit_from_group(
-        self, group: GeneratorGroup, unit_factory
-    ) -> Unit | None:
-        """
-        Create a unit from a generator group.
-
-        Parameters
-        ----------
-        group : GeneratorGroup
-            Group of generators
-        unit_factory : callable
-            Factory function to create Unit objects
-
-        Returns
-        -------
-        Unit | None
-            Created unit or None if creation failed
-        """
-        # Aggregate generator information
-        aggregated_info = {
-            "names": set(),
-            "sources": set(),
-            "technologies": set(),
-            "start_dates": set(),
-            "total_capacity": 0.0,
-            "capacity_count": 0,
-        }
-
-        for generator in group.generators:
-            tags = generator.get("tags", {})
-
-            # Extract information from tags
-            if "name" in tags or "name:en" in tags:
-                name = tags.get("name:en", tags.get("name", ""))
-                if name:
-                    aggregated_info["names"].add(name)
-
-            if "generator:source" in tags:
-                aggregated_info["sources"].add(tags["generator:source"])
-
-            if "generator:method" in tags or "generator:type" in tags:
-                tech = tags.get("generator:method", tags.get("generator:type", ""))
-                if tech:
-                    aggregated_info["technologies"].add(tech)
-
-            if "start_date" in tags or "year" in tags:
-                date = tags.get("start_date", tags.get("year", ""))
-                if date:
-                    aggregated_info["start_dates"].add(date)
-
-        # Determine final values
-        final_name = (
-            self.name_aggregator.aggregate_names(aggregated_info["names"])
-            if aggregated_info["names"]
-            else f"Plant Group {group.plant_id}"
-        )
-
-        # Use voting for source and technology
-        final_source = None
-        if aggregated_info["sources"]:
-            source_counts = {}
-            for source in aggregated_info["sources"]:
-                source_counts[source] = source_counts.get(source, 0) + 1
-            final_source = max(source_counts.items(), key=lambda x: x[1])[0]
-
-        final_technology = None
-        if aggregated_info["technologies"]:
-            tech_counts = {}
-            for tech in aggregated_info["technologies"]:
-                tech_counts[tech] = tech_counts.get(tech, 0) + 1
-            final_technology = max(tech_counts.items(), key=lambda x: x[1])[0]
-
-        final_start_date = (
-            min(aggregated_info["start_dates"])
-            if aggregated_info["start_dates"]
-            else None
-        )
-
-        # Create unit using factory
-        return unit_factory(
-            group=group,
-            name=final_name,
-            source=final_source,
-            technology=final_technology,
-            start_date=final_start_date,
-            capacity_source="aggregated_from_orphaned_generators",
-        )

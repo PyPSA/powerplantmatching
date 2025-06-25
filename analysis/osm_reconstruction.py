@@ -23,7 +23,7 @@ import seaborn as sns
 
 from powerplantmatching.core import _data_in, get_config
 from powerplantmatching.osm.client import OverpassAPIClient
-from powerplantmatching.osm.interface import validate_all_countries
+from powerplantmatching.osm.interface import validate_countries
 from powerplantmatching.osm.models import Units
 from powerplantmatching.osm.rejection import RejectionTracker
 from powerplantmatching.osm.workflow import Workflow
@@ -104,7 +104,7 @@ def run_scenario(country, scenario_name, config_overrides, cache_dir):
             units=units_collection,
             config=config,
         )
-        validate_all_countries([country])
+        validate_countries([country])
         workflow.process_country_data(country=country)
 
     processing_time = time.time() - start_time

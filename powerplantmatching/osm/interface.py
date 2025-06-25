@@ -77,11 +77,11 @@ def get_client_params(osm_config, api_url, cache_dir):
         "timeout": osm_config.get("overpass_api", {}).get("timeout", 300),
         "max_retries": osm_config.get("overpass_api", {}).get("max_retries", 3),
         "retry_delay": osm_config.get("overpass_api", {}).get("retry_delay", 5),
-        "show_progress": osm_config.get("show_progress", True),
+        "show_progress": osm_config.get("overpass_api", {}).get("show_progress", True),
     }
 
 
-def validate_all_countries(countries: list[str]) -> tuple[list[str], dict[str, str]]:
+def validate_countries(countries: list[str]) -> tuple[list[str], dict[str, str]]:
     """
     Validate all countries before processing begins.
 
@@ -227,7 +227,7 @@ def process_countries(
     # VALIDATE ALL COUNTRIES FIRST - This is the key addition!
     logger.info(f"Starting country validation for {len(countries)} countries...")
     try:
-        valid_countries, country_code_map = validate_all_countries(countries)
+        valid_countries, country_code_map = validate_countries(countries)
     except ValueError as e:
         # Re-raise with additional context
         raise ValueError(

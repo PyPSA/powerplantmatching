@@ -208,7 +208,7 @@ class UnitFactory:
             Created unit object
         """
         return Unit(
-            projectID=f"rejected_plant/{plant_id}",
+            projectID=f"OSM_plant:relation/{plant_id}",
             Country=country,
             lat=lat,
             lon=lon,
@@ -221,7 +221,7 @@ class UnitFactory:
             Set="PP",
             capacity_source="aggregated_from_orphaned_generators",
             DateIn=start_date,
-            id=f"rejected_plant/{plant_id}",
+            id=f"relation/{plant_id}",
             created_at=datetime.datetime.now().isoformat(),
             config_hash=self.config_hash,
             config_version="1.0",

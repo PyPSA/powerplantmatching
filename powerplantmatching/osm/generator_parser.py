@@ -56,6 +56,7 @@ class GeneratorParser(ElementProcessor):
         self,
         element: dict[str, Any],
         country: str | None = None,
+        processed_elements: set[str] | None = None,
     ) -> Unit | None:
         """
         Process a generator element using integrated features
@@ -74,10 +75,21 @@ class GeneratorParser(ElementProcessor):
         Unit | None
             Unit object if processing succeeded, None otherwise
         """
+        # Check if already processed
+        element_id = f"{element['type']}/{element['id']}"
+        if processed_elements and element_id in processed_elements:
+            logger.debug(f"Skipping already-processed generator {element_id}")
+            return None
+
         # Get country from element metadata or use provided country
         element_country = element.get("_country", country)
 
         lat, lon = self.geometry_handler.process_element_coordinates(element)
+
+        # Store coordinates in element for rejection tracker
+        if lat is not None and lon is not None:
+            element["_lat"] = lat
+            element["_lon"] = lon
 
         # Check if element is a valid generator
         if not is_valid_unit(element, "generator"):
@@ -86,11 +98,7 @@ class GeneratorParser(ElementProcessor):
                 element=element,
                 reason=RejectionReason.INVALID_ELEMENT_TYPE,
                 details=f"Expected power type 'generator' but found '{element.get('tags', {}).get('power', 'missing')}'",
-                keywords={
-                    "keyword": "power",
-                    "value": element.get("tags", {}).get("power"),
-                    "comment": None,
-                },
+                keywords=element.get("tags", {}).get("power", "missing"),
                 coordinates=(lat, lon) if lat is not None and lon is not None else None,
             )
             return None
@@ -145,11 +153,12 @@ class GeneratorParser(ElementProcessor):
         capacity, info = self._process_capacity(
             element, source, output_key, "generator"
         )
+        members_and_capacities = None
         if capacity is None:
             if element["type"] == "relation":
                 # If relation, try to get capacity from members
-                capacity, info = self._get_relation_member_capacity(
-                    element, source, "generator"
+                capacity, info, members_and_capacities = (
+                    self._get_relation_member_capacity(element, source, "generator")
                 )
                 if capacity is None:
                     return None
@@ -163,11 +172,7 @@ class GeneratorParser(ElementProcessor):
                 reason=RejectionReason.COORDINATES_NOT_FOUND,
                 details="Missing coordinates (lat/lon)",
                 country=element_country,
-                keywords={
-                    "keyword": None,
-                    "value": None,
-                    "comment": None,
-                },
+                keywords="none",
             )
             return None
 
@@ -177,9 +182,13 @@ class GeneratorParser(ElementProcessor):
                 reason=RejectionReason.OTHER,
                 details="Missing country information",
                 coordinates=(lat, lon) if lat and lon else None,
-                keywords={"keyword": "_country", "value": None, "comment": None},
+                keywords="none",
             )
             return None
+
+        if members_and_capacities and processed_elements:
+            for elem, _ in members_and_capacities:
+                processed_elements.add(f"{elem['type']}/{elem['id']}")
 
         return self.unit_factory.create_generator_unit(
             element_id=element["id"],
@@ -212,15 +221,52 @@ class GeneratorParser(ElementProcessor):
 
         self.generator_groups[plant_id].generators.append(element)
 
-    def finalize_generator_groups(self, country: str) -> list[Unit]:
+    def finalize_generator_groups(
+        self, country: str, processed_elements: set[str] | None = None
+    ) -> list[Unit]:
         """Create aggregated units from generator groups"""
         aggregated_units = []
 
         for plant_id, group in self.generator_groups.items():
-            if len(group.generators) > 0:
-                unit = self._create_aggregated_unit(group, country)
+            # Filter out already-processed generators
+            unprocessed_generators = []
+            skipped_count = 0
+
+            for gen in group.generators:
+                gen_id = f"{gen['type']}/{gen['id']}"
+                if processed_elements and gen_id in processed_elements:
+                    skipped_count += 1
+                    logger.debug(
+                        f"Skipping already-processed generator {gen_id} from group {plant_id}"
+                    )
+                else:
+                    unprocessed_generators.append(gen)
+
+            if skipped_count > 0:
+                logger.info(
+                    f"Filtered {skipped_count} already-processed generators from group {plant_id}"
+                )
+
+            # Only create unit if we have unprocessed generators
+            if len(unprocessed_generators) > 0:
+                # Create new group with filtered generators
+                filtered_group = GeneratorGroup(
+                    plant_id=plant_id,
+                    generators=unprocessed_generators,
+                    plant_polygon=group.plant_polygon,
+                )
+
+                unit = self._create_aggregated_unit(filtered_group, country)
                 if unit:
                     aggregated_units.append(unit)
+                    # Mark these generators as processed
+                    if processed_elements:
+                        for gen in unprocessed_generators:
+                            gen_id = f"{gen['type']}/{gen['id']}"
+                            processed_elements.add(gen_id)
+                            logger.debug(
+                                f"Marked generator {gen_id} as processed (part of aggregated unit for plant {plant_id})"
+                            )
 
         return aggregated_units
 

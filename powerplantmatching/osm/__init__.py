@@ -35,8 +35,8 @@ from .interface import (
     process_from_api,
     process_single_country,
     update_csv_cache,
-    validate_all_countries,
     validate_and_standardize_df,
+    validate_countries,
 )
 from .models import (
     ElementType,
@@ -49,7 +49,6 @@ from .models import (
 from .populate import populate_cache
 from .reconstruction import (
     NameAggregator,
-    OrphanedGeneratorSalvager,
     PlantReconstructor,
 )
 from .regional import region_download
@@ -81,16 +80,14 @@ __all__ = [
     "check_units_cache",
     "process_from_api",
     "update_csv_cache",
-    "validate_all_countries",
+    "validate_countries",
     "validate_and_standardize_df",
     "VALID_FUELTYPES",
     "VALID_TECHNOLOGIES",
     "NameAggregator",
     "PlantReconstructor",
-    "OrphanedGeneratorSalvager",
     "UnitFactory",
     "region_download",
-    # Utility functions
     "populate_cache",
     "show_country_coverage",
     "find_outdated_caches",

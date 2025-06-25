@@ -100,7 +100,7 @@ class ElementCache:
             "units": (self.units_cache_file, self.units_modified),
         }
 
-        for cache_name, (file_path, modified) in cache_files.items():
+        for _, (file_path, modified) in cache_files.items():
             if os.path.exists(file_path):
                 if force or modified:
                     size = os.path.getsize(file_path) / 1024  # Size in KB
@@ -150,21 +150,6 @@ class ElementCache:
     def get_generators(self, country_code: str) -> dict | None:
         """Get generators for a country from cache"""
         return self.generators_cache.get(country_code)
-
-    def store_node(self, node_id: int, data: dict) -> None:
-        """Store a node in cache"""
-        self.nodes_cache[str(node_id)] = data
-        self.nodes_modified = True
-
-    def store_way(self, way_id: int, data: dict) -> None:
-        """Store a way in cache"""
-        self.ways_cache[str(way_id)] = data
-        self.ways_modified = True
-
-    def store_relation(self, relation_id: int, data: dict) -> None:
-        """Store a relation in cache"""
-        self.relations_cache[str(relation_id)] = data
-        self.relations_modified = True
 
     def store_plants(self, country_code: str, data: dict) -> None:
         """Store plants for a country in cache"""
@@ -217,7 +202,7 @@ class ElementCache:
         if os.path.exists(cache_path):
             try:
                 with open(cache_path) as f:
-                    units_data = json.load(f)
+                    units_data: dict = json.load(f)
 
                 # Convert dict back to Units
                 units_cache = {}

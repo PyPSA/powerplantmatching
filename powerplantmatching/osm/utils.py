@@ -8,36 +8,6 @@ import pycountry
 logger = logging.getLogger(__name__)
 
 
-# Element processing utilities
-def get_element_coordinates(
-    element: dict[str, Any],
-) -> tuple[Optional[float], Optional[float]]:
-    """
-    Get coordinates for an OSM element
-
-    Parameters
-    ----------
-    element : dict[str, Any]
-        OSM element data
-
-    Returns
-    -------
-    tuple[Optional[float], Optional[float]]
-        (latitude, longitude) if found, (None, None) otherwise
-    """
-    if element["type"] == "node":
-        if "lat" in element and "lon" in element:
-            return element["lat"], element["lon"]
-    elif element["type"] == "way":
-        if "center" in element:
-            return element["center"]["lat"], element["center"]["lon"]
-    elif element["type"] == "relation":
-        if "center" in element:
-            return element["center"]["lat"], element["center"]["lon"]
-
-    return None, None
-
-
 def is_valid_unit(element: dict[str, Any], unit_type: str) -> bool:
     """
     Check if an element is a valid power unit
@@ -91,7 +61,7 @@ def get_source_config(
 def parse_capacity_value(
     value: str,
     advanced_extraction: bool,
-    regex_patterns: list[str] = [r"^(\d+(?:\.\d+)?)\s*([a-zA-Z]+p?)$"],
+    regex_patterns: list[str] | None = None,
 ) -> tuple[bool, float | None, str]:
     """
     Parse capacity value from string with improved error reporting
@@ -110,57 +80,75 @@ def parse_capacity_value(
     tuple[bool, float | None, str]
         (success, parsed_value, unit_or_error_info)
     """
-    # Normalize the input string - trim and convert to lowercase
-    value_str = value.strip().lower()
+    # Normalize the input string - trim
+    value_str = value.strip()
     original_value_str = value_str
 
-    # Proceed with normal parsing
+    # Try to handle comma as decimal separator
+    if "," in value_str and "." not in value_str:
+        value_str = value_str.replace(",", ".")
+
     if not advanced_extraction:
         # Basic extraction with simple pattern
-        pattern = r"(\d+(?:\.\d+)?)\s*(mw|mwp)"
+        pattern = r"^(\d+(?:\.\d+)?)\s*(mw|mwp|MW|MWP)$"
         try:
             match = re.match(pattern, value_str)
+            if not match:
+                # Try without space between number and unit
+                pattern_no_space = r"^(\d+(?:\.\d+)?)(mw|mwp|MW|MWP)$"
+                match = re.match(pattern_no_space, value_str)
         except Exception as e:
-            logger.error(f"Error parsing capacity value '{value_str}' with regex: {e}")
+            logger.error(
+                f"Error parsing capacity value '{original_value_str}' with regex: {e}"
+            )
             return False, None, "regex_error"
     else:
-        # Try to handle comma as decimal separator
-        if "," in value_str and not "." in value_str:
-            # Try with comma replacement
-            value_str = value_str.replace(",", ".")
+        # Use default patterns if none provided
+        if regex_patterns is None:
+            regex_patterns = [
+                # Pattern with optional space between number and unit, allowing various suffixes
+                r"^(\d+(?:\.\d+)?)\s*([a-zA-Z]+(?:p|el|e)?)$",
+                # Pattern without space (e.g., "460KW", "500kWel")
+                r"^(\d+(?:\.\d+)?)([a-zA-Z]+(?:p|el|e)?)$",
+            ]
 
-        try:
-            # Check if it is a number. We assume it is megawatts if no unit is provided
-            number = float(value_str)
-            return True, number, original_value_str
-        except ValueError:
-            # Advanced extraction with multiple configurable regex patterns
-            match = None
+        # Try to match with patterns
+        match = None
+        for pattern in regex_patterns:
             try:
-                for pattern in regex_patterns:
-                    match = re.match(pattern, value_str)
-                    if match:
-                        break
+                match = re.match(pattern, value_str)
+                if match:
+                    break
             except Exception as e:
                 logger.error(
-                    f"Error parsing capacity value '{value_str}' with regex: {e}"
+                    f"Error parsing capacity value '{original_value_str}' with regex: {e}"
                 )
-                return False, None, "regex_error"
+                continue
 
     if match:
         number_str, unit = match.groups()
+
         try:
             number = float(number_str)
 
             # Convert to MW based on unit
             unit_lower = unit.lower()
-            if unit_lower in ["w", "wp", "watt", "watts"]:
+
+            # Strip common suffixes (p=power, el/e=electrical)
+            # to get the base unit
+            base_unit = unit_lower
+            for suffix in ["el", "p", "e"]:
+                if base_unit.endswith(suffix):
+                    base_unit = base_unit[: -len(suffix)]
+                    break
+
+            if base_unit in ["w", "watt", "watts"]:
                 return True, number * 0.000001, original_value_str
-            elif unit_lower in ["kw", "kwp", "kilowatt", "kilowatts"]:
+            elif base_unit in ["kw", "kilowatt", "kilowatts"]:
                 return True, number * 0.001, original_value_str
-            elif unit_lower in ["mw", "mwp", "megawatt", "megawatts"]:
+            elif base_unit in ["mw", "megawatt", "megawatts"]:
                 return True, number, original_value_str
-            elif unit_lower in ["gw", "gwp", "gigawatt", "gigawatts"]:
+            elif base_unit in ["gw", "gigawatt", "gigawatts"]:
                 return True, number * 1000, original_value_str
             else:
                 return False, None, "unknown_unit"

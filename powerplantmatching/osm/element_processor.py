@@ -100,11 +100,7 @@ class ElementProcessor(ABC):
                 element=element,
                 reason=RejectionReason.MISSING_NAME_TAG,
                 details=f"tags: {tags}",
-                keywords={
-                    "keyword": "name",
-                    "value": None,
-                    "comment": None,
-                },
+                keywords="none",
             )
 
         return None
@@ -157,24 +153,16 @@ class ElementProcessor(ABC):
         if not store_element_source:
             self.rejection_tracker.add_rejection(
                 element=element,
-                reason=RejectionReason.MISSING_SOURSE_TAG,
+                reason=RejectionReason.MISSING_SOURCE_TAG,
                 details=f"tags: {tags}",
-                keywords={
-                    "keyword": source_keys[0] if source_keys else f"{unit_type}:source",
-                    "value": None,
-                    "comment": None,
-                },
+                keywords="none",
             )
         else:
             self.rejection_tracker.add_rejection(
                 element=element,
                 reason=RejectionReason.MISSING_SOURCE_TYPE,
                 details=f"Source value '{store_element_source}' from tag '{key}' is not recognized",
-                keywords={
-                    "keyword": key,
-                    "value": store_element_source,
-                    "comment": None,
-                },
+                keywords=store_element_source,
             )
 
         return None
@@ -221,13 +209,11 @@ class ElementProcessor(ABC):
         source_tech_mapping = self.config.get("source_technology_mapping", {})
 
         store_element_technology = ""
-        technology_key_used = None
 
         for key in technology_keys:
             if key in tags:
                 element_technology = tags[key].lower()
                 store_element_technology = element_technology
-                technology_key_used = key
                 for config_technology in technology_mapping:
                     if config_technology in source_tech_mapping[source_type]:
                         if element_technology in technology_mapping[config_technology]:
@@ -244,24 +230,14 @@ class ElementProcessor(ABC):
                 element=element,
                 reason=RejectionReason.MISSING_TECHNOLOGY_TAG,
                 details=f"No technology tag found. Element has {len(tags)} tags but none specify technology",
-                keywords={
-                    "keyword": "plant:method"
-                    if unit_type == "plant"
-                    else "generator:method",
-                    "value": None,
-                    "comment": None,
-                },
+                keywords="none",
             )
         else:
             self.rejection_tracker.add_rejection(
                 element=element,
                 reason=RejectionReason.MISSING_TECHNOLOGY_TYPE,
                 details=f'''"{store_element_technology}" not found in technology_mapping. Ensure updating source_technology_mapping with "{source_type}"''',
-                keywords={
-                    "keyword": technology_key_used,
-                    "value": store_element_technology,
-                    "comment": None,
-                },
+                keywords=store_element_technology,
             )
 
         return None
@@ -319,13 +295,7 @@ class ElementProcessor(ABC):
             element=element,
             reason=RejectionReason.MISSING_OUTPUT_TAG,
             details=f"tags: {tags}",
-            keywords={
-                "keyword": output_keys[0]
-                if output_keys
-                else f"{unit_type}:output:electricity",
-                "value": None,
-                "comment": None,
-            },
+            keywords="none",
         )
         return None
 
@@ -393,11 +363,7 @@ class ElementProcessor(ABC):
                             element=element,
                             reason=RejectionReason.INVALID_START_DATE_FORMAT,
                             details=f"Date value '{store_raw_date}' in tag '{key}' could not be parsed to standard format",
-                            keywords={
-                                "keyword": key,
-                                "value": store_raw_date,
-                                "comment": None,
-                            },
+                            keywords=store_raw_date,
                         )
                         return None
 
@@ -409,24 +375,14 @@ class ElementProcessor(ABC):
                 element=element,
                 reason=RejectionReason.MISSING_START_DATE_TAG,
                 details=f"tags: {tags}",
-                keywords={
-                    "keyword": start_date_keys[0]
-                    if start_date_keys
-                    else f"{unit_type}:start_date",
-                    "value": None,
-                    "comment": None,
-                },
+                keywords="none",
             )
         else:
             self.rejection_tracker.add_rejection(
                 element=element,
                 reason=RejectionReason.INVALID_START_DATE_FORMAT,
                 details=f"Date value '{store_raw_date}' could not be parsed to standard format",
-                keywords={
-                    "keyword": None,  # Key not available here since no valid date was found
-                    "value": store_raw_date,
-                    "comment": None,
-                },
+                keywords=store_raw_date,
             )
 
         return None
@@ -509,7 +465,7 @@ class ElementProcessor(ABC):
         except (ValueError, TypeError) as e:
             # If parsing failed, fallback to just using the year
             logger.warning(
-                f"Date parsing failed for plant {element['type']}/{element['id']} in '{date_string}': {str(e)}"
+                f"Date parsing failed {element['type']}/{element['id']} in '{date_string}': {str(e)}. Using year only."
             )
             return f"{year}-01-01"
 
@@ -585,7 +541,7 @@ class ElementProcessor(ABC):
 
     def _get_relation_member_capacity(
         self, relation: dict[str, Any], source_type: str, unit_type: str
-    ) -> tuple[float | None, str]:
+    ) -> tuple[float | None, str, list]:
         """
         Get capacity from relation members
 
@@ -599,10 +555,10 @@ class ElementProcessor(ABC):
         Returns
         -------
         tuple[float | None, str]
-            (capacity_mw, capacity_source)
+            (capacity_mw, capacity_source, members)
         """
         if "members" not in relation:
-            return None, "unknown"
+            return None, "unknown", []
 
         # Get country from relation for member context
         relation_country = relation.get("_country")
@@ -675,12 +631,12 @@ class ElementProcessor(ABC):
 
         # If no members with capacity, return None
         if not members_with_capacity:
-            return None, "unknown"
+            return None, "unknown", []
 
         # If only one member with capacity, use that
         if len(members_with_capacity) == 1:
-            return members_with_capacity[0][1], "member_capacity"
+            return members_with_capacity[0][1], "member_capacity", members_with_capacity
 
         # If multiple members with capacity, sum them
         total_capacity = sum(capacity for _, capacity in members_with_capacity)
-        return total_capacity, "aggregated_capacity"
+        return total_capacity, "aggregated_capacity", members_with_capacity

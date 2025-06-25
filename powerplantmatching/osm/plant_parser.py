@@ -3,7 +3,7 @@ Plant parser for processing OSM power plant elements.
 """
 
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any, Optional
 
 from .client import OverpassAPIClient
 from .element_processor import ElementProcessor
@@ -11,12 +11,14 @@ from .geometry import GeometryHandler
 from .models import PlantGeometry, RejectedPlantInfo, Unit
 from .reconstruction import (
     NameAggregator,
-    OrphanedGeneratorSalvager,
     PlantReconstructor,
 )
 from .rejection import RejectionReason, RejectionTracker
 from .unit_factory import UnitFactory
 from .utils import is_valid_unit
+
+if TYPE_CHECKING:
+    from .generator_parser import GeneratorParser
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +31,7 @@ class PlantParser(ElementProcessor):
         client: OverpassAPIClient,
         rejection_tracker: RejectionTracker,
         config: dict[str, Any],
+        generator_parser: Optional["GeneratorParser"] = None,
     ):
         """
         Initialize the integrated plant processor
@@ -41,6 +44,8 @@ class PlantParser(ElementProcessor):
             Tracker for rejected elements
         config : dict[str, Any] | None
             Configuration for processing
+        generator_parser : GeneratorParser, optional
+            Generator parser instance for processing generators
         """
         super().__init__(
             client,
@@ -50,18 +55,23 @@ class PlantParser(ElementProcessor):
         )
         self.plant_polygons: list[PlantGeometry] = []
         self.unit_factory = UnitFactory(config)
+        self.generator_parser = generator_parser
 
         # Initialize reconstruction components if feature is enabled
         reconstruct_config = self.config.get("units_reconstruction", {})
         if reconstruct_config.get("enabled", False):
             self.name_aggregator = NameAggregator(config)
-            self.plant_reconstructor = PlantReconstructor(config, self.name_aggregator)
-            self.orphaned_salvager = OrphanedGeneratorSalvager(
-                config, self.name_aggregator
+            self.plant_reconstructor = PlantReconstructor(
+                config, self.name_aggregator, generator_parser=self.generator_parser
             )
-            self.salvaged_plants: list[Unit] = []
+            self.rejected_plant_info: dict[str, RejectedPlantInfo] = {}
 
-    def process_element(self, element: dict[str, Any], country: str) -> Unit | None:
+    def process_element(
+        self,
+        element: dict[str, Any],
+        country: str,
+        processed_elements: set[str] | None = None,
+    ) -> Unit | None:
         """
         Process a plant element using all integrated features
 
@@ -80,6 +90,11 @@ class PlantParser(ElementProcessor):
         # EARLY COORDINATE EXTRACTION - Get coordinates first for rejection tracking
         lat, lon = self.geometry_handler.process_element_coordinates(element)
 
+        # Store coordinates in element for rejection tracker
+        if lat is not None and lon is not None:
+            element["_lat"] = lat
+            element["_lon"] = lon
+
         # Check if we have valid coordinates (coordinates were extracted earlier)
         if lat is None or lon is None:
             self.rejection_tracker.add_rejection(
@@ -87,11 +102,7 @@ class PlantParser(ElementProcessor):
                 reason=RejectionReason.COORDINATES_NOT_FOUND,
                 details="Could not determine coordinates for element",
                 coordinates=None,
-                keywords={
-                    "keyword": None,
-                    "value": None,
-                    "comment": None,
-                },
+                keywords="none",
             )
             return None
 
@@ -101,11 +112,7 @@ class PlantParser(ElementProcessor):
                 element=element,
                 reason=RejectionReason.INVALID_ELEMENT_TYPE,
                 details=f"Expected power type 'plant' but found '{element.get('tags', {}).get('power', 'missing')}'",
-                keywords={
-                    "keyword": "power",
-                    "value": element.get("tags", {}).get("power"),
-                    "comment": None,
-                },
+                keywords=element.get("tags", {}).get("power", "missing"),
             )
             return None
 
@@ -152,7 +159,7 @@ class PlantParser(ElementProcessor):
                     existing_capacity = capacity
                     existing_capacity_source = info
                     logger.debug(
-                        f"Plant {element['id']} has existing capacity: {existing_capacity} MW ({info})"
+                        f"Plant {element['type']}/{element['id']} has existing capacity: {existing_capacity} MW ({info})"
                     )
 
         # Check if salvage feature is enabled and we have missing fields
@@ -171,9 +178,9 @@ class PlantParser(ElementProcessor):
                 start_date,
                 existing_capacity,
                 existing_capacity_source,
+                processed_elements,
             )
             if salvaged_unit:
-                self.salvaged_plants.append(salvaged_unit)
                 return salvaged_unit
 
             # If we couldn't salvage but it's a relation, store for later
@@ -206,16 +213,20 @@ class PlantParser(ElementProcessor):
 
         # Process capacity
         capacity, info = self._process_capacity(element, source, output_key, "plant")
+        members_and_capacities = None
         if capacity is None:
             if element["type"] == "relation":
                 # If relation, try to get capacity from members
-                capacity, info = self._get_relation_member_capacity(
-                    element, source, "plant"
+                capacity, info, members_and_capacities = (
+                    self._get_relation_member_capacity(element, source, "plant")
                 )
                 if capacity is None:
                     return None
             else:
                 return None
+        if members_and_capacities and processed_elements:
+            for elem, _ in members_and_capacities:
+                processed_elements.add(f"{elem['type']}/{elem['id']}")
 
         return self.unit_factory.create_plant_unit(
             element_id=element["id"],
@@ -264,18 +275,21 @@ class PlantParser(ElementProcessor):
         existing_start_date: str | None,
         existing_capacity: float | None = None,
         existing_capacity_source: str | None = None,
+        processed_elements: set[str] | None = None,
     ) -> Unit | None:
         """Try to complete missing fields from relation members using PlantReconstructor"""
         if "members" not in relation:
             return None
 
-        # Collect generator members
+        # Collect generator members and their IDs
         generator_members = []
+        generator_ids = []
         for member in relation["members"]:
             if member["type"] in ["node", "way"]:
                 member_elem = self._get_member_element(member)
                 if member_elem and self._is_generator(member_elem):
                     generator_members.append(member_elem)
+                    generator_ids.append(f"{member_elem['type']}/{member_elem['id']}")
 
         # Check if we can reconstruct
         if not self.plant_reconstructor.can_reconstruct(len(generator_members)):
@@ -287,32 +301,8 @@ class PlantParser(ElementProcessor):
 
         # Aggregate generator information
         aggregated_info = self.plant_reconstructor.aggregate_generator_info(
-            generator_members
+            generator_members, country
         )
-
-        # Extract info from generators for missing fields
-        for generator in generator_members:
-            if missing_fields["name"]:
-                gen_name = self.extract_name_from_tags(generator, "generator")
-                if gen_name:
-                    aggregated_info["names"].add(gen_name)
-
-            if missing_fields["source"]:
-                gen_source = self.extract_source_from_tags(generator, "generator")
-                if gen_source:
-                    aggregated_info["sources"].add(gen_source)
-
-            if missing_fields["technology"] and existing_source:
-                gen_tech = self.extract_technology_from_tags(
-                    generator, "generator", existing_source
-                )
-                if gen_tech:
-                    aggregated_info["technologies"].add(gen_tech)
-
-            if missing_fields["start_date"]:
-                gen_date = self.extract_start_date_key_from_tags(generator, "generator")
-                if gen_date:
-                    aggregated_info["start_dates"].add(gen_date)
 
         # Determine final values
         existing_values = {
@@ -340,7 +330,7 @@ class PlantParser(ElementProcessor):
 
         if can_salvage:
             # Create unit with salvaged data
-            return self._create_unit_with_salvaged_data(
+            unit = self._create_unit_with_salvaged_data(
                 relation,
                 final_values,
                 country,
@@ -350,6 +340,16 @@ class PlantParser(ElementProcessor):
                 existing_capacity,
                 existing_capacity_source,
             )
+
+            # Mark all generator members as processed
+            if unit and processed_elements is not None:
+                for gen_id in generator_ids:
+                    processed_elements.add(gen_id)
+                    logger.debug(
+                        f"Marked generator {gen_id} as processed (part of salvaged plant relation/{relation['id']})"
+                    )
+
+            return unit
 
         return None
 
@@ -453,7 +453,7 @@ class PlantParser(ElementProcessor):
     def _store_rejected_plant(
         self, element: dict[str, Any], missing_fields: dict[str, bool]
     ):
-        """Store rejected plant info for later generator matching using OrphanedGeneratorSalvager"""
+        """Store rejected plant info for later generator matching"""
         polygon = self.geometry_handler.get_element_geometry(element)
         if polygon:
             plant_info = RejectedPlantInfo(
@@ -462,6 +462,6 @@ class PlantParser(ElementProcessor):
                 missing_fields=missing_fields,
                 member_generators=[],
             )
-            self.orphaned_salvager.store_rejected_plant(plant_info)
+            self.rejected_plant_info[plant_info.element_id] = plant_info
 
         return None

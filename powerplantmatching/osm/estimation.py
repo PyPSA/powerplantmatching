@@ -67,11 +67,7 @@ class CapacityEstimator:
                 element=element,
                 reason=RejectionReason.ESTIMATION_METHOD_UNKNOWN,
                 details=estimation_method,
-                keywords={
-                    "keyword": None,
-                    "value": None,
-                    "comment": None,
-                },
+                keywords=estimation_method,
             )
             return None, "unknown"
 
@@ -98,11 +94,7 @@ class CapacityEstimator:
             self.config, source_type, "capacity_estimation"
         )
 
-        # Check if method is default_value
-        if source_config.get("method") != "default_value":
-            return None, "unknown"
-
-        default_capacity_mw = source_config.get("default_capacity", 0)
+        default_capacity_mw = source_config.get("unit_capacity", 1.0)
 
         return default_capacity_mw, "estimated_default"
 
@@ -155,7 +147,10 @@ class CapacityEstimator:
             # Calculate capacity: area (m²) * efficiency (W/m²) / 1e6 = MW
             capacity_mw = (area_m2 * efficiency) / 1e6
             if unit_type == "plant":
-                capacity_mw *= 0.75
-            return capacity_mw, "estimated_area"
+                # When taking the complete plant area, there are spaces between the panels
+                capacity_mw *= 1 / 3
+                return capacity_mw, "estimated_area_plant"
+            else:
+                return capacity_mw, "estimated_area_generator"
 
         return None, "unknown"

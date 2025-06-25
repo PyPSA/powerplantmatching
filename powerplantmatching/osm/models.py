@@ -70,7 +70,7 @@ class RejectionReason(Enum):
     COORDINATES_NOT_FOUND = "Could not determine coordinates"
     MISSING_TECHNOLOGY_TAG = "Missing technology tag"
     MISSING_TECHNOLOGY_TYPE = "Missing technology type"
-    MISSING_SOURSE_TAG = "Missing source tag"
+    MISSING_SOURCE_TAG = "Missing source tag"
     MISSING_SOURCE_TYPE = "Missing source type"
     CAPACITY_PLACEHOLDER = "Capacity placeholder value"
     MISSING_OUTPUT_TAG = "Missing output tag"
@@ -310,45 +310,6 @@ class PlantGeometry:
                 return (self.geometry.y, self.geometry.x)
             logger.debug(f"Error calculating centroid for {self.id}: {str(e)}")
             return (None, None)  # type: ignore[return-value]
-
-    def get_area_sq_meters(self) -> Optional[float]:
-        """
-        Get the area of this geometry in square meters.
-
-        Returns
-        -------
-        float or None
-            Area in square meters, or None for point geometries
-        """
-        from math import cos, radians
-
-        from shapely.geometry import Point
-
-        if isinstance(self.geometry, Point):
-            return None
-
-        try:
-            # Note: This is approximate as we're using unprojected coordinates
-            # For more accurate area calculation, project to a local coordinate system
-            area_degrees = self.geometry.area
-
-            # Get centroid latitude for area correction
-            lat, _ = self.get_centroid()
-            if lat is not None:
-                # Correct for latitude distortion
-                # At latitude, 1 degree longitude = 111320 * cos(lat) meters
-                # 1 degree latitude = 111320 meters
-                lat_correction = 111320.0
-                lon_correction = 111320.0 * abs(cos(radians(lat)))
-                # Use average for area calculation
-                avg_correction = (lat_correction + lon_correction) / 2
-                return area_degrees * (avg_correction**2)
-            else:
-                # Fallback to equator approximation
-                return area_degrees * (111320.0**2)
-        except Exception as e:
-            logger.debug(f"Error calculating area for {self.id}: {str(e)}")
-            return None
 
     def buffer(self, distance_meters: float) -> "PlantGeometry":
         """
@@ -622,7 +583,7 @@ class Units:
 
 def create_plant_geometry(
     element: dict[str, Any],
-    geometry: Any,  # Union[Point, Polygon, MultiPolygon]
+    geometry: Any,  # Union[Point, Polygon]
 ) -> PlantGeometry:
     """
     Factory function to create a PlantGeometry from an OSM element and its geometry.

@@ -5,7 +5,7 @@ import pandas as pd
 
 from powerplantmatching.core import _data_in, get_config
 from powerplantmatching.osm.client import OverpassAPIClient
-from powerplantmatching.osm.interface import validate_all_countries
+from powerplantmatching.osm.interface import validate_countries
 from powerplantmatching.osm.models import Units
 from powerplantmatching.osm.rejection import RejectionTracker
 from powerplantmatching.osm.workflow import Workflow
@@ -67,7 +67,7 @@ if __name__ == "__main__":
     with OverpassAPIClient(
         api_url=config["overpass_api"]["url"], cache_dir=cache_dir
     ) as client:
-        validate_all_countries(countries)
+        validate_countries(countries)
         for country_name in countries:
             logger.info(f"Processing {country_name}...")
             workflow = Workflow(client, rejection_tracker, all_units, config)
@@ -116,7 +116,7 @@ if __name__ == "__main__":
 
     # Save main rejections reports in rejections folder
     rejections_geojson_path = os.path.join(subdirs["rejections"], "rejections.geojson")
-    rejection_tracker.save_geojson_report(rejections_geojson_path)
+    rejection_tracker.save_geojson(rejections_geojson_path)
     print(f"Saved rejections GeoJSON: {rejections_geojson_path}")
 
     rejections_csv_path = os.path.join(subdirs["rejections"], "rejections.csv")
@@ -169,7 +169,7 @@ if __name__ == "__main__":
 
     # Generate rejection reason specific files in by_rejection_reason folder
     print("\nGenerating rejection reason specific files...")
-    rejection_stats = rejection_tracker.get_rejection_statistics()
+    rejection_stats = rejection_tracker.get_statistics()
     rejection_summary = rejection_stats["by_reason"]  # Get the by_reason dictionary
     country_stats = rejection_tracker.get_country_statistics()
 
@@ -192,7 +192,7 @@ if __name__ == "__main__":
         print(f"  - {country}: {count:,} rejections")
 
     # Generate GeoJSON files for each rejection reason in by_rejection_reason folder
-    rejection_tracker.save_all_rejection_reasons_geojson(
+    rejection_tracker.save_geojson_by_reasons(
         subdirs["by_rejection_reason"], "rejections"
     )
 

@@ -53,11 +53,7 @@ class CapacityExtractor:
                 element=element,
                 reason=RejectionReason.CAPACITY_PLACEHOLDER,
                 details=f"Tag '{output_key}' contains placeholder value '{value_str}' instead of actual capacity",
-                keywords={
-                    "keyword": output_key,
-                    "value": value_str,
-                    "comment": None,  # No automatic suggestion for placeholders
-                },
+                keywords=value_str,
             )
             return False, None, "placeholder_value"
 
@@ -67,11 +63,7 @@ class CapacityExtractor:
                 element=element,
                 reason=RejectionReason.CAPACITY_DECIMAL_FORMAT,
                 details=f"Tag '{output_key}' uses comma as decimal separator in value '{value_str}'",
-                keywords={
-                    "keyword": output_key,
-                    "value": value_str,
-                    "comment": value_str.replace(",", "."),
-                },
+                keywords=value_str,
             )
             return False, None, "decimal_comma_format"
 
@@ -117,11 +109,7 @@ class CapacityExtractor:
                 element=element,
                 reason=RejectionReason.CAPACITY_REGEX_ERROR,
                 details=f"Regex parsing failed for tag '{output_key}' with value '{value_str}': {str(e)}",
-                keywords={
-                    "keyword": output_key,
-                    "value": value_str,
-                    "comment": None,
-                },
+                keywords=value_str,
             )
             return False, None, identifier
 
@@ -165,11 +153,7 @@ class CapacityExtractor:
                     element=element,
                     reason=RejectionReason.CAPACITY_ZERO,
                     details=f"Tag '{output_key}' parsed to zero capacity from value '{element['tags'][output_key]}'",
-                    keywords={
-                        "keyword": output_key,
-                        "value": element["tags"][output_key],
-                        "comment": None,
-                    },
+                    keywords=element["tags"][output_key],
                 )
                 return False, None, identifier
 
@@ -189,11 +173,7 @@ class CapacityExtractor:
                 element=element,
                 reason=reason,
                 details=f"Tag '{output_key}' has value '{element['tags'][output_key]}' which could not be parsed",
-                keywords={
-                    "keyword": output_key,
-                    "value": element["tags"][output_key],
-                    "comment": None,
-                },
+                keywords=element["tags"][output_key],
             )
             return False, None, identifier
 
@@ -201,10 +181,6 @@ class CapacityExtractor:
             element=element,
             reason=RejectionReason.OTHER,
             details=f"Unexpected error parsing tag '{output_key}' with value '{element['tags'][output_key]}'",
-            keywords={
-                "keyword": output_key,
-                "value": element["tags"][output_key],
-                "comment": None,
-            },
+            keywords=element["tags"][output_key],
         )
         return False, None, identifier
