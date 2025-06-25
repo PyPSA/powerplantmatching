@@ -1,15 +1,4 @@
 #!/usr/bin/env python3
-"""
-OSM Plant Reconstruction Feature Demonstration
-
-This example demonstrates the plant reconstruction feature by comparing:
-1. Without reconstruction (feature disabled)
-2. With reconstruction enabled
-3. With reconstruction + capacity estimation enabled
-
-Focus: Plant-only mode with strict validation (except start_date)
-Test Countries: Mexico and Chile (where the feature has proven effective)
-"""
 
 import logging
 import os
@@ -28,71 +17,44 @@ from powerplantmatching.osm.models import Units
 from powerplantmatching.osm.rejection import RejectionTracker
 from powerplantmatching.osm.workflow import Workflow
 
-# Set up logging to see the reconstruction process
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
-# Set matplotlib style
 plt.style.use("seaborn-v0_8-darkgrid")
 sns.set_palette("husl")
 
 
 def run_scenario(country, scenario_name, config_overrides, cache_dir):
-    """
-    Run a single scenario with specific configuration
-
-    Parameters
-    ----------
-    country : str
-        Country to process
-    scenario_name : str
-        Name of the scenario for logging
-    config_overrides : dict
-        Configuration overrides to apply
-    cache_dir : str
-        Cache directory path
-
-    Returns
-    -------
-    tuple
-        (units_collection, rejection_tracker, processing_time)
-    """
     print(f"\n{'=' * 60}")
     print(f"Running Scenario: {scenario_name}")
     print(f"Country: {country}")
     print(f"{'=' * 60}")
 
-    # Get base config and apply overrides
     config = get_config()["OSM"].copy()
 
-    # Base settings for all scenarios
     config.update(
         {
             "force_refresh": True,
-            "plants_only": True,  # Focus on plants only
-            "missing_name_allowed": False,  # Strict validation
-            "missing_technology_allowed": False,  # Strict validation
-            "missing_start_date_allowed": True,  # Allow missing start date as requested
+            "plants_only": True,
+            "missing_name_allowed": False,
+            "missing_technology_allowed": False,
+            "missing_start_date_allowed": True,
         }
     )
 
-    # Apply scenario-specific overrides
     config.update(config_overrides)
 
-    # Log key settings
     print("\nConfiguration:")
     print(f"- Plants only: {config['plants_only']}")
     print(f"- Reconstruction enabled: {config['units_reconstruction']['enabled']}")
     print(f"- Capacity estimation enabled: {config['capacity_estimation']['enabled']}")
     print(f"- Missing start date allowed: {config['missing_start_date_allowed']}")
 
-    # Initialize tracking objects
     rejection_tracker = RejectionTracker()
     units_collection = Units()
 
-    # Process data
     start_time = time.time()
 
     with OverpassAPIClient(
@@ -109,7 +71,6 @@ def run_scenario(country, scenario_name, config_overrides, cache_dir):
 
     processing_time = time.time() - start_time
 
-    # Print summary
     stats = units_collection.get_statistics()
     print("\nResults:")
     print(f"- Total plants: {stats['total_units']}")
@@ -118,7 +79,6 @@ def run_scenario(country, scenario_name, config_overrides, cache_dir):
     print(f"- Total rejections: {rejection_tracker.get_total_count()}")
     print(f"- Processing time: {processing_time:.1f} seconds")
 
-    # Count reconstructed plants
     reconstructed_count = 0
     salvaged_count = 0
     for unit in units_collection.units:
@@ -137,29 +97,15 @@ def run_scenario(country, scenario_name, config_overrides, cache_dir):
 
 
 def analyze_reconstruction_impact(results_by_scenario, country, output_dir):
-    """
-    Analyze and visualize the impact of reconstruction
-
-    Parameters
-    ----------
-    results_by_scenario : dict
-        Results for each scenario
-    country : str
-        Country name
-    output_dir : str
-        Directory to save outputs
-    """
     print(f"\n{'=' * 60}")
     print(f"Analyzing Reconstruction Impact for {country}")
     print(f"{'=' * 60}")
 
-    # Create comparison dataframe
     comparison_data = []
 
     for scenario_name, (units, rejections, proc_time) in results_by_scenario.items():
         stats = units.get_statistics()
 
-        # Count different types of plants
         reconstructed = 0
         salvaged = 0
         estimated = 0
@@ -196,19 +142,16 @@ def analyze_reconstruction_impact(results_by_scenario, country, output_dir):
     print("\nComparison Summary:")
     print(df_comparison.to_string(index=False))
 
-    # Save comparison
     comparison_file = os.path.join(
         output_dir, f"{country.lower()}_reconstruction_comparison.csv"
     )
     df_comparison.to_csv(comparison_file, index=False)
     print(f"\nSaved comparison to: {comparison_file}")
 
-    # Create visualizations
     create_reconstruction_visualizations(
         results_by_scenario, df_comparison, country, output_dir
     )
 
-    # Analyze rejection patterns
     print(f"\n{'=' * 60}")
     print("Rejection Analysis")
     print(f"{'=' * 60}")
@@ -217,7 +160,6 @@ def analyze_reconstruction_impact(results_by_scenario, country, output_dir):
         print(f"\n{scenario_name}:")
         summary = rejections.get_summary()
 
-        # Show top rejection reasons
         if summary:
             print("  Top rejection reasons:")
             for reason, count in sorted(
@@ -227,7 +169,6 @@ def analyze_reconstruction_impact(results_by_scenario, country, output_dir):
         else:
             print("  No rejections!")
 
-    # Show examples of reconstructed plants
     if country in results_by_scenario:
         scenario_with_reconstruction = None
         for scenario_name in [
@@ -252,7 +193,6 @@ def analyze_reconstruction_impact(results_by_scenario, country, output_dir):
                 print("Example Reconstructed Plants (Top 5 by capacity)")
                 print(f"{'=' * 60}")
 
-                # Sort by capacity
                 reconstructed_plants.sort(key=lambda x: x.Capacity or 0, reverse=True)
 
                 for i, plant in enumerate(reconstructed_plants[:5], 1):
@@ -270,17 +210,13 @@ def analyze_reconstruction_impact(results_by_scenario, country, output_dir):
 def create_reconstruction_visualizations(
     results_by_scenario, df_comparison, country, output_dir
 ):
-    """Create visualizations for reconstruction analysis"""
-
     fig = plt.figure(figsize=(16, 12))
     gs = fig.add_gridspec(3, 3, hspace=0.5, wspace=0.3)
 
-    # Title
     fig.suptitle(
         f"OSM Plant Reconstruction Analysis - {country}", fontsize=14, fontweight="bold"
     )
 
-    # 1. Plant counts comparison
     ax1 = fig.add_subplot(gs[0, 0])
     scenarios = df_comparison["Scenario"].values
     plant_counts = df_comparison["Total Plants"].values
@@ -308,7 +244,6 @@ def create_reconstruction_visualizations(
     ax1.legend()
     ax1.grid(axis="y", alpha=0.3)
 
-    # Add value labels
     for bars in [bars1, bars2]:
         for bar in bars:
             height = bar.get_height()
@@ -321,7 +256,6 @@ def create_reconstruction_visualizations(
                 fontsize=8,
             )
 
-    # 2. Capacity comparison
     ax2 = fig.add_subplot(gs[0, 1])
     capacities = df_comparison["Total Capacity (MW)"].values
     bars = ax2.bar(x, capacities, color=["#1f77b4", "#ff7f0e", "#2ca02c"], alpha=0.8)
@@ -333,7 +267,6 @@ def create_reconstruction_visualizations(
     ax2.set_xticklabels([s.replace(" ", "\n") for s in scenarios], fontsize=9)
     ax2.grid(axis="y", alpha=0.3)
 
-    # Add value labels and percentage change
     base_capacity = capacities[0]
     for i, bar in enumerate(bars):
         height = bar.get_height()
@@ -358,7 +291,6 @@ def create_reconstruction_visualizations(
                 color="white",
             )
 
-    # 3. Rejection comparison
     ax3 = fig.add_subplot(gs[0, 2])
     rejections = df_comparison["Total Rejections"].values
     bars = ax3.bar(x, rejections, color=["#d62728", "#ff9896", "#ffbb78"], alpha=0.8)
@@ -370,7 +302,6 @@ def create_reconstruction_visualizations(
     ax3.set_xticklabels([s.replace(" ", "\n") for s in scenarios], fontsize=9)
     ax3.grid(axis="y", alpha=0.3)
 
-    # Add value labels
     for bar in bars:
         height = bar.get_height()
         ax3.text(
@@ -382,24 +313,20 @@ def create_reconstruction_visualizations(
             fontsize=8,
         )
 
-    # 4. Capacity distribution for each scenario
     for idx, (scenario_name, (units, _, _)) in enumerate(results_by_scenario.items()):
         ax = fig.add_subplot(gs[1, idx])
 
-        # Get capacities
         capacities = [
             u.Capacity for u in units.units if u.Capacity is not None and u.Capacity > 0
         ]
 
         if capacities:
-            # Create histogram
             ax.hist(capacities, bins=30, alpha=0.7, edgecolor="black", linewidth=0.5)
             ax.set_xlabel("Capacity (MW)")
             ax.set_ylabel("Count")
             ax.set_title(f"{scenario_name}", fontsize=11)
             ax.set_xlim(0, min(1000, max(capacities)))
 
-            # Add statistics box
             stats_text = (
                 f"Count: {len(capacities)}\n"
                 f"Total: {sum(capacities):.0f} MW\n"
@@ -429,17 +356,14 @@ def create_reconstruction_visualizations(
 
         ax.grid(axis="y", alpha=0.3)
 
-    # 5. Fuel type distribution (best scenario)
     ax5 = fig.add_subplot(gs[2, :2])
 
-    # Use the scenario with most plants
     best_scenario = max(
         results_by_scenario.items(),
         key=lambda x: x[1][0].get_statistics()["total_units"],
     )
     scenario_name, (units, _, _) = best_scenario
 
-    # Count by fuel type
     fuel_counts = defaultdict(int)
     fuel_capacities = defaultdict(float)
 
@@ -450,16 +374,13 @@ def create_reconstruction_visualizations(
                 fuel_capacities[unit.Fueltype] += unit.Capacity
 
     if fuel_counts:
-        # Sort by capacity
         sorted_fuels = sorted(fuel_capacities.items(), key=lambda x: x[1], reverse=True)
         fuels = [f[0] for f in sorted_fuels]
         counts = [fuel_counts[f] for f in fuels]
         capacities = [fuel_capacities[f] for f in fuels]
 
-        # Create subplot with twin axis
         ax5_twin = ax5.twinx()
 
-        # Plot bars
         x = range(len(fuels))
         width = 0.35
 
@@ -489,13 +410,11 @@ def create_reconstruction_visualizations(
         ax5.tick_params(axis="y", labelcolor="steelblue")
         ax5_twin.tick_params(axis="y", labelcolor="darkorange")
 
-        # Add legends
         ax5.legend(loc="upper left")
         ax5_twin.legend(loc="upper right")
 
         ax5.grid(axis="y", alpha=0.3)
 
-    # 6. Processing time comparison
     ax6 = fig.add_subplot(gs[2, 2])
     scenario_names = df_comparison["Scenario"].values
     proc_times = df_comparison["Processing Time (s)"].values
@@ -511,7 +430,6 @@ def create_reconstruction_visualizations(
     ax6.set_xticklabels([s.replace(" ", "\n") for s in scenario_names], fontsize=9)
     ax6.grid(axis="y", alpha=0.3)
 
-    # Add value labels
     for bar in bars:
         height = bar.get_height()
         ax6.text(
@@ -523,7 +441,6 @@ def create_reconstruction_visualizations(
             fontsize=8,
         )
 
-    # Save figure
     plt.tight_layout()
     output_file = os.path.join(
         output_dir, f"{country.lower()}_reconstruction_analysis.png"
@@ -534,8 +451,6 @@ def create_reconstruction_visualizations(
 
 
 def main():
-    """Main function to run the reconstruction demonstration"""
-
     print("=" * 80)
     print("OSM PLANT RECONSTRUCTION FEATURE DEMONSTRATION")
     print("=" * 80)
@@ -546,13 +461,10 @@ def main():
     print("\nTest countries: Mexico and Chile")
     print("=" * 80)
 
-    # Setup
     fn = _data_in("osm_data.csv")
     cache_dir = os.path.join(os.path.dirname(fn), "osm_cache")
     os.makedirs(cache_dir, exist_ok=True)
 
-    # Create output directory at the root of powerplantmatching
-    # Get the root directory of powerplantmatching
     ppm_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     output_dir = os.path.join(
         ppm_root,
@@ -563,7 +475,6 @@ def main():
     os.makedirs(output_dir, exist_ok=True)
     print(f"\nOutput directory: {output_dir}")
 
-    # Define scenarios
     scenarios = {
         "Reference": {
             "units_reconstruction": {"enabled": False},
@@ -587,7 +498,6 @@ def main():
         },
     }
 
-    # Process each country
     countries = ["Mexico", "Chile"]
     all_results = {}
 
@@ -598,14 +508,12 @@ def main():
 
         country_results = {}
 
-        # Run each scenario
         for scenario_name, config_overrides in scenarios.items():
             units, rejections, proc_time = run_scenario(
                 country, scenario_name, config_overrides, cache_dir
             )
             country_results[scenario_name] = (units, rejections, proc_time)
 
-            # Save results
             output_file = os.path.join(
                 output_dir,
                 f"{country.lower()}_{scenario_name.lower().replace(' ', '_')}.csv",
@@ -613,7 +521,6 @@ def main():
             units.save_csv(output_file)
             print(f"\nSaved results to: {output_file}")
 
-            # Save rejection report if any
             if rejections.get_total_count() > 0:
                 rejection_file = os.path.join(
                     output_dir,
@@ -622,19 +529,15 @@ def main():
                 rejections.generate_report().to_csv(rejection_file, index=False)
                 print(f"Saved rejections to: {rejection_file}")
 
-            # Small delay between scenarios
             time.sleep(1)
 
-        # Analyze results for this country
         analyze_reconstruction_impact(country_results, country, output_dir)
         all_results[country] = country_results
 
-        # Delay between countries
         if country != countries[-1]:
             print("\nWaiting before processing next country...")
             time.sleep(2)
 
-    # Final summary
     print("\n" + "=" * 80)
     print("RECONSTRUCTION DEMONSTRATION COMPLETED")
     print("=" * 80)
@@ -643,14 +546,12 @@ def main():
     for country in countries:
         print(f"\n{country}:")
 
-        # Get statistics
         without = all_results[country]["Reference"][0].get_statistics()
         with_recon = all_results[country]["Reconstruction"][0].get_statistics()
         with_est = all_results[country]["Reconstruction + Estimation"][
             0
         ].get_statistics()
 
-        # Calculate improvements
         recon_improvement = (
             (
                 (with_recon["total_units"] - without["total_units"])

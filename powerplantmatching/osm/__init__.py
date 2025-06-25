@@ -1,23 +1,6 @@
-"""
-OpenStreetMap (OSM) power plant data extraction package.
-
-This package provides a clean, modular implementation for extracting and processing
-power plant data from OpenStreetMap via the Overpass API.
-
-Requirements:
-    requests
-    pycountry
-    pandas
-    shapely
-    scikit-learn
-    numpy
-"""
-
 from .cache import ElementCache
 from .client import OverpassAPIClient
 from .clustering import ClusteringManager
-
-# Import utility functions
 from .coverage import (
     find_outdated_caches,
     get_continent_mapping,

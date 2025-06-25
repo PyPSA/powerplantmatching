@@ -1,7 +1,3 @@
-"""
-Generator parser for processing OSM power generator elements.
-"""
-
 import logging
 from typing import Any
 
@@ -18,24 +14,12 @@ logger = logging.getLogger(__name__)
 
 
 class GeneratorParser(ElementProcessor):
-    """Generator processor with integrated features"""
-
     def __init__(
         self,
         client: OverpassAPIClient,
         rejection_tracker: RejectionTracker,
         config: dict[str, Any],
     ):
-        """
-        Initialize the integrated generator processor
-
-        Parameters
-        ----------
-        client : OverpassAPIClient
-            Client for accessing OSM data
-        rejection_tracker : RejectionTracker
-            Tracker for rejected elements
-        """
         super().__init__(
             client,
             GeometryHandler(client, rejection_tracker),
@@ -45,7 +29,6 @@ class GeneratorParser(ElementProcessor):
 
         self.unit_factory = UnitFactory(config)
 
-        # Initialize salvage-related attributes if feature is enabled
         reconstruct_config = self.config.get("units_reconstruction", {})
         if reconstruct_config.get("enabled", False):
             self.name_aggregator = NameAggregator(config)
@@ -58,42 +41,20 @@ class GeneratorParser(ElementProcessor):
         country: str | None = None,
         processed_elements: set[str] | None = None,
     ) -> Unit | None:
-        """
-        Process a generator element using integrated features
-
-        Parameters
-        ----------
-        element : dict[str, Any]
-            OSM element data
-        country : str | None
-            Country code
-        plant_polygons : list[PlantGeometry] | None
-            list of plant polygons to check if generator is within any
-
-        Returns
-        -------
-        Unit | None
-            Unit object if processing succeeded, None otherwise
-        """
-        # Check if already processed
         element_id = f"{element['type']}/{element['id']}"
         if processed_elements and element_id in processed_elements:
             logger.debug(f"Skipping already-processed generator {element_id}")
             return None
 
-        # Get country from element metadata or use provided country
         element_country = element.get("_country", country)
 
         lat, lon = self.geometry_handler.process_element_coordinates(element)
 
-        # Store coordinates in element for rejection tracker
         if lat is not None and lon is not None:
             element["_lat"] = lat
             element["_lon"] = lon
 
-        # Check if element is a valid generator
         if not is_valid_unit(element, "generator"):
-            # Reject invalid elements (no tags or invalid power type)
             self.rejection_tracker.add_rejection(
                 element=element,
                 reason=RejectionReason.INVALID_ELEMENT_TYPE,
@@ -103,22 +64,18 @@ class GeneratorParser(ElementProcessor):
             )
             return None
 
-        # Extract source type
         source = self.extract_source_from_tags(element, "generator")
         if source is None:
             return None
 
-        # Extract technology
         technology = self.extract_technology_from_tags(element, "generator", source)
         if technology is None:
             return None
 
-        # Extract name
         name = self.extract_name_from_tags(element, "generator")
         if name is None:
             return None
 
-        # Extract output key
         output_key = self.extract_output_key_from_tags(element, "generator", source)
         if output_key is None:
             return None
@@ -127,18 +84,15 @@ class GeneratorParser(ElementProcessor):
         if start_date is None:
             return None
 
-        # Check if salvage feature is enabled and generator belongs to rejected plant
         reconstruct_config = self.config.get("units_reconstruction", {})
         if reconstruct_config.get("enabled", False) and hasattr(
             self, "rejected_plant_polygons"
         ):
-            # Check if generator is within a rejected plant (only if coordinates are valid)
             if lat is not None and lon is not None:
                 rejected_plant_id = self.geometry_handler.check_point_within_geometries(
                     lat, lon, self.rejected_plant_polygons
                 )
                 if rejected_plant_id:
-                    # Add to generator group for later aggregation
                     self._add_to_generator_group(element, rejected_plant_id)
                     logger.debug(
                         f"Generator {element['id']} added to rejected plant group {rejected_plant_id}"
@@ -149,14 +103,12 @@ class GeneratorParser(ElementProcessor):
                     f"Generator {element['id']} has missing coordinates, skipping rejected plant check"
                 )
 
-        # Process capacity
         capacity, info = self._process_capacity(
             element, source, output_key, "generator"
         )
         members_and_capacities = None
         if capacity is None:
             if element["type"] == "relation":
-                # If relation, try to get capacity from members
                 capacity, info, members_and_capacities = (
                     self._get_relation_member_capacity(element, source, "generator")
                 )
@@ -165,7 +117,6 @@ class GeneratorParser(ElementProcessor):
             else:
                 return None
 
-        # Validate required parameters before creating unit
         if lat is None or lon is None:
             self.rejection_tracker.add_rejection(
                 element=element,
@@ -205,13 +156,11 @@ class GeneratorParser(ElementProcessor):
         )
 
     def set_rejected_plant_info(self, rejected_plant_info: dict[str, Any]):
-        """Set rejected plant info from PlantParser"""
         self.rejected_plant_polygons = {
             plant_id: info.polygon for plant_id, info in rejected_plant_info.items()
         }
 
     def _add_to_generator_group(self, element: dict[str, Any], plant_id: str):
-        """Add generator to a group for the rejected plant"""
         if plant_id not in self.generator_groups:
             self.generator_groups[plant_id] = GeneratorGroup(
                 plant_id=plant_id,
@@ -224,11 +173,9 @@ class GeneratorParser(ElementProcessor):
     def finalize_generator_groups(
         self, country: str, processed_elements: set[str] | None = None
     ) -> list[Unit]:
-        """Create aggregated units from generator groups"""
         aggregated_units = []
 
         for plant_id, group in self.generator_groups.items():
-            # Filter out already-processed generators
             unprocessed_generators = []
             skipped_count = 0
 
@@ -247,9 +194,7 @@ class GeneratorParser(ElementProcessor):
                     f"Filtered {skipped_count} already-processed generators from group {plant_id}"
                 )
 
-            # Only create unit if we have unprocessed generators
             if len(unprocessed_generators) > 0:
-                # Create new group with filtered generators
                 filtered_group = GeneratorGroup(
                     plant_id=plant_id,
                     generators=unprocessed_generators,
@@ -259,7 +204,6 @@ class GeneratorParser(ElementProcessor):
                 unit = self._create_aggregated_unit(filtered_group, country)
                 if unit:
                     aggregated_units.append(unit)
-                    # Mark these generators as processed
                     if processed_elements:
                         for gen in unprocessed_generators:
                             gen_id = f"{gen['type']}/{gen['id']}"
@@ -273,8 +217,6 @@ class GeneratorParser(ElementProcessor):
     def _create_aggregated_unit(
         self, group: GeneratorGroup, country: str
     ) -> Unit | None:
-        """Create an aggregated unit from a generator group"""
-        # Aggregate information from all generators
         names = set()
         sources = set()
         technologies = set()
@@ -283,7 +225,6 @@ class GeneratorParser(ElementProcessor):
         capacity_count = 0
 
         for generator in group.generators:
-            # Extract information
             name = self.extract_name_from_tags(generator, "generator")
             if name:
                 names.add(name)
@@ -301,7 +242,6 @@ class GeneratorParser(ElementProcessor):
             if date:
                 start_dates.add(date)
 
-            # Get capacity
             if source:
                 output_key = self.extract_output_key_from_tags(
                     generator, "generator", source
@@ -314,14 +254,12 @@ class GeneratorParser(ElementProcessor):
                         total_capacity += capacity
                         capacity_count += 1
 
-        # Determine final values
         final_name = (
             self.name_aggregator.aggregate_names(names)
             if names
             else f"Plant Group {group.plant_id}"
         )
 
-        # Use most common source and technology
         final_source = (
             max(sources, key=lambda x: sum(1 for s in sources if s == x))
             if sources
@@ -334,7 +272,6 @@ class GeneratorParser(ElementProcessor):
         )
         final_start_date = min(start_dates) if start_dates else None
 
-        # Get coordinates from plant polygon
         lat, lon = group.plant_polygon.get_centroid()
 
         if final_source and lat is not None and lon is not None:

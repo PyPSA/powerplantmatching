@@ -9,45 +9,19 @@ logger = logging.getLogger(__name__)
 
 
 class CapacityExtractor:
-    """Handles extraction of capacity values from OSM element tags"""
-
     def __init__(
         self,
         rejection_tracker: RejectionTracker,
         config: dict[str, Any],
     ):
-        """
-        Initialize the capacity extractor
-
-        Parameters
-        ----------
-        config : dict[str, Any]
-            Configuration for extraction
-        rejection_tracker : RejectionTracker
-            Tracker for rejected elements
-        """
         self.config = config
         self.rejection_tracker = rejection_tracker
 
     def basic_extraction(
         self, element: dict[str, Any], output_key: str
     ) -> tuple[bool, Optional[float], str]:
-        """
-        Perform basic capacity extraction (always attempted)
-
-        Parameters
-        ----------
-        element : dict[str, Any]
-            OSM element data
-
-        Returns
-        -------
-        tuple[Optional[float], str]
-            (capacity_mw, capacity_source) or (None, "unknown")
-        """
         value_str = element["tags"][output_key].strip()
 
-        # Check for placeholder values (yes, true)
         if value_str.lower() in ["yes", "true"]:
             self.rejection_tracker.add_rejection(
                 element=element,
@@ -57,7 +31,6 @@ class CapacityExtractor:
             )
             return False, None, "placeholder_value"
 
-        # Check for comma as decimal separator
         if "," in value_str and not "." in value_str:
             self.rejection_tracker.add_rejection(
                 element=element,
@@ -75,17 +48,6 @@ class CapacityExtractor:
     def advanced_extraction(
         self, element: dict[str, Any], output_key: str
     ) -> tuple[bool, Optional[float], str]:
-        """
-        Perform advanced capacity extraction using regex patterns
-
-        Parameters
-        ----------
-        element : dict[str, Any]
-            OSM element data
-
-        Returns
-        -------
-        """
         value_str = element["tags"][output_key].strip()
 
         regex_patterns = self.config.get("capacity_extraction", {}).get(
@@ -121,30 +83,6 @@ class CapacityExtractor:
         value: float | None,
         identifier: str,
     ) -> tuple[bool, float | None, str]:
-        """
-        Parse capacity value and track rejections
-
-        Parameters
-        ----------
-        element : dict[str, Any]
-            OSM element data
-        output_key : str
-            Key for the capacity value in the element's tags
-        is_valid : bool
-            Whether the capacity value is valid
-        value : float
-            Parsed capacity value
-        identifier : str
-            Identifier for rejection tracking
-        function_name : str
-            Name of the calling function
-
-        Returns
-        -------
-        tuple[bool, Optional[float], str]
-            (is_valid, capacity_mw, identifier)
-
-        """
         if is_valid and value is not None:
             if value > 0:
                 return True, value, identifier

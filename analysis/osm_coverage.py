@@ -13,8 +13,6 @@ from powerplantmatching.osm import (
 
 
 class TeeOutput:
-    """Duplicate stdout to both console and file."""
-
     def __init__(self, filename):
         self.terminal = sys.stdout
         self.log_file = open(filename, "w", encoding="utf-8")
@@ -22,7 +20,7 @@ class TeeOutput:
     def write(self, message):
         self.terminal.write(message)
         self.log_file.write(message)
-        self.log_file.flush()  # Ensure immediate write
+        self.log_file.flush()
 
     def flush(self):
         self.terminal.flush()
@@ -32,7 +30,6 @@ class TeeOutput:
         self.log_file.close()
 
 
-# Configure logging
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
@@ -40,26 +37,21 @@ logger = logging.getLogger(__name__)
 
 
 def example_basic_usage():
-    """Example 1: Basic usage with configuration."""
     print("\n" + "=" * 60)
     print("EXAMPLE 1: Basic OSM Data Loading")
     print("=" * 60)
 
-    # Create custom config for specific countries
     config = pm.get_config()
 
-    # Small countries for quick testing
     config["target_countries"] = ["Luxembourg", "Malta"]
 
     try:
-        # Load OSM data for configured countries
         df = pm.data.OSM(config=config)
 
         if df is not None and not df.empty:
             print(f"✓ Loaded {len(df)} power plants")
             print(f"Countries: {df['Country'].unique()}")
 
-            # Show basic statistics
             if "Capacity" in df.columns:
                 print("\nCapacity Statistics:")
                 print(f"  Total: {df['Capacity'].sum():.1f} MW")
@@ -78,7 +70,6 @@ def example_basic_usage():
 
 
 def example_cache_population():
-    """Example 2: Populate cache with data."""
     print("\n" + "=" * 60)
     print("EXAMPLE 2: Cache Population")
     print("=" * 60)
@@ -94,7 +85,7 @@ def example_cache_population():
     try:
         result = populate_cache(
             countries=test_countries,
-            force_refresh=False,  # Use cache if available
+            force_refresh=False,
             show_progress=True,
         )
 
@@ -109,17 +100,14 @@ def example_cache_population():
 
 
 def example_cache_coverage():
-    """Example 3: Check cache coverage."""
     print("\n" + "=" * 60)
     print("EXAMPLE 3: Cache Coverage Analysis")
     print("=" * 60)
 
-    # Show current cache status
     show_country_coverage(show_missing=False, check_live_counts=True)
 
 
 def example_find_outdated():
-    """Example 4: Find outdated caches."""
     print("\n" + "=" * 60)
     print("EXAMPLE 4: Finding Outdated Caches")
     print("=" * 60)
@@ -139,7 +127,6 @@ def example_find_outdated():
 
 
 def example_diagnostic():
-    """Example 5: Diagnostic - understanding data quality issues."""
     print("\n" + "=" * 60)
     print("EXAMPLE 5: Data Quality Diagnostic")
     print("=" * 60)
@@ -150,7 +137,6 @@ def example_diagnostic():
     from powerplantmatching.osm.utils import get_country_code
     from powerplantmatching.osm.workflow import Workflow
 
-    # Get config and cache
     config = pm.get_config()
     osm_config = config.get("OSM", {})
     cache_dir = os.path.join(
@@ -158,17 +144,14 @@ def example_diagnostic():
         "osm_cache",
     )
 
-    # Check a specific country
     test_country = "Kenya"
     test_code = get_country_code(test_country)
 
     print(f"Diagnosing {test_country} ({test_code})...")
 
-    # Load cache
     cache = ElementCache(cache_dir)
     cache.load_all_caches()
 
-    # Check raw data
     plants_data = cache.get_plants(test_code)
     generators_data = cache.get_generators(test_code)
 
@@ -178,7 +161,6 @@ def example_diagnostic():
         f"  Generators: {len(generators_data.get('elements', [])) if generators_data else 0}"
     )
 
-    # Process with workflow to see rejections
     try:
         with OverpassAPIClient(
             api_url=osm_config.get("overpass_api", {}).get("url"),
@@ -213,17 +195,6 @@ def example_diagnostic():
 
 
 def main(save_output=True, output_filename=None):
-    """
-    Run all examples.
-
-    Parameters
-    ----------
-    save_output : bool, default True
-        Whether to save output to a file
-    output_filename : str, optional
-        Custom filename for output. If None, uses timestamp-based name.
-    """
-    # Set up output redirection if requested
     tee_output = None
     if save_output:
         if output_filename is None:
@@ -240,7 +211,6 @@ def main(save_output=True, output_filename=None):
         print("=" * 80)
         print(f"Started at: {datetime.now()}")
 
-        # Run examples
         example_basic_usage()
         example_cache_population()
         example_cache_coverage()
@@ -255,7 +225,6 @@ def main(save_output=True, output_filename=None):
             print(f"\nOutput saved to: {output_filename}")
 
     finally:
-        # Restore stdout and close file
         if tee_output:
             sys.stdout = tee_output.terminal
             tee_output.close()

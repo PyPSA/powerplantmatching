@@ -10,19 +10,16 @@ from powerplantmatching.osm.models import Units
 from powerplantmatching.osm.rejection import RejectionTracker
 from powerplantmatching.osm.workflow import Workflow
 
-# Set up logging
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 
 logger = logging.getLogger(__name__)
 
-# Main execution
 if __name__ == "__main__":
-    # Load configuration
     config_main = get_config()
     config = config_main["OSM"]
-    config["force_refresh"] = True  # True to test rejection tracker logic
+    config["force_refresh"] = True
     config["plants_only"] = True
     config["missing_name_allowed"] = False
     config["missing_technology_allowed"] = False
@@ -31,10 +28,8 @@ if __name__ == "__main__":
     config["units_clustering"]["enabled"] = False
     config["units_reconstruction"]["enabled"] = True
 
-    # Initialize organized directory structure
     output_dir = "outputs"
 
-    # Create organized subdirectories
     subdirs = {
         "csv": os.path.join(output_dir, "csv"),
         "geojson": os.path.join(output_dir, "geojson"),
@@ -44,7 +39,6 @@ if __name__ == "__main__":
         "rejections": os.path.join(output_dir, "rejections"),
     }
 
-    # Create all directories
     for subdir in subdirs.values():
         os.makedirs(subdir, exist_ok=True)
 
@@ -52,18 +46,15 @@ if __name__ == "__main__":
     cache_dir = os.path.join(os.path.dirname(fn), "osm_cache")
     os.makedirs(cache_dir, exist_ok=True)
 
-    # List of countries to process
     countries = [
         "Chile",
         "South Africa",
         "Indonesia",
-    ]  # "Uruguay", "Costa Rica", "Kenya", "Zambia"
+    ]
 
-    # Initialize collections
     rejection_tracker = RejectionTracker()
-    all_units = Units()  # Use new Units collection class
+    all_units = Units()
 
-    # Process each country
     with OverpassAPIClient(
         api_url=config["overpass_api"]["url"], cache_dir=cache_dir
     ) as client:
@@ -73,7 +64,6 @@ if __name__ == "__main__":
             workflow = Workflow(client, rejection_tracker, all_units, config)
             _, _ = workflow.process_country_data(country=country_name)
 
-            # Save individual country CSV in by_country folder
             country_units = all_units.filter_by_country(country_name)
             if len(country_units) > 0:
                 output_file = os.path.join(
@@ -85,10 +75,8 @@ if __name__ == "__main__":
             else:
                 print(f"No units found for {country_name}")
 
-    # Generate comprehensive reports
     logger.info("Generating comprehensive reports...")
 
-    # Print statistics
     stats = all_units.get_statistics()
     print("\n" + "=" * 60)
     print("PROCESSING SUMMARY")
@@ -104,17 +92,14 @@ if __name__ == "__main__":
     print(f"Average Capacity: {stats['average_capacity_mw']} MW")
     print("=" * 60)
 
-    # Save combined data in csv folder
     combined_csv_path = os.path.join(subdirs["csv"], "all_countries_power_plants.csv")
     all_units.save_csv(combined_csv_path)
     print(f"Saved combined data: {combined_csv_path}")
 
-    # Save main units GeoJSON in geojson folder
     units_geojson_path = os.path.join(subdirs["geojson"], "power_plants.geojson")
     all_units.save_geojson_report(units_geojson_path)
     print(f"Saved units GeoJSON: {units_geojson_path}")
 
-    # Save main rejections reports in rejections folder
     rejections_geojson_path = os.path.join(subdirs["rejections"], "rejections.geojson")
     rejection_tracker.save_geojson(rejections_geojson_path)
     print(f"Saved rejections GeoJSON: {rejections_geojson_path}")
@@ -123,7 +108,6 @@ if __name__ == "__main__":
     rejection_tracker.generate_report().to_csv(rejections_csv_path, index=False)
     print(f"Saved rejections CSV: {rejections_csv_path}")
 
-    # Generate fuel type specific files in by_fuel_type folder
     print("\nGenerating fuel type specific files...")
     fuel_types = stats["fuel_types"]
     for fuel_type in fuel_types:
@@ -131,13 +115,11 @@ if __name__ == "__main__":
         if len(fuel_units) > 0:
             fuel_name = fuel_type.lower().replace(" ", "_")
 
-            # Save CSV
             fuel_csv_path = os.path.join(
                 subdirs["by_fuel_type"], f"{fuel_name}_power_plants.csv"
             )
             fuel_units.save_csv(fuel_csv_path)
 
-            # Save GeoJSON
             fuel_geojson_path = os.path.join(
                 subdirs["by_fuel_type"], f"{fuel_name}_power_plants.geojson"
             )
@@ -147,7 +129,6 @@ if __name__ == "__main__":
                 f"  - {fuel_type}: {len(fuel_units)} units → CSV & GeoJSON in by_fuel_type/"
             )
 
-    # Generate country specific files in by_country folder
     print("\nGenerating country specific files...")
     countries_processed = stats["countries"]
     for country in countries_processed:
@@ -155,9 +136,6 @@ if __name__ == "__main__":
         if len(country_units) > 0:
             country_name = country.lower().replace(" ", "_")
 
-            # CSV already saved during processing
-
-            # Save GeoJSON
             country_geojson_path = os.path.join(
                 subdirs["by_country"], f"{country_name}_power_plants.geojson"
             )
@@ -167,18 +145,16 @@ if __name__ == "__main__":
                 f"  - {country}: {len(country_units)} units → CSV & GeoJSON in by_country/"
             )
 
-    # Generate rejection reason specific files in by_rejection_reason folder
     print("\nGenerating rejection reason specific files...")
     rejection_stats = rejection_tracker.get_statistics()
-    rejection_summary = rejection_stats["by_reason"]  # Get the by_reason dictionary
+    rejection_summary = rejection_stats["by_reason"]
     country_stats = rejection_tracker.get_country_statistics()
 
     print(
         f"Found {len(rejection_summary)} different rejection reasons across {len(country_stats)} countries:"
     )
 
-    # Show top rejection reasons
-    for reason, count in list(rejection_summary.items())[:10]:  # Top 10 reasons
+    for reason, count in list(rejection_summary.items())[:10]:
         print(f"  - {reason}: {count:,} rejections")
 
     if len(rejection_summary) > 10:
@@ -191,17 +167,14 @@ if __name__ == "__main__":
     for country, count in country_stats.items():
         print(f"  - {country}: {count:,} rejections")
 
-    # Generate GeoJSON files for each rejection reason in by_rejection_reason folder
     rejection_tracker.save_geojson_by_reasons(
         subdirs["by_rejection_reason"], "rejections"
     )
 
-    # Also save rejection statistics as CSV
     rejection_stats_csv = os.path.join(
         subdirs["rejections"], "rejection_statistics.csv"
     )
 
-    # Create rejection statistics summary
     rejection_summary_data = []
     for reason, count in rejection_summary.items():
         rejection_summary_data.append(
@@ -216,7 +189,6 @@ if __name__ == "__main__":
     rejection_summary_df.to_csv(rejection_stats_csv, index=False)
     print(f"Saved rejection statistics: {rejection_stats_csv}")
 
-    # Create country statistics summary
     country_stats_csv = os.path.join(
         subdirs["rejections"], "country_rejection_statistics.csv"
     )

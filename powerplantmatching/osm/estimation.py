@@ -10,26 +10,12 @@ logger = logging.getLogger(__name__)
 
 
 class CapacityEstimator:
-    """Base class for capacity estimation"""
-
     def __init__(
         self,
         client: OverpassAPIClient,
         rejection_tracker: RejectionTracker,
         config: dict[str, Any],
     ):
-        """
-        Initialize the capacity estimator
-
-        Parameters
-        ----------
-        client : OverpassAPIClient
-            Client for accessing OSM data
-        rejection_tracker : RejectionTracker
-            Tracker for rejected elements
-        config : dict[str, Any]
-            Configuration for estimation
-        """
         self.client = client
         self.rejection_tracker = rejection_tracker
         self.config = config
@@ -37,21 +23,6 @@ class CapacityEstimator:
     def estimate_capacity(
         self, element: dict[str, Any], source_type: str, unit_type: str
     ) -> tuple[Optional[float], str]:
-        """
-        Estimate capacity
-
-        Parameters
-        ----------
-        element : dict[str, Any]
-            OSM element data
-        source_type : str
-            Type of power source
-
-        Returns
-        -------
-        tuple[Optional[float], str]
-            (estimated_capacity_mw, capacity_source)
-        """
         estimation_method = (
             self.config.get("sources", {})
             .get(source_type, {})
@@ -74,22 +45,6 @@ class CapacityEstimator:
     def estimate_capacity_default_value(
         self, element: dict[str, Any], source_type: str
     ) -> tuple[Optional[float], str]:
-        """
-        Estimate capacity using default values
-
-        Parameters
-        ----------
-        element : dict[str, Any]
-            OSM element data
-        source_type : str
-            Type of power source
-
-        Returns
-        -------
-        tuple[Optional[float], str]
-            (estimated_capacity_mw, capacity_source)
-        """
-        # Get source-specific config for estimation
         source_config = get_source_config(
             self.config, source_type, "capacity_estimation"
         )
@@ -101,39 +56,19 @@ class CapacityEstimator:
     def estimate_capacity_area_based(
         self, element: dict[str, Any], source_type: str, unit_type: str
     ) -> tuple[Optional[float], str]:
-        """
-        Estimate capacity based on area
-
-        Parameters
-        ----------
-        element : dict[str, Any]
-            OSM element data
-        source_type : str
-            Type of power source
-
-        Returns
-        -------
-        tuple[Optional[float], str]
-            (estimated_capacity_mw, capacity_source)
-        """
         assert unit_type in ["plant", "generator"], "Invalid unit type"
-        # Get source-specific config for estimation
         source_config = get_source_config(
             self.config, source_type, "capacity_estimation"
         )
 
-        # Only applicable for ways and relations
         if element["type"] not in ["way", "relation"]:
             return None, "this method is only applicable for ways and relations"
 
-        # Get efficiency (W/m²)
         efficiency = source_config.get("efficiency", 0)
 
-        # Calculate area
         area_m2 = None
 
         if element["type"] == "way" and "nodes" in element:
-            # Get coordinates for each node
             coords = []
             for node_id in element["nodes"]:
                 node = self.client.cache.get_node(node_id)
@@ -144,10 +79,8 @@ class CapacityEstimator:
                 area_m2 = calculate_area(coords)
 
         if area_m2:
-            # Calculate capacity: area (m²) * efficiency (W/m²) / 1e6 = MW
             capacity_mw = (area_m2 * efficiency) / 1e6
             if unit_type == "plant":
-                # When taking the complete plant area, there are spaces between the panels
                 capacity_mw *= 1 / 3
                 return capacity_mw, "estimated_area_plant"
             else:

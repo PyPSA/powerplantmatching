@@ -1,8 +1,3 @@
-"""
-Base element processor for OSM power plant data extraction.
-Contains the abstract base class and common extraction methods.
-"""
-
 import logging
 from abc import ABC, abstractmethod
 from typing import Any
@@ -18,8 +13,6 @@ logger = logging.getLogger(__name__)
 
 
 class ElementProcessor(ABC):
-    """Base class for processing OSM elements"""
-
     def __init__(
         self,
         client: OverpassAPIClient,
@@ -27,16 +20,6 @@ class ElementProcessor(ABC):
         rejection_tracker: RejectionTracker,
         config: dict[str, Any] | None = None,
     ):
-        """
-        Initialize the element processor
-
-        Parameters
-        ----------
-        client : OverpassAPIClient
-            Client for accessing OSM data
-        rejection_tracker : RejectionTracker
-            Tracker for rejected elements
-        """
         self.client = client
         self.config = config or {}
         self.rejection_tracker = rejection_tracker
@@ -52,19 +35,6 @@ class ElementProcessor(ABC):
     def extract_name_from_tags(
         self, element: dict[str, Any], unit_type: str
     ) -> str | None:
-        """
-        Extract name from OSM tags
-
-        Parameters
-        ----------
-        element : dict[str, Any]
-            OSM element data
-
-        Returns
-        -------
-        str | None
-            Name if found, None otherwise
-        """
         assert unit_type in ["plant", "generator"], "Invalid unit type"
 
         tags = element.get("tags", {})
@@ -83,7 +53,6 @@ class ElementProcessor(ABC):
             "name_tags_keys", default_name[unit_type_tags_keys[unit_type]]
         )
 
-        # Check if name is in tags
         name = None
         for key in name_keys:
             if key in tags:
@@ -108,19 +77,6 @@ class ElementProcessor(ABC):
     def extract_source_from_tags(
         self, element: dict[str, Any], unit_type: str
     ) -> str | None:
-        """
-        Extract power source from OSM tags
-
-        Parameters
-        ----------
-        tags : dict[str, str]
-            OSM element tags
-
-        Returns
-        -------
-        str | None
-            Power source if found, None otherwise
-        """
         assert unit_type in ["plant", "generator"], "Invalid unit type"
 
         tags = element.get("tags", {})
@@ -170,25 +126,6 @@ class ElementProcessor(ABC):
     def extract_technology_from_tags(
         self, element: dict[str, Any], unit_type: str, source_type: str
     ) -> str | None:
-        """
-        Extract technology information from OSM tags
-
-        Parameters
-        ----------
-        element : dict[str, Any]
-            OSM element data
-
-        unit_type : str
-            Type of unit ("plant" or "generator")
-
-        source_type : str
-            Type of power source
-
-        Returns
-        -------
-        str | None
-            Technology if found, None otherwise
-        """
         assert unit_type in ["plant", "generator"], "Invalid unit type"
 
         tags = element.get("tags", {})
@@ -245,22 +182,6 @@ class ElementProcessor(ABC):
     def extract_output_key_from_tags(
         self, element: dict[str, Any], unit_type: str, source_type: str | None = None
     ) -> str | None:
-        """
-        Extract output electricity information from OSM tags
-
-        Parameters
-        ----------
-        element : dict[str, Any]
-            OSM element data
-
-        unit_type : str
-            Type of unit ("plant" or "generator")
-
-        Returns
-        -------
-        str | None
-            Output if found, None otherwise
-        """
         assert unit_type in ["plant", "generator"], "Invalid unit type"
 
         tags = element.get("tags", {})
@@ -302,22 +223,6 @@ class ElementProcessor(ABC):
     def extract_start_date_key_from_tags(
         self, element: dict[str, Any], unit_type: str
     ) -> str | None:
-        """
-        Extract start date information from OSM tags
-
-        Parameters
-        ----------
-        element : dict[str, Any]
-            OSM element data
-
-        unit_type : str
-            Type of unit ("plant" or "generator")
-
-        Returns
-        -------
-        str | None
-            Start date if found, None otherwise
-        """
         assert unit_type in ["plant", "generator"], "Invalid unit type"
 
         tags = element.get("tags", {})
@@ -388,25 +293,10 @@ class ElementProcessor(ABC):
         return None
 
     def _parse_date_string(self, element: dict[str, Any], date_string: str) -> str:
-        """
-        Parse date string from OSM tags into a standardized format.
-        Handles various date formats including incomplete dates.
-
-        Parameters
-        ----------
-        date_string : str
-            Date string from OSM tags
-
-        Returns
-        -------
-        str
-            Standardized date string in ISO format (YYYY-MM-DD)
-        """
         import re
 
         from dateutil import parser
 
-        # Strip whitespace and handle empty strings
         if not date_string or not date_string.strip():
             logger.warning(
                 f"Empty date string provided for plant {element['type']}/{element['id']}"
@@ -415,7 +305,6 @@ class ElementProcessor(ABC):
 
         date_string = date_string.strip()
 
-        # Try to extract year from the string (for fallback)
         year_match = re.search(r"\b(1[0-9]{3}|2[0-9]{3})\b", date_string)
         if not year_match:
             logger.warning(
@@ -426,12 +315,9 @@ class ElementProcessor(ABC):
         year = int(year_match.group(1))
 
         try:
-            # Try to parse the date string
             date_obj = parser.parse(date_string, fuzzy=True)
 
-            # Return full date if it was fully specified
             if date_string.count(str(date_obj.year)) > 0:
-                # Check if month and day were part of the original string or defaults
                 month_detected = any(
                     m in date_string.lower()
                     for m in [
@@ -459,11 +345,9 @@ class ElementProcessor(ABC):
                 else:
                     return f"{date_obj.year}-01-01"
 
-            # Fallback to just the year
             return f"{year}-01-01"
 
         except (ValueError, TypeError) as e:
-            # If parsing failed, fallback to just using the year
             logger.warning(
                 f"Date parsing failed {element['type']}/{element['id']} in '{date_string}': {str(e)}. Using year only."
             )
@@ -473,21 +357,6 @@ class ElementProcessor(ABC):
     def process_element(
         self, element: dict[str, Any], country: str | None = None
     ) -> Unit | None:
-        """
-        Process a single OSM element into a Unit object
-
-        Parameters
-        ----------
-        element : dict[str, Any]
-            OSM element data
-        country : str | None
-            Country code
-
-        Returns
-        -------
-        Unit | None
-            Unit object if processing succeeded, None otherwise
-        """
         pass
 
     def _process_capacity(
@@ -497,28 +366,11 @@ class ElementProcessor(ABC):
         output_key: str,
         unit_type: str,
     ) -> tuple[float | None, str]:
-        """
-        Process capacity using extraction and estimation
-
-        Parameters
-        ----------
-        element : dict[str, Any]
-            Element data
-        source_type : str | None
-            Source type
-
-        Returns
-        -------
-        tuple[float | None, str]
-            (capacity_mw, info)
-        """
         assert unit_type in ["plant", "generator"], "Invalid unit type"
-        # 1. Basic extraction (always attempted)
         is_valid, capacity, info = self.capacity_extractor.basic_extraction(
             element, output_key
         )
 
-        # 2. If basic extraction fails, try advanced extraction (if enabled)
         advanced_extraction_enabled = self.config.get("capacity_extraction", {}).get(
             "enabled", False
         )
@@ -528,7 +380,6 @@ class ElementProcessor(ABC):
                 element, output_key
             )
 
-        # 3. If extraction fails, try estimation (if enabled)
         capacity_estimation_enabled = self.config.get("capacity_estimation", {}).get(
             "enabled", False
         )
@@ -542,48 +393,28 @@ class ElementProcessor(ABC):
     def _get_relation_member_capacity(
         self, relation: dict[str, Any], source_type: str, unit_type: str
     ) -> tuple[float | None, str, list]:
-        """
-        Get capacity from relation members
-
-        Parameters
-        ----------
-        relation : dict[str, Any]
-            Relation element data
-        source_type : str | None
-            Source type
-
-        Returns
-        -------
-        tuple[float | None, str]
-            (capacity_mw, capacity_source, members)
-        """
         if "members" not in relation:
             return None, "unknown", []
 
-        # Get country from relation for member context
         relation_country = relation.get("_country")
 
-        # Collect members with capacity information
         members_with_capacity = []
 
         for member in relation["members"]:
             member_type = member["type"]
             member_id = member["ref"]
 
-            # Get member element
             member_elem = None
             if member_type == "node":
                 member_elem = self.client.cache.get_node(member_id)
             elif member_type == "way":
                 member_elem = self.client.cache.get_way(member_id)
             elif member_type == "relation":
-                # Skip nested relations to avoid recursion
                 continue
 
             if not member_elem or "tags" not in member_elem:
                 continue
 
-            # IMPORTANT: Add country to member element if not present
             if relation_country and "_country" not in member_elem:
                 member_elem["_country"] = relation_country
 
@@ -614,7 +445,6 @@ class ElementProcessor(ABC):
             if capacity is not None:
                 members_with_capacity.append((member_elem, capacity))
             else:
-                # estimation if allowed
                 estimation_enabled = self.config.get("capacity_estimation", {}).get(
                     "enabled", False
                 )
@@ -629,14 +459,11 @@ class ElementProcessor(ABC):
                 else:
                     continue
 
-        # If no members with capacity, return None
         if not members_with_capacity:
             return None, "unknown", []
 
-        # If only one member with capacity, use that
         if len(members_with_capacity) == 1:
             return members_with_capacity[0][1], "member_capacity", members_with_capacity
 
-        # If multiple members with capacity, sum them
         total_capacity = sum(capacity for _, capacity in members_with_capacity)
         return total_capacity, "aggregated_capacity", members_with_capacity

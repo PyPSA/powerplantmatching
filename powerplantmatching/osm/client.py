@@ -12,8 +12,6 @@ logger = logging.getLogger(__name__)
 
 
 class OverpassAPIClient:
-    """Client for fetching data from the OpenStreetMap Overpass API"""
-
     def __init__(
         self,
         api_url: Optional[str] = None,
@@ -23,46 +21,23 @@ class OverpassAPIClient:
         retry_delay: int = 5,
         show_progress: bool = True,
     ):
-        """
-        Initialize the Overpass API client
-
-        Parameters
-        ----------
-        api_url : Optional[str]
-            URL of the Overpass API endpoint
-        cache_dir : str
-            Directory for caching OSM data
-        timeout : int
-            Timeout for API requests in seconds
-        max_retries : int
-            Maximum number of retries for API requests
-        retry_delay : int
-            Delay between retries in seconds
-        show_progress : bool
-            Whether to show progress bars during downloads
-        """
         self.api_url = api_url or "https://overpass-api.de/api/interpreter"
         self.cache = ElementCache(cache_dir)
         self.cache.load_all_caches()
 
-        # Set default values
         self.timeout = timeout
         self.max_retries = max_retries
         self.retry_delay = retry_delay
         self.show_progress = show_progress
 
     def __enter__(self):
-        """Enter context manager"""
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        """Exit context manager and save caches"""
         self.close()
 
     def close(self):
-        """Save caches and clean up resources"""
         if hasattr(self, "cache"):
-            # Only save if there are modifications
             if any(
                 [
                     self.cache.plants_modified,
@@ -76,26 +51,7 @@ class OverpassAPIClient:
                 self.cache.save_all_caches(force=False)
 
     def query_overpass(self, query: str) -> dict:
-        """
-        Execute a query against the Overpass API with retry logic and timeout
-
-        Parameters
-        ----------
-        query : str
-            Overpass QL query
-
-        Returns
-        -------
-        dict
-            Response from the API as JSON
-
-        Raises
-        ------
-        ConnectionError
-            If the API request fails after retries
-        """
         if "[timeout:" not in query:
-            # Overpass timeout is in seconds
             query = query.replace("[out:json]", f"[out:json][timeout:{self.timeout}]")
 
         retries = 0
@@ -126,27 +82,11 @@ class OverpassAPIClient:
         logger.error(
             f"Failed to query Overpass API after {self.max_retries} attempts: {str(last_error)}"
         )
-        # Return empty result instead of raising
         return {"elements": [], "error": f"API connection failed: {str(last_error)}"}
 
     def count_country_elements(
         self, country: str, element_type: str = "both"
     ) -> dict[str, int]:
-        """
-        Count power plants and/or generators in a country.
-
-        Parameters
-        ----------
-        country : str
-            Country name
-        element_type : str
-            "plants", "generators", or "both"
-
-        Returns
-        -------
-        dict
-            {"plants": N, "generators": M}
-        """
         country_code = get_country_code(country)
         if country_code is None:
             logger.error(f"Invalid country name: {country}")
@@ -191,24 +131,8 @@ out count;"""
     def count_region_elements(
         self, region: dict, element_type: str = "both"
     ) -> dict[str, int]:
-        """
-        Count power plants and/or generators in a region.
-
-        Parameters
-        ----------
-        region : dict
-            Region specification with type (bbox, radius, polygon)
-        element_type : str
-            "plants", "generators", or "both"
-
-        Returns
-        -------
-        dict
-            {"plants": N, "generators": M}
-        """
         counts = {}
 
-        # Build queries based on region type
         if region["type"] == "bbox":
             lat_min, lon_min, lat_max, lon_max = region["bounds"]
             area_filter = f"({lat_min},{lon_min},{lat_max},{lon_max})"
@@ -217,7 +141,6 @@ out count;"""
             radius_m = region["radius_km"] * 1000
             area_filter = f"(around:{radius_m},{lat},{lon})"
         elif region["type"] == "polygon":
-            # Convert to Overpass polygon format
             poly_str = 'poly:"'
             for lon, lat in region["coordinates"]:
                 poly_str += f"{lat} {lon} "
@@ -229,7 +152,6 @@ out count;"""
             )
             area_filter = None
 
-        # If area_filter is None (invalid region type), return zero counts
         if area_filter is None:
             counts["plants"] = 0
             if element_type in ["generators", "both"]:
@@ -269,37 +191,19 @@ out count;"""
         return counts
 
     def get_plants_data(self, country: str, force_refresh: bool = False) -> dict:
-        """
-        Get power plant data for a country
-
-        Parameters
-        ----------
-        country : str
-            Country name
-        force_refresh : bool
-            Whether to force a refresh from the API
-
-        Returns
-        -------
-        dict
-            Power plant data
-        """
         country_code = get_country_code(country)
         if country_code is None:
             logger.error(f"Invalid country name: {country}")
             return {"elements": [], "error": f"Invalid country: {country}"}
 
-        # Check cache first
         if not force_refresh:
             cached_data = self.cache.get_plants(country_code)
             if cached_data:
-                # Ensure all cached elements have country info
                 for element in cached_data.get("elements", []):
                     if "_country" not in element:
                         element["_country"] = country_code
                 return cached_data
 
-        # Build the query
         query = f"""
         [out:json][timeout:{self.timeout}];
         area["ISO3166-1"="{country_code}"][admin_level=2]->.boundaryarea;
@@ -311,51 +215,30 @@ out count;"""
         out body;
         """
 
-        # Execute the query
         logger.info(f"Fetching power plants for {country}")
         data = self.query_overpass(query)
 
-        # Add country to all elements before caching
         for element in data.get("elements", []):
             element["_country"] = country_code
 
-        # Cache the results
         self.cache.store_plants(country_code, data)
 
         return data
 
     def get_generators_data(self, country: str, force_refresh: bool = False) -> dict:
-        """
-        Get power generator data for a country
-
-        Parameters
-        ----------
-        country : str
-            Country name
-        force_refresh : bool
-            Whether to force a refresh from the API
-
-        Returns
-        -------
-        dict
-            Power generator data
-        """
         country_code = get_country_code(country)
         if country_code is None:
             logger.error(f"Invalid country name: {country}")
             return {"elements": [], "error": f"Invalid country: {country}"}
 
-        # Check cache first
         if not force_refresh:
             cached_data = self.cache.get_generators(country_code)
             if cached_data:
-                # Ensure all cached elements have country info
                 for element in cached_data.get("elements", []):
                     if "_country" not in element:
                         element["_country"] = country_code
                 return cached_data
 
-        # Build the query
         query = f"""
         [out:json][timeout:{self.timeout}];
         area["ISO3166-1"="{country_code}"][admin_level=2]->.boundaryarea;
@@ -367,15 +250,12 @@ out count;"""
         out body;
         """
 
-        # Execute the query
         logger.info(f"Fetching power generators for {country}")
         data = self.query_overpass(query)
 
-        # Add country to all elements before caching
         for element in data.get("elements", []):
             element["_country"] = country_code
 
-        # Cache the results
         self.cache.store_generators(country_code, data)
 
         return data
@@ -387,36 +267,14 @@ out count;"""
         recursion_level: int = 0,
         country_code: Optional[str] = None,
     ) -> list[dict]:
-        """
-        Get details of specific elements
-
-        Parameters
-        ----------
-        element_type : str
-            Type of element ('node', 'way', or 'relation')
-        element_ids : list[int]
-            list of element IDs
-        recursion_level : int, default 0
-            Current recursion level for nested element fetching
-        country_code : str, optional
-            Country code to add to fetched elements
-
-        Returns
-        -------
-        list[dict]
-            Element details
-        """
         if not element_ids:
             return []
 
-        # Remove duplicates
         element_ids = list(set(element_ids))
 
-        # First, check which elements are already in the cache
         cached_elements = []
         uncached_ids = []
 
-        # Get cached elements and identify uncached IDs
         for element_id in element_ids:
             element = None
             if element_type == "node":
@@ -427,36 +285,30 @@ out count;"""
                 element = self.cache.get_relation(element_id)
 
             if element:
-                # Add country to cached element if missing and country_code provided
                 if country_code and "_country" not in element:
                     element["_country"] = country_code
                 cached_elements.append(element)
             else:
                 uncached_ids.append(element_id)
 
-        # If all elements are cached, return them
         if not uncached_ids:
             logger.debug(
                 f"All {len(element_ids)} requested {element_type}s found in cache"
             )
             return cached_elements
 
-        # Query the API for uncached elements
         logger.info(
             f"Fetching {len(uncached_ids)} uncached {element_type}s out of {len(element_ids)} requested"
         )
 
-        # Join IDs into a comma-separated string
         ids_str = ",".join(map(str, uncached_ids))
 
-        # Build query
         query = f"""
         [out:json][timeout:300];
         {element_type}(id:{ids_str});
         out body;
         """
 
-        # For ways and relations, we also need to get their nodes
         if element_type in ["way", "relation"]:
             query = f"""
             [out:json][timeout:300];
@@ -465,13 +317,10 @@ out count;"""
             out body;
             """
 
-        # Execute query
         data = self.query_overpass(query)
 
-        # Extract the elements
         elements = data.get("elements", [])
 
-        # Log counts for debugging
         nodes = [e for e in elements if e["type"] == "node"]
         ways = [e for e in elements if e["type"] == "way"]
         relations = [e for e in elements if e["type"] == "relation"]
@@ -479,16 +328,13 @@ out count;"""
             f"Fetched {len(elements)} elements: {len(nodes)} nodes, {len(ways)} ways, {len(relations)} relations"
         )
 
-        # Cache the elements
         if element_type == "node":
-            # Add country to nodes if provided
             if country_code:
                 for node in nodes:
                     node["_country"] = country_code
             self.cache.store_nodes_bulk(nodes)
             fetched_elements = nodes
         elif element_type == "way":
-            # Add country to ways and nodes if provided
             if country_code:
                 for way in ways:
                     way["_country"] = country_code
@@ -498,11 +344,9 @@ out count;"""
             self.cache.store_nodes_bulk(nodes)
             fetched_elements = ways
 
-            # Process nodes from ways (with recursion control)
-            if recursion_level < 2:  # Prevent deep recursion
+            if recursion_level < 2:
                 for way in ways:
                     if "nodes" in way:
-                        # Check if any node isn't in our cache
                         uncached_nodes = [
                             node_id
                             for node_id in way["nodes"]
@@ -526,7 +370,6 @@ out count;"""
                     f"Recursion limit reached when processing way nodes (level {recursion_level})"
                 )
         elif element_type == "relation":
-            # Add country to relations, ways, and nodes if provided
             if country_code:
                 for relation in relations:
                     relation["_country"] = country_code
@@ -539,8 +382,7 @@ out count;"""
             self.cache.store_nodes_bulk(nodes)
             fetched_elements = relations
 
-            # Process members from relations (with recursion control)
-            if recursion_level < 2:  # Prevent deep recursion
+            if recursion_level < 2:
                 for relation in relations:
                     if "members" in relation:
                         way_members = [
@@ -550,7 +392,6 @@ out count;"""
                             m["ref"] for m in relation["members"] if m["type"] == "node"
                         ]
 
-                        # Fetch any uncached ways
                         uncached_ways = [
                             way_id
                             for way_id in way_members
@@ -570,7 +411,6 @@ out count;"""
                                 f"All {len(way_members)} ways from relation {relation['id']} already in cache"
                             )
 
-                        # Fetch any uncached nodes
                         uncached_nodes = [
                             node_id
                             for node_id in node_members
@@ -594,7 +434,6 @@ out count;"""
                     f"Recursion limit reached when processing relation members (level {recursion_level})"
                 )
 
-        # Combine cached and newly fetched elements
         return cached_elements + fetched_elements
 
     def get_nodes(
@@ -603,23 +442,6 @@ out count;"""
         recursion_level: int = 0,
         country_code: Optional[str] = None,
     ) -> list[dict]:
-        """
-        Get node details
-
-        Parameters
-        ----------
-        node_ids : list[int]
-            list of node IDs to fetch
-        recursion_level : int, default 0
-            Current recursion level
-        country_code : str, optional
-            Country code to add to fetched elements
-
-        Returns
-        -------
-        list[dict]
-            Node elements
-        """
         return self.get_elements("node", node_ids, recursion_level, country_code)
 
     def get_ways(
@@ -628,23 +450,6 @@ out count;"""
         recursion_level: int = 0,
         country_code: Optional[str] = None,
     ) -> list[dict]:
-        """
-        Get way details including their nodes
-
-        Parameters
-        ----------
-        way_ids : list[int]
-            list of way IDs to fetch
-        recursion_level : int, default 0
-            Current recursion level
-        country_code : str, optional
-            Country code to add to fetched elements
-
-        Returns
-        -------
-        list[dict]
-            Way elements and their referenced nodes
-        """
         return self.get_elements("way", way_ids, recursion_level, country_code)
 
     def get_relations(
@@ -653,23 +458,6 @@ out count;"""
         recursion_level: int = 0,
         country_code: Optional[str] = None,
     ) -> list[dict]:
-        """
-        Get relation details including their members
-
-        Parameters
-        ----------
-        relation_ids : list[int]
-            list of relation IDs to fetch
-        recursion_level : int, default 0
-            Current recursion level
-        country_code : str, optional
-            Country code to add to fetched elements
-
-        Returns
-        -------
-        list[dict]
-            Relation elements and their referenced members
-        """
         return self.get_elements(
             "relation", relation_ids, recursion_level, country_code
         )
@@ -677,37 +465,17 @@ out count;"""
     def get_country_data(
         self, country: str, force_refresh: bool = False, plants_only: bool = False
     ) -> tuple[dict, dict]:
-        """
-        Get all power plant and generator data for a country
-
-        Parameters
-        ----------
-        country : str
-            Country name
-        force_refresh : bool
-            Whether to force a refresh from the API
-        plants_only : bool
-            If True, only fetch plant data
-
-        Returns
-        -------
-        tuple[dict, dict]
-            (plants_data, generators_data)
-        """
-
         def type_order(element):
             order = {"relation": 0, "way": 1, "node": 2}
             return order[element["type"]]
 
         logger.info(f"Getting OSM data for {country}")
 
-        # Get country code to use for tracking
         country_code = get_country_code(country)
         if country_code is None:
             logger.error(f"Invalid country name: {country}")
             return {"elements": []}, {"elements": []}
 
-        # Count elements first if showing progress
         pbar = None
         if self.show_progress:
             logger.info(f"Counting elements in {country}...")
@@ -724,12 +492,10 @@ out count;"""
                 )
 
         try:
-            # Get plant data
             plants_data = self.get_plants_data(country, force_refresh)
             if pbar:
                 pbar.update(len(plants_data.get("elements", [])))
 
-            # Get generator data if needed
             if plants_only:
                 generators_data = {"elements": []}
             else:
@@ -737,16 +503,13 @@ out count;"""
                 if pbar:
                     pbar.update(len(generators_data.get("elements", [])))
 
-            # Extract node, way, and relation IDs from responses for resolution
             way_ids = []
             relation_ids = []
             node_ids = []
 
-            # Extract from plants data
             for element in plants_data.get("elements", []):
                 if element["type"] == "way":
                     way_ids.append(element["id"])
-                    # Extract node IDs from ways if they exist
                     if "nodes" in element:
                         node_ids.extend(element["nodes"])
                 elif element["type"] == "relation":
@@ -754,11 +517,9 @@ out count;"""
                 elif element["type"] == "node":
                     node_ids.append(element["id"])
 
-            # Extract from generators data
             for element in generators_data.get("elements", []):
                 if element["type"] == "way":
                     way_ids.append(element["id"])
-                    # Extract node IDs from ways if they exist
                     if "nodes" in element:
                         node_ids.extend(element["nodes"])
                 elif element["type"] == "relation":
@@ -766,12 +527,10 @@ out count;"""
                 elif element["type"] == "node":
                     node_ids.append(element["id"])
 
-            # Filter out duplicates
             unique_node_ids = list(set(node_ids))
             unique_way_ids = list(set(way_ids))
             unique_relation_ids = list(set(relation_ids))
 
-            # Only fetch elements that aren't already in the cache
             uncached_node_ids = [
                 node_id
                 for node_id in unique_node_ids
@@ -786,11 +545,9 @@ out count;"""
                 if not self.cache.get_relation(rel_id)
             ]
 
-            # Update progress bar description for reference resolution
             if pbar:
                 pbar.set_description(f"{country} - resolving references")
 
-            # Fetch and cache the uncached elements with country context
             if uncached_node_ids:
                 logger.info(
                     f"Resolving {len(uncached_node_ids)} uncached nodes out of {len(unique_node_ids)} referenced"
