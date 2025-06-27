@@ -1,3 +1,9 @@
+"""Plant reconstruction from incomplete OSM data.
+
+This module provides functionality to reconstruct power plants from
+orphaned generators and incomplete plant relations.
+"""
+
 import logging
 import re
 from typing import TYPE_CHECKING, Any, Optional
@@ -9,13 +15,45 @@ logger = logging.getLogger(__name__)
 
 
 class NameAggregator:
+    """Aggregates multiple generator names into a plant name.
+
+    Uses n-gram analysis to find common substrings among generator
+    names to create a meaningful plant name.
+
+    Attributes
+    ----------
+    config : dict
+        Configuration settings
+    similarity_threshold : float
+        Minimum similarity ratio for common substrings
+    """
+
     def __init__(self, config: dict[str, Any]):
+        """Initialize name aggregator.
+
+        Parameters
+        ----------
+        config : dict
+            Configuration with reconstruction settings
+        """
         self.config = config
         self.similarity_threshold = config.get("units_reconstruction", {}).get(
             "name_similarity_threshold", 0.7
         )
 
     def aggregate_names(self, names: set[str]) -> str:
+        """Aggregate multiple names into one representative name.
+
+        Parameters
+        ----------
+        names : set[str]
+            Generator names to aggregate
+
+        Returns
+        -------
+        str
+            Aggregated name or empty string
+        """
         names_list = list(names)
 
         if len(names_list) == 1:
@@ -32,6 +70,7 @@ class NameAggregator:
         return names_list[0]
 
     def _find_common_substring(self, names: list[str]) -> str | None:
+        """Find common substring among names using n-gram analysis."""
         if not names:
             return None
 
@@ -69,12 +108,46 @@ class NameAggregator:
 
 
 class PlantReconstructor:
+    """Reconstructs plants from orphaned generators.
+
+    Analyzes groups of generators within plant boundaries to reconstruct
+    missing plant data by aggregating generator attributes.
+
+    Attributes
+    ----------
+    config : dict
+        Reconstruction configuration
+    name_aggregator : NameAggregator
+        Name aggregation utility
+    generator_parser : GeneratorParser
+        Parser for processing generators
+    min_generators : int
+        Minimum generators needed for reconstruction
+
+    Examples
+    --------
+    >>> reconstructor = PlantReconstructor(config, name_aggregator)
+    >>> if reconstructor.can_reconstruct(len(generators)):
+    ...     plant_info = reconstructor.aggregate_generator_info(generators, country)
+    """
+
     def __init__(
         self,
         config: dict[str, Any],
         name_aggregator: NameAggregator,
         generator_parser: Optional["GeneratorParser"] = None,
     ):
+        """Initialize plant reconstructor.
+
+        Parameters
+        ----------
+        config : dict
+            Configuration with reconstruction settings
+        name_aggregator : NameAggregator
+            Name aggregation utility
+        generator_parser : GeneratorParser, optional
+            Parser for generator processing
+        """
         self.config = config
         self.name_aggregator = name_aggregator
         self.generator_parser = generator_parser
@@ -83,11 +156,26 @@ class PlantReconstructor:
         )
 
     def can_reconstruct(self, generator_count: int) -> bool:
+        """Check if enough generators for reconstruction."""
         return generator_count >= self.min_generators
 
     def process_generators_for_reconstruction(
         self, generators: list[dict[str, Any]], country: str
     ) -> list[dict[str, Any]]:
+        """Process generators to extract reconstruction data.
+
+        Parameters
+        ----------
+        generators : list[dict]
+            Generator elements to process
+        country : str
+            Country for context
+
+        Returns
+        -------
+        list[dict]
+            Processed generator information
+        """
         if not self.generator_parser:
             raise ValueError("Generator parser required for reconstruction")
 
@@ -144,6 +232,20 @@ class PlantReconstructor:
     def aggregate_generator_info(
         self, generators: list[dict[str, Any]], country: str
     ) -> dict[str, Any]:
+        """Aggregate information from multiple generators.
+
+        Parameters
+        ----------
+        generators : list[dict]
+            Generators to aggregate
+        country : str
+            Country context
+
+        Returns
+        -------
+        dict
+            Aggregated information with names, sources, capacities, etc.
+        """
         processed_generators = self.process_generators_for_reconstruction(
             generators, country
         )
@@ -182,6 +284,20 @@ class PlantReconstructor:
     def determine_final_values(
         self, aggregated_info: dict[str, Any], existing_values: dict[str, Any]
     ) -> dict[str, Any]:
+        """Determine final plant values from aggregated data.
+
+        Parameters
+        ----------
+        aggregated_info : dict
+            Aggregated generator information
+        existing_values : dict
+            Any existing plant values
+
+        Returns
+        -------
+        dict
+            Final values for reconstructed plant
+        """
         final_values = {}
 
         if aggregated_info["names"]:

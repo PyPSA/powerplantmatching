@@ -1,3 +1,10 @@
+"""Multi-level caching system for OpenStreetMap data.
+
+This module provides caching functionality for OSM elements, processed units,
+and country coordinate lookups. It reduces API calls and improves performance
+by storing data locally in JSON format.
+"""
+
 import json
 import logging
 import os
@@ -10,7 +17,40 @@ logger = logging.getLogger(__name__)
 
 
 class ElementCache:
+    """Multi-level cache for OSM elements and processed units.
+
+    Manages separate caches for different element types (nodes, ways, relations)
+    and aggregated data (plants, generators by country). Also caches processed
+    Unit objects to avoid reprocessing.
+
+    Attributes
+    ----------
+    cache_dir : str
+        Directory for cache files
+    plants_cache : dict[str, dict]
+        Country code to plant data mapping
+    generators_cache : dict[str, dict]
+        Country code to generator data mapping
+    ways_cache : dict[str, dict]
+        Way ID to element mapping
+    nodes_cache : dict[str, dict]
+        Node ID to element mapping
+    relations_cache : dict[str, dict]
+        Relation ID to element mapping
+    units_cache : dict[str, list[Unit]]
+        Country code to processed units mapping
+    *_modified : bool
+        Flags tracking which caches have unsaved changes
+    """
+
     def __init__(self, cache_dir: str):
+        """Initialize cache with specified directory.
+
+        Parameters
+        ----------
+        cache_dir : str
+            Directory path for cache files
+        """
         self.cache_dir = cache_dir
         os.makedirs(cache_dir, exist_ok=True)
 
@@ -38,6 +78,7 @@ class ElementCache:
         self.units_modified = False
 
     def load_all_caches(self) -> None:
+        """Load all cache files into memory."""
         self.plants_cache = self._load_cache(self.plants_cache_file)
         self.generators_cache = self._load_cache(self.generators_cache_file)
         self.ways_cache = self._load_cache(self.ways_cache_file)
@@ -46,6 +87,13 @@ class ElementCache:
         self.units_cache = self._load_units_cache(self.units_cache_file)
 
     def save_all_caches(self, force: bool = False) -> None:
+        """Save all modified caches to disk.
+
+        Parameters
+        ----------
+        force : bool
+            Save all caches regardless of modification status
+        """
         os.makedirs(self.cache_dir, exist_ok=True)
         logger.info(
             f"Saving caches to {self.cache_dir} (modified only unless force={force})"
@@ -93,6 +141,7 @@ class ElementCache:
                 logger.warning(f"Cache file was not created: {file_path}")
 
     def _load_cache(self, cache_path: str) -> dict:
+        """Load JSON cache file."""
         if os.path.exists(cache_path):
             try:
                 with open(cache_path) as f:
@@ -103,6 +152,7 @@ class ElementCache:
         return {}
 
     def _save_cache(self, cache_path: str, data: dict) -> None:
+        """Save dictionary to JSON cache file."""
         cache_data = data if data else {}
         try:
             os.makedirs(os.path.dirname(cache_path), exist_ok=True)
@@ -113,21 +163,27 @@ class ElementCache:
             logger.error(f"Failed to save cache to {cache_path}: {str(e)}")
 
     def get_node(self, node_id: int) -> dict | None:
+        """Get cached node by ID."""
         return self.nodes_cache.get(str(node_id))
 
     def get_way(self, way_id: int) -> dict | None:
+        """Get cached way by ID."""
         return self.ways_cache.get(str(way_id))
 
     def get_relation(self, relation_id: int) -> dict | None:
+        """Get cached relation by ID."""
         return self.relations_cache.get(str(relation_id))
 
     def get_plants(self, country_code: str) -> dict | None:
+        """Get cached plant data for country."""
         return self.plants_cache.get(country_code)
 
     def get_generators(self, country_code: str) -> dict | None:
+        """Get cached generator data for country."""
         return self.generators_cache.get(country_code)
 
     def store_plants(self, country_code: str, data: dict) -> None:
+        """Store plant data for country."""
         if country_code is None:
             logger.error("Attempted to store plants with None country_code")
             return
@@ -135,6 +191,7 @@ class ElementCache:
         self.plants_modified = True
 
     def store_generators(self, country_code: str, data: dict) -> None:
+        """Store generator data for country."""
         if country_code is None:
             logger.error("Attempted to store generators with None country_code")
             return
@@ -142,6 +199,7 @@ class ElementCache:
         self.generators_modified = True
 
     def store_nodes_bulk(self, nodes: list[dict]) -> None:
+        """Store multiple nodes at once."""
         modified = False
         for node in nodes:
             if node["type"] == "node":
@@ -151,6 +209,7 @@ class ElementCache:
             self.nodes_modified = True
 
     def store_ways_bulk(self, ways: list[dict]) -> None:
+        """Store multiple ways at once."""
         modified = False
         for way in ways:
             if way["type"] == "way":
@@ -160,6 +219,7 @@ class ElementCache:
             self.ways_modified = True
 
     def store_relations_bulk(self, relations: list[dict]) -> None:
+        """Store multiple relations at once."""
         modified = False
         for relation in relations:
             if relation["type"] == "relation":
@@ -169,6 +229,7 @@ class ElementCache:
             self.relations_modified = True
 
     def _load_units_cache(self, cache_path: str) -> dict[str, list[Unit]]:
+        """Load processed units from JSON cache."""
         if os.path.exists(cache_path):
             try:
                 with open(cache_path) as f:
@@ -184,6 +245,7 @@ class ElementCache:
         return {}
 
     def _save_units_cache(self, cache_path: str, data: dict[str, list[Unit]]) -> None:
+        """Save processed units to JSON cache."""
         try:
             units_data = {}
             for country, units in data.items():
@@ -197,9 +259,30 @@ class ElementCache:
             logger.error(f"Failed to save units cache to {cache_path}: {str(e)}")
 
     def get_units(self, country_code: str) -> list[Unit]:
+        """Get cached processed units for country.
+
+        Parameters
+        ----------
+        country_code : str
+            ISO country code
+
+        Returns
+        -------
+        list[Unit]
+            Processed units, empty list if not cached
+        """
         return self.units_cache.get(country_code, [])
 
     def store_units(self, country_code: str | None, units: list[Unit]) -> None:
+        """Store processed units for country.
+
+        Parameters
+        ----------
+        country_code : str or None
+            ISO country code
+        units : list[Unit]
+            Processed units to cache
+        """
         if country_code is None:
             logger.error("Attempted to store units with None country_code")
             return
@@ -208,7 +291,36 @@ class ElementCache:
 
 
 class CountryCoordinateCache:
+    """Cache for determining country from coordinates.
+
+    Uses LRU cache with configurable precision to minimize API calls
+    when determining which country a coordinate belongs to. Includes
+    legacy cache compatibility and tolerance-based lookups.
+
+    Attributes
+    ----------
+    precision : int
+        Decimal places for coordinate rounding
+    max_size : int
+        Maximum LRU cache size
+    _lookup : lru_cache
+        LRU cached lookup function
+    _legacy_cache : dict
+        Fallback cache for compatibility
+    _client : OverpassAPIClient
+        Client for API queries
+    """
+
     def __init__(self, precision: int = 2, max_size: int = 1000):
+        """Initialize country coordinate cache.
+
+        Parameters
+        ----------
+        precision : int
+            Decimal places for rounding coordinates
+        max_size : int
+            Maximum cache entries
+        """
         self.precision = precision
         self.max_size = max_size
         self._lookup = lru_cache(maxsize=max_size)(self._uncached_lookup)
@@ -216,12 +328,15 @@ class CountryCoordinateCache:
         self._client = None
 
     def set_client(self, client):
+        """Set the API client for lookups."""
         self._client = client
 
     def _round_coords(self, lat: float, lon: float) -> tuple[float, float]:
+        """Round coordinates to configured precision."""
         return (round(lat, self.precision), round(lon, self.precision))
 
     def _uncached_lookup(self, coords: tuple[float, float]) -> Optional[str]:
+        """Look up country for coordinates via API."""
         if self._client is None:
             logger.error("Client not set for country cache")
             return None
@@ -251,6 +366,20 @@ class CountryCoordinateCache:
         return None
 
     def get(self, lat: float, lon: float) -> Optional[str]:
+        """Get country code for coordinates.
+
+        Parameters
+        ----------
+        lat : float
+            Latitude
+        lon : float
+            Longitude
+
+        Returns
+        -------
+        str or None
+            ISO country code
+        """
         rounded_lat, rounded_lon = self._round_coords(lat, lon)
         country = self._lookup((rounded_lat, rounded_lon))
 
@@ -266,6 +395,22 @@ class CountryCoordinateCache:
     def get_with_tolerance(
         self, lat: float, lon: float, tolerance: float = 0.01
     ) -> Optional[str]:
+        """Get country with coordinate tolerance.
+
+        Parameters
+        ----------
+        lat : float
+            Latitude
+        lon : float
+            Longitude
+        tolerance : float
+            Coordinate tolerance in degrees
+
+        Returns
+        -------
+        str or None
+            ISO country code
+        """
         country = self.get(lat, lon)
         if country:
             return country
@@ -277,6 +422,7 @@ class CountryCoordinateCache:
         return None
 
     def items(self):
+        """Get legacy cache items."""
         return self._legacy_cache.items()
 
     def __getitem__(self, key):
@@ -289,6 +435,13 @@ class CountryCoordinateCache:
         return len(self._legacy_cache)
 
     def get_stats(self) -> dict:
+        """Get cache performance statistics.
+
+        Returns
+        -------
+        dict
+            Cache hits, misses, sizes, and hit rate
+        """
         cache_info = self._lookup.cache_info()
         return {
             "lru_hits": cache_info.hits,
@@ -302,5 +455,6 @@ class CountryCoordinateCache:
         }
 
     def clear(self):
+        """Clear all caches."""
         self._lookup.cache_clear()
         self._legacy_cache.clear()

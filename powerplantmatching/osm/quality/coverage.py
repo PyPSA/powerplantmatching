@@ -1,3 +1,16 @@
+"""Cache coverage analysis for OSM power plant data.
+
+This module provides tools to analyze cache coverage, compare cached
+data with live OpenStreetMap data, and identify countries that need
+updating. Useful for cache maintenance and data quality monitoring.
+
+Functions:
+    show_country_coverage: Display or return cache coverage statistics
+    find_outdated_caches: Identify countries with stale data
+    get_continent_mapping: Map country codes to continents
+    format_table: Format data as ASCII table
+"""
+
 import logging
 from datetime import datetime, timezone
 from typing import Any, Optional
@@ -14,6 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 def format_table(data, headers, col_widths=None):
+    """Format data as ASCII table for console output."""
     if not data:
         return ""
 
@@ -37,6 +51,13 @@ def format_table(data, headers, col_widths=None):
 
 
 def get_continent_mapping() -> dict[str, str]:
+    """Get mapping of ISO country codes to continents.
+
+    Returns
+    -------
+    dict[str, str]
+        Mapping of ISO 3166-1 alpha-2 codes to continent names
+    """
     return {
         "AW": "North America",
         "AF": "Asia",
@@ -291,6 +312,54 @@ def show_country_coverage(
     show_outdated_only: bool = False,
     outdated_threshold: float = 0.95,
 ) -> Optional[dict[str, Any]]:
+    """Display or return cache coverage statistics by country.
+
+    Analyzes the OSM cache to show which countries have data cached,
+    optionally comparing with live OSM data to identify outdated caches.
+
+    Parameters
+    ----------
+    cache_dir : str, optional
+        Cache directory path. If None, uses config value.
+    show_missing : bool
+        Whether to list countries without cached data
+    return_data : bool
+        If True, return dict instead of printing
+    check_live_counts : bool
+        If True, query live OSM for comparison (slower)
+    countries_to_check : list[str], optional
+        Specific country codes to check live counts for
+    show_outdated_only : bool
+        Only show countries with outdated data
+    outdated_threshold : float
+        Ratio below which cache is considered outdated
+
+    Returns
+    -------
+    dict or None
+        If return_data=True, returns coverage statistics dict.
+        Otherwise prints report and returns None.
+
+    Examples
+    --------
+    >>> # Print coverage report
+    >>> show_country_coverage(show_missing=True)
+
+    >>> # Get data for analysis
+    >>> data = show_country_coverage(return_data=True)
+    >>> print(f"Countries cached: {data['countries_cached']}")
+
+    >>> # Check if Germany needs update
+    >>> show_country_coverage(
+    ...     check_live_counts=True,
+    ...     countries_to_check=['DE']
+    ... )
+
+    Notes
+    -----
+    Live count checking makes API calls and can be slow for many countries.
+    The coverage report includes breakdowns by continent and cache status.
+    """
     config = get_config()
     osm_config = config.get("OSM", {})
 
@@ -733,6 +802,45 @@ def find_outdated_caches(
     threshold: float = 0.95,
     check_specific_countries: Optional[list[str]] = None,
 ) -> list[dict[str, Any]]:
+    """Find countries where cached data is outdated compared to live OSM.
+
+    Parameters
+    ----------
+    cache_dir : str, optional
+        Cache directory path. If None, uses config value.
+    threshold : float
+        Coverage ratio below which cache is considered outdated
+    check_specific_countries : list[str], optional
+        ISO codes of specific countries to check
+
+    Returns
+    -------
+    list[dict]
+        List of outdated countries with details:
+        - code: ISO country code
+        - name: Country name
+        - plants_cached/live/missing: Plant counts
+        - generators_cached/live/missing: Generator counts
+        - total_missing: Total missing elements
+        - cache_coverage_ratio: Current coverage ratio
+
+    Examples
+    --------
+    >>> # Find all significantly outdated caches
+    >>> outdated = find_outdated_caches(threshold=0.9)
+    >>> for country in outdated:
+    ...     print(f"{country['name']}: {country['total_missing']} new elements")
+
+    >>> # Check specific countries
+    >>> outdated = find_outdated_caches(
+    ...     check_specific_countries=['DE', 'FR', 'IT']
+    ... )
+
+    Notes
+    -----
+    This function makes API calls to check live counts, so it can be
+    slow for many countries. Results are sorted by total missing elements.
+    """
     coverage_data = show_country_coverage(
         cache_dir=cache_dir,
         return_data=True,

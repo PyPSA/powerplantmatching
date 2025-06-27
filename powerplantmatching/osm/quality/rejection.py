@@ -1,3 +1,14 @@
+"""Quality tracking for OSM power plant data processing.
+
+This module provides comprehensive tracking of rejected OSM elements,
+helping to identify data quality issues and generate reports for
+OpenStreetMap contributors to improve the data.
+
+Key components:
+    RejectedElement: Data structure for a single rejection
+    RejectionTracker: Main tracking and analysis system
+"""
+
 import json
 import logging
 from dataclasses import dataclass
@@ -13,6 +24,37 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class RejectedElement:
+    """Information about a rejected OSM element.
+
+    Stores details about why an OSM element was rejected during processing,
+    including location, reason, and metadata for analysis and reporting.
+
+    Attributes
+    ----------
+    id : str
+        Combined identifier (e.g., "node/123456")
+    element_id : str
+        OSM element ID
+    element_type : ElementType
+        Type of OSM element (node, way, relation)
+    reason : RejectionReason
+        Reason for rejection
+    details : str, optional
+        Additional details about the rejection
+    keywords : str
+        Keywords from the rejected value (default: "none")
+    timestamp : datetime, optional
+        When the rejection occurred
+    url : str, optional
+        OpenStreetMap URL for the element
+    coordinates : tuple[float, float], optional
+        (latitude, longitude) if available
+    country : str, optional
+        Country where element is located
+    unit_type : str, optional
+        Type of power unit (plant or generator)
+    """
+
     id: str
     element_id: str
     element_type: ElementType
@@ -26,6 +68,7 @@ class RejectedElement:
     unit_type: str | None = None
 
     def __post_init__(self):
+        """Initialize timestamp and URL if not provided."""
         if self.timestamp is None:
             self.timestamp = datetime.now()
         if self.url is None:
@@ -34,6 +77,35 @@ class RejectedElement:
 
 
 class RejectionTracker:
+    """Tracks and analyzes rejected OSM elements.
+
+    Provides comprehensive tracking of data quality issues, with methods
+    for analysis, reporting, and export. Helps identify patterns in
+    rejected data to improve OpenStreetMap quality.
+
+    Attributes
+    ----------
+    rejected_elements : dict[str, list[RejectedElement]]
+        Rejected elements grouped by ID
+    ids : set[str]
+        Set of all rejection IDs for quick lookup
+
+    Examples
+    --------
+    >>> tracker = RejectionTracker()
+    >>> tracker.add_rejection(
+    ...     element_id="123456",
+    ...     element_type="node",
+    ...     reason=RejectionReason.MISSING_CAPACITY_TAG,
+    ...     details="No plant:output:electricity tag"
+    ... )
+    >>> print(tracker.get_summary_string())
+    Rejection Summary:
+    Total rejections: 1
+    ----------------------------------------
+    Missing capacity tag: 1 (100.0%)
+    """
+
     def __init__(self):
         self.rejected_elements: dict[str, list[RejectedElement]] = {}
         self.ids: set[str] = set()
@@ -50,6 +122,37 @@ class RejectionTracker:
         country: str | None = None,
         unit_type: str | None = None,
     ) -> None:
+        """Add a rejection record for an OSM element.
+
+        Can accept either a full element dict or individual parameters.
+        Extracts metadata from element if provided.
+
+        Parameters
+        ----------
+        element : dict, optional
+            OSM element data (extracts id, type, coordinates, etc.)
+        element_id : str, optional
+            Element ID (required if element not provided)
+        element_type : str, optional
+            Element type (required if element not provided)
+        reason : RejectionReason, optional
+            Reason for rejection (required)
+        details : str, optional
+            Additional details about rejection
+        keywords : str
+            Keywords from rejected value
+        coordinates : tuple[float, float], optional
+            (lat, lon) coordinates
+        country : str, optional
+            Country code or name
+        unit_type : str, optional
+            'plant' or 'generator'
+
+        Raises
+        ------
+        ValueError
+            If required parameters are missing
+        """
         if element is not None:
             element_id = element.get("id") if element_id is None else element_id
             element_type = element.get("type") if element_type is None else element_type
@@ -111,6 +214,7 @@ class RejectionTracker:
             )
 
     def delete_rejection(self, id: str) -> bool:
+        """Delete a rejection by ID."""
         success = False
         if id in self.rejected_elements:
             del self.rejected_elements[id]
@@ -125,6 +229,18 @@ class RejectionTracker:
         return success
 
     def delete_for_units(self, units: list[Unit]) -> int:
+        """Delete rejections for successfully processed units.
+
+        Parameters
+        ----------
+        units : list[Unit]
+            Units that were successfully processed
+
+        Returns
+        -------
+        int
+            Number of rejections deleted
+        """
         deleted = 0
         for unit in units:
             if hasattr(unit, "id") and unit.id is not None:
@@ -138,6 +254,13 @@ class RejectionTracker:
         return deleted
 
     def get_summary(self) -> dict[str, int]:
+        """Get count of rejections by reason.
+
+        Returns
+        -------
+        dict[str, int]
+            Mapping of rejection reason to count
+        """
         summary = {}
         for rejections in self.rejected_elements.values():
             for rejection in rejections:
@@ -147,9 +270,17 @@ class RejectionTracker:
         return summary
 
     def get_total_count(self) -> int:
+        """Get total number of rejected elements."""
         return len(self.rejected_elements)
 
     def get_summary_string(self) -> str:
+        """Generate human-readable summary of rejections.
+
+        Returns
+        -------
+        str
+            Formatted summary with counts and percentages
+        """
         summary = self.get_summary()
         if not summary:
             return "No rejections recorded"
@@ -166,6 +297,14 @@ class RejectionTracker:
         return "\n".join(lines)
 
     def get_statistics(self) -> dict[str, Any]:
+        """Calculate comprehensive statistics about rejections.
+
+        Returns
+        -------
+        dict
+            Statistics including totals, breakdowns by reason/country,
+            and coordinate coverage
+        """
         total_rejections = self.get_total_count()
         by_reason = self.get_summary()
         by_country = self.get_country_statistics()
@@ -193,6 +332,7 @@ class RejectionTracker:
         }
 
     def get_country_statistics(self) -> dict[str, int]:
+        """Get rejection counts by country."""
         stats = {}
         for rejections in self.rejected_elements.values():
             for rejection in rejections:
@@ -201,6 +341,7 @@ class RejectionTracker:
         return dict(sorted(stats.items(), key=lambda x: x[1], reverse=True))
 
     def get_unique_rejection_reasons(self) -> list[RejectionReason]:
+        """Get list of all unique rejection reasons."""
         reasons = set()
         for rejections in self.rejected_elements.values():
             for rejection in rejections:
@@ -210,6 +351,7 @@ class RejectionTracker:
     def get_rejections_by_reason(
         self, reason: RejectionReason
     ) -> list[RejectedElement]:
+        """Get all rejections for a specific reason."""
         filtered_rejections = []
         for rejections in self.rejected_elements.values():
             for rejection in rejections:
@@ -220,6 +362,26 @@ class RejectionTracker:
     def generate_geojson(
         self, reason: Optional[RejectionReason] = None
     ) -> dict[str, Any]:
+        """Generate GeoJSON for visualization in mapping tools.
+
+        Creates a FeatureCollection with rejected elements that have
+        coordinates. Useful for JOSM or iD editor to fix issues.
+
+        Parameters
+        ----------
+        reason : RejectionReason, optional
+            Filter to specific rejection reason
+
+        Returns
+        -------
+        dict
+            GeoJSON FeatureCollection
+
+        Notes
+        -----
+        Only includes rejections with valid coordinates.
+        Excludes cluster rejections (synthetic elements).
+        """
         features = []
 
         if reason is not None:
@@ -272,6 +434,15 @@ class RejectionTracker:
     def save_geojson(
         self, filepath: str, reason: Optional[RejectionReason] = None
     ) -> None:
+        """Save rejections as GeoJSON file.
+
+        Parameters
+        ----------
+        filepath : str
+            Path to save GeoJSON file
+        reason : RejectionReason, optional
+            Filter to specific rejection reason
+        """
         geojson_data = self.generate_geojson(reason)
 
         with open(filepath, "w", encoding="utf-8") as f:
@@ -286,6 +457,21 @@ class RejectionTracker:
     def save_geojson_by_reasons(
         self, output_dir: str, prefix: str = "rejections"
     ) -> None:
+        """Save separate GeoJSON files for each rejection reason.
+
+        Useful for OSM contributors to focus on specific issues.
+
+        Parameters
+        ----------
+        output_dir : str
+            Directory to save files
+        prefix : str
+            Filename prefix (default: "rejections")
+
+        Notes
+        -----
+        Creates files like: rejections_missing_name_tag.geojson
+        """
         import os
 
         unique_reasons = self.get_unique_rejection_reasons()
@@ -307,6 +493,14 @@ class RejectionTracker:
             print(f"  - {reason.value}: {count} rejections → {filename}")
 
     def generate_report(self) -> pd.DataFrame:
+        """Generate detailed DataFrame report of all rejections.
+
+        Returns
+        -------
+        pd.DataFrame
+            Report with columns: id, element_id, element_type, country,
+            unit_type, reason, keywords, details, timestamp, url, lat, lon
+        """
         rejection_data = []
 
         for element_id, rejections in self.rejected_elements.items():
@@ -360,6 +554,22 @@ class RejectionTracker:
         reason: RejectionReason,
         country: str | None = None,
     ) -> dict[str, int]:
+        """Get unique keywords for a specific rejection reason.
+
+        Useful for identifying problematic tag values.
+
+        Parameters
+        ----------
+        reason : RejectionReason
+            Reason to filter by
+        country : str, optional
+            Country to filter by
+
+        Returns
+        -------
+        dict[str, int]
+            Keywords and their counts, sorted by frequency
+        """
         value_counts = {}
 
         for element_id, rejections in self.rejected_elements.items():
@@ -378,6 +588,20 @@ class RejectionTracker:
     def filter_rejections(
         self, reason: Optional[RejectionReason] = None, country: Optional[str] = None
     ) -> list[RejectedElement]:
+        """Filter rejections by reason and/or country.
+
+        Parameters
+        ----------
+        reason : RejectionReason, optional
+            Filter by rejection reason
+        country : str, optional
+            Filter by country
+
+        Returns
+        -------
+        list[RejectedElement]
+            Filtered list of rejections
+        """
         filtered = []
         for rejections in self.rejected_elements.values():
             for rejection in rejections:

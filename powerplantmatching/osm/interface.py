@@ -1,3 +1,15 @@
+"""OpenStreetMap power plant data interface.
+
+This module provides the main interface for extracting and processing power plant
+data from OpenStreetMap. It handles country validation, multi-level caching,
+and data standardization.
+
+Main functions:
+    process_countries: Process multiple countries with caching
+    validate_countries: Validate country names with fuzzy matching
+    validate_and_standardize_df: Ensure data consistency
+"""
+
 import logging
 import os
 from difflib import get_close_matches
@@ -13,6 +25,8 @@ from .workflow import Workflow
 
 logger = logging.getLogger(__name__)
 
+# Valid fuel types for power plant categorization
+# These match powerplantmatching's standard fuel types
 VALID_FUELTYPES = [
     "Nuclear",
     "Solid Biomass",
@@ -29,6 +43,8 @@ VALID_FUELTYPES = [
     "Other",
 ]
 
+# Valid technology types for power generation methods
+# These match powerplantmatching's standard technologies
 VALID_TECHNOLOGIES = [
     "Steam Turbine",
     "OCGT",
@@ -44,10 +60,12 @@ VALID_TECHNOLOGIES = [
     "Marine",
 ]
 
+# Valid power plant set types
 VALID_SETS = ["PP", "CHP", "Store"]
 
 
 def get_client_params(osm_config, api_url, cache_dir):
+    """Build parameters for OverpassAPIClient initialization."""
     return {
         "api_url": api_url,
         "cache_dir": cache_dir,
@@ -59,6 +77,45 @@ def get_client_params(osm_config, api_url, cache_dir):
 
 
 def validate_countries(countries: list[str]) -> tuple[list[str], dict[str, str]]:
+    """Validate country names and provide helpful suggestions for invalid entries.
+
+    Uses pycountry to validate country names, supporting full names, ISO codes,
+    and common variations. Provides fuzzy matching suggestions for typos or
+    incorrect names.
+
+    Parameters
+    ----------
+    countries : list of str
+        Country names to validate. Accepts:
+        - Full names: 'Germany', 'United States'
+        - ISO 3166-1 alpha-2: 'DE', 'US'
+        - ISO 3166-1 alpha-3: 'DEU', 'USA'
+        - Common variations: 'USA', 'UK', 'South Korea'
+
+    Returns
+    -------
+    valid_countries : list of str
+        List of validated country names as provided
+    country_code_map : dict
+        Mapping of country names to ISO alpha-2 codes
+
+    Raises
+    ------
+    ValueError
+        If any country names are invalid. Error message includes
+        suggestions for similar valid names and shows which entries
+        were valid vs invalid.
+
+    Examples
+    --------
+    >>> valid, codes = validate_countries(['Germany', 'France'])
+    >>> print(codes)
+    {'Germany': 'DE', 'France': 'FR'}
+
+    >>> validate_countries(['Germny'])  # Typo
+    ValueError: ❌ Invalid country names detected...
+         ℹ️  Did you mean: 'Germany', 'Armenia'
+    """
     import pycountry
 
     valid_countries = []
@@ -74,9 +131,9 @@ def validate_countries(countries: list[str]) -> tuple[list[str], dict[str, str]]
             invalid_countries.append(country)
 
     if invalid_countries:
-        all_country_names = [c.name for c in pycountry.countries]
-        all_country_names.extend([c.alpha_2 for c in pycountry.countries])
-        all_country_names.extend([c.alpha_3 for c in pycountry.countries])
+        all_country_names = [c.name for c in pycountry.countries]  # type: ignore
+        all_country_names.extend([c.alpha_2 for c in pycountry.countries])  # type: ignore
+        all_country_names.extend([c.alpha_3 for c in pycountry.countries])  # type: ignore
 
         country_variations = {
             "USA": "United States",
@@ -151,6 +208,58 @@ def validate_countries(countries: list[str]) -> tuple[list[str], dict[str, str]]
 def process_countries(
     countries, csv_cache_path, cache_dir, update, osm_config, target_columns, raw=False
 ):
+    """Process OpenStreetMap power plant data for specified countries.
+
+    Main entry point for extracting power plant data. Handles the complete
+    pipeline: validation, caching, downloading, processing, and standardization.
+
+    Parameters
+    ----------
+    countries : list of str
+        List of country names or ISO codes to process
+    csv_cache_path : str
+        Path to CSV cache file (usually osm_data.csv)
+    cache_dir : str
+        Directory containing OSM cache subdirectories
+    update : bool
+        If True, forces reprocessing even if cache exists
+    osm_config : dict
+        OSM configuration with quality settings and API parameters
+    target_columns : list of str
+        Expected columns in output DataFrame
+    raw : bool, optional
+        If True, skip validation and standardization. Default False.
+
+    Returns
+    -------
+    pd.DataFrame
+        Power plant data with standardized columns:
+        projectID, Country, lat, lon, Fueltype, Technology,
+        Capacity, Name, Set, DateIn, etc.
+
+    Raises
+    ------
+    ValueError
+        If country validation fails
+
+    Examples
+    --------
+    >>> config = get_config()
+    >>> df = process_countries(['Luxembourg', 'Malta'],
+    ...                       'cache/osm.csv', 'cache/',
+    ...                       False, config['OSM'],
+    ...                       config['target_columns'])
+    >>> print(f"Found {len(df)} power plants")
+    Found 89 power plants
+
+    Notes
+    -----
+    The function uses multi-level caching:
+    1. CSV cache (fastest)
+    2. Units cache (pre-processed)
+    3. API cache (raw responses)
+    4. Live API (slowest)
+    """
     logger.info(f"Starting country validation for {len(countries)} countries...")
     try:
         valid_countries, country_code_map = validate_countries(countries)
@@ -205,6 +314,35 @@ def process_countries(
 def process_single_country(
     country, csv_cache_path, cache_dir, api_url, config_hash, update, osm_config
 ):
+    """Process a single country with cache hierarchy.
+
+    Checks multiple cache levels before downloading from API:
+    1. CSV cache (if not forced refresh)
+    2. Units cache (if CSV miss)
+    3. API download (if all caches miss)
+
+    Parameters
+    ----------
+    country : str
+        Country name to process
+    csv_cache_path : str
+        Path to CSV cache file
+    cache_dir : str
+        OSM cache directory
+    api_url : str
+        Overpass API URL
+    config_hash : str
+        Hash of current configuration
+    update : bool
+        Force cache update if True
+    osm_config : dict
+        OSM configuration
+
+    Returns
+    -------
+    pd.DataFrame or None
+        Country power plant data, or None if no data found
+    """
     force_refresh = osm_config.get("force_refresh", False)
 
     if force_refresh:
@@ -228,6 +366,7 @@ def process_single_country(
 
 
 def check_csv_cache(cache_path, country, config_hash, update):
+    """Check if valid data exists in CSV cache for country."""
     if update or not os.path.exists(cache_path):
         return None
 
@@ -264,6 +403,7 @@ def check_csv_cache(cache_path, country, config_hash, update):
 
 
 def check_units_cache(csv_cache_path, country, config_hash, client_params):
+    """Check if valid units exist in units cache for country."""
     country_code = get_country_code(country)
     if country_code is None:
         logger.warning(f"Invalid country name: {country}, skipping units cache check")
@@ -293,6 +433,7 @@ def check_units_cache(csv_cache_path, country, config_hash, client_params):
 
 
 def process_from_api(csv_cache_path, cache_dir, api_url, country, osm_config):
+    """Download and process country data from Overpass API."""
     logger.info(f"No valid cache for {country}, processing from API")
 
     try:
@@ -329,6 +470,7 @@ def process_from_api(csv_cache_path, cache_dir, api_url, country, osm_config):
 
 
 def update_csv_cache(cache_path, country, country_data):
+    """Update CSV cache with new country data."""
     if country_data.empty:
         return
 
@@ -361,6 +503,36 @@ def update_csv_cache(cache_path, country, country_data):
 def validate_and_standardize_df(
     df, target_columns, valid_fueltypes=None, valid_technologies=None, valid_sets=None
 ):
+    """Validate and standardize power plant DataFrame.
+
+    Ensures data consistency by validating fuel types, technologies,
+    and sets against allowed values. Adds missing columns and removes
+    metadata columns.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Raw power plant data
+    target_columns : list of str
+        Expected columns in output
+    valid_fueltypes : list of str, optional
+        Allowed fuel types. Uses VALID_FUELTYPES if None
+    valid_technologies : list of str, optional
+        Allowed technologies. Uses VALID_TECHNOLOGIES if None
+    valid_sets : list of str, optional
+        Allowed set types. Uses VALID_SETS if None
+
+    Returns
+    -------
+    pd.DataFrame
+        Standardized DataFrame with validated values and
+        consistent column structure
+
+    Notes
+    -----
+    Invalid values are not removed but warnings are logged.
+    Missing columns are added with NaN values.
+    """
     if df.empty:
         return df
 

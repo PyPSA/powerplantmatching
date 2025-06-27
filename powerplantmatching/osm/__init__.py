@@ -1,3 +1,68 @@
+"""OpenStreetMap (OSM) power plant data extraction and processing.
+
+This module provides comprehensive tools for extracting, processing, and analyzing
+power plant data from OpenStreetMap. It handles the complete pipeline from raw OSM
+data to clean, standardized power plant datasets.
+
+Key Components
+--------------
+Data Processing:
+    process_countries : Main entry point for country-level processing
+    validate_countries : Country name validation with fuzzy matching
+    Workflow : Orchestrates the processing pipeline
+
+Data Models:
+    Unit : Individual power plant representation
+    Units : Collection of power plants with statistics
+    PlantGeometry : Spatial representation of plants
+
+Quality Control:
+    RejectionTracker : Tracks why elements were rejected
+    show_country_coverage : Analyze cache coverage
+    find_outdated_caches : Identify stale data
+
+Data Retrieval:
+    OverpassAPIClient : Interface to Overpass API
+    ElementCache : Multi-level caching system
+    region_download : Download data for custom regions
+
+Enhancement Features:
+    ClusteringManager : Group nearby generators
+    CapacityEstimator : Estimate missing capacities
+    PlantReconstructor : Reconstruct plants from parts
+
+Examples
+--------
+Basic usage for loading OSM data:
+
+>>> from powerplantmatching import get_config
+>>> from powerplantmatching.osm import process_countries
+>>> config = get_config()
+>>> df = process_countries(
+...     countries=['Luxembourg'],
+...     csv_cache_path=config['OSM']['fn'],
+...     cache_dir=config['OSM']['cache_dir'],
+...     update=False,
+...     osm_config=config['OSM'],
+...     target_columns=config['target_columns']
+... )
+
+Check cache coverage:
+
+>>> from powerplantmatching.osm import show_country_coverage
+>>> show_country_coverage(show_missing=True)
+
+Notes
+-----
+The module uses a multi-level caching strategy:
+1. CSV cache - Fastest, contains processed data
+2. Units cache - Pre-processed Unit objects
+3. API cache - Raw API responses
+4. Live API - Slowest, queries OpenStreetMap
+
+See the tutorials in analysis/ for detailed usage examples.
+"""
+
 from .enhancement.clustering import ClusteringManager
 from .enhancement.estimation import CapacityEstimator
 from .enhancement.geometry import GeometryHandler
@@ -40,39 +105,48 @@ from .retrieval.regional import region_download
 from .workflow import GeneratorParser, PlantParser, Workflow
 
 __all__ = [
+    # API Client and Cache
     "OverpassAPIClient",
     "ElementCache",
+    # Data Models
     "Unit",
     "Units",
     "PlantGeometry",
     "create_plant_geometry",
     "ElementType",
     "RejectionReason",
+    # Quality Control
     "RejectedElement",
     "RejectionTracker",
+    # Parsers
     "PlantParser",
     "GeneratorParser",
+    # Enhancement
     "GeometryHandler",
     "ClusteringManager",
     "CapacityEstimator",
     "CapacityExtractor",
+    "NameAggregator",
+    "PlantReconstructor",
+    "UnitFactory",
+    # Main Processing
     "Workflow",
     "process_countries",
     "process_single_country",
+    "validate_countries",
+    "validate_and_standardize_df",
+    # Cache Functions
     "check_csv_cache",
     "check_units_cache",
     "process_from_api",
     "update_csv_cache",
-    "validate_countries",
-    "validate_and_standardize_df",
-    "VALID_FUELTYPES",
-    "VALID_TECHNOLOGIES",
-    "NameAggregator",
-    "PlantReconstructor",
-    "UnitFactory",
+    # Regional and Coverage
     "region_download",
     "populate_cache",
     "show_country_coverage",
     "find_outdated_caches",
     "get_continent_mapping",
+    # Constants
+    "VALID_FUELTYPES",
+    "VALID_TECHNOLOGIES",
 ]

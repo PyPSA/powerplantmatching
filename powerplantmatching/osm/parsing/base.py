@@ -1,3 +1,11 @@
+"""Base classes for parsing OpenStreetMap power plant elements.
+
+This module provides the abstract base class for parsing OSM elements
+(nodes, ways, relations) into standardized power plant units. It handles
+common parsing tasks like extracting names, sources, technologies, and
+capacities from OSM tags.
+"""
+
 import logging
 from abc import ABC, abstractmethod
 from typing import Any
@@ -14,6 +22,39 @@ logger = logging.getLogger(__name__)
 
 
 class ElementProcessor(ABC):
+    """Abstract base class for processing OSM elements into power plant units.
+
+    Provides common functionality for extracting and validating power plant
+    attributes from OSM tags. Subclasses implement specific processing logic
+    for plants and generators.
+
+    The processor handles:
+    - Tag extraction with configurable mappings
+    - Data validation and rejection tracking
+    - Capacity extraction and estimation
+    - Date parsing and standardization
+
+    Attributes
+    ----------
+    client : OverpassAPIClient
+        API client for additional data retrieval
+    config : dict
+        Processing configuration including tag mappings
+    rejection_tracker : RejectionTracker
+        Tracks elements rejected for data quality issues
+    capacity_extractor : CapacityExtractor
+        Handles capacity value extraction from tags
+    capacity_estimator : CapacityEstimator
+        Estimates missing capacities
+    geometry_handler : GeometryHandler
+        Handles spatial operations
+
+    Notes
+    -----
+    This is an abstract base class. Use PlantParser or GeneratorParser
+    for actual element processing.
+    """
+
     def __init__(
         self,
         client: OverpassAPIClient,
@@ -21,6 +62,19 @@ class ElementProcessor(ABC):
         rejection_tracker: RejectionTracker,
         config: dict[str, Any] | None = None,
     ):
+        """Initialize the element processor.
+
+        Parameters
+        ----------
+        client : OverpassAPIClient
+            Client for API access
+        geometry_handler : GeometryHandler
+            Handler for spatial operations
+        rejection_tracker : RejectionTracker
+            Tracker for rejected elements
+        config : dict, optional
+            Processing configuration
+        """
         self.client = client
         self.config = config or {}
         self.rejection_tracker = rejection_tracker
@@ -36,6 +90,26 @@ class ElementProcessor(ABC):
     def extract_name_from_tags(
         self, element: dict[str, Any], unit_type: str
     ) -> str | None:
+        """Extract name from OSM tags with fallback handling.
+
+        Parameters
+        ----------
+        element : dict
+            OSM element with tags
+        unit_type : {'plant', 'generator'}
+            Type of unit being processed
+
+        Returns
+        -------
+        str or None
+            Extracted name, empty string if allowed missing, or None if rejected
+
+        Notes
+        -----
+        Checks multiple name tag keys in order of preference.
+        If missing_name_allowed=True in config, returns empty string.
+        Otherwise adds rejection and returns None.
+        """
         assert unit_type in ["plant", "generator"], "Invalid unit type"
 
         tags = element.get("tags", {})
@@ -78,6 +152,25 @@ class ElementProcessor(ABC):
     def extract_source_from_tags(
         self, element: dict[str, Any], unit_type: str
     ) -> str | None:
+        """Extract and map source (fuel type) from OSM tags.
+
+        Parameters
+        ----------
+        element : dict
+            OSM element with tags
+        unit_type : {'plant', 'generator'}
+            Type of unit being processed
+
+        Returns
+        -------
+        str or None
+            Mapped fuel type (e.g., 'Solar', 'Wind'), or None if not found/mapped
+
+        Notes
+        -----
+        Uses source_mapping from config to map OSM values to standard fuel types.
+        Tracks both missing tags and unmapped values separately.
+        """
         assert unit_type in ["plant", "generator"], "Invalid unit type"
 
         tags = element.get("tags", {})
@@ -127,6 +220,29 @@ class ElementProcessor(ABC):
     def extract_technology_from_tags(
         self, element: dict[str, Any], unit_type: str, source_type: str
     ) -> str | None:
+        """Extract and map technology from OSM tags based on source type.
+
+        Parameters
+        ----------
+        element : dict
+            OSM element with tags
+        unit_type : {'plant', 'generator'}
+            Type of unit being processed
+        source_type : str
+            Fuel type to filter valid technologies
+
+        Returns
+        -------
+        str or None
+            Mapped technology (e.g., 'PV', 'CCGT'), empty string if allowed missing,
+            or None if not found/mapped
+
+        Notes
+        -----
+        Technology mapping is source-specific. For example, 'photovoltaic' maps
+        to 'PV' only for Solar sources. Uses source_technology_mapping to ensure
+        valid technology-fuel combinations.
+        """
         assert unit_type in ["plant", "generator"], "Invalid unit type"
 
         tags = element.get("tags", {})
@@ -183,6 +299,28 @@ class ElementProcessor(ABC):
     def extract_output_key_from_tags(
         self, element: dict[str, Any], unit_type: str, source_type: str | None = None
     ) -> str | None:
+        """Find the tag key containing capacity/output information.
+
+        Parameters
+        ----------
+        element : dict
+            OSM element with tags
+        unit_type : {'plant', 'generator'}
+            Type of unit being processed
+        source_type : str, optional
+            Fuel type for source-specific tag keys
+
+        Returns
+        -------
+        str or None
+            Tag key containing capacity (e.g., 'plant:output:electricity'),
+            or None if not found
+
+        Notes
+        -----
+        Returns the key itself, not the value. The actual capacity extraction
+        is handled by CapacityExtractor using this key.
+        """
         assert unit_type in ["plant", "generator"], "Invalid unit type"
 
         tags = element.get("tags", {})
@@ -224,6 +362,26 @@ class ElementProcessor(ABC):
     def extract_start_date_key_from_tags(
         self, element: dict[str, Any], unit_type: str
     ) -> str | None:
+        """Extract and parse start date from OSM tags.
+
+        Parameters
+        ----------
+        element : dict
+            OSM element with tags
+        unit_type : {'plant', 'generator'}
+            Type of unit being processed
+
+        Returns
+        -------
+        str or None
+            Standardized date string (YYYY-MM-DD format), empty string if allowed
+            missing, or None if invalid/missing
+
+        Notes
+        -----
+        Handles various date formats using fuzzy parsing. Falls back to
+        year-only dates (YYYY-01-01) when full date cannot be determined.
+        """
         assert unit_type in ["plant", "generator"], "Invalid unit type"
 
         tags = element.get("tags", {})
@@ -294,6 +452,7 @@ class ElementProcessor(ABC):
         return None
 
     def _parse_date_string(self, element: dict[str, Any], date_string: str) -> str:
+        """Parse various date formats into standardized YYYY-MM-DD format."""
         import re
 
         from dateutil import parser
@@ -358,6 +517,24 @@ class ElementProcessor(ABC):
     def process_element(
         self, element: dict[str, Any], country: str | None = None
     ) -> Unit | None:
+        """Process an OSM element into a power plant unit.
+
+        Parameters
+        ----------
+        element : dict
+            OSM element to process
+        country : str, optional
+            Country name for the element
+
+        Returns
+        -------
+        Unit or None
+            Processed unit or None if rejected
+
+        Notes
+        -----
+        This is an abstract method that must be implemented by subclasses.
+        """
         pass
 
     def _process_capacity(
@@ -367,6 +544,26 @@ class ElementProcessor(ABC):
         output_key: str,
         unit_type: str,
     ) -> tuple[float | None, str]:
+        """Process capacity through extraction and estimation pipeline.
+
+        Parameters
+        ----------
+        element : dict
+            OSM element with tags
+        source_type : str
+            Fuel type for estimation parameters
+        output_key : str
+            Tag key containing capacity value
+        unit_type : {'plant', 'generator'}
+            Type of unit being processed
+
+        Returns
+        -------
+        capacity : float or None
+            Extracted/estimated capacity in MW
+        info : str
+            Source of capacity ('tag', 'estimated', etc.)
+        """
         assert unit_type in ["plant", "generator"], "Invalid unit type"
         is_valid, capacity, info = self.capacity_extractor.basic_extraction(
             element, output_key
@@ -394,6 +591,26 @@ class ElementProcessor(ABC):
     def _get_relation_member_capacity(
         self, relation: dict[str, Any], source_type: str, unit_type: str
     ) -> tuple[float | None, str, list]:
+        """Calculate total capacity from relation members.
+
+        Parameters
+        ----------
+        relation : dict
+            OSM relation with members
+        source_type : str
+            Fuel type for capacity processing
+        unit_type : {'plant', 'generator'}
+            Type of unit being processed
+
+        Returns
+        -------
+        total_capacity : float or None
+            Sum of member capacities or None if no valid members
+        info : str
+            'member_capacity' or 'aggregated_capacity'
+        members_with_capacity : list
+            List of (member_element, capacity) tuples
+        """
         if "members" not in relation:
             return None, "unknown", []
 

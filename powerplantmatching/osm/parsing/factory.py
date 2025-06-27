@@ -1,3 +1,10 @@
+"""Factory for creating standardized power plant units.
+
+This module provides a factory class that creates Unit objects with
+consistent formatting and metadata. It handles different unit types
+including plants, generators, reconstructed plants, and clusters.
+"""
+
 import datetime
 import logging
 from typing import Any
@@ -8,7 +15,31 @@ logger = logging.getLogger(__name__)
 
 
 class UnitFactory:
+    """Factory for creating standardized Unit objects.
+
+    Ensures consistent formatting of Unit objects across different
+    creation scenarios (plants, generators, reconstructed units,
+    clusters). Automatically adds metadata like timestamps, config
+    hashes, and processing parameters.
+
+    Attributes
+    ----------
+    config : dict
+        Processing configuration
+    config_hash : str
+        Hash of configuration for cache validation
+    processing_parameters : dict
+        Subset of config affecting processing
+    """
+
     def __init__(self, config: dict[str, Any]):
+        """Initialize the unit factory.
+
+        Parameters
+        ----------
+        config : dict
+            Processing configuration
+        """
         self.config = config
         self.config_hash = Unit._generate_config_hash(config)
         self.processing_parameters = {
@@ -31,6 +62,40 @@ class UnitFactory:
         generator_count: int | None = None,
         unit_type: str = "plant",
     ) -> Unit:
+        """Create a standard plant or generator unit.
+
+        Parameters
+        ----------
+        element_id : str
+            OSM element ID
+        element_type : str
+            OSM element type (node/way/relation)
+        country : str
+            Country name
+        lat, lon : float
+            Coordinates
+        name : str
+            Plant/generator name
+        source : str
+            Fuel type
+        technology : str
+            Generation technology
+        capacity : float or None
+            Capacity in MW
+        capacity_source : str
+            How capacity was determined
+        start_date : str, optional
+            Commissioning date (YYYY-MM-DD)
+        generator_count : int, optional
+            Number of generators (for aggregated units)
+        unit_type : str
+            'plant' or 'generator'
+
+        Returns
+        -------
+        Unit
+            Standardized unit object
+        """
         return Unit(
             projectID=f"OSM_{unit_type}:{element_type}/{element_id}",
             Country=country,
@@ -65,6 +130,34 @@ class UnitFactory:
         generator_count: int,
         start_date: str | None = None,
     ) -> Unit:
+        """Create a plant reconstructed from member generators.
+
+        Parameters
+        ----------
+        relation_id : str
+            Plant relation ID
+        country : str
+            Country name
+        lat, lon : float
+            Coordinates
+        name : str
+            Plant name (possibly aggregated)
+        source : str
+            Fuel type
+        technology : str
+            Generation technology
+        capacity : float or None
+            Total capacity from generators
+        generator_count : int
+            Number of member generators
+        start_date : str, optional
+            Earliest commissioning date
+
+        Returns
+        -------
+        Unit
+            Reconstructed plant unit
+        """
         return self.create_plant_unit(
             element_id=relation_id,
             element_type="relation",
@@ -94,6 +187,34 @@ class UnitFactory:
         generator_count: int,
         start_date: str | None = None,
     ) -> Unit:
+        """Create a plant from orphaned generators within a rejected plant boundary.
+
+        Parameters
+        ----------
+        plant_id : str
+            Original plant relation ID
+        country : str
+            Country name
+        lat, lon : float
+            Centroid coordinates
+        name : str
+            Aggregated name
+        source : str
+            Most common fuel type
+        technology : str or None
+            Most common technology
+        capacity : float or None
+            Total capacity
+        generator_count : int
+            Number of orphaned generators
+        start_date : str, optional
+            Earliest date
+
+        Returns
+        -------
+        Unit
+            Salvaged plant unit
+        """
         return Unit(
             projectID=f"OSM_plant:relation/{plant_id}",
             Country=country,
@@ -129,6 +250,36 @@ class UnitFactory:
         capacity_source: str,
         start_date: str | None = None,
     ) -> Unit:
+        """Create a standalone generator unit.
+
+        Parameters
+        ----------
+        element_id : str
+            OSM element ID
+        element_type : str
+            OSM element type (node/way)
+        country : str
+            Country name
+        lat, lon : float
+            Coordinates
+        name : str
+            Generator name
+        source : str
+            Fuel type
+        technology : str
+            Generation technology
+        capacity : float
+            Capacity in MW
+        capacity_source : str
+            How capacity was determined
+        start_date : str, optional
+            Commissioning date
+
+        Returns
+        -------
+        Unit
+            Generator unit
+        """
         return self.create_plant_unit(
             element_id=element_id,
             element_type=element_type,
@@ -157,6 +308,34 @@ class UnitFactory:
         generator_count: int,
         start_date: str | None = None,
     ) -> Unit:
+        """Create a plant from clustered nearby generators.
+
+        Parameters
+        ----------
+        cluster_id : str
+            Cluster identifier
+        country : str
+            Country name
+        lat, lon : float
+            Cluster centroid
+        name : str
+            Aggregated name
+        source : str
+            Common fuel type (used for clustering)
+        technology : str or None
+            Most common technology
+        capacity : float
+            Total cluster capacity
+        generator_count : int
+            Number of clustered generators
+        start_date : str, optional
+            Earliest date
+
+        Returns
+        -------
+        Unit
+            Clustered plant unit
+        """
         return Unit(
             projectID=f"OSM_cluster:{source}_{cluster_id}",
             Country=country,

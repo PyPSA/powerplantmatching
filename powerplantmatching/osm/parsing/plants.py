@@ -1,3 +1,10 @@
+"""Parser for OpenStreetMap power plant relations.
+
+This module handles the parsing of OSM relations tagged as power plants.
+It processes plant-level attributes, handles member generators, and can
+reconstruct incomplete plants using data from their components.
+"""
+
 import logging
 from typing import TYPE_CHECKING, Any, Optional
 
@@ -21,6 +28,28 @@ logger = logging.getLogger(__name__)
 
 
 class PlantParser(ElementProcessor):
+    """Parser for OSM power plant relations and complex plants.
+
+    Processes OSM elements tagged with power=plant, extracting attributes
+    and handling complex cases like relations with member generators.
+    Supports reconstruction of incomplete plants from their components.
+
+    Attributes
+    ----------
+    plant_polygons : list[PlantGeometry]
+        Geometries of processed plants for spatial checks
+    unit_factory : UnitFactory
+        Factory for creating standardized units
+    generator_parser : GeneratorParser, optional
+        Parser for processing member generators
+    name_aggregator : NameAggregator
+        Aggregates names from components (if reconstruction enabled)
+    plant_reconstructor : PlantReconstructor
+        Reconstructs plants from members (if enabled)
+    rejected_plant_info : dict[str, RejectedPlantInfo]
+        Stores incomplete plants for potential reconstruction
+    """
+
     def __init__(
         self,
         client: OverpassAPIClient,
@@ -28,6 +57,19 @@ class PlantParser(ElementProcessor):
         config: dict[str, Any],
         generator_parser: Optional["GeneratorParser"] = None,
     ):
+        """Initialize the plant parser.
+
+        Parameters
+        ----------
+        client : OverpassAPIClient
+            API client for data retrieval
+        rejection_tracker : RejectionTracker
+            Tracks rejected elements
+        config : dict
+            Processing configuration
+        generator_parser : GeneratorParser, optional
+            Parser for member generators
+        """
         super().__init__(
             client,
             GeometryHandler(client, rejection_tracker),
@@ -52,6 +94,27 @@ class PlantParser(ElementProcessor):
         country: str,
         processed_elements: set[str] | None = None,
     ) -> Unit | None:
+        """Process an OSM element tagged as a power plant.
+
+        Parameters
+        ----------
+        element : dict
+            OSM element to process
+        country : str
+            Country name for the element
+        processed_elements : set[str], optional
+            Track processed element IDs to avoid duplicates
+
+        Returns
+        -------
+        Unit or None
+            Processed plant unit or None if rejected
+
+        Notes
+        -----
+        Attempts reconstruction from member generators if the plant
+        itself is missing required attributes and reconstruction is enabled.
+        """
         lat, lon = self.geometry_handler.process_element_coordinates(element)
 
         if lat is not None and lon is not None:
@@ -187,6 +250,7 @@ class PlantParser(ElementProcessor):
         )
 
     def _get_member_element(self, member: dict[str, Any]) -> dict[str, Any] | None:
+        """Retrieve member element data from cache."""
         member_type = member["type"]
         member_id = member["ref"]
 
@@ -200,6 +264,7 @@ class PlantParser(ElementProcessor):
         return None
 
     def _is_generator(self, element: dict[str, Any]) -> bool:
+        """Check if element is tagged as a generator."""
         tags = element.get("tags", {})
         return tags.get("power") == "generator"
 
@@ -218,6 +283,28 @@ class PlantParser(ElementProcessor):
         existing_capacity_source: str | None = None,
         processed_elements: set[str] | None = None,
     ) -> Unit | None:
+        """Attempt to reconstruct plant from member generators.
+
+        Parameters
+        ----------
+        relation : dict
+            Plant relation with missing fields
+        missing_fields : dict[str, bool]
+            Flags indicating which fields are missing
+        country : str
+            Country name
+        lat, lon : float
+            Coordinates
+        existing_* : various
+            Any existing values from the plant relation
+        processed_elements : set[str], optional
+            Track processed elements
+
+        Returns
+        -------
+        Unit or None
+            Reconstructed unit if successful
+        """
         if "members" not in relation:
             return None
 
@@ -297,6 +384,30 @@ class PlantParser(ElementProcessor):
         existing_capacity: float | None = None,
         existing_capacity_source: str | None = None,
     ) -> Unit | None:
+        """Create unit from salvaged/aggregated data.
+
+        Parameters
+        ----------
+        relation : dict
+            Original plant relation
+        salvaged_data : dict
+            Aggregated data from members
+        country : str
+            Country name
+        lat, lon : float
+            Coordinates
+        generator_members : list[dict]
+            Member generators used for reconstruction
+        existing_capacity : float, optional
+            Capacity from plant tags if available
+        existing_capacity_source : str, optional
+            Source of existing capacity
+
+        Returns
+        -------
+        Unit or None
+            Created unit or None if insufficient data
+        """
         if existing_capacity is not None and existing_capacity > 0:
             final_capacity = existing_capacity
             assert existing_capacity_source, (
@@ -379,6 +490,7 @@ class PlantParser(ElementProcessor):
     def _store_rejected_plant(
         self, element: dict[str, Any], missing_fields: dict[str, bool]
     ):
+        """Store rejected plant for potential future reconstruction."""
         polygon = self.geometry_handler.get_element_geometry(element)
         if polygon:
             plant_info = RejectedPlantInfo(

@@ -1,3 +1,10 @@
+"""Regional download functionality for OpenStreetMap power plant data.
+
+This module provides tools for downloading OSM data for custom regions
+(bounding boxes, circles, polygons) rather than entire countries. It
+handles automatic country determination and cache updates.
+"""
+
 import logging
 import math
 from datetime import datetime
@@ -24,6 +31,69 @@ def region_download(
     retry_delay: Optional[int] = None,
     client: Optional[OverpassAPIClient] = None,
 ) -> dict[str, Any]:
+    """Download power infrastructure data for custom regions.
+
+    Supports downloading data for regions defined by bounding boxes,
+    circles (radius around center), or polygons. Automatically determines
+    which countries the regions belong to and updates country caches.
+
+    Parameters
+    ----------
+    regions : list[dict] or dict, optional
+        Region definitions. Each region dict should have:
+        - 'type': 'bbox', 'radius', or 'polygon'
+        - 'name': Region name (optional)
+        - Type-specific parameters (see examples)
+    download_type : {'both', 'plants', 'generators'}
+        Which element types to download
+    update_country_caches : bool
+        Update country caches with regional data
+    show_element_counts : bool
+        Show expected element counts before download
+    config : dict, optional
+        Configuration dict
+    api_url : str, optional
+        Overpass API URL
+    cache_dir : str, optional
+        Cache directory path
+    timeout : int, optional
+        Query timeout in seconds
+    max_retries : int, optional
+        Maximum retry attempts
+    retry_delay : int, optional
+        Delay between retries
+    client : OverpassAPIClient, optional
+        Existing client to use
+
+    Returns
+    -------
+    dict
+        Results with status, counts, and affected countries
+
+    Examples
+    --------
+    Bounding box region:
+    >>> region = {
+    ...     'type': 'bbox',
+    ...     'name': 'Berlin Area',
+    ...     'bounds': [52.3, 13.1, 52.7, 13.7]  # [min_lat, min_lon, max_lat, max_lon]
+    ... }
+
+    Radius region:
+    >>> region = {
+    ...     'type': 'radius',
+    ...     'name': 'Paris 50km',
+    ...     'center': [48.8566, 2.3522],  # [lat, lon]
+    ...     'radius_km': 50
+    ... }
+
+    Polygon region:
+    >>> region = {
+    ...     'type': 'polygon',
+    ...     'name': 'Custom Area',
+    ...     'coordinates': [[lon1, lat1], [lon2, lat2], ...]  # Close the polygon
+    ... }
+    """
     if client is not None:
         if regions is None:
             regions = []
@@ -191,6 +261,26 @@ def _region_download_with_client(
     update_country_caches: bool = True,
     show_element_counts: bool = True,
 ) -> dict[str, Any]:
+    """Process regional downloads with an existing client.
+
+    Parameters
+    ----------
+    client : OverpassAPIClient
+        API client instance
+    regions : list[dict]
+        Region definitions
+    download_type : str
+        Element types to download
+    update_country_caches : bool
+        Update country caches
+    show_element_counts : bool
+        Show counts before download
+
+    Returns
+    -------
+    dict
+        Processing results
+    """
     results = {
         "success": True,
         "regions_processed": 0,
@@ -270,6 +360,7 @@ def _region_download_with_client(
 def _download_single_region(
     client: OverpassAPIClient, region: dict[str, Any], download_type: str
 ) -> dict[str, list[dict]]:
+    """Download data for a single region."""
     results = {"plants": [], "generators": []}
 
     area_filter = _build_area_filter(region)
@@ -318,6 +409,7 @@ def _download_single_region(
 
 
 def _fetch_referenced_elements(client: OverpassAPIClient, elements: list[dict]) -> None:
+    """Fetch all elements referenced by ways and relations."""
     node_ids_to_fetch = set()
     way_ids_to_fetch = set()
     relation_ids_to_fetch = set()
@@ -357,6 +449,18 @@ def _fetch_referenced_elements(client: OverpassAPIClient, elements: list[dict]) 
 
 
 def _build_area_filter(region: dict[str, Any]) -> str:
+    """Build Overpass area filter for region type.
+
+    Parameters
+    ----------
+    region : dict
+        Region definition
+
+    Returns
+    -------
+    str
+        Overpass filter string
+    """
     if region["type"] == "bbox":
         lat_min, lon_min, lat_max, lon_max = region["bounds"]
         return f"({lat_min},{lon_min},{lat_max},{lon_max})"
@@ -385,6 +489,7 @@ def _update_caches_with_regional_data(
     region_data: dict[str, list[dict]],
     region: Optional[dict[str, Any]] = None,
 ) -> dict[str, Any]:
+    """Update country caches with downloaded regional data."""
     stats = {"elements_updated": 0, "elements_added": 0, "countries_affected": set()}
 
     for data_type in ["plants", "generators"]:
@@ -437,6 +542,7 @@ def _group_elements_by_country(
     elements: list[dict],
     region: Optional[dict[str, Any]] = None,
 ) -> dict[str, list[dict]]:
+    """Group elements by their country location."""
     if region:
         region_countries = _determine_countries_for_region(client, region)
 
@@ -484,6 +590,20 @@ def _group_elements_by_country(
 def _determine_countries_for_region(
     client: OverpassAPIClient, region: dict[str, Any]
 ) -> list[str]:
+    """Determine which countries a region overlaps with.
+
+    Parameters
+    ----------
+    client : OverpassAPIClient
+        API client
+    region : dict
+        Region definition
+
+    Returns
+    -------
+    list[str]
+        ISO country codes
+    """
     try:
         logger.info(
             f"Determining countries for region: {region.get('name', 'unnamed')}"
@@ -559,6 +679,22 @@ def _determine_countries_for_region(
 def _get_element_coordinates(
     client: OverpassAPIClient, element: dict
 ) -> tuple[Optional[float], Optional[float]]:
+    """Extract coordinates from OSM element.
+
+    Parameters
+    ----------
+    client : OverpassAPIClient
+        Client for cache access
+    element : dict
+        OSM element
+
+    Returns
+    -------
+    lat : float or None
+        Latitude
+    lon : float or None
+        Longitude
+    """
     if element["type"] == "node":
         return element.get("lat"), element.get("lon")
 
@@ -594,6 +730,24 @@ def _get_element_coordinates(
 def _determine_country_from_coordinates(
     client: OverpassAPIClient, lat: float, lon: float, use_cache: bool = True
 ) -> Optional[str]:
+    """Determine country code from coordinates.
+
+    Parameters
+    ----------
+    client : OverpassAPIClient
+        API client
+    lat : float
+        Latitude
+    lon : float
+        Longitude
+    use_cache : bool
+        Use coordinate cache
+
+    Returns
+    -------
+    str or None
+        ISO country code
+    """
     if use_cache:
         country = client._country_cache.get_with_tolerance(lat, lon, tolerance=0.01)
         if country:

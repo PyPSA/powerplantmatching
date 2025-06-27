@@ -1,3 +1,9 @@
+"""Utility functions for OSM power plant processing.
+
+This module provides helper functions for capacity parsing, country
+validation, geometric calculations, and configuration handling.
+"""
+
 import logging
 import math
 import os
@@ -12,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 def is_valid_unit(element: dict[str, Any], unit_type: str) -> bool:
+    """Check if OSM element is a valid power unit."""
     assert unit_type in ["plant", "generator"], "Invalid unit type"
 
     if "tags" not in element:
@@ -27,6 +34,7 @@ def is_valid_unit(element: dict[str, Any], unit_type: str) -> bool:
 def get_source_config(
     config: dict[str, Any], source_type: str, section: Optional[str] = None
 ) -> dict[str, Any]:
+    """Get configuration for a specific source type."""
     source_config = config.get("sources", {}).get(source_type, {})
     if section:
         return source_config.get(section) or {}
@@ -38,6 +46,40 @@ def parse_capacity_value(
     advanced_extraction: bool,
     regex_patterns: list[str] | None = None,
 ) -> tuple[bool, float | None, str]:
+    """Parse capacity value string to MW.
+
+    Handles various formats and units for power capacity values,
+    converting them to megawatts. Supports both basic formats
+    (e.g., "50 MW") and advanced patterns with suffixes.
+
+    Parameters
+    ----------
+    value : str
+        Capacity string to parse (e.g., "50 MW", "1.5GW", "100kWp")
+    advanced_extraction : bool
+        If True, use flexible regex patterns for complex formats
+    regex_patterns : list[str], optional
+        Custom regex patterns for advanced extraction
+
+    Returns
+    -------
+    tuple[bool, float or None, str]
+        (success, capacity_mw, original_value_or_error)
+        - success: True if parsing succeeded
+        - capacity_mw: Capacity in megawatts or None
+        - original_value_or_error: Original string or error type
+
+    Examples
+    --------
+    >>> parse_capacity_value("50 MW", False)
+    (True, 50.0, "50 MW")
+
+    >>> parse_capacity_value("1.5GW", True)
+    (True, 1500.0, "1.5GW")
+
+    >>> parse_capacity_value("100kWp", True)  # 'p' suffix for peak
+    (True, 0.1, "100kWp")
+    """
     value_str = value.strip()
     original_value_str = value_str
 
@@ -106,6 +148,27 @@ def parse_capacity_value(
 
 
 def get_country_code(country: str) -> str | None:
+    """Get ISO 3166-1 alpha-2 code for country.
+
+    Parameters
+    ----------
+    country : str
+        Country name, ISO code, or common variation
+
+    Returns
+    -------
+    str or None
+        Two-letter country code or None if not found
+
+    Examples
+    --------
+    >>> get_country_code("Germany")
+    'DE'
+    >>> get_country_code("USA")
+    'US'
+    >>> get_country_code("DEU")
+    'DE'
+    """
     try:
         country_obj = pycountry.countries.lookup(country)
         return country_obj.alpha_2
@@ -115,6 +178,21 @@ def get_country_code(country: str) -> str | None:
 
 
 def calculate_area(coordinates: list[dict[str, float]]) -> float:
+    """Calculate area of polygon from coordinates.
+
+    Uses the shoelace formula with coordinates projected to meters
+    using haversine distance for accuracy.
+
+    Parameters
+    ----------
+    coordinates : list[dict[str, float]]
+        List of coordinate dicts with 'lat' and 'lon' keys
+
+    Returns
+    -------
+    float
+        Area in square meters
+    """
     if len(coordinates) < 3:
         return 0.0
 
@@ -145,6 +223,20 @@ def calculate_area(coordinates: list[dict[str, float]]) -> float:
 
 
 def haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """Calculate distance between two points using haversine formula.
+
+    Parameters
+    ----------
+    lat1, lon1 : float
+        First point coordinates (degrees)
+    lat2, lon2 : float
+        Second point coordinates (degrees)
+
+    Returns
+    -------
+    float
+        Distance in meters
+    """
     lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lon1, lat2, lon2])
 
     dlat = lat2 - lat1
@@ -159,6 +251,35 @@ def haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> fl
 
 
 def get_osm_cache_paths(config: Optional[dict] = None) -> tuple[str, str]:
+    """Get OSM cache directory and CSV file paths.
+
+    Resolves cache paths from configuration, handling relative paths,
+    home directory expansion, and defaults.
+
+    Parameters
+    ----------
+    config : dict, optional
+        Configuration dict. If None, loads default config.
+
+    Returns
+    -------
+    tuple[str, str]
+        (cache_dir, csv_cache_path) where:
+        - cache_dir: Directory containing all OSM caches
+        - csv_cache_path: Full path to CSV cache file
+
+    Examples
+    --------
+    >>> cache_dir, csv_path = get_osm_cache_paths()
+    >>> print(cache_dir)
+    /home/user/powerplantmatching/data/osm_cache
+
+    >>> # With custom config
+    >>> config = {'OSM': {'cache_dir': '~/osm_data', 'fn': 'plants.csv'}}
+    >>> cache_dir, csv_path = get_osm_cache_paths(config)
+    >>> print(csv_path)
+    /home/user/osm_data/plants.csv
+    """
     if config is None:
         actual_config: dict = get_config()
     else:

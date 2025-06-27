@@ -1,3 +1,16 @@
+"""Data models for OpenStreetMap power plant processing.
+
+This module defines the core data structures used throughout the OSM module,
+including power plant units, geometries, and rejection tracking. It provides
+type-safe representations of OSM elements and their attributes.
+
+Key components:
+    Unit: Individual power plant representation
+    Units: Collection of power plants with filtering and export
+    PlantGeometry: Spatial representation with geometric operations
+    RejectionReason: Enumeration of data quality issues
+"""
+
 import hashlib
 import json
 import logging
@@ -12,8 +25,10 @@ from shapely.geometry import MultiPolygon, Point, Polygon
 
 logger = logging.getLogger(__name__)
 
+# Type aliases for OSM element types
 OSMElementType = Literal["node", "way", "relation"]
 
+# Standard fuel types used in powerplantmatching
 FuelType = Literal[
     "Nuclear",
     "Solid Biomass",
@@ -30,6 +45,7 @@ FuelType = Literal[
     "Other",
 ]
 
+# Standard technology types for power generation methods
 TechnologyType = Literal[
     "Steam Turbine",
     "OCGT",
@@ -45,8 +61,10 @@ TechnologyType = Literal[
     "Marine",
 ]
 
+# Power plant set types
 SetType = Literal["PP", "CHP", "Store"]
 
+# Configuration parameters that affect processing
 PROCESSING_PARAMETERS = [
     "capacity_extraction",
     "capacity_estimation",
@@ -64,6 +82,12 @@ PROCESSING_PARAMETERS = [
 
 
 class RejectionReason(Enum):
+    """Enumeration of reasons why OSM elements are rejected during processing.
+
+    Each reason represents a specific data quality issue that prevents
+    an element from being included in the final dataset.
+    """
+
     INVALID_ELEMENT_TYPE = "Invalid element type"
     COORDINATES_NOT_FOUND = "Could not determine coordinates"
     MISSING_TECHNOLOGY_TAG = "Missing technology tag"
@@ -88,6 +112,8 @@ class RejectionReason(Enum):
 
 
 class ElementType(Enum):
+    """OSM element types."""
+
     NODE = "node"
     WAY = "way"
     RELATION = "relation"
@@ -95,6 +121,64 @@ class ElementType(Enum):
 
 @dataclass
 class Unit:
+    """Power plant unit data structure.
+
+    Represents a single power generation unit with standardized attributes.
+    This is the core data structure for power plant information, compatible
+    with powerplantmatching's standard format.
+
+    Attributes
+    ----------
+    projectID : str
+        Unique identifier for the unit
+    Country : str, optional
+        Country name or code
+    lat : float, optional
+        Latitude coordinate
+    lon : float, optional
+        Longitude coordinate
+    type : str, optional
+        Plant type (e.g., 'plant', 'generator')
+    Fueltype : str, optional
+        Primary fuel type from standard list
+    Technology : str, optional
+        Generation technology from standard list
+    Capacity : float, optional
+        Electrical capacity in MW
+    Name : str, optional
+        Plant name
+    generator_count : int, optional
+        Number of generators if aggregated
+    Set : str, optional
+        Plant set type (PP, CHP, Store)
+    capacity_source : str, optional
+        How capacity was determined ('tag', 'estimated', etc.)
+    DateIn : str, optional
+        Commissioning date
+    id : str, optional
+        OSM element ID (e.g., 'node/123456')
+    created_at : str, optional
+        Timestamp when unit was processed
+    config_hash : str, optional
+        Hash of configuration used for processing
+    config_version : str, optional
+        Version of configuration
+    processing_parameters : dict, optional
+        Parameters used during processing
+
+    Examples
+    --------
+    >>> unit = Unit(
+    ...     projectID="OSM_node_123456",
+    ...     Country="Germany",
+    ...     lat=52.5200,
+    ...     lon=13.4050,
+    ...     Fueltype="Solar",
+    ...     Technology="PV",
+    ...     Capacity=10.5
+    ... )
+    """
+
     projectID: str
     Country: Optional[str] = None
     lat: Optional[float] = None
@@ -116,9 +200,22 @@ class Unit:
     processing_parameters: dict | None = None
 
     def to_dict(self) -> dict[str, Any]:
+        """Convert unit to dictionary, excluding None values."""
         return {k: v for k, v in asdict(self).items() if v is not None}
 
     def is_valid_for_config(self, current_config: dict) -> bool:
+        """Check if unit was processed with compatible configuration.
+
+        Parameters
+        ----------
+        current_config : dict
+            Current processing configuration
+
+        Returns
+        -------
+        bool
+            True if unit's config hash matches current config
+        """
         if not self.config_hash:
             return False
 
@@ -127,6 +224,7 @@ class Unit:
 
     @staticmethod
     def _generate_config_hash(config: dict) -> str:
+        """Generate hash of relevant configuration parameters."""
         relevant_config = {
             k: config.get(k) for k in PROCESSING_PARAMETERS if k in config
         }
@@ -137,6 +235,34 @@ class Unit:
 
 @dataclass
 class PlantGeometry:
+    """Spatial representation of a power plant.
+
+    Handles geometric operations for plant boundaries, supporting
+    point, polygon, and multi-polygon geometries from OSM data.
+
+    Attributes
+    ----------
+    id : str
+        OSM element identifier
+    type : {'node', 'way', 'relation'}
+        OSM element type
+    geometry : shapely.geometry
+        Shapely geometry object (Point, Polygon, or MultiPolygon)
+    element_data : dict, optional
+        Original OSM element data
+
+    Examples
+    --------
+    >>> from shapely.geometry import Point
+    >>> geom = PlantGeometry(
+    ...     id="way/123456",
+    ...     type="way",
+    ...     geometry=Point(13.4050, 52.5200)
+    ... )
+    >>> geom.contains_point(52.5201, 13.4051, buffer_meters=100)
+    True
+    """
+
     id: str
     type: Literal["node", "way", "relation"]
     geometry: Union["Point", "Polygon", "MultiPolygon"]
@@ -146,6 +272,22 @@ class PlantGeometry:
     def contains_point(
         self, lat: float, lon: float, buffer_meters: Optional[float] = None
     ) -> bool:
+        """Check if a coordinate is within the plant geometry.
+
+        Parameters
+        ----------
+        lat : float
+            Latitude coordinate
+        lon : float
+            Longitude coordinate
+        buffer_meters : float, optional
+            Buffer distance in meters. Default 50m for points.
+
+        Returns
+        -------
+        bool
+            True if point is within geometry (with buffer if applicable)
+        """
         point = Point(lon, lat)
 
         try:
@@ -180,6 +322,20 @@ class PlantGeometry:
     def intersects(
         self, other: "PlantGeometry", buffer_meters: Optional[float] = None
     ) -> bool:
+        """Check if this geometry intersects with another.
+
+        Parameters
+        ----------
+        other : PlantGeometry
+            Another plant geometry to check intersection with
+        buffer_meters : float, optional
+            Buffer distance in meters for point geometries
+
+        Returns
+        -------
+        bool
+            True if geometries intersect
+        """
         try:
             if isinstance(self.geometry, Point) and isinstance(other.geometry, Point):
                 if buffer_meters is None:
@@ -215,6 +371,13 @@ class PlantGeometry:
             return False
 
     def get_centroid(self) -> tuple[float, float] | tuple[None, None]:
+        """Get the centroid coordinates of the geometry.
+
+        Returns
+        -------
+        tuple[float, float]
+            (latitude, longitude) of centroid, or (None, None) if error
+        """
         try:
             centroid = self.geometry.centroid
             return (centroid.y, centroid.x)
@@ -225,6 +388,18 @@ class PlantGeometry:
             return (None, None)
 
     def buffer(self, distance_meters: float) -> "PlantGeometry":
+        """Create a buffered version of this geometry.
+
+        Parameters
+        ----------
+        distance_meters : float
+            Buffer distance in meters
+
+        Returns
+        -------
+        PlantGeometry
+            New geometry with buffer applied
+        """
         try:
             buffer_degrees = distance_meters / 111320.0
             buffered_geom = self.geometry.buffer(buffer_degrees)
@@ -241,6 +416,13 @@ class PlantGeometry:
 
     @property
     def bounds(self) -> tuple[float, float, float, float]:
+        """Get bounding box coordinates.
+
+        Returns
+        -------
+        tuple
+            (min_lon, min_lat, max_lon, max_lat)
+        """
         bounds = self.geometry.bounds
         return (bounds[0], bounds[1], bounds[2], bounds[3])
 
@@ -259,6 +441,8 @@ class PlantGeometry:
 
 @dataclass
 class RejectedPlantInfo:
+    """Information about a rejected plant for potential reconstruction."""
+
     element_id: str
     polygon: PlantGeometry
     missing_fields: dict[str, bool]
@@ -267,6 +451,8 @@ class RejectedPlantInfo:
 
 @dataclass
 class GeneratorGroup:
+    """Group of generators that may form a plant."""
+
     plant_id: str
     generators: list[dict]
     plant_polygon: PlantGeometry
@@ -274,13 +460,36 @@ class GeneratorGroup:
 
 
 class Units:
+    """Collection of power plant units with filtering and analysis methods.
+
+    Provides methods for filtering, statistics, and exporting power plant
+    data in various formats. Acts as a container for Unit objects with
+    convenient access patterns.
+
+    Parameters
+    ----------
+    units : list[Unit], optional
+        Initial list of units to store
+
+    Examples
+    --------
+    >>> units = Units()
+    >>> units.add_unit(Unit(projectID="test1", Country="Germany"))
+    >>> units.filter_by_country("Germany")
+    <Units with 1 units>
+    >>> stats = units.get_statistics()
+    >>> units.save_csv("output.csv")
+    """
+
     def __init__(self, units: list[Unit] | None = None):
         self.units: list[Unit] = units or []
 
     def add_unit(self, unit: Unit) -> None:
+        """Add a single unit to the collection."""
         self.units.append(unit)
 
     def add_units(self, units: list[Unit]) -> None:
+        """Add multiple units to the collection."""
         self.units.extend(units)
 
     def __len__(self) -> int:
@@ -293,18 +502,70 @@ class Units:
         return self.units[index]
 
     def filter_by_country(self, country: str) -> "Units":
+        """Filter units by country.
+
+        Parameters
+        ----------
+        country : str
+            Country name to filter by
+
+        Returns
+        -------
+        Units
+            New Units instance with filtered data
+        """
         filtered = [unit for unit in self.units if unit.Country == country]
         return Units(filtered)
 
     def filter_by_fueltype(self, fueltype: str) -> "Units":
+        """Filter units by fuel type.
+
+        Parameters
+        ----------
+        fueltype : str
+            Fuel type to filter by
+
+        Returns
+        -------
+        Units
+            New Units instance with filtered data
+        """
         filtered = [unit for unit in self.units if unit.Fueltype == fueltype]
         return Units(filtered)
 
     def filter_by_technology(self, technology: str) -> "Units":
+        """Filter units by technology.
+
+        Parameters
+        ----------
+        technology : str
+            Technology type to filter by
+
+        Returns
+        -------
+        Units
+            New Units instance with filtered data
+        """
         filtered = [unit for unit in self.units if unit.Technology == technology]
         return Units(filtered)
 
     def get_statistics(self) -> dict[str, Any]:
+        """Calculate summary statistics for the collection.
+
+        Returns
+        -------
+        dict
+            Statistics including counts, capacity totals, and coverage
+
+        Notes
+        -----
+        Statistics include:
+        - Total unit count
+        - Units with valid coordinates
+        - Coverage percentage
+        - Unique countries, fuel types, and technologies
+        - Total and average capacity
+        """
         if not self.units:
             return {"total_units": 0}
 
@@ -336,6 +597,16 @@ class Units:
         }
 
     def generate_geojson_report(self) -> dict[str, Any]:
+        """Generate GeoJSON FeatureCollection from units.
+
+        Creates a GeoJSON representation suitable for mapping tools.
+        Only includes units with valid coordinates.
+
+        Returns
+        -------
+        dict
+            GeoJSON FeatureCollection with power plant features
+        """
         features = []
 
         for unit in self.units:
@@ -390,6 +661,13 @@ class Units:
         return geojson
 
     def save_geojson_report(self, filepath: str) -> None:
+        """Save units as GeoJSON file.
+
+        Parameters
+        ----------
+        filepath : str
+            Path to save GeoJSON file
+        """
         geojson_data = self.generate_geojson_report()
 
         with open(filepath, "w", encoding="utf-8") as f:
@@ -402,6 +680,13 @@ class Units:
         )
 
     def to_dataframe(self) -> pd.DataFrame:
+        """Convert units to pandas DataFrame.
+
+        Returns
+        -------
+        pd.DataFrame
+            DataFrame with unit data, empty if no units
+        """
         if not self.units:
             return pd.DataFrame()
 
@@ -409,6 +694,13 @@ class Units:
         return pd.DataFrame(units_dicts)
 
     def save_csv(self, filepath: str) -> None:
+        """Save units to CSV file.
+
+        Parameters
+        ----------
+        filepath : str
+            Path to save CSV file
+        """
         df = self.to_dataframe()
         df.to_csv(filepath, index=False)
         logger.info(f"Saved {len(self.units)} units to CSV: {filepath}")
@@ -418,6 +710,7 @@ def create_plant_geometry(
     element: dict[str, Any],
     geometry: Any,
 ) -> PlantGeometry:
+    """Factory function to create PlantGeometry from OSM element."""
     return PlantGeometry(
         id=str(element.get("id", "unknown")),
         type=element.get("type", "unknown"),

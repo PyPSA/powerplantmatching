@@ -1,3 +1,9 @@
+"""Cache population utilities for OSM power plant data.
+
+This module provides functions to populate the OSM cache with data from
+multiple countries, useful for batch processing and overnight cache building.
+"""
+
 import logging
 import time
 from datetime import timedelta
@@ -16,6 +22,38 @@ logger = logging.getLogger(__name__)
 
 
 def get_all_countries(sort_by_continent: bool = True) -> list[dict[str, str]]:
+    """Get list of all countries with metadata.
+
+    Retrieves all countries from pycountry with additional continent
+    information for grouping and sorting.
+
+    Parameters
+    ----------
+    sort_by_continent : bool, optional
+        If True, sort countries by continent then name.
+        If False, sort alphabetically by name only.
+        Default is True.
+
+    Returns
+    -------
+    list[dict[str, str]]
+        List of country dictionaries with keys:
+        - name: Full country name
+        - code: ISO 3166-1 alpha-2 code
+        - alpha3: ISO 3166-1 alpha-3 code
+        - continent: Continent name
+
+    Examples
+    --------
+    >>> countries = get_all_countries()
+    >>> print(f"Found {len(countries)} countries")
+    Found 249 countries
+
+    >>> # Get European countries
+    >>> europe = [c for c in countries if c['continent'] == 'Europe']
+    >>> print(f"European countries: {len(europe)}")
+    European countries: 52
+    """
     continent_map = get_continent_mapping()
     countries = []
 
@@ -56,6 +94,94 @@ def populate_cache(
     show_progress: bool = True,
     sort_by_continent: bool = True,
 ) -> dict[str, Any]:
+    """Populate OSM cache with power plant data from multiple countries.
+
+    Downloads and caches OSM power plant data for specified countries or
+    all countries. Useful for building a complete cache overnight or
+    updating specific regions. Handles failures gracefully and provides
+    detailed progress tracking.
+
+    Parameters
+    ----------
+    countries : str, list[str], or None, optional
+        Countries to download. Can be:
+        - None: Download all 249 countries
+        - str: Single country name or code
+        - list[str]: Multiple country names/codes
+        Accepts full names, ISO codes, or common variations.
+
+    force_refresh : bool, optional
+        If True, re-download even if already cached.
+        If False, skip countries already in cache.
+        Default is False.
+
+    plants_only : bool, optional
+        If True, only download power plants (faster).
+        If False, also download individual generators.
+        Default is False.
+
+    cache_dir : str, optional
+        Custom cache directory path.
+        If None, uses config value or default.
+
+    dry_run : bool, optional
+        If True, only show what would be downloaded.
+        No actual downloads performed.
+        Default is False.
+
+    show_progress : bool, optional
+        If True, show progress bar and statistics.
+        Default is True.
+
+    sort_by_continent : bool, optional
+        If True, process countries grouped by continent.
+        Default is True.
+
+    Returns
+    -------
+    dict[str, Any]
+        Result dictionary with keys:
+        - total_countries: Number of countries to process
+        - succeeded: Successfully downloaded
+        - failed: Failed downloads
+        - skipped: Already cached (when force_refresh=False)
+        - elapsed_time: Total time in seconds
+        - failed_countries: List of failed country details
+        - cache_dir: Path to cache directory used
+        - dry_run: True if dry run mode
+
+    Examples
+    --------
+    >>> # Download small countries for testing
+    >>> result = populate_cache(['Luxembourg', 'Malta'])
+    >>> print(f"Downloaded: {result['succeeded']}, Skipped: {result['skipped']}")
+    Downloaded: 2, Skipped: 0
+
+    >>> # Update African countries
+    >>> african = get_all_countries()
+    >>> african_names = [c['name'] for c in african if c['continent'] == 'Africa']
+    >>> result = populate_cache(african_names, force_refresh=False)
+
+    >>> # Dry run to see what would be downloaded
+    >>> result = populate_cache(dry_run=True)
+    >>> print(f"Would download {result['total_countries']} countries")
+
+    >>> # Download everything overnight
+    >>> result = populate_cache(force_refresh=True, show_progress=True)
+
+    Notes
+    -----
+    - Downloads are performed sequentially to respect API rate limits
+    - Failed countries are logged but don't stop the process
+    - Progress shows ETA based on current download rate
+    - Cache is saved after each successful country download
+    - Typical timing: ~30s per country (varies by size and API load)
+
+    See Also
+    --------
+    show_country_coverage : Check what's already cached
+    find_outdated_caches : Identify countries needing updates
+    """
     config = get_config()
     osm_config = config.get("OSM", {})
 

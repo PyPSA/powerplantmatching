@@ -1,3 +1,10 @@
+"""Capacity extraction from OpenStreetMap tags.
+
+This module handles the extraction and parsing of power plant capacity
+values from various OSM tag formats, including unit conversion and
+validation.
+"""
+
 import logging
 from typing import Any, Optional
 
@@ -9,17 +16,63 @@ logger = logging.getLogger(__name__)
 
 
 class CapacityExtractor:
+    """Extracts and validates capacity values from OSM tags.
+
+    Handles various capacity formats including different units (W, kW, MW, GW),
+    decimal separators, and placeholder values. Supports both basic and
+    advanced extraction with configurable regex patterns.
+
+    Attributes
+    ----------
+    config : dict
+        Configuration with extraction settings
+    rejection_tracker : RejectionTracker
+        Tracks elements with invalid capacity values
+    """
+
     def __init__(
         self,
         rejection_tracker: RejectionTracker,
         config: dict[str, Any],
     ):
+        """Initialize the capacity extractor.
+
+        Parameters
+        ----------
+        rejection_tracker : RejectionTracker
+            Tracker for rejected elements
+        config : dict
+            Configuration with regex patterns and settings
+        """
         self.config = config
         self.rejection_tracker = rejection_tracker
 
     def basic_extraction(
         self, element: dict[str, Any], output_key: str
     ) -> tuple[bool, Optional[float], str]:
+        """Perform basic capacity extraction with standard patterns.
+
+        Parameters
+        ----------
+        element : dict
+            OSM element containing tags
+        output_key : str
+            Tag key containing capacity value
+
+        Returns
+        -------
+        is_valid : bool
+            Whether extraction was successful
+        value : float or None
+            Extracted capacity in MW
+        info : str
+            Source/reason for the result
+
+        Notes
+        -----
+        Basic extraction handles standard formats like "10 MW", "5.5 MWp".
+        Rejects placeholder values like "yes" or "true".
+        """
         value_str = element["tags"][output_key].strip()
 
         if value_str.lower() in ["yes", "true"]:
@@ -48,6 +101,30 @@ class CapacityExtractor:
     def advanced_extraction(
         self, element: dict[str, Any], output_key: str
     ) -> tuple[bool, Optional[float], str]:
+        """Perform advanced capacity extraction with custom regex patterns.
+
+        Parameters
+        ----------
+        element : dict
+            OSM element containing tags
+        output_key : str
+            Tag key containing capacity value
+
+        Returns
+        -------
+        is_valid : bool
+            Whether extraction was successful
+        value : float or None
+            Extracted capacity in MW
+        info : str
+            Source/reason for the result
+
+        Notes
+        -----
+        Advanced extraction uses configurable regex patterns to handle
+        non-standard formats. Falls back to basic patterns if custom
+        patterns are not configured.
+        """
         value_str = element["tags"][output_key].strip()
 
         regex_patterns = self.config.get("capacity_extraction", {}).get(
@@ -83,6 +160,30 @@ class CapacityExtractor:
         value: float | None,
         identifier: str,
     ) -> tuple[bool, float | None, str]:
+        """Validate parsed capacity and track rejections.
+
+        Parameters
+        ----------
+        element : dict
+            OSM element for rejection tracking
+        output_key : str
+            Tag key being processed
+        is_valid : bool
+            Whether parsing was successful
+        value : float or None
+            Parsed capacity value
+        identifier : str
+            Reason/source identifier
+
+        Returns
+        -------
+        is_valid : bool
+            Final validation result
+        value : float or None
+            Validated capacity or None
+        identifier : str
+            Final identifier
+        """
         if is_valid and value is not None:
             if value > 0:
                 return True, value, identifier

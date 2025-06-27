@@ -1,3 +1,9 @@
+"""Geometry handling for OSM power plant elements.
+
+This module provides geometric operations for OSM elements including
+coordinate extraction, polygon creation, and spatial relationship checks.
+"""
+
 import logging
 from typing import Any, Optional
 
@@ -13,11 +19,41 @@ logger = logging.getLogger(__name__)
 
 
 class GeometryHandler:
+    """Handles geometric operations for OSM elements.
+
+    Provides methods to create and manipulate geometries from OSM nodes,
+    ways, and relations. Supports coordinate extraction, polygon creation,
+    and spatial relationship testing.
+
+    Attributes
+    ----------
+    client : OverpassAPIClient
+        API client for retrieving element dependencies
+    rejection_tracker : RejectionTracker
+        Tracker for invalid geometries
+
+    Examples
+    --------
+    >>> handler = GeometryHandler(client, rejection_tracker)
+    >>> geometry = handler.get_element_geometry(way_element)
+    >>> lat, lon = geometry.get_centroid()
+    """
+
     def __init__(self, client: OverpassAPIClient, rejection_tracker: RejectionTracker):
+        """Initialize geometry handler.
+
+        Parameters
+        ----------
+        client : OverpassAPIClient
+            Client for accessing cached elements
+        rejection_tracker : RejectionTracker
+            Tracker for geometry errors
+        """
         self.client = client
         self.rejection_tracker = rejection_tracker
 
     def create_node_geometry(self, node: dict[str, Any]) -> Optional[PlantGeometry]:
+        """Create point geometry from OSM node."""
         if "lat" not in node or "lon" not in node:
             logger.debug(f"Node {node.get('id', 'unknown')} missing coordinates")
             return None
@@ -32,6 +68,18 @@ class GeometryHandler:
             return None
 
     def create_way_geometry(self, way: dict[str, Any]) -> Optional[PlantGeometry]:
+        """Create polygon or point geometry from OSM way.
+
+        Parameters
+        ----------
+        way : dict
+            OSM way element with nodes list
+
+        Returns
+        -------
+        PlantGeometry or None
+            Polygon for closed ways, point for others
+        """
         if "nodes" not in way:
             logger.debug(f"Way {way['id']} does not have nodes")
             return None
@@ -64,6 +112,21 @@ class GeometryHandler:
     def create_relation_geometry(
         self, relation: dict[str, Any]
     ) -> Optional[PlantGeometry]:
+        """Create geometry from OSM relation members.
+
+        Combines member ways into polygons or creates convex hull
+        from member nodes. Handles multipolygon relations.
+
+        Parameters
+        ----------
+        relation : dict
+            OSM relation with members list
+
+        Returns
+        -------
+        PlantGeometry or None
+            Combined geometry from members
+        """
         if "members" not in relation:
             logger.debug(f"Relation {relation['id']} does not have members")
             return None
@@ -121,6 +184,18 @@ class GeometryHandler:
         return None
 
     def get_element_geometry(self, element: dict[str, Any]) -> Optional[PlantGeometry]:
+        """Get geometry for any OSM element type.
+
+        Parameters
+        ----------
+        element : dict
+            OSM element (node, way, or relation)
+
+        Returns
+        -------
+        PlantGeometry or None
+            Appropriate geometry for element type
+        """
         element_type = element.get("type")
 
         if element_type == "node":
@@ -136,6 +211,18 @@ class GeometryHandler:
     def process_element_coordinates(
         self, element: dict[str, Any]
     ) -> tuple[Optional[float], Optional[float]]:
+        """Extract coordinates from any OSM element.
+
+        Parameters
+        ----------
+        element : dict
+            OSM element to process
+
+        Returns
+        -------
+        tuple[float, float] or tuple[None, None]
+            (latitude, longitude) or (None, None) if not found
+        """
         plant_geometry = self.get_element_geometry(element)
         if plant_geometry:
             return plant_geometry.get_centroid()
@@ -162,6 +249,11 @@ class GeometryHandler:
     def get_relation_centroid_from_members(
         self, relation: dict[str, Any]
     ) -> tuple[Optional[float], Optional[float]]:
+        """Calculate centroid from relation members.
+
+        Prioritizes members with capacity tags when computing
+        the centroid for more accurate plant location.
+        """
         if "members" not in relation:
             return None, None
 
@@ -227,6 +319,22 @@ class GeometryHandler:
         plant_geometries: list[PlantGeometry],
         buffer_meters: Optional[float] = None,
     ) -> tuple[bool, Optional[str]]:
+        """Check if element is within any plant boundary.
+
+        Parameters
+        ----------
+        element : dict
+            OSM element to check
+        plant_geometries : list[PlantGeometry]
+            Plant boundaries to test against
+        buffer_meters : float, optional
+            Buffer distance for containment check
+
+        Returns
+        -------
+        tuple[bool, str or None]
+            (is_within, plant_id) where plant_id is like "way/123456"
+        """
         element_geometry = self.get_element_geometry(element)
         if not element_geometry:
             return False, None
@@ -257,6 +365,7 @@ class GeometryHandler:
         plant_geometries: dict[str, PlantGeometry],
         buffer_meters: Optional[float] = None,
     ) -> Optional[str]:
+        """Check if point is within any plant geometry."""
         for geom_id, plant_geom in plant_geometries.items():
             if plant_geom.contains_point(lat, lon, buffer_meters):
                 return geom_id

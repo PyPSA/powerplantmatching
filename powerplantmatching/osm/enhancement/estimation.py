@@ -1,3 +1,9 @@
+"""Capacity estimation for power plants without explicit data.
+
+This module estimates missing capacity values using various methods
+including area-based calculations and default values.
+"""
+
 import logging
 from typing import Any, Optional
 
@@ -10,12 +16,45 @@ logger = logging.getLogger(__name__)
 
 
 class CapacityEstimator:
+    """Estimates missing capacity values for power plants.
+
+    Provides methods to estimate capacity when not explicitly tagged,
+    using area-based calculations for solar farms or default values
+    for other types.
+
+    Attributes
+    ----------
+    client : OverpassAPIClient
+        API client for accessing element data
+    rejection_tracker : RejectionTracker
+        Tracks estimation failures
+    config : dict
+        Estimation configuration
+
+    Examples
+    --------
+    >>> estimator = CapacityEstimator(client, tracker, config)
+    >>> capacity, method = estimator.estimate_capacity(solar_way, "Solar", "plant")
+    >>> print(f"Estimated {capacity} MW using {method}")
+    """
+
     def __init__(
         self,
         client: OverpassAPIClient,
         rejection_tracker: RejectionTracker,
         config: dict[str, Any],
     ):
+        """Initialize capacity estimator.
+
+        Parameters
+        ----------
+        client : OverpassAPIClient
+            Client for element data access
+        rejection_tracker : RejectionTracker
+            Tracker for failed estimations
+        config : dict
+            Configuration with estimation settings
+        """
         self.client = client
         self.rejection_tracker = rejection_tracker
         self.config = config
@@ -23,6 +62,22 @@ class CapacityEstimator:
     def estimate_capacity(
         self, element: dict[str, Any], source_type: str, unit_type: str
     ) -> tuple[Optional[float], str]:
+        """Estimate capacity for an element.
+
+        Parameters
+        ----------
+        element : dict
+            OSM element to estimate capacity for
+        source_type : str
+            Fuel type (e.g., "Solar", "Wind")
+        unit_type : str
+            Either "plant" or "generator"
+
+        Returns
+        -------
+        tuple[float or None, str]
+            (capacity_mw, estimation_method) or (None, error_reason)
+        """
         estimation_method = (
             self.config.get("sources", {})
             .get(source_type, {})
@@ -45,6 +100,7 @@ class CapacityEstimator:
     def estimate_capacity_default_value(
         self, element: dict[str, Any], source_type: str
     ) -> tuple[Optional[float], str]:
+        """Estimate using configured default value."""
         source_config = get_source_config(
             self.config, source_type, "capacity_estimation"
         )
@@ -56,6 +112,25 @@ class CapacityEstimator:
     def estimate_capacity_area_based(
         self, element: dict[str, Any], source_type: str, unit_type: str
     ) -> tuple[Optional[float], str]:
+        """Estimate capacity based on element area.
+
+        Uses efficiency (W/m²) to calculate capacity from polygon area.
+        Common for solar farms where capacity correlates with area.
+
+        Parameters
+        ----------
+        element : dict
+            Way or relation with area
+        source_type : str
+            Fuel type for efficiency lookup
+        unit_type : str
+            Plant or generator
+
+        Returns
+        -------
+        tuple[float or None, str]
+            (capacity_mw, method) or (None, reason)
+        """
         assert unit_type in ["plant", "generator"], "Invalid unit type"
         source_config = get_source_config(
             self.config, source_type, "capacity_estimation"

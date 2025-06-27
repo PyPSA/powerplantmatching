@@ -1,3 +1,10 @@
+"""Overpass API client for retrieving OpenStreetMap power plant data.
+
+This module provides a robust client for querying the Overpass API with
+features like automatic retrying, caching, progress tracking, and country
+coordinate determination.
+"""
+
 import logging
 import time
 from typing import Optional, Union
@@ -14,6 +21,37 @@ logger = logging.getLogger(__name__)
 
 
 class OverpassAPIClient:
+    """Client for interacting with the Overpass API to retrieve OSM data.
+
+    Provides methods for querying power plants and generators by country or
+    region, with automatic caching, retry logic, and progress tracking.
+    Handles the complexity of OSM data structures including nodes, ways,
+    and relations with their dependencies.
+
+    Attributes
+    ----------
+    api_url : str
+        Overpass API endpoint URL
+    cache : ElementCache
+        Multi-level cache for OSM elements
+    timeout : int
+        Query timeout in seconds
+    max_retries : int
+        Maximum retry attempts for failed queries
+    retry_delay : int
+        Delay between retries in seconds
+    show_progress : bool
+        Whether to show progress bars
+    _country_cache : CountryCoordinateCache
+        Cache for country coordinate lookups
+
+    Examples
+    --------
+    >>> with OverpassAPIClient() as client:
+    ...     plants, generators = client.get_country_data("Malta")
+    ...     print(f"Found {len(plants['elements'])} plants")
+    """
+
     def __init__(
         self,
         api_url: Optional[str] = None,
@@ -24,6 +62,25 @@ class OverpassAPIClient:
         show_progress: bool = True,
         country_cache: Optional[Union[dict, "CountryCoordinateCache"]] = None,
     ):
+        """Initialize the Overpass API client.
+
+        Parameters
+        ----------
+        api_url : str, optional
+            Overpass API URL. Defaults to public instance.
+        cache_dir : str, optional
+            Directory for caching. Uses config default if None.
+        timeout : int
+            Query timeout in seconds
+        max_retries : int
+            Maximum retry attempts
+        retry_delay : int
+            Seconds between retries
+        show_progress : bool
+            Show progress bars during downloads
+        country_cache : dict or CountryCoordinateCache, optional
+            Country coordinate cache
+        """
         if cache_dir is None:
             config = get_config()
             cache_dir, _ = get_osm_cache_paths(config)
@@ -55,6 +112,7 @@ class OverpassAPIClient:
         self.close()
 
     def close(self):
+        """Save modified caches on client close."""
         if hasattr(self, "cache"):
             if any(
                 [
@@ -69,6 +127,23 @@ class OverpassAPIClient:
                 self.cache.save_all_caches(force=False)
 
     def query_overpass(self, query: str) -> dict:
+        """Execute an Overpass API query with retry logic.
+
+        Parameters
+        ----------
+        query : str
+            Overpass QL query string
+
+        Returns
+        -------
+        dict
+            Query results with 'elements' list
+
+        Notes
+        -----
+        Automatically adds timeout if not present in query.
+        Retries on connection errors with exponential backoff.
+        """
         if "[timeout:" not in query:
             query = query.replace("[out:json]", f"[out:json][timeout:{self.timeout}]")
 
@@ -105,6 +180,20 @@ class OverpassAPIClient:
     def count_country_elements(
         self, country: str, element_type: str = "both"
     ) -> dict[str, int]:
+        """Count power plants and/or generators in a country.
+
+        Parameters
+        ----------
+        country : str
+            Country name or ISO code
+        element_type : {'plants', 'generators', 'both'}
+            Which elements to count
+
+        Returns
+        -------
+        dict[str, int]
+            Counts by type, -1 indicates error
+        """
         country_code = get_country_code(country)
         if country_code is None:
             logger.error(f"Invalid country name: {country}")
@@ -149,6 +238,20 @@ out count;"""
     def count_region_elements(
         self, region: dict, element_type: str = "both"
     ) -> dict[str, int]:
+        """Count power elements in a custom region.
+
+        Parameters
+        ----------
+        region : dict
+            Region definition with type and parameters
+        element_type : {'plants', 'generators', 'both'}
+            Which elements to count
+
+        Returns
+        -------
+        dict[str, int]
+            Counts by type
+        """
         counts = {}
 
         if region["type"] == "bbox":
@@ -209,6 +312,20 @@ out count;"""
         return counts
 
     def get_plants_data(self, country: str, force_refresh: bool = False) -> dict:
+        """Get all power plants for a country.
+
+        Parameters
+        ----------
+        country : str
+            Country name or ISO code
+        force_refresh : bool
+            Skip cache and download fresh data
+
+        Returns
+        -------
+        dict
+            OSM data with 'elements' list
+        """
         country_code = get_country_code(country)
         if country_code is None:
             logger.error(f"Invalid country name: {country}")
@@ -244,6 +361,20 @@ out count;"""
         return data
 
     def get_generators_data(self, country: str, force_refresh: bool = False) -> dict:
+        """Get all power generators for a country.
+
+        Parameters
+        ----------
+        country : str
+            Country name or ISO code
+        force_refresh : bool
+            Skip cache and download fresh data
+
+        Returns
+        -------
+        dict
+            OSM data with 'elements' list
+        """
         country_code = get_country_code(country)
         if country_code is None:
             logger.error(f"Invalid country name: {country}")
@@ -285,6 +416,29 @@ out count;"""
         recursion_level: int = 0,
         country_code: Optional[str] = None,
     ) -> list[dict]:
+        """Get OSM elements by ID with dependency resolution.
+
+        Parameters
+        ----------
+        element_type : {'node', 'way', 'relation'}
+            Type of elements to retrieve
+        element_ids : list[int]
+            Element IDs to fetch
+        recursion_level : int
+            Current recursion depth for dependency resolution
+        country_code : str, optional
+            Country code to tag elements with
+
+        Returns
+        -------
+        list[dict]
+            Retrieved elements
+
+        Notes
+        -----
+        Automatically fetches dependencies (nodes for ways, members for
+        relations) up to recursion depth of 2.
+        """
         if not element_ids:
             return []
 
@@ -460,6 +614,7 @@ out count;"""
         recursion_level: int = 0,
         country_code: Optional[str] = None,
     ) -> list[dict]:
+        """Get nodes by ID."""
         return self.get_elements("node", node_ids, recursion_level, country_code)
 
     def get_ways(
@@ -468,6 +623,7 @@ out count;"""
         recursion_level: int = 0,
         country_code: Optional[str] = None,
     ) -> list[dict]:
+        """Get ways by ID with node resolution."""
         return self.get_elements("way", way_ids, recursion_level, country_code)
 
     def get_relations(
@@ -476,6 +632,7 @@ out count;"""
         recursion_level: int = 0,
         country_code: Optional[str] = None,
     ) -> list[dict]:
+        """Get relations by ID with member resolution."""
         return self.get_elements(
             "relation", relation_ids, recursion_level, country_code
         )
@@ -483,6 +640,30 @@ out count;"""
     def get_country_data(
         self, country: str, force_refresh: bool = False, plants_only: bool = False
     ) -> tuple[dict, dict]:
+        """Get all power infrastructure data for a country.
+
+        Parameters
+        ----------
+        country : str
+            Country name or ISO code
+        force_refresh : bool
+            Skip cache and download fresh data
+        plants_only : bool
+            Only download plants, not generators
+
+        Returns
+        -------
+        plants_data : dict
+            Power plant elements
+        generators_data : dict
+            Generator elements (empty if plants_only=True)
+
+        Notes
+        -----
+        Automatically resolves all dependencies (nodes for ways, members
+        for relations) and shows progress if enabled.
+        """
+
         def type_order(element):
             order = {"relation": 0, "way": 1, "node": 2}
             return order[element["type"]]

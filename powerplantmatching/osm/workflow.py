@@ -1,3 +1,9 @@
+"""Core workflow orchestration for OSM power plant processing.
+
+This module contains the main Workflow class that coordinates the entire
+processing pipeline for extracting power plant data from OpenStreetMap.
+"""
+
 import logging
 from typing import Any
 
@@ -13,6 +19,43 @@ logger = logging.getLogger(__name__)
 
 
 class Workflow:
+    """Orchestrates the OSM power plant data processing pipeline.
+
+    Coordinates all processing steps including data retrieval, parsing,
+    validation, enhancement (clustering, reconstruction), and caching.
+    Handles both power plants and generators with configurable processing.
+
+    Attributes
+    ----------
+    client : OverpassAPIClient
+        API client for data retrieval
+    config : dict
+        Processing configuration
+    units : Units
+        Collection to store processed units
+    rejection_tracker : RejectionTracker
+        Tracks rejected elements
+    clustering_manager : ClusteringManager
+        Handles generator clustering
+    generator_parser : GeneratorParser
+        Parses generator elements
+    plant_parser : PlantParser
+        Parses plant relations
+    config_hash : str
+        Hash of current configuration
+    processed_elements : set
+        Track processed element IDs
+
+    Examples
+    --------
+    >>> from powerplantmatching.osm import OverpassAPIClient, RejectionTracker, Units
+    >>> client = OverpassAPIClient()
+    >>> tracker = RejectionTracker()
+    >>> units = Units()
+    >>> workflow = Workflow(client, tracker, units, config)
+    >>> units, tracker = workflow.process_country_data('Malta')
+    """
+
     def __init__(
         self,
         client: OverpassAPIClient,
@@ -20,6 +63,19 @@ class Workflow:
         units: Units,
         config: dict[str, Any] | None = None,
     ):
+        """Initialize workflow with required components.
+
+        Parameters
+        ----------
+        client : OverpassAPIClient
+            Client for accessing Overpass API
+        rejection_tracker : RejectionTracker
+            Tracker for rejected elements
+        units : Units
+            Collection to store processed units
+        config : dict, optional
+            Processing configuration. If None, uses defaults.
+        """
         self.client = client
         self.config = config or {}
         self.units = units
@@ -57,6 +113,41 @@ class Workflow:
         country: str,
         force_refresh: bool | None = None,
     ) -> tuple[Units, RejectionTracker]:
+        """Process power plant data for a single country.
+
+        Main entry point for country processing. Handles the complete pipeline:
+        1. Check cache for valid data
+        2. Download from API if needed
+        3. Parse plants and generators
+        4. Apply clustering/reconstruction if enabled
+        5. Store results in cache
+
+        Parameters
+        ----------
+        country : str
+            Country name or ISO code to process
+        force_refresh : bool, optional
+            If True, bypass cache and download fresh data.
+            If None, uses config['force_refresh'] value.
+
+        Returns
+        -------
+        units : Units
+            Updated collection with processed units
+        rejection_tracker : RejectionTracker
+            Updated tracker with rejection details
+
+        Notes
+        -----
+        Processing order matters:
+        1. Plants are processed first to establish boundaries
+        2. Generators are checked against plant polygons
+        3. Orphaned generators can be reconstructed into plants
+        4. Clustering groups nearby generators by fuel type
+
+        The function modifies the units collection in-place but also
+        returns it for convenience.
+        """
         if force_refresh is None:
             force_refresh = self.config.get("force_refresh", False)
 
