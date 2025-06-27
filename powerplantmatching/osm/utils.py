@@ -1,9 +1,12 @@
 import logging
 import math
+import os
 import re
 from typing import Any, Optional
 
 import pycountry
+
+from powerplantmatching.core import _data_in, get_config
 
 logger = logging.getLogger(__name__)
 
@@ -153,3 +156,27 @@ def haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> fl
     c = 2 * math.asin(math.sqrt(a))
     r = 6371000
     return c * r
+
+
+def get_osm_cache_paths(config: Optional[dict] = None) -> tuple[str, str]:
+    if config is None:
+        actual_config: dict = get_config()
+    else:
+        actual_config = config
+
+    osm_config = actual_config.get("OSM", {})
+    fn = osm_config.get("fn", "osm_data.csv")
+
+    cache_dir = osm_config.get("cache_dir")
+    if cache_dir:
+        cache_dir = os.path.expanduser(cache_dir)
+        if not os.path.isabs(cache_dir):
+            data_dir = os.path.dirname(_data_in(""))
+            cache_dir = os.path.join(data_dir, cache_dir)
+    else:
+        data_dir = os.path.dirname(_data_in(""))
+        cache_dir = os.path.join(data_dir, "osm_cache")
+
+    csv_cache_path = os.path.join(cache_dir, fn)
+
+    return cache_dir, csv_cache_path

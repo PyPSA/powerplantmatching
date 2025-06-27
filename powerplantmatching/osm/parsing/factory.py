@@ -2,7 +2,7 @@ import datetime
 import logging
 from typing import Any
 
-from .models import PROCESSING_PARAMETERS, Unit
+from powerplantmatching.osm.models import PROCESSING_PARAMETERS, Unit
 
 logger = logging.getLogger(__name__)
 

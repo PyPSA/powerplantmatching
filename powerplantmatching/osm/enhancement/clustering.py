@@ -4,8 +4,8 @@ from typing import Any
 
 import numpy as np
 
-from .models import Unit
-from .unit_factory import UnitFactory
+from powerplantmatching.osm.models import Unit
+from powerplantmatching.osm.parsing.factory import UnitFactory
 
 logger = logging.getLogger(__name__)
 from sklearn.cluster import DBSCAN, KMeans

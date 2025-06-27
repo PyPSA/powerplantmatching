@@ -1,10 +1,10 @@
 import logging
 import math
-import os
 from datetime import datetime
 from typing import Any, Optional, Union
 
-import powerplantmatching as ppm
+from powerplantmatching.core import get_config
+from powerplantmatching.osm.utils import get_osm_cache_paths
 
 from .client import OverpassAPIClient
 
@@ -38,7 +38,7 @@ def region_download(
         )
 
     if config is None:
-        config = ppm.get_config()
+        config = get_config()
 
     if config is None:
         logger.error("Unable to get configuration")
@@ -114,8 +114,7 @@ def region_download(
     regions = valid_regions
 
     if cache_dir is None:
-        fn = ppm.data._data_in(osm_config.get("fn", "osm_data.csv"))
-        cache_dir = os.path.join(os.path.dirname(fn), "osm_cache")
+        cache_dir, _ = get_osm_cache_paths(config)
 
     overpass_config = osm_config.get("overpass_api", {})
 
@@ -596,12 +595,9 @@ def _determine_country_from_coordinates(
     client: OverpassAPIClient, lat: float, lon: float, use_cache: bool = True
 ) -> Optional[str]:
     if use_cache:
-        if not hasattr(client, "_country_cache"):
-            client._country_cache = {}
-
-        for (cached_lat, cached_lon), country in client._country_cache.items():
-            if abs(lat - cached_lat) < 0.01 and abs(lon - cached_lon) < 0.01:
-                return country
+        country = client._country_cache.get_with_tolerance(lat, lon, tolerance=0.01)
+        if country:
+            return country
 
     query = f"""
     [out:json][timeout:30];
@@ -617,14 +613,8 @@ def _determine_country_from_coordinates(
         if elements:
             country_code = elements[0].get("tags", {}).get("ISO3166-1", "")
 
-            if use_cache:
-                if not hasattr(client, "_country_cache"):
-                    client._country_cache = {}
+            if use_cache and country_code:
                 client._country_cache[(lat, lon)] = country_code
-
-                if len(client._country_cache) > 1000:
-                    items = list(client._country_cache.items())
-                    client._country_cache = dict(items[-500:])
 
             return country_code if country_code else None
 

@@ -1,10 +1,10 @@
 import logging
 from typing import Any, Optional
 
-from .client import OverpassAPIClient
-from .models import RejectionReason
-from .rejection import RejectionTracker
-from .utils import calculate_area, get_source_config
+from powerplantmatching.osm.models import RejectionReason
+from powerplantmatching.osm.quality.rejection import RejectionTracker
+from powerplantmatching.osm.retrieval.client import OverpassAPIClient
+from powerplantmatching.osm.utils import calculate_area, get_source_config
 
 logger = logging.getLogger(__name__)
 

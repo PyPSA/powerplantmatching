@@ -216,6 +216,9 @@ OSM:
   reliability_score: 3
   net_capacity: false
   fn: osm_data.csv
+  cache_dir: null  # Default: auto-generate from fn location
+  # cache_dir: /custom/path/to/osm_cache  # Custom path
+  # cache_dir: ./tutorial_cache  # Relative path
 
   # OSM Global configurations
   force_refresh: false

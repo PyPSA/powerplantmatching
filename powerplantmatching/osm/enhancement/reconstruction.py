@@ -3,7 +3,7 @@ import re
 from typing import TYPE_CHECKING, Any, Optional
 
 if TYPE_CHECKING:
-    from .generator_parser import GeneratorParser
+    from powerplantmatching.osm.parsing.generators import GeneratorParser
 
 logger = logging.getLogger(__name__)
 

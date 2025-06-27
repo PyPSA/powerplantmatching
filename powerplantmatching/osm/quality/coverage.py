@@ -1,15 +1,14 @@
 import logging
-import os
 from datetime import datetime, timezone
 from typing import Any, Optional
 
 import pycountry
 from tqdm import tqdm
 
-from powerplantmatching.core import _data_in, get_config
-
-from .cache import ElementCache
-from .client import OverpassAPIClient
+from powerplantmatching.core import get_config
+from powerplantmatching.osm.retrieval.cache import ElementCache
+from powerplantmatching.osm.retrieval.client import OverpassAPIClient
+from powerplantmatching.osm.utils import get_osm_cache_paths
 
 logger = logging.getLogger(__name__)
 
@@ -296,8 +295,7 @@ def show_country_coverage(
     osm_config = config.get("OSM", {})
 
     if cache_dir is None:
-        fn = _data_in(osm_config.get("fn", "osm_data.csv"))
-        cache_dir = os.path.join(os.path.dirname(fn), "osm_cache")
+        cache_dir, _ = get_osm_cache_paths(config)
 
     cache = ElementCache(cache_dir)
 
@@ -306,7 +304,7 @@ def show_country_coverage(
 
     cache.load_all_caches()
 
-    all_countries = {c.alpha_2: c.name for c in pycountry.countries}
+    all_countries = {c.alpha_2: c.name for c in pycountry.countries}  # type: ignore
     total_possible_countries = len(all_countries)
 
     cached_countries = {}

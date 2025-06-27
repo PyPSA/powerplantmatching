@@ -5,9 +5,9 @@ from difflib import get_close_matches
 import numpy as np
 import pandas as pd
 
-from .client import OverpassAPIClient
 from .models import Unit, Units
-from .rejection import RejectionTracker
+from .quality.rejection import RejectionTracker
+from .retrieval.client import OverpassAPIClient
 from .utils import get_country_code
 from .workflow import Workflow
 

@@ -5,9 +5,9 @@ from shapely.errors import ShapelyError
 from shapely.geometry import MultiPoint, Point, Polygon
 from shapely.ops import unary_union
 
-from .client import OverpassAPIClient
-from .models import PlantGeometry, create_plant_geometry
-from .rejection import RejectionTracker
+from powerplantmatching.osm.models import PlantGeometry, create_plant_geometry
+from powerplantmatching.osm.quality.rejection import RejectionTracker
+from powerplantmatching.osm.retrieval.client import OverpassAPIClient
 
 logger = logging.getLogger(__name__)
 

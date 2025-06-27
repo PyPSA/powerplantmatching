@@ -1,12 +1,12 @@
 import logging
 from typing import Any
 
-from .client import OverpassAPIClient
-from .clustering import ClusteringManager
-from .generator_parser import GeneratorParser
+from .enhancement.clustering import ClusteringManager
 from .models import PROCESSING_PARAMETERS, Unit, Units
-from .plant_parser import PlantParser
-from .rejection import RejectionReason, RejectionTracker
+from .parsing.generators import GeneratorParser
+from .parsing.plants import PlantParser
+from .quality.rejection import RejectionReason, RejectionTracker
+from .retrieval.client import OverpassAPIClient
 from .utils import get_country_code
 
 logger = logging.getLogger(__name__)

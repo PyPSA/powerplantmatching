@@ -1,20 +1,21 @@
 import logging
 from typing import TYPE_CHECKING, Any, Optional
 
-from .client import OverpassAPIClient
-from .element_processor import ElementProcessor
-from .geometry import GeometryHandler
-from .models import PlantGeometry, RejectedPlantInfo, Unit
-from .reconstruction import (
+from powerplantmatching.osm.enhancement.geometry import GeometryHandler
+from powerplantmatching.osm.enhancement.reconstruction import (
     NameAggregator,
     PlantReconstructor,
 )
-from .rejection import RejectionReason, RejectionTracker
-from .unit_factory import UnitFactory
-from .utils import is_valid_unit
+from powerplantmatching.osm.models import PlantGeometry, RejectedPlantInfo, Unit
+from powerplantmatching.osm.quality.rejection import RejectionReason, RejectionTracker
+from powerplantmatching.osm.retrieval.client import OverpassAPIClient
+from powerplantmatching.osm.utils import is_valid_unit
+
+from .base import ElementProcessor
+from .factory import UnitFactory
 
 if TYPE_CHECKING:
-    from .generator_parser import GeneratorParser
+    from .generators import GeneratorParser
 
 logger = logging.getLogger(__name__)
 

@@ -1,12 +1,14 @@
 import logging
 import time
-from typing import Optional
+from typing import Optional, Union
 
 import requests
 from tqdm import tqdm
 
-from .cache import ElementCache
-from .utils import get_country_code
+from powerplantmatching.core import get_config
+from powerplantmatching.osm.utils import get_country_code, get_osm_cache_paths
+
+from .cache import CountryCoordinateCache, ElementCache
 
 logger = logging.getLogger(__name__)
 
@@ -15,12 +17,17 @@ class OverpassAPIClient:
     def __init__(
         self,
         api_url: Optional[str] = None,
-        cache_dir: str = "osm_cache",
+        cache_dir: Optional[str] = None,
         timeout: int = 300,
         max_retries: int = 3,
         retry_delay: int = 5,
         show_progress: bool = True,
+        country_cache: Optional[Union[dict, "CountryCoordinateCache"]] = None,
     ):
+        if cache_dir is None:
+            config = get_config()
+            cache_dir, _ = get_osm_cache_paths(config)
+
         self.api_url = api_url or "https://overpass-api.de/api/interpreter"
         self.cache = ElementCache(cache_dir)
         self.cache.load_all_caches()
@@ -29,6 +36,17 @@ class OverpassAPIClient:
         self.max_retries = max_retries
         self.retry_delay = retry_delay
         self.show_progress = show_progress
+
+        if country_cache is None:
+            self._country_cache = CountryCoordinateCache(precision=2, max_size=1000)
+        elif isinstance(country_cache, CountryCoordinateCache):
+            self._country_cache = country_cache
+        else:
+            self._country_cache = CountryCoordinateCache(precision=2, max_size=1000)
+            if isinstance(country_cache, dict):
+                self._country_cache._legacy_cache.update(country_cache)
+
+        self._country_cache.set_client(self)
 
     def __enter__(self):
         return self

@@ -1,8 +1,10 @@
 import json
 import logging
 import os
+from functools import lru_cache
+from typing import Optional
 
-from .models import Unit
+from powerplantmatching.osm.models import Unit
 
 logger = logging.getLogger(__name__)
 
@@ -203,3 +205,102 @@ class ElementCache:
             return
         self.units_cache[country_code] = units
         self.units_modified = True
+
+
+class CountryCoordinateCache:
+    def __init__(self, precision: int = 2, max_size: int = 1000):
+        self.precision = precision
+        self.max_size = max_size
+        self._lookup = lru_cache(maxsize=max_size)(self._uncached_lookup)
+        self._legacy_cache = {}
+        self._client = None
+
+    def set_client(self, client):
+        self._client = client
+
+    def _round_coords(self, lat: float, lon: float) -> tuple[float, float]:
+        return (round(lat, self.precision), round(lon, self.precision))
+
+    def _uncached_lookup(self, coords: tuple[float, float]) -> Optional[str]:
+        if self._client is None:
+            logger.error("Client not set for country cache")
+            return None
+
+        lat, lon = coords
+
+        query = f"""
+        [out:json][timeout:30];
+        is_in({lat},{lon})->.a;
+        relation(pivot.a)["admin_level"="2"]["ISO3166-1"];
+        out tags;
+        """
+
+        try:
+            result = self._client.query_overpass(query)
+            elements = result.get("elements", [])
+
+            if elements:
+                country_code = elements[0].get("tags", {}).get("ISO3166-1", "")
+                return country_code if country_code else None
+
+        except Exception as e:
+            logger.warning(
+                f"Could not determine country for coordinates {lat},{lon}: {e}"
+            )
+
+        return None
+
+    def get(self, lat: float, lon: float) -> Optional[str]:
+        rounded_lat, rounded_lon = self._round_coords(lat, lon)
+        country = self._lookup((rounded_lat, rounded_lon))
+
+        if country:
+            self._legacy_cache[(lat, lon)] = country
+
+            if len(self._legacy_cache) > 1000:
+                items = list(self._legacy_cache.items())
+                self._legacy_cache = dict(items[-500:])
+
+        return country
+
+    def get_with_tolerance(
+        self, lat: float, lon: float, tolerance: float = 0.01
+    ) -> Optional[str]:
+        country = self.get(lat, lon)
+        if country:
+            return country
+
+        for (cached_lat, cached_lon), cached_country in self._legacy_cache.items():
+            if abs(lat - cached_lat) < tolerance and abs(lon - cached_lon) < tolerance:
+                return cached_country
+
+        return None
+
+    def items(self):
+        return self._legacy_cache.items()
+
+    def __getitem__(self, key):
+        return self._legacy_cache[key]
+
+    def __setitem__(self, key, value):
+        self._legacy_cache[key] = value
+
+    def __len__(self):
+        return len(self._legacy_cache)
+
+    def get_stats(self) -> dict:
+        cache_info = self._lookup.cache_info()
+        return {
+            "lru_hits": cache_info.hits,
+            "lru_misses": cache_info.misses,
+            "lru_size": cache_info.currsize,
+            "lru_maxsize": cache_info.maxsize,
+            "legacy_size": len(self._legacy_cache),
+            "hit_rate": cache_info.hits / (cache_info.hits + cache_info.misses)
+            if (cache_info.hits + cache_info.misses) > 0
+            else 0.0,
+        }
+
+    def clear(self):
+        self._lookup.cache_clear()
+        self._legacy_cache.clear()

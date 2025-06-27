@@ -1,9 +1,9 @@
 import logging
 from typing import Any, Optional
 
-from .models import RejectionReason
-from .rejection import RejectionTracker
-from .utils import parse_capacity_value
+from powerplantmatching.osm.models import RejectionReason
+from powerplantmatching.osm.quality.rejection import RejectionTracker
+from powerplantmatching.osm.utils import parse_capacity_value
 
 logger = logging.getLogger(__name__)
 

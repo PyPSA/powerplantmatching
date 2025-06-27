@@ -1,14 +1,15 @@
 import logging
 from typing import Any
 
-from .client import OverpassAPIClient
-from .element_processor import ElementProcessor
-from .geometry import GeometryHandler, PlantGeometry
-from .models import GeneratorGroup, Unit
-from .reconstruction import NameAggregator
-from .rejection import RejectionReason, RejectionTracker
-from .unit_factory import UnitFactory
-from .utils import is_valid_unit
+from powerplantmatching.osm.enhancement.geometry import GeometryHandler, PlantGeometry
+from powerplantmatching.osm.enhancement.reconstruction import NameAggregator
+from powerplantmatching.osm.models import GeneratorGroup, Unit
+from powerplantmatching.osm.quality.rejection import RejectionReason, RejectionTracker
+from powerplantmatching.osm.retrieval.client import OverpassAPIClient
+from powerplantmatching.osm.utils import is_valid_unit
+
+from .base import ElementProcessor
+from .factory import UnitFactory
 
 logger = logging.getLogger(__name__)
 

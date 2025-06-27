@@ -19,9 +19,10 @@ from .cleaning import (
     gather_set_info,
     gather_specifications,
 )
-from .core import _data_in, _package_data, get_config
+from .core import _package_data, get_config
 from .heuristics import scale_to_net_capacities
 from .osm import process_countries
+from .osm.utils import get_osm_cache_paths
 from .utils import (
     config_filter,
     convert_to_short_name,
@@ -2261,13 +2262,11 @@ def OSM(raw=False, update=False, config=None):
     # Extract OSM-specific configuration
     osm_config = config.get("OSM", {})
 
-    # Set up paths
-    fn = _data_in(osm_config.get("fn", "osm_data.csv"))
-    cache_dir = os.path.join(os.path.dirname(fn), "osm_cache")
+    cache_dir, csv_cache_path = get_osm_cache_paths(config)
 
     # Process all countries and get combined data
     all_valid_data = process_countries(
-        countries, fn, cache_dir, update, osm_config, target_columns, raw
+        countries, csv_cache_path, cache_dir, update, osm_config, target_columns, raw
     )
 
     # Handle empty dataset case

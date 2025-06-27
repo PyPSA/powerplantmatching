@@ -1,5 +1,4 @@
 import logging
-import os
 import time
 from datetime import timedelta
 from typing import Any, Optional, Union
@@ -7,10 +6,11 @@ from typing import Any, Optional, Union
 import pycountry
 from tqdm import tqdm
 
-from powerplantmatching.core import _data_in, get_config
+from powerplantmatching.core import get_config
+from powerplantmatching.osm.quality.coverage import get_continent_mapping
+from powerplantmatching.osm.utils import get_osm_cache_paths
 
 from .client import OverpassAPIClient
-from .coverage import get_continent_mapping
 
 logger = logging.getLogger(__name__)
 
@@ -21,10 +21,10 @@ def get_all_countries(sort_by_continent: bool = True) -> list[dict[str, str]]:
 
     for country in pycountry.countries:
         country_data = {
-            "name": country.name,
-            "code": country.alpha_2,
-            "alpha3": country.alpha_3,
-            "continent": continent_map.get(country.alpha_2, "Unknown"),
+            "name": country.name,  # type: ignore
+            "code": country.alpha_2,  # type: ignore
+            "alpha3": country.alpha_3,  # type: ignore
+            "continent": continent_map.get(country.alpha_2, "Unknown"),  # type: ignore
         }
         countries.append(country_data)
 
@@ -60,8 +60,7 @@ def populate_cache(
     osm_config = config.get("OSM", {})
 
     if cache_dir is None:
-        fn = _data_in(osm_config.get("fn", "osm_data.csv"))
-        cache_dir = os.path.join(os.path.dirname(fn), "osm_cache")
+        cache_dir, _ = get_osm_cache_paths(config)
 
     if countries is None:
         all_countries = get_all_countries(sort_by_continent=sort_by_continent)
@@ -147,8 +146,8 @@ def populate_cache(
                     and country_continent != current_continent
                 ):
                     current_continent = country_continent
-                    if hasattr(iterator, "set_description"):
-                        iterator.set_description(f"{current_continent}")
+                    if show_progress and hasattr(iterator, "set_description"):
+                        iterator.set_description(f"{current_continent}")  # type: ignore
 
                 try:
                     has_plants = country_code in client.cache.plants_cache
@@ -190,24 +189,23 @@ def populate_cache(
                         }
                     )
 
-                if show_progress:
+                if show_progress and hasattr(iterator, "set_postfix"):
                     elapsed = time.time() - start_time
                     rate = (i + 1) / elapsed
                     remaining = len(all_countries) - (i + 1)
                     eta = remaining / rate if rate > 0 else 0
 
-                    if hasattr(iterator, "set_postfix"):
-                        iterator.set_postfix(
-                            {
-                                "OK": succeeded,
-                                "Skip": skipped,
-                                "Fail": failed,
-                                "ETA": str(timedelta(seconds=int(eta))),
-                            }
-                        )
+                    iterator.set_postfix(  # type: ignore
+                        {
+                            "OK": succeeded,
+                            "Skip": skipped,
+                            "Fail": failed,
+                            "ETA": str(timedelta(seconds=int(eta))),
+                        }
+                    )
 
-            if show_progress and hasattr(iterator, "close"):
-                iterator.close()
+            # tqdm automatically closes when used as context manager
+            # No need to manually close
 
     except Exception as e:
         logger.error(f"Fatal error during cache population: {str(e)}", exc_info=True)

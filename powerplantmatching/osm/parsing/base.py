@@ -2,12 +2,13 @@ import logging
 from abc import ABC, abstractmethod
 from typing import Any
 
-from .client import OverpassAPIClient
-from .estimation import CapacityEstimator
-from .extractor import CapacityExtractor
-from .geometry import GeometryHandler
-from .models import Unit
-from .rejection import RejectionReason, RejectionTracker
+from powerplantmatching.osm.enhancement.estimation import CapacityEstimator
+from powerplantmatching.osm.enhancement.geometry import GeometryHandler
+from powerplantmatching.osm.models import Unit
+from powerplantmatching.osm.quality.rejection import RejectionReason, RejectionTracker
+from powerplantmatching.osm.retrieval.client import OverpassAPIClient
+
+from .capacity import CapacityExtractor
 
 logger = logging.getLogger(__name__)
 

@@ -6,7 +6,7 @@ from typing import Any, Optional
 
 import pandas as pd
 
-from .models import ElementType, RejectionReason, Unit
+from powerplantmatching.osm.models import ElementType, RejectionReason, Unit
 
 logger = logging.getLogger(__name__)
 

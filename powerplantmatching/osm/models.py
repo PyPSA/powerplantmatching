@@ -1,13 +1,14 @@
+import hashlib
 import json
 import logging
 from dataclasses import asdict, dataclass
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Literal, Optional, Union
+from math import cos, radians
+from typing import Any, Literal, Optional, Union
 
 import pandas as pd
-
-if TYPE_CHECKING:
-    from shapely.geometry import MultiPolygon, Point, Polygon
+from shapely.errors import ShapelyError
+from shapely.geometry import MultiPolygon, Point, Polygon
 
 logger = logging.getLogger(__name__)
 
@@ -126,9 +127,6 @@ class Unit:
 
     @staticmethod
     def _generate_config_hash(config: dict) -> str:
-        import hashlib
-        import json
-
         relevant_config = {
             k: config.get(k) for k in PROCESSING_PARAMETERS if k in config
         }
@@ -148,9 +146,6 @@ class PlantGeometry:
     def contains_point(
         self, lat: float, lon: float, buffer_meters: Optional[float] = None
     ) -> bool:
-        from shapely.errors import ShapelyError
-        from shapely.geometry import MultiPolygon, Point, Polygon
-
         point = Point(lon, lat)
 
         try:
@@ -159,8 +154,6 @@ class PlantGeometry:
                     buffer_meters = 50.0
 
                 buffer_degrees = buffer_meters / 111320.0
-
-                from math import cos, radians
 
                 if lat != 0:
                     lon_correction = abs(cos(radians(lat)))
@@ -187,9 +180,6 @@ class PlantGeometry:
     def intersects(
         self, other: "PlantGeometry", buffer_meters: Optional[float] = None
     ) -> bool:
-        from shapely.errors import ShapelyError
-        from shapely.geometry import MultiPolygon, Point, Polygon
-
         try:
             if isinstance(self.geometry, Point) and isinstance(other.geometry, Point):
                 if buffer_meters is None:
@@ -224,10 +214,7 @@ class PlantGeometry:
             )
             return False
 
-    def get_centroid(self) -> tuple[float, float]:
-        from shapely.errors import ShapelyError
-        from shapely.geometry import Point
-
+    def get_centroid(self) -> tuple[float, float] | tuple[None, None]:
         try:
             centroid = self.geometry.centroid
             return (centroid.y, centroid.x)
@@ -238,8 +225,6 @@ class PlantGeometry:
             return (None, None)
 
     def buffer(self, distance_meters: float) -> "PlantGeometry":
-        from shapely.errors import ShapelyError
-
         try:
             buffer_degrees = distance_meters / 111320.0
             buffered_geom = self.geometry.buffer(buffer_degrees)
@@ -260,8 +245,6 @@ class PlantGeometry:
         return (bounds[0], bounds[1], bounds[2], bounds[3])
 
     def __repr__(self) -> str:
-        from shapely.geometry import MultiPolygon, Point, Polygon
-
         if isinstance(self.geometry, Point):
             geom_type = "Point"
         elif isinstance(self.geometry, Polygon):
