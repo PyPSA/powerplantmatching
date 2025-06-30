@@ -18,6 +18,7 @@ from typing import Any, Optional
 import pandas as pd
 
 from powerplantmatching.osm.models import ElementType, RejectionReason, Unit
+from powerplantmatching.osm.utils import standardize_country_name
 
 logger = logging.getLogger(__name__)
 
@@ -186,7 +187,7 @@ class RejectionTracker:
             details=details,
             keywords=keywords,
             coordinates=coordinates,
-            country=country,
+            country=standardize_country_name(country) if country else None,
             unit_type=unit_type,
         )
 

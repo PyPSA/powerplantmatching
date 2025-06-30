@@ -13,7 +13,7 @@ from powerplantmatching.osm.enhancement.reconstruction import NameAggregator
 from powerplantmatching.osm.models import GeneratorGroup, Unit
 from powerplantmatching.osm.quality.rejection import RejectionReason, RejectionTracker
 from powerplantmatching.osm.retrieval.client import OverpassAPIClient
-from powerplantmatching.osm.utils import is_valid_unit
+from powerplantmatching.osm.utils import is_valid_unit, standardize_country_name
 
 from .base import ElementProcessor
 from .factory import UnitFactory
@@ -106,6 +106,9 @@ class GeneratorParser(ElementProcessor):
             return None
 
         element_country = element.get("_country", country)
+        # Standardize country name from code if needed
+        if element_country:
+            element_country = standardize_country_name(element_country)
 
         lat, lon = self.geometry_handler.process_element_coordinates(element)
 

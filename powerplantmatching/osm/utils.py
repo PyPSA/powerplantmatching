@@ -177,6 +177,42 @@ def get_country_code(country: str) -> str | None:
         return None
 
 
+def standardize_country_name(country_value: str) -> str:
+    """Standardize country codes to full country names.
+
+    Ensures all output uses consistent country names rather than codes.
+
+    Parameters
+    ----------
+    country_value : str
+        Either a country code (e.g., 'CL', 'CHI') or country name (e.g., 'Chile')
+
+    Returns
+    -------
+    str
+        Full country name, or original value if not found
+
+    Examples
+    --------
+    >>> standardize_country_name("CL")
+    'Chile'
+    >>> standardize_country_name("Chile")
+    'Chile'
+    >>> standardize_country_name("USA")
+    'United States'
+    """
+    # If it's already a known country name, return it
+    try:
+        # First try to find by name
+        country = pycountry.countries.lookup(country_value)
+        return country.name
+    except LookupError:
+        pass
+
+    # Return original value if no match found
+    return country_value
+
+
 def calculate_area(coordinates: list[dict[str, float]]) -> float:
     """Calculate area of polygon from coordinates.
 

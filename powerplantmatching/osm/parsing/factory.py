@@ -10,6 +10,7 @@ import logging
 from typing import Any
 
 from powerplantmatching.osm.models import PROCESSING_PARAMETERS, Unit
+from powerplantmatching.osm.utils import standardize_country_name
 
 logger = logging.getLogger(__name__)
 
@@ -98,7 +99,7 @@ class UnitFactory:
         """
         return Unit(
             projectID=f"OSM_{unit_type}:{element_type}/{element_id}",
-            Country=country,
+            Country=standardize_country_name(country) if country else None,
             lat=lat,
             lon=lon,
             type=f"{unit_type}:{element_type}",
@@ -217,7 +218,7 @@ class UnitFactory:
         """
         return Unit(
             projectID=f"OSM_plant:relation/{plant_id}",
-            Country=country,
+            Country=standardize_country_name(country) if country else None,
             lat=lat,
             lon=lon,
             type="plant",
@@ -338,7 +339,7 @@ class UnitFactory:
         """
         return Unit(
             projectID=f"OSM_cluster:{source}_{cluster_id}",
-            Country=country,
+            Country=standardize_country_name(country) if country else None,
             lat=lat,
             lon=lon,
             type="cluster",
