@@ -29,73 +29,7 @@ The OSM module addresses these challenges through:
 PowerPlantMatching OSM Processing Pipeline
 ~~~~~~~~~~~~
 
-```mermaid
-%%{init: {
-  "themeVariables": {
-    "fontFamily": "Inter, Arial",
-    "fontSize": "15px"
-  },
-  "flowchart": {
-    "curve": "monotoneX"
-  }
-}}%%
-flowchart TD
-
-%% ENTRY POINT
-subgraph "Entry Point"
-  direction TB
-  User_Script_Notebook([User Script / Notebook])
-  OverpassAPIClient([OverpassAPIClient])
-  Workflow([Workflow])
-  User_Script_Notebook --> OverpassAPIClient
-  OverpassAPIClient --> Workflow
-end
-
-%% WORKFLOW INTERNALS
-subgraph "Workflow Internals"
-  direction TB
-  Workflow --> PlantParser{{PlantParser}}
-  Workflow --> GeneratorParser{{GeneratorParser}}
-
-  PlantParser -- if tags missing --> Reconstruction_optional([Reconstruction optional])
-  GeneratorParser -- if enabled --> ClusteringManager_optional([ClusteringManager optional])
-
-  PlantParser -- Valid Plant --> Units((Units))
-  GeneratorParser -- Valid Generator --> Units
-  Reconstruction_optional --> Units
-  ClusteringManager_optional --> Units
-
-  PlantParser -- Rejected --> RejectionTracker([RejectionTracker])
-  GeneratorParser -- Rejected --> RejectionTracker
-end
-
-%% OUTPUTS
-subgraph "Outputs"
-  direction TB
-  Units --> Save_CSV([Save CSV])
-  Units --> Save_GeoJSON_Report([Save GeoJSON Report])
-  Units --> Filter_by_Country([Filter by Country, Fuel Type, Tech])
-  RejectionTracker --> Generate_Report([Generate Report → rejections.csv])
-  RejectionTracker --> Save_GeoJSON([Save GeoJSON → rejections.geojson])
-  RejectionTracker --> Save_GeoJSON_by_Reasons([Save GeoJSON by Reasons → per-reason GeoJSON])
-end
-
-%% Color styles
-classDef entry fill:#e3f6fd,stroke:#1e88e5,stroke-width:2px,color:#145577;
-classDef workflow fill:#e9e7fd,stroke:#7c4dff,stroke-width:2px,color:#352969;
-classDef output fill:#fef6e4,stroke:#f9b233,stroke-width:2px,color:#976013;
-classDef optional fill:#fdeef6,stroke:#db2777,stroke-width:2px,stroke-dasharray: 4 2;
-classDef rejected_files fill:#fceaea,stroke:#e53935,stroke-width:2px,color:#7b2222;
-classDef reject_tracker fill:#fff4e5,stroke:#f57c00,stroke-width:2px,color:#7b3f00;
-classDef accepted fill:#d3f9d8,stroke:#43aa8b,stroke-width:2px,color:#1b4332;
-
-class User_Script_Notebook,OverpassAPIClient,Workflow entry;
-class PlantParser,GeneratorParser workflow;
-class Reconstruction_optional,ClusteringManager_optional optional;
-class Save_CSV,Save_GeoJSON_Report,Filter_by_Country accepted;
-class Generate_Report,Save_GeoJSON,Save_GeoJSON_by_Reasons rejected_files;
-class RejectionTracker,Units reject_tracker;
-```
+![OSM Processing Pipeline](docs/ppm_osm_pipeline.png)
 
 
 Key Features
