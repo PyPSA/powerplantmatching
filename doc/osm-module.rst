@@ -29,7 +29,7 @@ The OSM module addresses these challenges through:
 PowerPlantMatching OSM Processing Pipeline
 ~~~~~~~~~~~~
 
-![OSM Processing Pipeline](doc/ppm_osm_pipeline.png)
+![OSM Processing Pipeline](ppm_osm_pipeline.png)
 
 
 Key Features
