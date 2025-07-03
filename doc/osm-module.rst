@@ -27,9 +27,13 @@ The OSM module addresses these challenges through:
 - **Configurable processing** to balance quality vs. coverage
 
 PowerPlantMatching OSM Processing Pipeline
-~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-![OSM Processing Pipeline](doc/ppm_osm_pipeline.png)
+.. image:: ppm_osm_pipeline.png
+   :alt: OSM Processing Pipeline
+   :align: center
+   :width: 1000px
+
 
 
 Key Features
