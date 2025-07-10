@@ -501,22 +501,22 @@ The OSM module helps identify data quality issues that can be fixed in OpenStree
 
 1. **Manual review using rejection outputs**:
 
-    1.1 Run rejection analysis on your region.
-    1.2 Review the generated GeoJSON files in JOSM or iD editor.
-    1.3 Common fixes needed:
+    1. Run rejection analysis on your region.
+    2. Review the generated GeoJSON files in JOSM or iD editor.
+    3. Common fixes needed:
 
         - Add capacity tags: ``plant:output:electricity=50 MW``
         - Add names tags: ``name=Central Hidroeléctrica Rapel``
         - Add technology tags: ``plant:method=water-storage``, ``plant:method=wind_turbine``
         - Add dates tags: ``start_date=1968``
 
-    1.4 Re-run analysis to verify improvements
+    4. Re-run analysis to verify improvements
 
 2. **Interactive mapping via MapYourGrid**:
 
-    2.1 Visit the `MapYourGrid Improve Tags Tool <https://mapyourgrid.org/tools/#improve-osm-tags-with-ppm>`_.
-    2.2 This tool offers a visual interface for exploring rejected power plant data, using the output from powerplantmatching rejection reports.
-    2.3 You can easily download the rejected data in a geojson format for a given country worldwide and use it as a hint layer in JOSM to improve the power  plants tags directly in OSM.
+    1. Visit the `MapYourGrid Improve Tags Tool <https://mapyourgrid.org/tools/#improve-osm-tags-with-ppm>`_.
+    2. This tool offers a visual interface for exploring rejected power plant data, using the output from powerplantmatching rejection reports.
+    3. You can easily download the rejected data in a geojson format for a given country worldwide and use it as a hint layer in JOSM to improve the power  plants tags directly in OSM.
 
 
 Performance Considerations
