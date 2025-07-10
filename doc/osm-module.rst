@@ -2,9 +2,9 @@
 OpenStreetMap (OSM) Module
 ===================
 
-The OSM module provides an interface for extracting, processing, and analyzing power plant data from OpenStreetMap. It offers a complete pipeline from raw OSM data to clean, standardized power plant datasets with features like capacity estimation, plant reconstruction, and quality tracking.
 
-.. contents:: Table of Contents
+.. contents:: **Table of Contents**
+--------
    :local:
    :depth: 2
 
