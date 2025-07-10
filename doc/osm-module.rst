@@ -11,20 +11,20 @@ The OSM module provides an interface for extracting, processing, and analyzing p
 Overview
 --------
 
-OpenStreetMap contains crowd-sourced information about power infrastructure worldwide. However, this data often has:
+The OpenStreetMap (OSM) module in PowerPlantMatching enables automated extraction, processing, and standardization of global power plant data sourced from OSM. As an open and community-driven geospatial platform, OSM contains a wealth of power infrastructure data, ranging from individual wind turbines and generators to multipolygon power plants. However, this data is inherently heterogeneous and often lacks key tags such as installed capacity or generation output.
 
-- Inconsistent tagging conventions
-- Missing critical attributes (capacity, technology, dates, source/carrier)
-- Incomplete plant definitions
-- Varying data quality across regions
+The OSM module addresses these challenges by implementing a robust and configurable processing pipeline. It enhances raw OSM data with inferred capacity values, reconstructs missing plant structures, identifies and categorizes invalid or low-quality power plant entries, and outputs validated datasets in multiple formats. The module is designed to support both casual users and expert energy system modellers, providing flexibility via `config.yaml` while maintaining a clear structure for quality tracking and downstream integration.
 
-The OSM module addresses these challenges through:
+Core features include:
 
-- **Data extraction** using the Overpass API
-- **Caching system** to minimize API calls
-- **Quality tracking** to identify and report data issues
-- **Data enhancement** through estimation and reconstruction
-- **Configurable processing** to balance quality vs. coverage
+- **Overpass API integration**, to programmatically retrieve plant and generator data.
+- **Multi-level caching**, to reduce redundant queries and accelerate analysis.
+- **Optional reconstruction and clustering**, to group standalone generators and improve completeness.
+- **Export formats**, including CSV and GeoJSON for analysis and mapping.
+- **Modular architecture**, designed for extension and reuse in research and planning workflows.
+- **Automated rejection tracking**, for transparent data quality monitoring and reporting.
+
+The module is fully integrated with powerplantmatching's object model and can be used through high-level functions (`OSM(config)`), custom pipelines, or interactive notebooks.
 
 PowerPlantMatching OSM Processing Pipeline
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
