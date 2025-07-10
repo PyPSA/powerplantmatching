@@ -31,11 +31,37 @@ The module is fully integrated with powerplantmatching's object model and can be
 PowerPlantMatching OSM Processing Pipeline
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+The following diagram summarizes the structure of the OSM processing pipeline:
+
 .. image:: ppm_osm_pipeline.png
    :alt: OSM Processing Pipeline
    :align: center
    :width: 1000px
 
+The OSM module is structured as a modular, multi-stage pipeline that transforms raw geospatial data into validated and structured power plant entries. The process consists of three main layers:
+
+1. **Entry Point**:
+   The pipeline is typically initialized using the high-level ``OSM(config)`` function, which loads user configuration and instantiates both the Overpass API client and the ``Workflow`` manager. These components handle data retrieval and coordinate the subsequent processing steps.
+
+2. **Workflow Internals**:
+   The ``Workflow`` orchestrates two specialized parsers:
+
+   - ``PlantParser`` extracts high-level ``power=plant`` objects.
+   - ``GeneratorParser`` processes individual ``power=generator`` entries.
+
+   Each parser classifies entries as **valid** or **rejected** based on configurable criteria (e.g., missing name, unknown technology, no source tag, etc). Optional modules can be enabled:
+
+   - **Reconstruction**: Reconstructs plants from isolated generators lacking parent plant relations.
+   - **Clustering**: Groups nearby generators of the same type into logical units.
+
+   Valid entries are added to a ``Units`` container, while rejected ones are logged by the ``RejectionTracker`` including the reason of its rejection and associated metadata.
+
+3. **Outputs**:
+   Once processing is complete, results are exported to:
+
+   - CSV and GeoJSON files for accepted units.
+   - GeoJSON and CSV summaries for rejected elements.
+   - Optional breakdowns by country, fuel type, and rejection reason.
 
 
 Key Features
