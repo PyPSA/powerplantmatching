@@ -6,6 +6,22 @@ Upcoming Version
 
 * Update Marktstammdatenregister data for Germany from `open-MaStR (February 25, 2025)  <https://zenodo.org/records/14783581>`__.
 
+Features
+--------
+
+* Add comprehensive OpenStreetMap (OSM) data source with advanced processing capabilities (https://github.com/PyPSA/powerplantmatching/pull/236):
+
+  - **Multi-level caching system** minimizes API calls and improves performance through API response, processed unit, and CSV caching.
+  - **Data enhancement features** including capacity estimation for plants with missing data using technology-specific heuristics, plant reconstruction from incomplete data and orphaned generators, spatial clustering of nearby generators into logical units, and advanced geometry handling for complex plant boundaries.
+  - **Quality control system** tracks 20+ types of data issues with detailed rejection reporting and GeoJSON visualization export.
+  - **Regional download support** enables extraction by radius, bounding box, or custom polygons (not limited to countries).
+  - **Performance optimizations** through batch processing, incremental updates, and optimized API queries.
+  - **Flexible configuration system** serves dual purposes: energy analysts can use permissive settings to maximize data coverage with estimation features enabled, while OSM contributors can use strict settings to identify data quality issues and improve OpenStreetMap.
+  - **Comprehensive documentation** with tutorials and examples in the ``analysis/`` directory demonstrating both use cases.
+
+  The OSM module provides a complete pipeline from raw OpenStreetMap data to clean, standardized power plant datasets, making previously heterogeneous crowd-sourced data accessible for energy system modeling while also helping improve OSM data quality through detailed rejection analysis.
+
+
 `v0.7.1 <https://github.com/PyPSA/powerplantmatching/releases/tag/v0.7.1>`__ (30th January 2024)
 =================================================================================================
 
