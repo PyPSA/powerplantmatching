@@ -514,9 +514,9 @@ The OSM module helps identify data quality issues that can be fixed in OpenStree
 
 2. **Interactive mapping via MapYourGrid**:
 
-    1. Visit the `MapYourGrid Improve Tags Tool <https://mapyourgrid.org/tools/#improve-osm-tags-with-ppm>`_.
-    2. This tool offers a visual interface for exploring rejected power plant data, using the output from powerplantmatching rejection reports.
-    3. You can easily download the rejected data in a geojson format for a given country worldwide and use it as a hint layer in JOSM to improve the power  plants tags directly in OSM.
+    1. Visit the `MapYourGrid Improve OSM tags with PPM section <https://mapyourgrid.org/tools/#improve-osm-tags-with-ppm>`_.
+    2. In this section you will find a comprenhensive description on how to use `Map It <https://mapyourgrid.org/map-it/>`_ which is an interactive map  containing rejected power plant data by country, using the output from powerplantmatching rejection reports.
+    3. You can easily download the rejected data in a geojson format by clicking on given country and use it as a hint layer in JOSM to improve the power  plants tags directly in OSM.
 
 
 Performance Considerations
