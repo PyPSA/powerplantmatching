@@ -2,29 +2,76 @@
 OpenStreetMap (OSM) Module
 ===================
 
-The OSM module provides an interface for extracting, processing, and analyzing power plant data from OpenStreetMap. It offers a complete pipeline from raw OSM data to clean, standardized power plant datasets with features like capacity estimation, plant reconstruction, and quality tracking.
 
-.. contents:: Table of Contents
+.. contents:: **Table of Contents**
    :local:
    :depth: 2
 
 Overview
 --------
 
-OpenStreetMap contains crowd-sourced information about power infrastructure worldwide. However, this data often has:
+The OpenStreetMap (OSM) module in powerplantmatching enables automated extraction, processing, and standardization of global power plant data sourced from OSM.It provides an interface for extracting, processing, and analyzing power plant data from OpenStreetMap. It offers a complete pipeline from raw OSM data to clean, standardized power plant datasets with features like capacity estimation, plant reconstruction, and quality tracking. 
 
-- Inconsistent tagging conventions
-- Missing critical attributes (capacity, technology, dates)
-- Incomplete plant definitions
-- Varying data quality across regions
 
-The OSM module addresses these challenges through:
+As an open and community-driven geospatial platform, OSM contains a wealth of power infrastructure data, ranging from individual wind turbines and generators to multipolygon power plants. However, this data is inherently heterogeneous and often lacks key tags such as installed capacity or generation output.
 
-- **Data extraction** using the Overpass API
-- **Caching system** to minimize API calls
-- **Quality tracking** to identify and report data issues
-- **Data enhancement** through estimation and reconstruction
-- **Configurable processing** to balance quality vs. coverage
+The OSM module addresses these challenges by implementing a robust and configurable processing pipeline. It enhances raw OSM data with inferred capacity values, reconstructs missing plant structures, identifies and categorizes invalid or low-quality power plant entries, and outputs validated datasets in multiple formats. The module is designed to support both casual users and expert energy system modellers, providing flexibility via `config.yaml` while maintaining a clear structure for quality tracking and downstream integration.
+
+Core features include:
+
+- **Overpass API integration**, to programmatically retrieve plant and generator data.
+- **Multi-level caching**, to reduce redundant queries and accelerate analysis.
+- **Optional reconstruction and clustering**, to group standalone generators and improve completeness.
+- **Export formats**, including CSV and GeoJSON for analysis and mapping.
+- **Modular architecture**, designed for extension and reuse in research and planning workflows.
+- **Automated rejection tracking**, for transparent data quality monitoring and reporting.
+
+The module is fully integrated with powerplantmatching's object model and can be used through high-level functions (`OSM(config)`), custom pipelines, or interactive notebooks.
+
+PowerPlantMatching OSM Processing Pipeline
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The following diagram summarizes the structure of the OSM processing pipeline:
+
+.. image:: ppm_osm_pipeline.png
+   :alt: OSM Processing Pipeline
+   :align: center
+   :width: 1000px
+
+The OSM module is structured as a modular, multi-stage pipeline that transforms raw geospatial data into validated and structured power plant entries. The process consists of three main layers:
+
+1. **Entry Point**:
+   The pipeline is typically initialized using the high-level ``OSM(config)`` function, which loads user configuration and instantiates both the Overpass API client and the ``Workflow`` manager. These components handle data retrieval and coordinate the subsequent processing steps.
+
+2. **Workflow Internals**:
+   The ``Workflow`` orchestrates two specialized parsers:
+
+   - ``PlantParser`` extracts high-level ``power=plant`` objects.
+   - ``GeneratorParser`` processes individual ``power=generator`` entries.
+
+   Each parser classifies entries as **valid** or **rejected** based on configurable criteria (e.g., missing name, unknown technology, no source tag, etc). Optional modules can be enabled:
+
+   - **Reconstruction**: Reconstructs plants from isolated generators lacking parent plant relations.
+   - **Clustering**: Groups nearby generators of the same type into logical units.
+
+   Valid entries are added to a ``Units`` container, while rejected ones are logged by the ``RejectionTracker`` including the reason of its rejection and associated metadata.
+
+3. **Outputs**:
+   Once processing is complete, results are exported to:
+
+   - CSV and GeoJSON files for accepted units.
+   - GeoJSON and CSV summaries for rejected elements.
+   - Optional breakdowns by country, fuel type, and rejection reason.
+
+To see complete examples of how the pipeline works in practice, refer to the following tutorial scripts in the ``analysis/`` folder:
+
+- ``analysis/1_osm_basics.py`` – Loading, configuration, and strictness settings.
+- ``analysis/2_osm_cache_and_quality.py`` – Caching system and rejection tracking.
+- ``analysis/3_osm_regional_and_features.py`` – Regional downloads and feature options.
+- ``analysis/4_osm_rejection_analysis.py`` – Rejection analysis and data improvement.
+
+Alternatively, you can run the full pipeline end-to-end using the script ``run_osm_pipeline.py`` in the ``analysis/``  folder of the repository.
+
 
 Key Features
 ~~~~~~~~~~~~
@@ -450,18 +497,27 @@ Best Practices
 Contributing to OSM Data Quality
 --------------------------------
 
-The OSM module helps identify data quality issues that can be fixed in OpenStreetMap:
+The OSM module helps identify data quality issues that can be fixed in OpenStreetMap. There are two main ways to contribute improvements:
 
-1. Run rejection analysis on your region
-2. Review the generated GeoJSON files in JOSM or iD editor
-3. Common fixes needed:
+1. **Manual review using rejection outputs**:
 
-   - Add capacity: ``plant:output:electricity=50 MW``
-   - Add names: ``name=Central Hidroeléctrica Rapel``
-   - Add technology: ``plant:method=water-storage``
-   - Add dates: ``start_date=1968``
+    1. Run rejection analysis on your region.
+    2. Review the generated GeoJSON files in JOSM or iD editor.
+    3. Common fixes needed:
 
-4. Re-run analysis to verify improvements
+        - Add capacity tags: ``plant:output:electricity=50 MW``
+        - Add names tags: ``name=Central Hidroeléctrica Rapel``
+        - Add technology tags: ``plant:method=water-storage``, ``plant:method=wind_turbine``
+        - Add dates tags: ``start_date=1968``
+
+    4. Re-run analysis to verify improvements
+
+2. **Interactive mapping via MapYourGrid**:
+
+    1. Visit the `MapYourGrid Improve OSM tags with PPM section <https://mapyourgrid.org/tools/#improve-osm-tags-with-ppm>`_.
+    2. In this section you will find a comprenhensive description on how to use `Map It <https://mapyourgrid.org/map-it/>`_ which is an interactive map  containing rejected power plant data by country, using the output from powerplantmatching rejection reports.
+    3. You can easily download the rejected data in a geojson format by clicking on given country and use it as a hint layer in JOSM to improve the power  plants tags directly in OSM.
+
 
 Performance Considerations
 --------------------------
