@@ -63,6 +63,15 @@ The OSM module is structured as a modular, multi-stage pipeline that transforms 
    - GeoJSON and CSV summaries for rejected elements.
    - Optional breakdowns by country, fuel type, and rejection reason.
 
+To see complete examples of how the pipeline works in practice, refer to the following tutorial scripts in the ``analysis/`` folder:
+
+- ``analysis/1_osm_basics.py`` – Loading, configuration, and strictness settings.
+- ``analysis/2_osm_cache_and_quality.py`` – Caching system and rejection tracking.
+- ``analysis/3_osm_regional_and_features.py`` – Regional downloads and feature options.
+- ``analysis/4_osm_rejection_analysis.py`` – Rejection analysis and data improvement.
+
+Alternatively, you can run the full pipeline end-to-end using the script ``run_osm_pipeline.py`` in the ``analysis/``  folder of the repository.
+
 
 Key Features
 ~~~~~~~~~~~~
