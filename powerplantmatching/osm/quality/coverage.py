@@ -13,7 +13,7 @@ Functions:
 
 import logging
 from datetime import datetime, timezone
-from typing import Any, Optional
+from typing import Any
 
 import pycountry
 from tqdm import tqdm
@@ -304,14 +304,14 @@ def get_continent_mapping() -> dict[str, str]:
 
 
 def show_country_coverage(
-    cache_dir: Optional[str] = None,
+    cache_dir: str | None = None,
     show_missing: bool = False,
     return_data: bool = False,
     check_live_counts: bool = False,
-    countries_to_check: Optional[list[str]] = None,
+    countries_to_check: list[str] | None = None,
     show_outdated_only: bool = False,
     outdated_threshold: float = 0.95,
-) -> Optional[dict[str, Any]]:
+) -> dict[str, Any] | None:
     """Display or return cache coverage statistics by country.
 
     Analyzes the OSM cache to show which countries have data cached,
@@ -798,9 +798,9 @@ def show_country_coverage(
 
 
 def find_outdated_caches(
-    cache_dir: Optional[str] = None,
+    cache_dir: str | None = None,
     threshold: float = 0.95,
-    check_specific_countries: Optional[list[str]] = None,
+    check_specific_countries: list[str] | None = None,
 ) -> list[dict[str, Any]]:
     """Find countries where cached data is outdated compared to live OSM.
 

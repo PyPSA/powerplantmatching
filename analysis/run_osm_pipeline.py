@@ -1,6 +1,6 @@
 """
 This script demonstrates the end-to-end usage of the PowerPlantMatching (PPM) tool with a focus on OSM data.
-It configures the pipeline, processes power plant data from OpenStreetMap for selected countries, 
+It configures the pipeline, processes power plant data from OpenStreetMap for selected countries,
 tracks rejected power plants from the searched countries, and exports results into structured CSV and GeoJSON files.
 
 Main functionalities:
@@ -13,9 +13,9 @@ Outputs:
 - Rejection statistics and corresponding GeoJSON/CSV.
 """
 
-
 import logging
 import os
+
 import pandas as pd
 
 from powerplantmatching.core import _data_in, get_config
@@ -56,7 +56,14 @@ def prepare_output_directories(base_dir: str = "outputs") -> dict:
     return subdirs
 
 
-def run_country_pipeline(country: str, client, config, units: Units, rejections: RejectionTracker, output_dir: str):
+def run_country_pipeline(
+    country: str,
+    client,
+    config,
+    units: Units,
+    rejections: RejectionTracker,
+    output_dir: str,
+):
     """
     Process a single country's data using PPM pipeline.
 
@@ -104,8 +111,12 @@ def generate_summary_reports(units: Units, stats: dict, subdirs: dict):
             continue
 
         name = fuel_type.lower().replace(" ", "_")
-        fuel_units.save_csv(os.path.join(subdirs["by_fuel_type"], f"{name}_power_plants.csv"))
-        fuel_units.save_geojson_report(os.path.join(subdirs["by_fuel_type"], f"{name}_power_plants.geojson"))
+        fuel_units.save_csv(
+            os.path.join(subdirs["by_fuel_type"], f"{name}_power_plants.csv")
+        )
+        fuel_units.save_geojson_report(
+            os.path.join(subdirs["by_fuel_type"], f"{name}_power_plants.geojson")
+        )
 
     # Save by country
     for country in stats["countries"]:
@@ -114,7 +125,9 @@ def generate_summary_reports(units: Units, stats: dict, subdirs: dict):
             continue
 
         name = country.lower().replace(" ", "_")
-        country_units.save_geojson_report(os.path.join(subdirs["by_country"], f"{name}_power_plants.geojson"))
+        country_units.save_geojson_report(
+            os.path.join(subdirs["by_country"], f"{name}_power_plants.geojson")
+        )
 
 
 def save_rejection_stats(rejection_tracker: RejectionTracker, subdirs: dict):
@@ -126,37 +139,49 @@ def save_rejection_stats(rejection_tracker: RejectionTracker, subdirs: dict):
         subdirs (dict): Output subdirectories
     """
     # Save main rejections
-    rejection_tracker.save_geojson(os.path.join(subdirs["rejections"], "rejections.geojson"))
+    rejection_tracker.save_geojson(
+        os.path.join(subdirs["rejections"], "rejections.geojson")
+    )
     rejection_tracker.generate_report().to_csv(
         os.path.join(subdirs["rejections"], "rejections.csv"), index=False
     )
 
     # Save by reason
-    rejection_tracker.save_geojson_by_reasons(subdirs["by_rejection_reason"], "rejections")
+    rejection_tracker.save_geojson_by_reasons(
+        subdirs["by_rejection_reason"], "rejections"
+    )
 
     # Stats by reason
     rejection_summary = rejection_tracker.get_statistics()["by_reason"]
-    rejection_stats_csv = os.path.join(subdirs["rejections"], "rejection_statistics.csv")
-    pd.DataFrame([
-        {
-            "rejection_reason": reason,
-            "count": count,
-            "percentage": round(count / sum(rejection_summary.values()) * 100, 2),
-        }
-        for reason, count in rejection_summary.items()
-    ]).to_csv(rejection_stats_csv, index=False)
+    rejection_stats_csv = os.path.join(
+        subdirs["rejections"], "rejection_statistics.csv"
+    )
+    pd.DataFrame(
+        [
+            {
+                "rejection_reason": reason,
+                "count": count,
+                "percentage": round(count / sum(rejection_summary.values()) * 100, 2),
+            }
+            for reason, count in rejection_summary.items()
+        ]
+    ).to_csv(rejection_stats_csv, index=False)
 
     # Stats by country
     country_stats = rejection_tracker.get_country_statistics()
-    country_stats_csv = os.path.join(subdirs["rejections"], "country_rejection_statistics.csv")
-    pd.DataFrame([
-        {
-            "country": country,
-            "rejection_count": count,
-            "percentage": round(count / sum(country_stats.values()) * 100, 2),
-        }
-        for country, count in country_stats.items()
-    ]).to_csv(country_stats_csv, index=False)
+    country_stats_csv = os.path.join(
+        subdirs["rejections"], "country_rejection_statistics.csv"
+    )
+    pd.DataFrame(
+        [
+            {
+                "country": country,
+                "rejection_count": count,
+                "percentage": round(count / sum(country_stats.values()) * 100, 2),
+            }
+            for country, count in country_stats.items()
+        ]
+    ).to_csv(country_stats_csv, index=False)
 
 
 def main():
@@ -164,13 +189,15 @@ def main():
     config = config_main["OSM"]
 
     # Configuration overrides
-    config.update({
-        "force_refresh": True,
-        "plants_only": True,
-        "missing_name_allowed": False,
-        "missing_technology_allowed": False,
-        "missing_start_date_allowed": True,
-    })
+    config.update(
+        {
+            "force_refresh": True,
+            "plants_only": True,
+            "missing_name_allowed": False,
+            "missing_technology_allowed": False,
+            "missing_start_date_allowed": True,
+        }
+    )
     config["capacity_estimation"]["enabled"] = False
     config["units_clustering"]["enabled"] = False
     config["units_reconstruction"]["enabled"] = True
@@ -197,13 +224,12 @@ def main():
                 config=config,
                 units=all_units,
                 rejections=rejection_tracker,
-                output_dir=subdirs["by_country"]
+                output_dir=subdirs["by_country"],
             )
 
     stats = all_units.get_statistics()
     generate_summary_reports(all_units, stats, subdirs)
     save_rejection_stats(rejection_tracker, subdirs)
-
 
     # Final summary report
     logger.info("\n" + "=" * 60)
@@ -214,7 +240,9 @@ def main():
     logger.info(f"  📂 {subdirs['geojson']}/             - Main GeoJSON files")
     logger.info(f"  📂 {subdirs['by_country']}/          - Country-specific files")
     logger.info(f"  📂 {subdirs['by_fuel_type']}/        - Fuel type-specific files")
-    logger.info(f"  📂 {subdirs['by_rejection_reason']}/ - Rejection reason-specific files")
+    logger.info(
+        f"  📂 {subdirs['by_rejection_reason']}/ - Rejection reason-specific files"
+    )
     logger.info(f"  📂 {subdirs['rejections']}/          - Rejection analysis files")
     logger.info("")
     logger.info("📊 Generated files:")

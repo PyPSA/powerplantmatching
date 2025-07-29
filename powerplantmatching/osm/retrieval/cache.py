@@ -9,7 +9,6 @@ import json
 import logging
 import os
 from functools import lru_cache
-from typing import Optional
 
 from powerplantmatching.osm.models import Unit
 
@@ -335,7 +334,7 @@ class CountryCoordinateCache:
         """Round coordinates to configured precision."""
         return (round(lat, self.precision), round(lon, self.precision))
 
-    def _uncached_lookup(self, coords: tuple[float, float]) -> Optional[str]:
+    def _uncached_lookup(self, coords: tuple[float, float]) -> str | None:
         """Look up country for coordinates via API."""
         if self._client is None:
             logger.error("Client not set for country cache")
@@ -365,7 +364,7 @@ class CountryCoordinateCache:
 
         return None
 
-    def get(self, lat: float, lon: float) -> Optional[str]:
+    def get(self, lat: float, lon: float) -> str | None:
         """Get country code for coordinates.
 
         Parameters
@@ -394,7 +393,7 @@ class CountryCoordinateCache:
 
     def get_with_tolerance(
         self, lat: float, lon: float, tolerance: float = 0.01
-    ) -> Optional[str]:
+    ) -> str | None:
         """Get country with coordinate tolerance.
 
         Parameters

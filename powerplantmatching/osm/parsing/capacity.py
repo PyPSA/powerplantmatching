@@ -6,7 +6,7 @@ validation.
 """
 
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from powerplantmatching.osm.models import RejectionReason
 from powerplantmatching.osm.quality.rejection import RejectionTracker
@@ -49,7 +49,7 @@ class CapacityExtractor:
 
     def basic_extraction(
         self, element: dict[str, Any], output_key: str
-    ) -> tuple[bool, Optional[float], str]:
+    ) -> tuple[bool, float | None, str]:
         """Perform basic capacity extraction with standard patterns.
 
         Parameters
@@ -100,7 +100,7 @@ class CapacityExtractor:
 
     def advanced_extraction(
         self, element: dict[str, Any], output_key: str
-    ) -> tuple[bool, Optional[float], str]:
+    ) -> tuple[bool, float | None, str]:
         """Perform advanced capacity extraction with custom regex patterns.
 
         Parameters

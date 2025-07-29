@@ -8,7 +8,7 @@ import logging
 import math
 import os
 import re
-from typing import Any, Optional
+from typing import Any
 
 import pycountry
 
@@ -32,7 +32,7 @@ def is_valid_unit(element: dict[str, Any], unit_type: str) -> bool:
 
 
 def get_source_config(
-    config: dict[str, Any], source_type: str, section: Optional[str] = None
+    config: dict[str, Any], source_type: str, section: str | None = None
 ) -> dict[str, Any]:
     """Get configuration for a specific source type."""
     source_config = config.get("sources", {}).get(source_type, {})
@@ -286,7 +286,7 @@ def haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> fl
     return c * r
 
 
-def get_osm_cache_paths(config: Optional[dict] = None) -> tuple[str, str]:
+def get_osm_cache_paths(config: dict | None = None) -> tuple[str, str]:
     """Get OSM cache directory and CSV file paths.
 
     Resolves cache paths from configuration, handling relative paths,

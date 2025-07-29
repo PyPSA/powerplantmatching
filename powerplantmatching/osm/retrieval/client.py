@@ -7,7 +7,7 @@ coordinate determination.
 
 import logging
 import time
-from typing import Optional, Union
+from typing import Union
 
 import requests
 from tqdm import tqdm
@@ -54,13 +54,13 @@ class OverpassAPIClient:
 
     def __init__(
         self,
-        api_url: Optional[str] = None,
-        cache_dir: Optional[str] = None,
+        api_url: str | None = None,
+        cache_dir: str | None = None,
         timeout: int = 300,
         max_retries: int = 3,
         retry_delay: int = 5,
         show_progress: bool = True,
-        country_cache: Optional[Union[dict, "CountryCoordinateCache"]] = None,
+        country_cache: Union[dict, "CountryCoordinateCache"] | None = None,
     ):
         """Initialize the Overpass API client.
 
@@ -414,7 +414,7 @@ out count;"""
         element_type: str,
         element_ids: list[int],
         recursion_level: int = 0,
-        country_code: Optional[str] = None,
+        country_code: str | None = None,
     ) -> list[dict]:
         """Get OSM elements by ID with dependency resolution.
 
@@ -612,7 +612,7 @@ out count;"""
         self,
         node_ids: list[int],
         recursion_level: int = 0,
-        country_code: Optional[str] = None,
+        country_code: str | None = None,
     ) -> list[dict]:
         """Get nodes by ID."""
         return self.get_elements("node", node_ids, recursion_level, country_code)
@@ -621,7 +621,7 @@ out count;"""
         self,
         way_ids: list[int],
         recursion_level: int = 0,
-        country_code: Optional[str] = None,
+        country_code: str | None = None,
     ) -> list[dict]:
         """Get ways by ID with node resolution."""
         return self.get_elements("way", way_ids, recursion_level, country_code)
@@ -630,7 +630,7 @@ out count;"""
         self,
         relation_ids: list[int],
         recursion_level: int = 0,
-        country_code: Optional[str] = None,
+        country_code: str | None = None,
     ) -> list[dict]:
         """Get relations by ID with member resolution."""
         return self.get_elements(

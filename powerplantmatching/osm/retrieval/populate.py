@@ -7,7 +7,7 @@ multiple countries, useful for batch processing and overnight cache building.
 import logging
 import time
 from datetime import timedelta
-from typing import Any, Optional, Union
+from typing import Any
 
 import pycountry
 from tqdm import tqdm
@@ -86,10 +86,10 @@ def get_all_countries(sort_by_continent: bool = True) -> list[dict[str, str]]:
 
 
 def populate_cache(
-    countries: Optional[Union[str, list[str]]] = None,
+    countries: str | list[str] | None = None,
     force_refresh: bool = False,
     plants_only: bool = False,
-    cache_dir: Optional[str] = None,
+    cache_dir: str | None = None,
     dry_run: bool = False,
     show_progress: bool = True,
     sort_by_continent: bool = True,

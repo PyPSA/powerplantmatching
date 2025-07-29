@@ -5,7 +5,7 @@ coordinate extraction, polygon creation, and spatial relationship checks.
 """
 
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from shapely.errors import ShapelyError
 from shapely.geometry import MultiPoint, Point, Polygon
@@ -52,7 +52,7 @@ class GeometryHandler:
         self.client = client
         self.rejection_tracker = rejection_tracker
 
-    def create_node_geometry(self, node: dict[str, Any]) -> Optional[PlantGeometry]:
+    def create_node_geometry(self, node: dict[str, Any]) -> PlantGeometry | None:
         """Create point geometry from OSM node."""
         if "lat" not in node or "lon" not in node:
             logger.debug(f"Node {node.get('id', 'unknown')} missing coordinates")
@@ -67,7 +67,7 @@ class GeometryHandler:
             )
             return None
 
-    def create_way_geometry(self, way: dict[str, Any]) -> Optional[PlantGeometry]:
+    def create_way_geometry(self, way: dict[str, Any]) -> PlantGeometry | None:
         """Create polygon or point geometry from OSM way.
 
         Parameters
@@ -111,7 +111,7 @@ class GeometryHandler:
 
     def create_relation_geometry(
         self, relation: dict[str, Any]
-    ) -> Optional[PlantGeometry]:
+    ) -> PlantGeometry | None:
         """Create geometry from OSM relation members.
 
         Combines member ways into polygons or creates convex hull
@@ -183,7 +183,7 @@ class GeometryHandler:
 
         return None
 
-    def get_element_geometry(self, element: dict[str, Any]) -> Optional[PlantGeometry]:
+    def get_element_geometry(self, element: dict[str, Any]) -> PlantGeometry | None:
         """Get geometry for any OSM element type.
 
         Parameters
@@ -210,7 +210,7 @@ class GeometryHandler:
 
     def process_element_coordinates(
         self, element: dict[str, Any]
-    ) -> tuple[Optional[float], Optional[float]]:
+    ) -> tuple[float | None, float | None]:
         """Extract coordinates from any OSM element.
 
         Parameters
@@ -248,7 +248,7 @@ class GeometryHandler:
 
     def get_relation_centroid_from_members(
         self, relation: dict[str, Any]
-    ) -> tuple[Optional[float], Optional[float]]:
+    ) -> tuple[float | None, float | None]:
         """Calculate centroid from relation members.
 
         Prioritizes members with capacity tags when computing
@@ -317,8 +317,8 @@ class GeometryHandler:
         self,
         element: dict[str, Any],
         plant_geometries: list[PlantGeometry],
-        buffer_meters: Optional[float] = None,
-    ) -> tuple[bool, Optional[str]]:
+        buffer_meters: float | None = None,
+    ) -> tuple[bool, str | None]:
         """Check if element is within any plant boundary.
 
         Parameters
@@ -363,8 +363,8 @@ class GeometryHandler:
         lat: float,
         lon: float,
         plant_geometries: dict[str, PlantGeometry],
-        buffer_meters: Optional[float] = None,
-    ) -> Optional[str]:
+        buffer_meters: float | None = None,
+    ) -> str | None:
         """Check if point is within any plant geometry."""
         for geom_id, plant_geom in plant_geometries.items():
             if plant_geom.contains_point(lat, lon, buffer_meters):

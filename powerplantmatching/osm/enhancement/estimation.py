@@ -5,7 +5,7 @@ including area-based calculations and default values.
 """
 
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from powerplantmatching.osm.models import RejectionReason
 from powerplantmatching.osm.quality.rejection import RejectionTracker
@@ -61,7 +61,7 @@ class CapacityEstimator:
 
     def estimate_capacity(
         self, element: dict[str, Any], source_type: str, unit_type: str
-    ) -> tuple[Optional[float], str]:
+    ) -> tuple[float | None, str]:
         """Estimate capacity for an element.
 
         Parameters
@@ -99,7 +99,7 @@ class CapacityEstimator:
 
     def estimate_capacity_default_value(
         self, element: dict[str, Any], source_type: str
-    ) -> tuple[Optional[float], str]:
+    ) -> tuple[float | None, str]:
         """Estimate using configured default value."""
         source_config = get_source_config(
             self.config, source_type, "capacity_estimation"
@@ -111,7 +111,7 @@ class CapacityEstimator:
 
     def estimate_capacity_area_based(
         self, element: dict[str, Any], source_type: str, unit_type: str
-    ) -> tuple[Optional[float], str]:
+    ) -> tuple[float | None, str]:
         """Estimate capacity based on element area.
 
         Uses efficiency (W/m²) to calculate capacity from polygon area.

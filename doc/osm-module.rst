@@ -10,7 +10,7 @@ OpenStreetMap (OSM) Module
 Overview
 --------
 
-The OpenStreetMap (OSM) module in powerplantmatching enables automated extraction, processing, and standardization of global power plant data sourced from OSM.It provides an interface for extracting, processing, and analyzing power plant data from OpenStreetMap. It offers a complete pipeline from raw OSM data to clean, standardized power plant datasets with features like capacity estimation, plant reconstruction, and quality tracking. 
+The OpenStreetMap (OSM) module in powerplantmatching enables automated extraction, processing, and standardization of global power plant data sourced from OSM.It provides an interface for extracting, processing, and analyzing power plant data from OpenStreetMap. It offers a complete pipeline from raw OSM data to clean, standardized power plant datasets with features like capacity estimation, plant reconstruction, and quality tracking.
 
 
 As an open and community-driven geospatial platform, OSM contains a wealth of power infrastructure data, ranging from individual wind turbines and generators to multipolygon power plants. However, this data is inherently heterogeneous and often lacks key tags such as installed capacity or generation output.

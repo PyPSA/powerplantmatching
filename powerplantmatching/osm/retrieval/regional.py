@@ -8,7 +8,7 @@ handles automatic country determination and cache updates.
 import logging
 import math
 from datetime import datetime
-from typing import Any, Optional, Union
+from typing import Any
 
 from powerplantmatching.core import get_config
 from powerplantmatching.osm.utils import get_osm_cache_paths
@@ -19,17 +19,17 @@ logger = logging.getLogger(__name__)
 
 
 def region_download(
-    regions: Optional[Union[list[dict[str, Any]], dict[str, Any]]] = None,
+    regions: list[dict[str, Any]] | dict[str, Any] | None = None,
     download_type: str = "both",
     update_country_caches: bool = True,
     show_element_counts: bool = True,
-    config: Optional[dict] = None,
-    api_url: Optional[str] = None,
-    cache_dir: Optional[str] = None,
-    timeout: Optional[int] = None,
-    max_retries: Optional[int] = None,
-    retry_delay: Optional[int] = None,
-    client: Optional[OverpassAPIClient] = None,
+    config: dict | None = None,
+    api_url: str | None = None,
+    cache_dir: str | None = None,
+    timeout: int | None = None,
+    max_retries: int | None = None,
+    retry_delay: int | None = None,
+    client: OverpassAPIClient | None = None,
 ) -> dict[str, Any]:
     """Download power infrastructure data for custom regions.
 
@@ -487,7 +487,7 @@ def _build_area_filter(region: dict[str, Any]) -> str:
 def _update_caches_with_regional_data(
     client: OverpassAPIClient,
     region_data: dict[str, list[dict]],
-    region: Optional[dict[str, Any]] = None,
+    region: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Update country caches with downloaded regional data."""
     stats = {"elements_updated": 0, "elements_added": 0, "countries_affected": set()}
@@ -540,7 +540,7 @@ def _update_caches_with_regional_data(
 def _group_elements_by_country(
     client: OverpassAPIClient,
     elements: list[dict],
-    region: Optional[dict[str, Any]] = None,
+    region: dict[str, Any] | None = None,
 ) -> dict[str, list[dict]]:
     """Group elements by their country location."""
     if region:
@@ -678,7 +678,7 @@ def _determine_countries_for_region(
 
 def _get_element_coordinates(
     client: OverpassAPIClient, element: dict
-) -> tuple[Optional[float], Optional[float]]:
+) -> tuple[float | None, float | None]:
     """Extract coordinates from OSM element.
 
     Parameters
@@ -729,7 +729,7 @@ def _get_element_coordinates(
 
 def _determine_country_from_coordinates(
     client: OverpassAPIClient, lat: float, lon: float, use_cache: bool = True
-) -> Optional[str]:
+) -> str | None:
     """Determine country code from coordinates.
 
     Parameters

@@ -13,7 +13,7 @@ import json
 import logging
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 import pandas as pd
 
@@ -360,9 +360,7 @@ class RejectionTracker:
                     filtered_rejections.append(rejection)
         return filtered_rejections
 
-    def generate_geojson(
-        self, reason: Optional[RejectionReason] = None
-    ) -> dict[str, Any]:
+    def generate_geojson(self, reason: RejectionReason | None = None) -> dict[str, Any]:
         """Generate GeoJSON for visualization in mapping tools.
 
         Creates a FeatureCollection with rejected elements that have
@@ -433,7 +431,7 @@ class RejectionTracker:
         return geojson
 
     def save_geojson(
-        self, filepath: str, reason: Optional[RejectionReason] = None
+        self, filepath: str, reason: RejectionReason | None = None
     ) -> None:
         """Save rejections as GeoJSON file.
 
@@ -587,7 +585,7 @@ class RejectionTracker:
         return dict(sorted(value_counts.items(), key=lambda x: x[1], reverse=True))
 
     def filter_rejections(
-        self, reason: Optional[RejectionReason] = None, country: Optional[str] = None
+        self, reason: RejectionReason | None = None, country: str | None = None
     ) -> list[RejectedElement]:
         """Filter rejections by reason and/or country.
 
