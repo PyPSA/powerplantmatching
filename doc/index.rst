@@ -112,7 +112,7 @@ If you want to cite powerplantmatching, use the following paper
    energy modelling exercises in a transparent way - The issue of data
    quality in power plant
    databases <https://www.sciencedirect.com/science/article/pii/S2211467X18301056?dgcid=author>`__,
-   Energy Strategy Reviews, vol. 23, pp. 1–12, Jan. 2019.
+   Energy Strategy Reviews, vol. 23, pp. 1–12, Jan. 2019.
 
 with bibtex
 
@@ -170,6 +170,7 @@ powerplantmatching is released as free software under the
    basics
    example.ipynb
    custom-config
+   osm-module
 
 .. toctree::
    :hidden:

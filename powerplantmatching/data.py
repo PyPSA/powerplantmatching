@@ -1,18 +1,3 @@
-# Copyright 2016-2020 Fabian Hofmann (FIAS), Jonas Hoersch (KIT, IAI) and
-# Fabian Gotzens (FZJ, IEK-STE)
-
-# This program is free software; you can redistribute it and/or
-# modify it under the terms of the GNU General Public License as
-# published by the Free Software Foundation; either version 3 of the
-# License, or (at your option) any later version.
-
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 Collection of power plant data bases and statistical data
 """
@@ -36,6 +21,8 @@ from .cleaning import (
 )
 from .core import _package_data, get_config
 from .heuristics import scale_to_net_capacities
+from .osm import process_countries
+from .osm.utils import get_osm_cache_paths
 from .utils import (
     config_filter,
     convert_to_short_name,
@@ -824,34 +811,6 @@ def ENTSOE_EIC(raw=False, update=False, config=None, entsoe_token=None):
         .pipe(set_column_name, "ENTSOE-EIC")
         .assign(lat=np.nan, lon=np.nan)
     )
-
-
-# def OSM():
-#    """
-#    Parser and Importer for Open Street Map power plant data.
-#    """
-#    import requests
-#    overpass_url = "http://overpass-api.de/api/interpreter"
-#    overpass_query = """
-#    [out:json][timeout:210];
-#    area["name"="Luxembourg"]->.boundaryarea;
-#    (
-#    // query part for: “power=plant”
-#    node["power"="plant"](area.boundaryarea);
-#    way["power"="plant"](area.boundaryarea);
-#    relation["power"="plant"](area.boundaryarea);
-#    node["power"="generator"](area.boundaryarea);
-#    way["power"="generator"](area.boundaryarea);
-#    relation["power"="generator"](area.boundaryarea);
-#    );
-#    out body;
-#    """
-#    response = requests.get(overpass_url,
-#                            params={'data': overpass_query})
-#    data = response.json()
-#    df = pd.DataFrame(data['elements'])
-#    df = pd.concat([df.drop(columns='tags'), df.tags.apply(pd.Series)], axis=1)
-#
 
 
 @deprecated(
@@ -2269,6 +2228,60 @@ def MASTR(
     )
 
     return df
+
+
+def OSM(raw=False, update=False, config=None):
+    """
+    Importer for the OpenStreetMap power plant data.
+
+    Parameters
+    ----------
+    raw : boolean, default False
+        Whether to return the original dataset
+    update: bool, default False
+        Whether to update the data from the url.
+    config : dict, default None
+        Add custom specific configuration,
+        e.g. powerplantmatching.config.get_config(target_countries='Italy'),
+        defaults to powerplantmatching.config.get_config()
+
+    Returns
+    -------
+    pd.DataFrame
+        Power plant data from OpenStreetMap formatted according to
+        powerplantmatching standards
+    """
+    config = get_config() if config is None else config
+
+    # Get countries list and target columns
+    countries = config["target_countries"]
+    if isinstance(countries, str):
+        countries = [countries]
+    target_columns = config["target_columns"]
+
+    # Extract OSM-specific configuration
+    osm_config = config.get("OSM", {})
+
+    cache_dir, csv_cache_path = get_osm_cache_paths(config)
+
+    # Process all countries and get combined data
+    all_valid_data = process_countries(
+        countries, csv_cache_path, cache_dir, update, osm_config, target_columns, raw
+    )
+
+    # Handle empty dataset case
+    if all_valid_data.empty:
+        logger.warning("No OSM power plant data found for the specified countries")
+        if raw:
+            return all_valid_data
+        return pd.DataFrame(columns=target_columns).pipe(set_column_name, "OSM")
+
+    # Return raw data if requested
+    if raw:
+        return all_valid_data
+
+    # Apply final processing for powerplantmatching compatibility
+    return all_valid_data.pipe(set_column_name, "OSM").pipe(config_filter, config)
 
 
 # deprecated alias for GGPT

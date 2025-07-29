@@ -1,0 +1,378 @@
+"""Cache population utilities for OSM power plant data.
+
+This module provides functions to populate the OSM cache with data from
+multiple countries, useful for batch processing and overnight cache building.
+"""
+
+import logging
+import time
+from datetime import timedelta
+from typing import Any
+
+import pycountry
+from tqdm import tqdm
+
+from powerplantmatching.core import get_config
+from powerplantmatching.osm.quality.coverage import get_continent_mapping
+from powerplantmatching.osm.utils import get_osm_cache_paths
+
+from .client import OverpassAPIClient
+
+logger = logging.getLogger(__name__)
+
+
+def get_all_countries(sort_by_continent: bool = True) -> list[dict[str, str]]:
+    """Get list of all countries with metadata.
+
+    Retrieves all countries from pycountry with additional continent
+    information for grouping and sorting.
+
+    Parameters
+    ----------
+    sort_by_continent : bool, optional
+        If True, sort countries by continent then name.
+        If False, sort alphabetically by name only.
+        Default is True.
+
+    Returns
+    -------
+    list[dict[str, str]]
+        List of country dictionaries with keys:
+        - name: Full country name
+        - code: ISO 3166-1 alpha-2 code
+        - alpha3: ISO 3166-1 alpha-3 code
+        - continent: Continent name
+
+    Examples
+    --------
+    >>> countries = get_all_countries()
+    >>> print(f"Found {len(countries)} countries")
+    Found 249 countries
+
+    >>> # Get European countries
+    >>> europe = [c for c in countries if c['continent'] == 'Europe']
+    >>> print(f"European countries: {len(europe)}")
+    European countries: 52
+    """
+    continent_map = get_continent_mapping()
+    countries = []
+
+    for country in pycountry.countries:
+        country_data = {
+            "name": country.name,  # type: ignore
+            "code": country.alpha_2,  # type: ignore
+            "alpha3": country.alpha_3,  # type: ignore
+            "continent": continent_map.get(country.alpha_2, "Unknown"),  # type: ignore
+        }
+        countries.append(country_data)
+
+    if sort_by_continent:
+        continent_order = [
+            "Europe",
+            "Asia",
+            "Africa",
+            "North America",
+            "South America",
+            "Oceania",
+            "Antarctica",
+            "Unknown",
+        ]
+
+        countries.sort(key=lambda x: (continent_order.index(x["continent"]), x["name"]))
+    else:
+        countries.sort(key=lambda x: x["name"])
+
+    return countries
+
+
+def populate_cache(
+    countries: str | list[str] | None = None,
+    force_refresh: bool = False,
+    plants_only: bool = False,
+    cache_dir: str | None = None,
+    dry_run: bool = False,
+    show_progress: bool = True,
+    sort_by_continent: bool = True,
+) -> dict[str, Any]:
+    """Populate OSM cache with power plant data from multiple countries.
+
+    Downloads and caches OSM power plant data for specified countries or
+    all countries. Useful for building a complete cache overnight or
+    updating specific regions. Handles failures gracefully and provides
+    detailed progress tracking.
+
+    Parameters
+    ----------
+    countries : str, list[str], or None, optional
+        Countries to download. Can be:
+        - None: Download all 249 countries
+        - str: Single country name or code
+        - list[str]: Multiple country names/codes
+        Accepts full names, ISO codes, or common variations.
+
+    force_refresh : bool, optional
+        If True, re-download even if already cached.
+        If False, skip countries already in cache.
+        Default is False.
+
+    plants_only : bool, optional
+        If True, only download power plants (faster).
+        If False, also download individual generators.
+        Default is False.
+
+    cache_dir : str, optional
+        Custom cache directory path.
+        If None, uses config value or default.
+
+    dry_run : bool, optional
+        If True, only show what would be downloaded.
+        No actual downloads performed.
+        Default is False.
+
+    show_progress : bool, optional
+        If True, show progress bar and statistics.
+        Default is True.
+
+    sort_by_continent : bool, optional
+        If True, process countries grouped by continent.
+        Default is True.
+
+    Returns
+    -------
+    dict[str, Any]
+        Result dictionary with keys:
+        - total_countries: Number of countries to process
+        - succeeded: Successfully downloaded
+        - failed: Failed downloads
+        - skipped: Already cached (when force_refresh=False)
+        - elapsed_time: Total time in seconds
+        - failed_countries: List of failed country details
+        - cache_dir: Path to cache directory used
+        - dry_run: True if dry run mode
+
+    Examples
+    --------
+    >>> # Download small countries for testing
+    >>> result = populate_cache(['Luxembourg', 'Malta'])
+    >>> print(f"Downloaded: {result['succeeded']}, Skipped: {result['skipped']}")
+    Downloaded: 2, Skipped: 0
+
+    >>> # Update African countries
+    >>> african = get_all_countries()
+    >>> african_names = [c['name'] for c in african if c['continent'] == 'Africa']
+    >>> result = populate_cache(african_names, force_refresh=False)
+
+    >>> # Dry run to see what would be downloaded
+    >>> result = populate_cache(dry_run=True)
+    >>> print(f"Would download {result['total_countries']} countries")
+
+    >>> # Download everything overnight
+    >>> result = populate_cache(force_refresh=True, show_progress=True)
+
+    Notes
+    -----
+    - Downloads are performed sequentially to respect API rate limits
+    - Failed countries are logged but don't stop the process
+    - Progress shows ETA based on current download rate
+    - Cache is saved after each successful country download
+    - Typical timing: ~30s per country (varies by size and API load)
+
+    See Also
+    --------
+    show_country_coverage : Check what's already cached
+    find_outdated_caches : Identify countries needing updates
+    """
+    config = get_config()
+    osm_config = config.get("OSM", {})
+
+    if cache_dir is None:
+        cache_dir, _ = get_osm_cache_paths(config)
+
+    if countries is None:
+        all_countries = get_all_countries(sort_by_continent=sort_by_continent)
+    else:
+        if isinstance(countries, str):
+            countries = [countries]
+
+        continent_map = get_continent_mapping()
+        all_countries = []
+
+        for name in countries:
+            try:
+                country = pycountry.countries.lookup(name)
+                all_countries.append(
+                    {
+                        "name": country.name,
+                        "code": country.alpha_2,
+                        "alpha3": country.alpha_3,
+                        "continent": continent_map.get(country.alpha_2, "Unknown"),
+                    }
+                )
+            except LookupError:
+                logger.warning(f"Country '{name}' not found, skipping")
+
+    logger.info(f"Total countries to process: {len(all_countries)}")
+
+    if dry_run:
+        print("\nDry run - would download the following countries:")
+        current_continent = None
+        for country in all_countries:
+            if sort_by_continent and country.get("continent") != current_continent:
+                current_continent = country.get("continent", "Unknown")
+                print(f"\n{current_continent}:")
+            print(f"  {country['name']} ({country['code']})")
+
+        return {
+            "total_countries": len(all_countries),
+            "dry_run": True,
+            "countries": [c["name"] for c in all_countries],
+        }
+
+    api_url = osm_config.get("overpass_api", {}).get(
+        "url", "https://overpass-api.de/api/interpreter"
+    )
+    timeout = osm_config.get("overpass_api", {}).get("timeout", 300)
+    max_retries = osm_config.get("overpass_api", {}).get("max_retries", 3)
+    retry_delay = osm_config.get("overpass_api", {}).get("retry_delay", 5)
+
+    if show_progress:
+        print(f"Starting download of {len(all_countries)} countries...")
+        print("-" * 60)
+
+    start_time = time.time()
+    succeeded = 0
+    failed = 0
+    skipped = 0
+    failed_countries = []
+
+    try:
+        with OverpassAPIClient(
+            api_url=api_url,
+            cache_dir=cache_dir,
+            timeout=timeout,
+            max_retries=max_retries,
+            retry_delay=retry_delay,
+            show_progress=show_progress,
+        ) as client:
+            iterator = (
+                tqdm(all_countries, desc="Downloading countries", unit="country")
+                if show_progress
+                else all_countries
+            )
+            current_continent = None
+
+            for i, country in enumerate(iterator):
+                country_name = country["name"]
+                country_code = country["code"]
+                country_continent = country.get("continent", "Unknown")
+
+                if (
+                    show_progress
+                    and sort_by_continent
+                    and country_continent != current_continent
+                ):
+                    current_continent = country_continent
+                    if show_progress and hasattr(iterator, "set_description"):
+                        iterator.set_description(f"{current_continent}")  # type: ignore
+
+                try:
+                    has_plants = country_code in client.cache.plants_cache
+                    has_generators = (
+                        country_code in client.cache.generators_cache
+                        if not plants_only
+                        else True
+                    )
+
+                    if not force_refresh and has_plants and has_generators:
+                        logger.info(f"Skipping {country_name} - already in cache")
+                        skipped += 1
+                    else:
+                        logger.info(f"Downloading {country_name} ({country_code})")
+
+                        plants_data, generators_data = client.get_country_data(
+                            country_name,
+                            force_refresh=force_refresh,
+                            plants_only=plants_only,
+                        )
+
+                        plants_count = len(plants_data.get("elements", []))
+                        generators_count = len(generators_data.get("elements", []))
+
+                        logger.info(
+                            f"Downloaded {country_name}: "
+                            f"{plants_count} plants, {generators_count} generators"
+                        )
+                        succeeded += 1
+
+                except Exception as e:
+                    logger.error(f"Failed to download {country_name}: {str(e)}")
+                    failed += 1
+                    failed_countries.append(
+                        {
+                            "country": country_name,
+                            "code": country_code,
+                            "error": str(e),
+                        }
+                    )
+
+                if show_progress and hasattr(iterator, "set_postfix"):
+                    elapsed = time.time() - start_time
+                    rate = (i + 1) / elapsed
+                    remaining = len(all_countries) - (i + 1)
+                    eta = remaining / rate if rate > 0 else 0
+
+                    iterator.set_postfix(  # type: ignore
+                        {
+                            "OK": succeeded,
+                            "Skip": skipped,
+                            "Fail": failed,
+                            "ETA": str(timedelta(seconds=int(eta))),
+                        }
+                    )
+
+            # tqdm automatically closes when used as context manager
+            # No need to manually close
+
+    except Exception as e:
+        logger.error(f"Fatal error during cache population: {str(e)}", exc_info=True)
+        raise
+
+    total_time = time.time() - start_time
+
+    logger.info("\n" + "=" * 60)
+    logger.info("CACHE POPULATION COMPLETE")
+    logger.info("=" * 60)
+    logger.info(f"Total countries: {len(all_countries)}")
+    logger.info(f"  ✓ Downloaded: {succeeded}")
+    logger.info(f"  ⟳ Skipped (cached): {skipped}")
+    logger.info(f"  ✗ Failed: {failed}")
+    logger.info(f"Total time: {str(timedelta(seconds=int(total_time)))}")
+    logger.info(f"Cache directory: {cache_dir}")
+    logger.info("=" * 60)
+
+    if show_progress:
+        print("\n" + "=" * 60)
+        print("CACHE POPULATION COMPLETE")
+        print("=" * 60)
+        print(f"Total countries: {len(all_countries)}")
+        print(f"  ✓ Downloaded: {succeeded}")
+        print(f"  ⟳ Skipped (cached): {skipped}")
+        print(f"  ✗ Failed: {failed}")
+        print(f"Total time: {str(timedelta(seconds=int(total_time)))}")
+        print(f"Cache directory: {cache_dir}")
+        print("=" * 60)
+
+        if failed > 0:
+            print(f"\nFailed countries ({failed}):")
+            for fc in failed_countries:
+                print(f"  - {fc['country']} ({fc['code']}): {fc['error']}")
+
+    return {
+        "total_countries": len(all_countries),
+        "succeeded": succeeded,
+        "failed": failed,
+        "skipped": skipped,
+        "elapsed_time": total_time,
+        "failed_countries": failed_countries,
+        "cache_dir": cache_dir,
+    }

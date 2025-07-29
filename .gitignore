@@ -96,3 +96,6 @@ test.ipynb
 # temporary
 .devcontainer/
 .repoai/
+
+uv.lock
+output/
