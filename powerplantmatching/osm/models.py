@@ -17,7 +17,7 @@ import logging
 from dataclasses import asdict, dataclass
 from enum import Enum
 from math import cos, radians
-from typing import Any, Literal, Optional, Union
+from typing import Any, Literal, Union
 
 import pandas as pd
 from shapely.errors import ShapelyError
@@ -180,19 +180,19 @@ class Unit:
     """
 
     projectID: str
-    Country: Optional[str] = None
-    lat: Optional[float] = None
-    lon: Optional[float] = None
-    type: Optional[str] = None
-    Fueltype: Optional[str] = None
-    Technology: Optional[str] = None
-    Capacity: Optional[float] = None
-    Name: Optional[str] = None
-    generator_count: Optional[int] = None
-    Set: Optional[str] = None
-    capacity_source: Optional[str] = None
-    DateIn: Optional[str] = None
-    id: Optional[str] = None
+    Country: str | None = None
+    lat: float | None = None
+    lon: float | None = None
+    type: str | None = None
+    Fueltype: str | None = None
+    Technology: str | None = None
+    Capacity: float | None = None
+    Name: str | None = None
+    generator_count: int | None = None
+    Set: str | None = None
+    capacity_source: str | None = None
+    DateIn: str | None = None
+    id: str | None = None
 
     created_at: str | None = None
     config_hash: str | None = None
@@ -267,10 +267,10 @@ class PlantGeometry:
     type: Literal["node", "way", "relation"]
     geometry: Union["Point", "Polygon", "MultiPolygon"]
 
-    element_data: Optional[dict[str, Any]] = None
+    element_data: dict[str, Any] | None = None
 
     def contains_point(
-        self, lat: float, lon: float, buffer_meters: Optional[float] = None
+        self, lat: float, lon: float, buffer_meters: float | None = None
     ) -> bool:
         """Check if a coordinate is within the plant geometry.
 
@@ -306,7 +306,7 @@ class PlantGeometry:
                 distance = self.geometry.distance(point)
                 return distance <= buffer_degrees
 
-            elif isinstance(self.geometry, (Polygon, MultiPolygon)):
+            elif isinstance(self.geometry, Polygon | MultiPolygon):
                 return self.geometry.contains(point)
 
             else:
@@ -320,7 +320,7 @@ class PlantGeometry:
             return False
 
     def intersects(
-        self, other: "PlantGeometry", buffer_meters: Optional[float] = None
+        self, other: "PlantGeometry", buffer_meters: float | None = None
     ) -> bool:
         """Check if this geometry intersects with another.
 
@@ -345,7 +345,7 @@ class PlantGeometry:
                 return distance <= buffer_degrees
 
             elif isinstance(self.geometry, Point) and isinstance(
-                other.geometry, (Polygon, MultiPolygon)
+                other.geometry, Polygon | MultiPolygon
             ):
                 if buffer_meters is None:
                     buffer_meters = 0
@@ -356,7 +356,7 @@ class PlantGeometry:
                 else:
                     return other.geometry.contains(self.geometry)
 
-            elif isinstance(self.geometry, (Polygon, MultiPolygon)) and isinstance(
+            elif isinstance(self.geometry, Polygon | MultiPolygon) and isinstance(
                 other.geometry, Point
             ):
                 return other.intersects(self, buffer_meters)

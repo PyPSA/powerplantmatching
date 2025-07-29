@@ -6,6 +6,11 @@ Upcoming Version
 
 * Update Marktstammdatenregister data for Germany from `open-MaStR (February 25, 2025)  <https://zenodo.org/records/14783581>`__.
 
+Breaking Changes
+----------------
+
+* **Drop Python 3.9 support** - Minimum Python version is now 3.10.
+
 Features
 --------
 
