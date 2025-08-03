@@ -19,7 +19,7 @@ config = pm.get_config()
 cmap = {k: v for k, v in config["fuel_to_color"].items() if k in df.Fueltype.unique()}
 # checkbox = pn.widgets.CheckButtonGroup(name="Select", options=["Fueltype", "Country"])
 
-map = df.hvplot.points(
+point_map = df.hvplot.points(
     "lon",
     "lat",
     color="Fueltype",
@@ -40,7 +40,7 @@ map = df.hvplot.points(
     # features={"rivers": "10m", "lakes": "10m"},
 )
 
-hvplot.save(map, "figures/powerplant-map.html")
+hvplot.save(point_map, "figures/powerplant-map.html")
 
 bars = grouped.hvplot.barh(
     by="Fueltype",
