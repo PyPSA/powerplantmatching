@@ -14,7 +14,12 @@ nav:
     - Release Notes: release-notes.md
     - Citing: citing.md
     - License: license.md
-  - Support: support.md
+    - Support:
+      - FAQ: faq.md
+      - Support: support.md
+      - Troubleshooting: troubleshooting.md
+  - Example:
+    - Example: examples/example.ipynb
   - API reference:
     - API Core: api-core.md
     - API Data: api-data.md
@@ -49,6 +54,7 @@ plugins:
   - autolinks
   - table-reader
   - mkdocs-video
+  - mkdocs-jupyter
 
 markdown_extensions:
   - admonition
