@@ -2,15 +2,7 @@
 
 This guide will help you get started with Powerplantmatching.
 
-## Installation
-
-Instructions for installing Powerplantmatching.
-
-## Usage
-
-Basic usage examples and tips.
-
-# Get the Data
+## Get the Data
 
 To directly load the already built data into a pandas dataframe, just call:
 
@@ -34,10 +26,8 @@ pm.powerplants(reduced=False)
 
 It links the entries of the matched power plants and lists all the related properties given by the different data-sources.
 
-> **Note**
->
-> Calling the function with `reduced=False` will trigger the matching process which requires **Java** to be installed on your system. Please ensure that you have Java installed and that it is in your system's PATH.
->
-> You can download and install Java from the official website: https://www.java.com/en/download/
->
-> If Java is not installed or not in your system's PATH, you may encounter runtime errors.
+!!! note
+    Calling the function with `reduced=False` will trigger the matching process which requires **Java** to be installed on your system. Please ensure that you have Java installed and that it is in your system's PATH.
+    
+    You can download and install Java from the official website: https://www.java.com/en/download/
+    If Java is not installed or not in your system's PATH, you may encounter runtime errors.
