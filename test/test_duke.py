@@ -1,4 +1,4 @@
-# SPDX-FileContributor: The powerplantmatching contributors
+# SPDX-FileCopyrightText: The powerplantmatching contributors
 #
 # SPDX-License-Identifier: MIT
 
