@@ -51,6 +51,8 @@ theme:
   - search.highlight
   - search.share
   - announce.dismiss
+  - content.code.copy
+  - content.code.select
 
 plugins:
   - search
