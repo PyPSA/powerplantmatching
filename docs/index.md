@@ -10,6 +10,34 @@
 ![LICENSE](https://img.shields.io/pypi/l/powerplantmatching.svg)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3358985.svg)](https://zenodo.org/record/3358985#.XUReFPxS_MU)
 
-This project provides tools for generating and managing power plant data.
+## Introduction
 
-Refer to the navigation for guides, API reference, and more.
+A toolset for cleaning, standardizing and combining multiple power plant
+databases.
+
+This package provides ready-to-use power plant data for the European
+power system. Starting from openly available power plant datasets, the
+package cleans, standardizes and merges the input data to create a new
+combining dataset, which includes all the important information. The
+package allows to easily update the combined data as soon as new input
+datasets are released.
+
+![Map of power plants in Europe](assets/images/powerplants.png)
+
+`powerplantmatching` was initially developed by the [Renewable Energy Group](https://fias.uni-frankfurt.de/physics/schramm/complex-renewable-energy-networks/) at [FIAS](https://fias.uni-frankfurt.de/) to build power plant data inputs to [PyPSA](http://www.pypsa.org/)-based models for carrying out simulations for the [CoNDyNet project](http://condynet.de/), financed by the [German Federal Ministry for Education and Research (BMBF)](https://www.bmbf.de/en/) as part of the [Stromnetze Research Initiative](http://forschung-stromnetze.info/projekte/grundlagen-und-konzepte-fuer-effiziente-dezentrale-stromnetze/).
+
+## Main Features
+
+- clean and standardize power plant data sets
+- aggregate power plants units which belong to the same plant
+- compare and combine different data sets
+- create lookups and give statistical insight to power plant goodness
+- provide cleaned data from different sources
+- choose between gros/net capacity
+- provide an already merged data set of six different data-sources
+- scale the power plant capacities in order to match country specific
+  statistics about total power plant capacities
+- visualize the data
+- export your powerplant data to a
+    - [PyPSA](https://github.com/PyPSA/PyPSA), or
+    - [TIMES](https://iea-etsap.org/index.php/etsap-tools/model-generators/times) model
