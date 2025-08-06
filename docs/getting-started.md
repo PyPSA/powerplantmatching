@@ -28,6 +28,6 @@ It links the entries of the matched power plants and lists all the related prope
 
 !!! note
     Calling the function with `reduced=False` will trigger the matching process which requires **Java** to be installed on your system. Please ensure that you have Java installed and that it is in your system's PATH.
-    
+
     You can download and install Java from the official website: https://www.java.com/en/download/
     If Java is not installed or not in your system's PATH, you may encounter runtime errors.
