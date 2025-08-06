@@ -1,0 +1,81 @@
+site_name: Documentation
+site_url: https://github.com/PyPSA/powerplantmatching
+repo_url: https://github.com/PyPSA/powerplantmatching
+repo_name: PyPSA/powerplantmatching
+edit_uri: edit/master/docs/
+
+nav:
+  - Home:
+    - Home: index.md
+    - Getting Started: getting-started.md
+    - Basics: basics.md
+    - Custom Config: custom-config.md
+    - Contributors: contributors.md
+    - Release Notes: release-notes.md
+    - Citing: citing.md
+    - License: license.md
+  - Support: support.md
+  - API reference:
+    - API Core: api-core.md
+    - API Data: api-data.md
+    - API Utils: api-utils.md
+
+# Theme settings
+theme:
+  name: material
+  font:
+    text: Overpass
+  features:
+  - navigation.tabs
+  - navigation.tabs.sticky
+  - navigation.sections
+  - navigation.tracking  # Anchor tracking
+  - navigation.indexes  # Section indexes
+  - navigation.path
+  - navigation.top # Back to top button
+  # - navigation.foot
+  - header.autohide
+  - content.action.edit
+  - content.action.view
+  - toc.follow
+  - search
+  - search.suggest
+  - search.highlight
+  - search.share
+  - announce.dismiss
+
+plugins:
+  - search
+  - autolinks
+  - table-reader
+  - mkdocs-video
+
+markdown_extensions:
+  - admonition
+  - footnotes
+  - abbr
+  - attr_list
+  - md_in_html
+  # Emojis
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  # Toctree with permalinks
+  - toc:
+      title: On this page
+      permalink: true
+      toc_depth: 3
+
+
+extra:
+  social:
+  - icon: fontawesome/brands/discord
+    link: https://discord.com/invite/AnuJBk23FU
+  - icon: fontawesome/brands/github
+    link: https://github.com/PyPSA/powerplantmatching
+
+  extra:
+  homepage: https://pypsa.org
+
+copyright: >-
+  &copy Copyright 2015-2025 Powerplantmatching Developers and Contributors
