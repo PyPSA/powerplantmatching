@@ -1,10 +1,3 @@
-#!/usr/bin/env python3
-"""
-Created on Tue Jul 16 15:47:46 2019
-
-@author: fabian
-"""
-
 import logging
 from os import environ, makedirs
 from os.path import abspath, dirname, exists, expanduser, isdir, join

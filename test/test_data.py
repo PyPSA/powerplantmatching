@@ -1,10 +1,3 @@
-#!/usr/bin/env python3
-"""
-Created on Wed Nov 25 08:48:04 2020
-
-@author: fabian
-"""
-
 import pytest
 
 import powerplantmatching as pm

@@ -1,10 +1,3 @@
-#!/usr/bin/env python3
-"""
-Created on Tue Jul 16 18:09:56 2019
-
-@author: fabian
-"""
-
 import pandas
 
 
