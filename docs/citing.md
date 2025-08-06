@@ -1,10 +1,11 @@
 # Citing powerplantmatching
 
-If you want to cite powerplantmatching, use the following paper:
+If you use `powerplantmatching` in your work, please consider citing the following paper:
 
-- F. Gotzens, H. Heinrichs, J. Hörsch, and F. Hofmann, "Performing energy modelling exercises in a transparent way - The issue of data quality in power plant databases", Energy Strategy Reviews, vol. 23, pp. 1–12, Jan. 2019. [Link](https://www.sciencedirect.com/science/article/pii/S2211467X18301056?dgcid=author)
+> F. Gotzens, H. Heinrichs, J. Hörsch, and F. Hofmann, "Performing energy modelling exercises in a transparent way - The issue of data quality in power plant databases", Energy Strategy Reviews, vol. 23, pp. 1–12, Jan. 2019, doi:[10.1016/j.esr.2018.11.004](https://www.sciencedirect.com/science/article/pii/S2211467X18301056).
 
-**BibTeX:**
+## BibTeX entry
+
 ```bibtex
 @article{gotzens_performing_2019,
       title = {Performing energy modelling exercises in a transparent way - {The} issue of data quality in power plant databases},
