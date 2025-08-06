@@ -60,6 +60,32 @@ plugins:
   - table-reader
   - mkdocs-video
   - mkdocs-jupyter
+  # Docstring generation
+  - mkdocstrings:
+      enabled: true
+      default_handler: python
+      handlers:
+        python:
+          options:
+            docstring_style: numpy
+            docstring_section_style: list
+            filters:
+            - "!logger"
+            - "!^_[^_]"
+            heading_level: 2
+            merge_init_into_class: true
+            parameter_headings: false
+            separate_signature: true
+            show_root_heading: true
+            show_root_full_path: false
+            show_signature_annotations: true
+            show_source: false
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            signature_crossrefs: true
+            summary: true
+            show_if_no_docstring: true
+            show_inheritance_diagram: true
 
 markdown_extensions:
   - admonition
