@@ -38,7 +38,3 @@ path = [
 ]
 SPDX-FileCopyrightText = "Lars Marius Garshol <larsga@garshol.priv.no>"
 SPDX-License-Identifier = "Apache-2.0"
-
-# TODO powerplantmatching/package_data
-# Check all
-# Update README.md
