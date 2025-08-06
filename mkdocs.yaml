@@ -7,13 +7,16 @@ edit_uri: edit/master/docs/
 nav:
   - Home:
     - Home: index.md
-    - Getting Started: getting-started.md
-    - Basics: basics.md
-    - Custom Config: custom-config.md
-    - Contributors: contributors.md
-    - Release Notes: release-notes.md
-    - Citing: citing.md
-    - License: license.md
+    - Usage:
+      - Installation: installation.md
+      - Getting Started: getting-started.md
+      - Basics: basics.md
+      - Custom Config: custom-config.md
+    - About:
+      - Release Notes: release-notes.md
+      - Contributors: contributors.md
+      - Citing: citing.md
+      - License: license.md
     - Support:
       - FAQ: faq.md
       - Support: support.md
@@ -21,9 +24,9 @@ nav:
   - Example:
     - Example: examples/example.ipynb
   - API reference:
-    - API Core: api-core.md
-    - API Data: api-data.md
-    - API Utils: api-utils.md
+    - Core modules: api-core.md
+    - Data processing modules: api-data.md
+    - Utility modules: api-utils.md
 
 # Theme settings
 theme:
