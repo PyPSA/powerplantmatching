@@ -1,3 +1,7 @@
+# SPDX-FileContributor: The powerplantmatching contributors
+#
+# SPDX-License-Identifier: MIT
+
 """
 Functions to modify and adjust power plant datasets
 """

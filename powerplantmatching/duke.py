@@ -1,3 +1,7 @@
+# SPDX-FileContributor: The powerplantmatching contributors
+#
+# SPDX-License-Identifier: MIT
+
 import logging
 import os
 import shutil

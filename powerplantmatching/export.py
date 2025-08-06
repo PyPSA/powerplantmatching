@@ -1,3 +1,7 @@
+# SPDX-FileContributor: The powerplantmatching contributors
+#
+# SPDX-License-Identifier: MIT
+
 # This export script is intended for the users of PyPSA:
 #   https://www.pypsa.org/
 # or the VEDA-TIMES modelling framework:

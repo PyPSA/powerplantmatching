@@ -1,3 +1,7 @@
+# SPDX-FileContributor: The powerplantmatching contributors
+#
+# SPDX-License-Identifier: MIT
+
 """
 Collection of power plant data bases and statistical data
 """

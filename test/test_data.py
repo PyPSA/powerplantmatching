@@ -1,3 +1,7 @@
+# SPDX-FileContributor: The powerplantmatching contributors
+#
+# SPDX-License-Identifier: MIT
+
 import pytest
 
 import powerplantmatching as pm

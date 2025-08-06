@@ -1,3 +1,7 @@
+# SPDX-FileContributor: The powerplantmatching contributors
+#
+# SPDX-License-Identifier: MIT
+
 import logging
 from os import environ, makedirs
 from os.path import abspath, dirname, exists, expanduser, isdir, join

@@ -1,3 +1,9 @@
+<!--
+SPDX-FileContributor: The powerplantmatching contributors
+
+SPDX-License-Identifier: MIT
+-->
+
 # powerplantmatching
 
 [![pypi](https://img.shields.io/pypi/v/powerplantmatching.svg)](https://pypi.org/project/powerplantmatching/)

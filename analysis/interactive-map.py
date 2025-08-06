@@ -1,3 +1,7 @@
+# SPDX-FileContributor: The powerplantmatching contributors
+#
+# SPDX-License-Identifier: MIT
+
 import hvplot
 import hvplot.pandas  # noqa
 import hvplot.xarray  # noqa
