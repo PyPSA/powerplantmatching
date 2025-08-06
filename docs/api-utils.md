@@ -1,12 +1,9 @@
-# API Utils
-
-Utility functions and helpers for Powerplantmatching.
-
 # Utility Modules
 
-API documentation for utility modules:
+::: powerplantmatching.utils
 
-- `powerplantmatching.utils`
-- `powerplantmatching.export`
-- `powerplantmatching.heuristics`
-- `powerplantmatching.plot`
+::: powerplantmatching.export
+
+::: powerplantmatching.heuristics
+
+::: powerplantmatching.plot

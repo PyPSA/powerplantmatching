@@ -1,7 +1,7 @@
 # Core Modules
 
-API documentation for core modules:
+::: powerplantmatching.core
 
-- `powerplantmatching.core`
-- `powerplantmatching.duke`
-- `powerplantmatching.accessor`
+::: powerplantmatching.duke
+
+::: powerplantmatching.accessor
