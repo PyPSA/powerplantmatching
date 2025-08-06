@@ -3,6 +3,7 @@
 ## Upcoming Version
 
 * Update Marktstammdatenregister data for Germany from [open-MaStR (February 25, 2025)](https://zenodo.org/records/14783581).
+* Restructure documentation and move to use `mkdocs` for a nicer user experience.
 
 ## [v0.7.1](https://github.com/PyPSA/powerplantmatching/releases/tag/v0.7.1) (30th January 2024)
 
