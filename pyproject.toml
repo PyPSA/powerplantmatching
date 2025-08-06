@@ -67,7 +67,8 @@ dev= [
     "types-PyYAML",
     "pandas-stubs",
     "types-tqdm",
-    "types-six"
+    "types-six",
+    "reuse>=5.0.2",
 ]
 
 # Add optional dependencies for plotting
