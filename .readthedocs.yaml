@@ -11,7 +11,7 @@ version: 2
 
 
 mkdocs:
-  configuration: docs/mkdocs.yaml
+  configuration: mkdocs.yaml
 
 build:
   os: ubuntu-24.04
