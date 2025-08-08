@@ -6,6 +6,9 @@ Upcoming Version
 
 * Update Marktstammdatenregister data for Germany from `open-MaStR (February 25, 2025)  <https://zenodo.org/records/14783581>`__.
 
+* Drop support for Python 3.9, add support for Python 3.13. Minimum required Python version is now 3.10.
+
+
 `v0.7.1 <https://github.com/PyPSA/powerplantmatching/releases/tag/v0.7.1>`__ (30th January 2024)
 =================================================================================================
 
