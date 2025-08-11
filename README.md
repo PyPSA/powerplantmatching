@@ -1,5 +1,5 @@
 <!--
-SPDX-FileCopyrightText: The powerplantmatching contributors
+SPDX-FileCopyrightText: Contributors to powerplantmatching <https://github.com/pypsa/powerplantmatching>
 
 SPDX-License-Identifier: MIT
 -->
@@ -109,5 +109,5 @@ Parts of the repository may be licensed under different licenses, please see the
 
 This repository uses the [REUSE](https://reuse.software/) conventions to indicate the licenses that apply to individual files and parts of the repository.
 
-(c) The powerplantmatching contributors
+(c) Contributors to powerplantmatching <https://github.com/pypsa/powerplantmatching>
 You can find a list of contributors in the [contributors page](docs/contributors.md).

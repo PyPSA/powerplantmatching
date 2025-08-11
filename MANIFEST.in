@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: The powerplantmatching contributors
+# SPDX-FileCopyrightText: Contributors to powerplantmatching <https://github.com/pypsa/powerplantmatching>
 #
 # SPDX-License-Identifier: MIT
 
