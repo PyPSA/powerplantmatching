@@ -19,6 +19,7 @@ Processed datasets of merged and/or adjusted data
 
 import logging
 import os
+from pathlib import Path
 
 import pandas as pd
 from deprecation import deprecated
@@ -169,7 +170,7 @@ def powerplants(
             Arguments passed to powerplantmatching.collection.Collection.
 
     """
-    from . import latest_release
+    from . import __version__
 
     if config is None:
         if config_update is None:
@@ -200,7 +201,26 @@ def powerplants(
 
     if from_url:
         fn = _data_out("matched_data_red.csv", config)
-        url = config["matched_data_url"].format(tag="v" + latest_release)
+
+        url: str = ""
+        if any(substr in __version__ for substr in ["dev", "post"]):
+            # Detect running from a development installation - retrieve data from the HEAD of the
+            # branch that we assume it exists in the GitHub pypsa/powerplantmatching repository
+            logger.warning("You are using a development version of powerplantmatching.")
+            try:
+                from git import Repo
+
+                branch_name = Repo(
+                    Path(__file__).parent, search_parent_directories=True
+                ).active_branch.name
+                url = config["matched_data_url"].format(tag=branch_name)
+            except ImportError as e:
+                raise ImportError(
+                    "GitPython is not installed. Need to install optional `dev` dependencies with `uv sync --extra dev`."
+                ) from e
+        else:
+            # Regular usage: retrieve data from the latest release
+            url = config["matched_data_url"].format(tag="latest")
         logger.info(f"Retrieving data from {url}")
         df = (
             pd.read_csv(url, index_col=0)
