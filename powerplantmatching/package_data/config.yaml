@@ -76,8 +76,8 @@ ENTSOE:
   url: https://raw.githubusercontent.com/pypsa-meets-earth/ppm-data-backup/main/entsoe_powerplants.csv
   fn: entsoe_powerplants.csv
 ENTSOE-EIC:
-  url: https://eepublicdownloads.entsoe.eu/eic-codes-csv/W_eiccodes.csv
-  fn: entsoe_eic_codes.csv
+  url: https://eepublicdownloads.blob.core.windows.net/cio-lio/csv/W_eicCodes.csv
+  fn: W_eicCodes.csv
 JRC:
   reliability_score: 4
   fn: jrc-hydro-power-plant-database.csv
