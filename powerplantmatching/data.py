@@ -68,15 +68,15 @@ def BEYONDCOAL(raw=False, update=False, config=None):
     config = get_config() if config is None else config
 
     fn = get_raw_file("BEYONDCOAL", update=update, config=config)
-    df = pd.read_excel(fn, sheet_name="Plant", header=0, skiprows=[0,2,3])
+    df = pd.read_excel(fn, sheet_name="Plant", header=0, skiprows=[0, 2, 3])
     df.set_index("BFF plant ID", drop=False, inplace=True)
 
     if raw:
         return df
 
-    status_list = config["BEYONDCOAL"].get("status", ["Open"]) # noqa
+    status_list = config["BEYONDCOAL"].get("status", ["Open"])  # noqa
 
-    df_units = pd.read_excel(fn, sheet_name="Unit", header=0, skiprows=[0,2,3])
+    df_units = pd.read_excel(fn, sheet_name="Unit", header=0, skiprows=[0, 2, 3])
 
     RENAME_COLUMNS = {
         "Plant name": "Name",
@@ -91,30 +91,40 @@ def BEYONDCOAL(raw=False, update=False, config=None):
     }
 
     phaseout_col = "Covered by country phase-out? [if yes: country phase-out year]"
-    df_units[phaseout_col] = pd.to_numeric(df_units[phaseout_col], errors='coerce')
+    df_units[phaseout_col] = pd.to_numeric(df_units[phaseout_col], errors="coerce")
     unit_phaseout = df_units.groupby("BFF plant ID")[phaseout_col].max()
 
     # plant-level does not contain CHP information
     def get_dominant_type(group):
         type_capacity = group.groupby("Unit type")["Capacity"].sum()
-        return "CHP" if type_capacity.get("chp", 0) > type_capacity.get("conventional", 0) else "PP"
+        return (
+            "CHP"
+            if type_capacity.get("chp", 0) > type_capacity.get("conventional", 0)
+            else "PP"
+        )
 
-    unit_set = df_units.groupby("BFF plant ID").apply(get_dominant_type, include_groups=False)
-    
+    unit_set = df_units.groupby("BFF plant ID").apply(
+        get_dominant_type, include_groups=False
+    )
+
     # for retired plants
     unit_capacity = df_units.groupby("BFF plant ID").Capacity.sum()
 
     df = (
-        df
-        .rename(columns=RENAME_COLUMNS)
-        .query('status in @status_list')
+        df.rename(columns=RENAME_COLUMNS)
+        .query("status in @status_list")
         .assign(
-            DateOut=lambda df: df.rename(columns=RENAME_COLUMNS).DateOut.replace({"After 2030": np.nan, "By 2030": 2030}).infer_objects(copy=False).combine_first(unit_phaseout),
+            DateOut=lambda df: df.rename(columns=RENAME_COLUMNS)
+            .DateOut.replace({"After 2030": np.nan, "By 2030": 2030})
+            .infer_objects(copy=False)
+            .combine_first(unit_phaseout),
             projectID=lambda df: "BEYOND-" + df.projectID,
             Fueltype=lambda df: df.Fueltype.str.title(),
             Set=unit_set,
             Technology=np.nan,
-            Capacity=lambda df: df.Capacity.add(df["Coal capacity under construction"], fill_value=0).combine_first(unit_capacity),
+            Capacity=lambda df: df.Capacity.add(
+                df["Coal capacity under construction"], fill_value=0
+            ).combine_first(unit_capacity),
         )
         .pipe(scale_to_net_capacities)
         .pipe(clean_name)
