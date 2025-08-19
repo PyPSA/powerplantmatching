@@ -110,4 +110,4 @@ Parts of the repository may be licensed under different licenses, please see the
 This repository uses the [REUSE](https://reuse.software/) conventions to indicate the licenses that apply to individual files and parts of the repository.
 
 (c) Contributors to powerplantmatching <https://github.com/pypsa/powerplantmatching>
-You can find a list of contributors in the [contributors page](docs/contributors.md).
+You can find a list of contributors in the [contributors page](https://github.com/PyPSA/powerplantmatching/graphs/contributors).
