@@ -1764,7 +1764,7 @@ def GCPT(raw=False, update=False, config=None):
 
     config = get_config() if config is None else config
     fn = get_raw_file("GCPT", update=update, config=config)
-    df = pd.read_excel(fn, sheet_name="Units")
+    df = pd.read_excel(fn, sheet_name="Units", na_values=["not found"])
 
     if raw:
         return df
@@ -1782,21 +1782,23 @@ def GCPT(raw=False, update=False, config=None):
         "GEM unit/phase ID": "projectID",
     }
     fueltype_dict = {
-        "bituminous": "Hard Coal",
-        "lignite": "Lignite",
-        "unknown": "Hard Coal",
-        "subbituminous": "Hard Coal",
-        "waste coal": "Hard Coal",
         "anthracite": "Hard Coal",
-        "lignite with CCS": "Lignite",
+        "bituminous": "Hard Coal",
         "bituminous with CCS": "Hard Coal",
+        "lignite": "Lignite",
+        "lignite with CCS": "Lignite",
+        "subbituminous": "Hard Coal",
         "subbituminous with CCS": "Hard Coal",
+        "unknown": "Hard Coal",
         "unknown with CCS": "Hard Coal",
+        "waste coal": "Hard Coal",
     }
 
     planned_retirement = df["Planned retirement"].apply(pd.to_numeric, errors="coerce")
 
     status_list = config["GCPT"].get("status", ["operating"])  # noqa: F841
+
+    BTU_PER_KWH = 3412.14
 
     df = df.rename(columns=RENAME_COLUMNS)
     df_final = (
@@ -1806,16 +1808,17 @@ def GCPT(raw=False, update=False, config=None):
         .dropna(subset="Capacity")
         .assign(
             DateIn=df["DateIn"].apply(pd.to_numeric, errors="coerce"),
-            DateOut=df["DateOut"].apply(pd.to_numeric, errors="coerce"),
+            DateOut=df["DateOut"]
+            .apply(pd.to_numeric, errors="coerce")
+            .combine_first(planned_retirement),
             lat=df["lat"].apply(pd.to_numeric, errors="coerce"),
             lon=df["lon"].apply(pd.to_numeric, errors="coerce"),
+            Set=df["CHP"].replace({"yes": "CHP", "no": "PP"}),
+            Efficiency=BTU_PER_KWH / df["Heat rate (Btu per kWh)"],
         )
-        .assign(DateOut=lambda x: x["DateOut"].combine_first(planned_retirement))
         .query("Status in @status_list")
         .pipe(lambda x: x[df.columns.intersection(config.get("target_columns"))])
         .pipe(lambda x: x.replace({"Fueltype": fueltype_dict}))
-        .pipe(lambda x: x.assign(Technology="Steam Turbine"))
-        .pipe(lambda x: x.assign(Set="PP"))
         .pipe(config_filter, config)
     )
 
