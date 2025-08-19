@@ -282,9 +282,9 @@ target_fueltypes:
   # given by the list. An empty string results in a regex expression containing only the key.
   # Parsed of representatives at the top may be overwritten by representatives further below.
   Other: ".*"
-  Solid Biomass: [biological, bioenergy, agricultural, wood, biomass, feste biomasse]
-  Biogas: [biogas, biomethan, gasförmige biomasse]
-  Nuclear: [nuclear]
+  Solid Biomass: [biological, bioenergy, agricultural, wood, biomass, feste biomasse, biomasa, biomassa]
+  Biogas: [biogas, biogaz, biomethan, gasförmige biomasse]
+  Nuclear: [nuclear, kernkraft, atomkraft, nucléaire, atomowa, jądrowa, kjernekraft, kern, atom, atoom]
   Natural Gas:
     [
       ccgt,
@@ -297,6 +297,13 @@ target_fueltypes:
       mixed fossil fuels,
       erdgas,
       andere gase,
+      gaz,
+      gaz naturel,
+      gas natural,
+      naturgass,
+      gaz ziemny,
+      gass,
+      aardgas,
     ]
   Hydro:
     [
@@ -307,19 +314,23 @@ target_fueltypes:
       ror,
       hydro,
       hidro,
+      hydraulique,
       hydroelectric,
       wasserkraft,
+      waterkracht,
       wasser,
       vannkraft,
+      vattenkraft,
       wodna,
       idroelettrica,
+      idraulica,
     ]
-  Hard Coal: [coal, coke, steinkohle]
-  Lignite: [brown coal, lignite, peat, braunkohle]
-  Oil: [oil, diesel, mineralölprodukte]
+  Hard Coal: [coal, coke, steinkohle, houille, charbon dur, hulla, carbón duro, carbone duro, antracite, steinkul, węgiel kamienny, steenkool]
+  Lignite: [brown coal, lignite, peat, braunkohle, ligni.*, brunatny, brunkul, bruinkool]
+  Oil: [oil, diesel, mineralölprodukte, fioul, mazout, petrol, olio, olej, carburante, olie]
   Geothermal: ""
   Solar: ""
-  Waste: ["abfall.*", "waste", "mva", "müll", "afval", "energy recovery", "incineration"]
+  Waste: ["abfall.*", "waste", "mva", "müll", "afval", "affald", "energy recovery", "incineration", "reststoffe", "refuse", "déchets", "ordures", "residuos", "basura", "rifiuti", "scarti", "odpady", "śmieci"]
   Wind: ""
   Battery: [Electro-chemical, battery]
 target_sets:
@@ -341,6 +352,21 @@ target_sets:
       power and heat,
       heat and power,
       chp,
+      cogen,
+      heat & power,
+      power & heat,
+      cogeneración,
+      cogenerazione,
+      kogeneracja,
+      combinada calor y electricidad,
+      kraftvarmeverk,
+      kraftvarmeværk,
+      samproduktion,
+      samproduksjon,
+      kvv,
+      wkk,
+      warmtekrachtkoppeling,
+      warmte-krachtcentrale,
     ]
   Store: [battery, storage, store]
 target_technologies:
