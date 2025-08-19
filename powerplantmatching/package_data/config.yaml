@@ -57,8 +57,9 @@ BEYONDCOAL:
   net_capacity: false
   aggregated_units: true
   reliability_score: 6
-  fn: Europe_Beyond_Coal-European_Coal_Database_hc5n.xlsx
-  url: https://beyond-coal.eu/wp-content/uploads/2021/07/2021-04-20_Europe_Beyond_Coal-European_Coal_Database_hc5n.xlsx
+  status: ["Construction", "Open", "Planned", "Retired"]
+  fn: 2025-07-24-BeyondFossilFuels-Europe_Coal_Plants_Database.xlsx
+  url: https://beyondfossilfuels.org/wp-content/uploads/2025/07/2025-07-24-BeyondFossilFuels-Europe_Coal_Plants_Database.xlsx
 IRENA:
   net_capacity: true
   aggregated_units: true
