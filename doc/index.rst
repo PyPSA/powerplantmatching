@@ -150,15 +150,15 @@ in-depth discussions and exchanges of ideas and code with
 
 
 
-Licence
+License
 -------
 
-Copyright 2018-2024 Fabian Gotzens (FZ Jülich), Jonas Hörsch (KIT),
-Fabian Hofmann (FIAS)
+Copyright 2018-2024 Fabian Gotzens (FZ Jülich), Jonas Hörsch (KIT), Fabian Hofmann (FIAS)
+Copyright 2025- The powerplantmatching contributors.
 
-powerplantmatching is released as free software under the
-`GPLv3 <http://www.gnu.org/licenses/gpl-3.0.en.html>`__, see
-`LICENSE <LICENSE>`__ for further information.
+powerplantmatching is released as free software, mostly under the `MIT license <https://github.com/PyPSA/powerplantmatching/tree/master/LICENSES/MIT.txt>`__,
+with some dependent package binaries being licensed under `Apache 2.0 license <https://github.com/PyPSA/powerplantmatching/tree/master/LICENSES/Apache-2.0.txt>`__.
+The data output `powerplants.csv` is released under the `CC BY 4.0 license <https://github.com/PyPSA/powerplantmatching/tree/master/LICENSES/CC-BY-4.0.txt>`__.
 
 
 .. toctree::
