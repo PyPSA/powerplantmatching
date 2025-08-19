@@ -2029,7 +2029,9 @@ def GGPT(raw=False, update=False, config=None):
     config = get_config() if config is None else config
     fn = get_raw_file("GGPT", update=update, config=config)
     df = pd.read_excel(fn, sheet_name="Gas & Oil Units", na_values=["not found"])
-    df_small = pd.read_excel(fn, sheet_name="sub-threshold units", na_values=["not found"])
+    df_small = pd.read_excel(
+        fn, sheet_name="sub-threshold units", na_values=["not found"]
+    )
     df = pd.concat([df, df_small], ignore_index=True)
 
     if raw:
@@ -2085,7 +2087,9 @@ def GGPT(raw=False, update=False, config=None):
         .dropna(subset="Capacity")
         .assign(
             DateIn=df["DateIn"].apply(pd.to_numeric, errors="coerce"),
-            DateOut=df["DateOut"].apply(pd.to_numeric, errors="coerce").combine_first(df["Planned retire"]),
+            DateOut=df["DateOut"]
+            .apply(pd.to_numeric, errors="coerce")
+            .combine_first(df["Planned retire"]),
             lat=df["lat"].apply(pd.to_numeric, errors="coerce"),
             lon=df["lon"].apply(pd.to_numeric, errors="coerce"),
             Capacity=df["Capacity"].apply(pd.to_numeric, errors="coerce"),
