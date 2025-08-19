@@ -1900,6 +1900,11 @@ def GWPT(raw=False, update=False, config=None):
     config = get_config() if config is None else config
     fn = get_raw_file("GWPT", update=update, config=config)
     df = pd.read_excel(fn, sheet_name="Data")
+    df_small = pd.read_excel(fn, sheet_name="Below Threshold")
+    df = pd.concat([df, df_small], ignore_index=True)
+
+    if raw:
+        return df
 
     RENAME_COLUMNS = {
         "Project Name": "Name",
