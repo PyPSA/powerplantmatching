@@ -2135,7 +2135,9 @@ def GHPT(raw=False, update=False, config=None):
     """
     config = get_config() if config is None else config
     fn = get_raw_file("GHPT", update=update, config=config)
-    df = pd.read_excel(fn, sheet_name="Data")
+    large = pd.read_excel(fn, sheet_name="Data")
+    small = pd.read_excel(fn, sheet_name="Below Threshold")
+    df = pd.concat([large, small], ignore_index=True)
 
     if raw:
         return df
@@ -2148,7 +2150,7 @@ def GHPT(raw=False, update=False, config=None):
         "Start Year": "DateIn",
         "Retired Year": "DateOut",
         "GEM unit ID": "projectID",
-        "Country 1": "Country",
+        "Country/Area 1": "Country",
         "Technology Type": "Technology",
     }
     technology_dict = {
@@ -2156,7 +2158,8 @@ def GHPT(raw=False, update=False, config=None):
         "pumped storage": "Pumped Storage",
         "run-of-river": "Run-Of-River",
         "conventional and pumped storage": "Pumped Storage",
-        "conventional and run-of-river": "Run-Of-River",
+        "conventional and run-of-river": "Reservoir",
+        "unknown": "Run-Of-River",
     }
     status_list = config["GHPT"].get("status", ["operating"])  # noqa: F841
     df = df.rename(columns=RENAME_COLUMNS)

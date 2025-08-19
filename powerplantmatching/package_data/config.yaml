@@ -205,8 +205,8 @@ GHPT:
   net_capacity: false
   reliability_score: 4
   status: ["operating", "retired", "construction"]
-  fn: Global-Hydropower-Tracker-April-2024.xlsx
-  url: https://tubcloud.tu-berlin.de/s/sEztyBLdJS5sNHY/download/Global-Hydropower-Tracker-April-2024.xlsx
+  fn: Global-Hydropower-Tracker-April-2025.xlsx
+  url: https://tubcloud.tu-berlin.de/s/2xqxRmfP4FKTrLf/download/Global-Hydropower-Tracker-April-2025.xlsx
 
 MASTR:
   net_capacity: true
@@ -306,9 +306,13 @@ target_fueltypes:
       run-of-river,
       ror,
       hydro,
+      hidro,
       hydroelectric,
       wasserkraft,
       wasser,
+      vannkraft,
+      wodna,
+      idroelettrica,
     ]
   Hard Coal: [coal, coke, steinkohle]
   Lignite: [brown coal, lignite, peat, braunkohle]
