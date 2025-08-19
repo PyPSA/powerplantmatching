@@ -2028,42 +2028,54 @@ def GGPT(raw=False, update=False, config=None):
     """
     config = get_config() if config is None else config
     fn = get_raw_file("GGPT", update=update, config=config)
-    df = pd.read_excel(fn, sheet_name="Gas & Oil Units")
+    df = pd.read_excel(fn, sheet_name="Gas & Oil Units", na_values=["not found"])
+    df_small = pd.read_excel(fn, sheet_name="sub-threshold units", na_values=["not found"])
+    df = pd.concat([df, df_small], ignore_index=True)
 
     if raw:
         return df
 
     RENAME_COLUMNS = {
         "Plant name": "Name",
-        "Fuel": "Fueltype",
         "Capacity (MW)": "Capacity",
         "Latitude": "lat",
         "Longitude": "lon",
         "Start year": "DateIn",
         "Retired year": "DateOut",
         "CHP": "Set",
+        "Fuel": "Fueltype",
         "GEM location ID": "projectID",
+        "Country/Area": "Country",
+        "Turbine/Engine Technology": "Technology",
     }
 
+    def classify_fuel(s):
+        if s["Fuel classification?"] in ["Gas only", "LNG only"]:
+            return "Natural Gas"
+        elif s["Fuel classification?"] == "Oil only":
+            return "Oil"
+        elif s["Fueltype"].startswith("fossil liquids"):
+            return "Oil"
+        else:
+            return "Natural Gas"
+
     technology_dict = {
-        "GT": "Steam Turbine",
-        "IC": "Steam Turbine",
-        "CC": "CCGT",
-        "GT/IC": "Steam Turbine",
+        "gas turbine": "Steam Turbine",
+        "internal combustion": "Steam Turbine",
+        "combined cycle": "CCGT",
         "ICCC": "CCGT",
         "ISCC": "CCGT",
-        "ST": "Steam Turbine",
+        "steam turbine": "Steam Turbine",
         "AFC": "CCGT",
+        "unknown": np.nan,
     }
 
     set_dict = {
-        "Y": "CHP",
-        "N": "PP",
-        "not found": "PP",
+        "yes": "CHP",
+        "no": "PP",
     }
 
     status_list = config["GGPT"].get("status", ["operating"])  # noqa: F841
-    gas_fuels = ["NG", "LNG", "BU", "LFG", "BG", "BFG", "COG", "CM", "H", "OG"]
 
     df = df.rename(columns=RENAME_COLUMNS)
     df_final = (
@@ -2071,26 +2083,18 @@ def GGPT(raw=False, update=False, config=None):
         .pipe(set_column_name, "GGPT")
         .pipe(convert_to_short_name)
         .dropna(subset="Capacity")
-        .pipe(lambda x: x.query("Capacity != 'not found'"))
         .assign(
             DateIn=df["DateIn"].apply(pd.to_numeric, errors="coerce"),
-            DateOut=df["DateOut"].apply(pd.to_numeric, errors="coerce"),
+            DateOut=df["DateOut"].apply(pd.to_numeric, errors="coerce").combine_first(df["Planned retire"]),
             lat=df["lat"].apply(pd.to_numeric, errors="coerce"),
             lon=df["lon"].apply(pd.to_numeric, errors="coerce"),
-            Capacity=lambda df: pd.to_numeric(df.Capacity, "coerce"),
-            Fueltype=df["Fueltype"].apply(
-                lambda s: (
-                    "Natural Gas"
-                    if any(sub in gas_fuels for sub in s.split("/"))
-                    else "Oil"
-                )
-            ),
+            Capacity=df["Capacity"].apply(pd.to_numeric, errors="coerce"),
+            Fueltype=df.apply(classify_fuel, axis=1),
         )
         .query("Status in @status_list")
         .pipe(lambda x: x[df.columns.intersection(config.get("target_columns"))])
         .pipe(lambda x: x.replace({"Technology": technology_dict}))
-        .pipe(lambda x: x.replace({"Set": set_dict}).fillna({"Set": "PP"}))
-        .assign(Fueltype="Natural Gas")
+        .pipe(lambda x: x.replace({"Set": set_dict}))
         .pipe(config_filter, config)
     )
     return df_final
