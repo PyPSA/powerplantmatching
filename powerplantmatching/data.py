@@ -1660,7 +1660,7 @@ def GBPT(raw=False, update=False, config=None):
         "bioenergy: wood & other biomass (biocoal)": "Solid Biomass",
         "bioenergy: wood & other biomass (solids)": "Solid Biomass",
         "bioenergy: agricultural waste (syngas)": "Solid Biomass",
-        # biogas    
+        # biogas
         "bioenergy: agricultural waste (biogas)": "Biogas",
         "bioenergy: refuse (landfill gas)": "Biogas",
         "bioenergy: wastewater and sewage sludge (solids or biogas)": "Biogas",
@@ -1685,7 +1685,9 @@ def GBPT(raw=False, update=False, config=None):
             DateOut=df["DateOut"].apply(pd.to_numeric, errors="coerce"),
             lat=df["lat"].apply(pd.to_numeric, errors="coerce"),
             lon=df["lon"].apply(pd.to_numeric, errors="coerce"),
-            Fueltype=df["Fueltype"].apply(lambda v: fueltype_dict[v.split(",")[0].strip()])
+            Fueltype=df["Fueltype"].apply(
+                lambda v: fueltype_dict[v.split(",")[0].strip()]
+            ),
         )
         .query("Status in @status_list")
         .pipe(lambda x: x[df.columns.intersection(config.get("target_columns"))])
