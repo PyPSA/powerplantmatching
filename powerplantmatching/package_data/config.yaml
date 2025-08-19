@@ -193,8 +193,8 @@ GBPT:
   net_capacity: false
   reliability_score: 4
   status: ["operating", "retired", "construction"]
-  fn: Global-Bioenergy-Power-Tracker-GBPT-V1.xlsx
-  url: https://tubcloud.tu-berlin.de/s/F34bbwcxYHL9ZR4/download/Global-Bioenergy-Power-Tracker-GBPT-V1.xlsx
+  fn: Global-Bioenergy-Power-Tracker-GBPT-September-2024.xlsx
+  url: https://tubcloud.tu-berlin.de/s/CzMBKe2rAcsoq7c/download/Global-Bioenergy-Power-Tracker-GBPT-September-2024.xlsx
 GNPT:
   net_capacity: false
   reliability_score: 4
@@ -315,7 +315,7 @@ target_fueltypes:
   Oil: [oil, diesel, mineralölprodukte]
   Geothermal: ""
   Solar: ""
-  Waste: ["abfall.*", "waste"]
+  Waste: ["abfall.*", "waste", "mva", "müll", "afval", "energy recovery", "incineration"]
   Wind: ""
   Battery: [Electro-chemical, battery]
 target_sets:

@@ -1632,37 +1632,44 @@ def GBPT(raw=False, update=False, config=None):
     """
     config = get_config() if config is None else config
     fn = get_raw_file("GBPT", update=update, config=config)
-    df = pd.read_excel(fn, sheet_name="Data")
+    large = pd.read_excel(fn, sheet_name="Data")
+    small = pd.read_excel(fn, sheet_name="Below Threshold")
+    df = pd.concat([large, small], ignore_index=True)
 
     if raw:
         return df
 
     RENAME_COLUMNS = {
-        "Project name": "Name",
+        "Project Name": "Name",
         "Capacity (MW)": "Capacity",
-        "Fuel 1": "Fueltype",
-        "Operating status": "Status",
+        "Fuel": "Fueltype",
         "Latitude": "lat",
         "Longitude": "lon",
-        "Unit start year": "DateIn",
-        "Retired year": "DateOut",
+        "Start Year": "DateIn",
+        "Retired Year": "DateOut",
+        "Country/Area": "Country",
         "GEM phase ID": "projectID",
     }
+
     fueltype_dict = {
-        "bioenergy - agricultural waste (solids)": "Solid Biomass",
-        "bioenergy - refuse (municipal and industrial wastes)": "Solid Biomass",
-        "bioenergy - refuse (syngas)": "Solid Biomass",
-        "bioenergy - agricultural waste (biogas)": "Biogas",
-        "bioenergy - wood & other biomass (solids)": "Solid Biomass",
-        "bioenergy - ethanol": "Solid Biomass",
-        "bioenergy - paper mill wastes": "Solid Biomass",
-        "bioenergy - biodiesel": "Solid Biomass",
-        "bioenergy - unknown": "Solid Biomass",
-        "bioenergy - wastewater and sewage sludge (solids or biogas)": "Solid Biomass",
-        "bioenergy - refuse (landfill gas)": "Biogas",
-        "bioenergy - agricultural waste (unknown)": "Solid Biomass",
-        "bioenergy - agricultural waste (syngas)": "Solid Biomass",
-        "bioenergy - wood & other biomass (biocoal)": "Solid Biomass",
+        # solid biomass
+        "bioenergy: agricultural waste (solids)": "Solid Biomass",
+        "bioenergy: agricultural waste (unknown)": "Solid Biomass",
+        "bioenergy: paper mill wastes": "Solid Biomass",
+        "bioenergy: unknown": "Solid Biomass",
+        "bioenergy: wood & other biomass (biocoal)": "Solid Biomass",
+        "bioenergy: wood & other biomass (solids)": "Solid Biomass",
+        "bioenergy: agricultural waste (syngas)": "Solid Biomass",
+        # biogas    
+        "bioenergy: agricultural waste (biogas)": "Biogas",
+        "bioenergy: refuse (landfill gas)": "Biogas",
+        "bioenergy: wastewater and sewage sludge (solids or biogas)": "Biogas",
+        # oil
+        "bioenergy: ethanol": "Oil",
+        "bioenergy: biodiesel": "Oil",
+        # waste
+        "bioenergy: refuse (municipal and industrial wastes)": "Waste",
+        "bioenergy: refuse (syngas)": "Solid Biomass",
     }
 
     status_list = config["GBPT"].get("status", ["operating"])  # noqa: F841
@@ -1678,12 +1685,12 @@ def GBPT(raw=False, update=False, config=None):
             DateOut=df["DateOut"].apply(pd.to_numeric, errors="coerce"),
             lat=df["lat"].apply(pd.to_numeric, errors="coerce"),
             lon=df["lon"].apply(pd.to_numeric, errors="coerce"),
+            Fueltype=df["Fueltype"].apply(lambda v: fueltype_dict[v.split(",")[0].strip()])
         )
         .query("Status in @status_list")
         .pipe(lambda x: x[df.columns.intersection(config.get("target_columns"))])
-        .pipe(lambda x: x.replace({"Fueltype": fueltype_dict}))
-        .assign(Technology="Steam Turbine")
-        .assign(Set="PP")
+        .assign(Technology=np.nan)
+        .assign(Set=np.nan)
         .pipe(config_filter, config)
     )
     return df_final
