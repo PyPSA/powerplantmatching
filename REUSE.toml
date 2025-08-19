@@ -1,6 +1,6 @@
 version = 1
 SPDX-PackageName = "powerplantmatching"
-SPDX-PackageSupplyer = "PyPSA"
+SPDX-PackageSupplier = "PyPSA <https://pypsa.org>"
 SPDX-PackageDownloadLocation = "https://github.com/pypsa/powerplantmatching"
 
 [[annotations]]
