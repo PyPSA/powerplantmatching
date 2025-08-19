@@ -173,9 +173,10 @@ GCPT:
 GGTPT:
   net_capacity: false
   reliability_score: 4
-  status: ["operating", "retired", "construction"]
-  fn: Geothermal-Power-Tracker-May-2024.xlsx
-  url: https://tubcloud.tu-berlin.de/s/Hz3ZD7YcKnZTs9t/download/Geothermal-Power-Tracker-May-2024.xlsx
+  aggregated_units: false
+  status: ["operating", "retired", "construction", "mothballed"]
+  fn: Geothermal-Power-Tracker-March-2025-Final.xlsx
+  url: https://tubcloud.tu-berlin.de/s/dNoEsLeGtCWDkoc/download/Geothermal-Power-Tracker-March-2025-Final.xlsx
 GWPT:
   net_capacity: false
   reliability_score: 4

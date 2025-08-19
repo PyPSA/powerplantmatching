@@ -1846,11 +1846,11 @@ def GGTPT(raw=False, update=False, config=None):
 
     RENAME_COLUMNS = {
         "Project Name": "Name",
-        "Capacity (MW)": "Capacity",
+        "Unit Capacity (MW)": "Capacity",
         "Latitude": "lat",
         "Longitude": "lon",
-        "Start year": "DateIn",
-        "Retired year": "DateOut",
+        "Start Year": "DateIn",
+        "Retired Year": "DateOut",
         "Country/Area": "Country",
         "GEM unit ID": "projectID",
     }
