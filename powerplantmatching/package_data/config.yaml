@@ -211,7 +211,7 @@ GHPT:
 MASTR:
   net_capacity: true
   reliability_score: 8
-  status: ["In Betrieb", "In Planung", "Endgültig stillgelegt"]
+  status: ["In Betrieb", "In Planung", "Endgültig stillgelegt", "Vorübergehend stillgelegt"]
   fn: bnetza_open_mastr_2025-02-09.zip
   url: https://zenodo.org/records/14783581/files/bnetza_open_mastr_2025-02-09.zip
 
@@ -282,7 +282,7 @@ target_fueltypes:
   # given by the list. An empty string results in a regex expression containing only the key.
   # Parsed of representatives at the top may be overwritten by representatives further below.
   Other: ".*"
-  Solid Biomass: [biological, bioenergy, agricultural, wood, biomass, feste biomasse, biomasa, biomassa]
+  Solid Biomass: [biological, bioenergy, agricultural, wood, holz, biomass, feste biomasse, biomasa, biomassa, feste biogene stoffe, pellets, stroh, straw]
   Biogas: [biogas, biogaz, biomethan, gasförmige biomasse]
   Nuclear: [nuclear, kernkraft, atomkraft, nucléaire, atomowa, jądrowa, kjernekraft, kern, atom, atoom]
   Natural Gas:
@@ -304,6 +304,7 @@ target_fueltypes:
       gaz ziemny,
       gass,
       aardgas,
+      flüssiggas
     ]
   Hydro:
     [
@@ -327,10 +328,10 @@ target_fueltypes:
     ]
   Hard Coal: [coal, coke, steinkohle, houille, charbon dur, hulla, carbón duro, carbone duro, antracite, steinkul, węgiel kamienny, steenkool]
   Lignite: [brown coal, lignite, peat, braunkohle, ligni.*, brunatny, brunkul, bruinkool]
-  Oil: [oil, diesel, mineralölprodukte, fioul, mazout, petrol, olio, olej, carburante, olie]
+  Oil: [oil, diesel, biodiesel, methanol, heizöl, ethanol, mineralölprodukte, öl, fioul, mazout, petrol, olio, olej, carburante, olie]
   Geothermal: ""
   Solar: ""
-  Waste: ["abfall.*", "waste", "mva", "müll", "afval", "affald", "energy recovery", "incineration", "reststoffe", "refuse", "déchets", "ordures", "residuos", "basura", "rifiuti", "scarti", "odpady", "śmieci"]
+  Waste: ["abfall.*", "waste", "mva", "müll", "afval", "affald", "energy recovery", "incineration", "reststoffe", "refuse", "déchets", "ordures", "residuos", "basura", "rifiuti", "scarti", "odpady", "śmieci", "abfälle"]
   Wind: ""
   Battery: [Electro-chemical, battery]
 target_sets:
@@ -368,7 +369,7 @@ target_sets:
       warmtekrachtkoppeling,
       warmte-krachtcentrale,
     ]
-  Store: [battery, storage, store]
+  Store: [battery, storage, store, speicher, pumped]
 target_technologies:
   # Provide a mapping of the keys to a list or a regex expression which are used for parsing.
   # A list will be converted to a regex expression matching all words (case-insensitive)
@@ -378,14 +379,14 @@ target_technologies:
   OCGT: [ocgt, gasturbinen ohne abhitzekessel]
   Steam Turbine: [steam, turbine, kondensationsmaschine, gegendruckmaschine, dampfmotor]
   Combustion Engine: [combustion engine, verbrennungsmotor, stirlingmotor]
-  Run-Of-River: [run-off, run off, run of river, run-of-river, ror, laufwasseranlage]
-  Pumped Storage: [pumped hydro, pumped, speicherwasseranlage]
-  Reservoir: ""
+  Run-Of-River: [run-off, run off, run of river, run-of-river, ror, laufwasseranlage, laufwasser, abwasserkraft, trinkwassersystem, brauchwassersystem, pasada, przepływowa, fluente, elvekraft, doorstroom, älvkraft]
+  Reservoir: [reservoir, réservoir, impoundment, talsperre, stausee, speicherwasseranlage, speicherwasser, barrage, embalse, bacino, zbiornik, magasinverk, damkraftverk, reguleringsmagasin]
+  Pumped Storage: [pumped hydro, pumped, kavernen, bombeo, reversible, reversibel, oberbecken, unterbecken, pompage, pompaggio, pompowa, pumpekraftverk]
   Marine: ""
-  Onshore: ""
-  Offshore: ""
   PV: [pv, photo-voltaic, photo voltaic]
   CSP: ""
+  Onshore: ""
+  Offshore: ""
 clean_name:
   remove_common_words: false # remove words which appear more that 20 times in all entries
   remove_duplicated_words: true

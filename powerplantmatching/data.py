@@ -35,7 +35,7 @@ from .cleaning import (
     gather_specifications,
 )
 from .core import _package_data, get_config
-from .heuristics import scale_to_net_capacities
+from .heuristics import scale_to_net_capacities, PLZ_to_LatLon_map
 from .utils import (
     config_filter,
     convert_to_short_name,
@@ -2226,7 +2226,10 @@ def MASTR(
         defaults to powerplantmatching.config.get_config()
 
     """
+
     config = get_config() if config is None else config
+
+    THRESHOLD_KW = 1000  # noqa: F841
 
     RENAME_COLUMNS = {
         "EinheitMastrNummer": "projectID",
@@ -2251,6 +2254,7 @@ def MASTR(
         "Energietraeger",
         "Hauptbrennstoff",
         "NameStromerzeugungseinheit",
+        "Technologie",
     ]
 
     fn = get_raw_file("MASTR", update=update, config=config)
@@ -2261,6 +2265,7 @@ def MASTR(
         "Hydro": "hydro_raw.csv",
         "Wind": "wind_raw.csv",
         "Solar": "solar_raw.csv",
+        "Storage": "bnetza_mastr_storage_raw.csv"
     }
     data_frames = []
     with ZipFile(fn, "r") as file:
@@ -2272,6 +2277,13 @@ def MASTR(
                         "GeplantesInbetriebnahmedatum",
                         "ThermischeNutzleistung",
                         "KwkMastrNummer",
+                        "Batterietechnologie",
+                        "DatumBeginnVoruebergehendeStilllegung",
+                        "DatumWiederaufnahmeBetrieb",
+                        "Postleitzahl",
+                        "Ort",
+                        "Gemeinde",
+                        "Landkreis",
                     ]
                     target_columns = (
                         target_columns + PARSE_COLUMNS + list(RENAME_COLUMNS.keys())
@@ -2279,32 +2291,57 @@ def MASTR(
                     usecols = available_columns.intersection(target_columns)
                     df = pd.read_csv(file.open(name), usecols=usecols).assign(
                         Filesuffix=fueltype
-                    )
+                    ).query("Nettonennleistung >= @THRESHOLD_KW")
                     data_frames.append(df)
                     break
     df = pd.concat(data_frames).reset_index(drop=True)
+
+    cols = ["NutzbareSpeicherkapazitaet", "VerknuepfteEinheit"]
+    with ZipFile(fn, "r") as file:
+        fn_storage_units = "bnetza_open_mastr_2025-02-09/bnetza_mastr_storage_units_raw.csv"
+        storage_units = pd.read_csv(file.open(fn_storage_units), usecols=cols)
+
+    storage_mwh = (
+        storage_units
+        .assign(VerknuepfteEinheit=lambda x: x.VerknuepfteEinheit.str.split(", "))
+        .assign(n=lambda x: x.VerknuepfteEinheit.str.len())
+        .explode("VerknuepfteEinheit")
+        .assign(NutzbareSpeicherkapazitaet=lambda x: x.NutzbareSpeicherkapazitaet / x.n)
+        .set_index("VerknuepfteEinheit")["NutzbareSpeicherkapazitaet"]
+    )
+
+    df["StorageCapacity_MWh"] = df["EinheitMastrNummer"].map(storage_mwh) / 1000 #  kWh to MWh
 
     if raw:
         return df
 
     status_list = config["MASTR"].get("status", ["In Betrieb"])  # noqa: F841
-    capacity_threshold_kw = 1000
 
-    df = (
+    PLZ_map = PLZ_to_LatLon_map()
+    df.Postleitzahl = df.Postleitzahl.astype(str).str.replace(r'[^0-9]', '0', regex=True).astype(int)
+    df["PLZ_lat"] = df.Postleitzahl.map(PLZ_map.lat)
+    df["PLZ_lon"] = df.Postleitzahl.map(PLZ_map.lon)
+
+    df_processed = (
         df.rename(columns=RENAME_COLUMNS)
         .query("Status in @status_list")
-        .loc[lambda df: df.Capacity > capacity_threshold_kw]
         .assign(
             projectID=lambda df: "MASTR-" + df.projectID,
+            Name=lambda df: df.Name.combine_first(df.NameStromerzeugungseinheit),
             Country=lambda df: df.Country.map(COUNTRY_MAP),
             Capacity=lambda df: df.Capacity / 1e3,  # kW to MW
-            DateIn=lambda df: pd.to_datetime(df.DateIn).dt.year,
-            DateOut=lambda df: pd.to_datetime(df.DateOut).dt.year,
-        )
-        .assign(
-            DateIn=lambda df: df["DateIn"].combine_first(
+            DateIn=lambda df: pd.to_datetime(df.DateIn).dt.year.combine_first(
                 pd.to_datetime(df["GeplantesInbetriebnahmedatum"]).dt.year
             ),
+            DateOut=lambda df: pd.to_datetime(df.DateOut).dt.year.where(
+                df.Status != "Vorübergehend stillgelegt",
+                pd.to_datetime(df["DatumBeginnVoruebergehendeStilllegung"]).dt.year.where(
+                    df["DatumWiederaufnahmeBetrieb"].isna(),
+                    pd.to_datetime(df.DateOut).dt.year
+                ),
+            ),
+            lat=lambda df: df.lat.combine_first(df.PLZ_lat),
+            lon=lambda df: df.lon.combine_first(df.PLZ_lon),
         )
         .pipe(
             gather_specifications,
@@ -2316,12 +2353,33 @@ def MASTR(
                 df["KwkMastrNummer"].isna() & df["ThermischeNutzleistung"].isna(), "CHP"
             ),
         )
+    )
+
+    psw = df_processed.query("Energietraeger == 'Speicher' and Technologie == 'Pumpspeicher'").index
+    df_processed.loc[psw, ["Fueltype", "Technology"]] = ["Hydro", "Pumped Storage"]
+
+    bat = df_processed.query("Energietraeger == 'Speicher' and Technologie == 'Batterie'").index
+    df_processed.loc[bat, ["Fueltype", "Set"]] =  ["Battery", "Store"]
+    BATTERY_MAPPING = {
+        "Blei-Batterie": "Lead",
+        "Lithium-Batterie": "Lithium",
+        "Sonstige Batterie": np.nan,
+        "Hochtemperaturbatterie": "High-Temperature",
+        "Nickel-Cadmium- / Nickel-Metallhydridbatterie": "Nickel"
+    }
+    df_processed.loc[bat, "Technology"] = df_processed.loc[bat, "Batterietechnologie"].map(BATTERY_MAPPING)
+
+    mask = df_processed.query("Energietraeger in ['Hydro', 'Wind', 'Solar', 'Battery'] and Set == 'Store'").index
+    df_processed.loc[mask, "Set"] = "PP"
+
+    df_final = (
+        df_processed
         .pipe(clean_name)
         .pipe(set_column_name, "MASTR")
         .pipe(config_filter, config)
     )
 
-    return df
+    return df_final
 
 
 # deprecated alias for GGPT
