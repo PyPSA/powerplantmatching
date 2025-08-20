@@ -25,6 +25,7 @@ matching_sources:
   - WIKIPEDIA: Fueltype != 'Solar'
   - GEM
   - MASTR
+  - EESI
 
 # fully_included_sources, these sources are included even without match to the final dataset
 fully_included_sources:
@@ -35,7 +36,7 @@ fully_included_sources:
   - JRC: Country not in ['Switzerland', 'Albania', 'United Kingdom', 'Norway']
   - OPSD: Country not in ['Switzerland', 'Italy', 'Spain', 'Norway', 'Austria']
   - BEYONDCOAL
-  - GEM: Country != 'Germany' or Fueltype == 'Solar'
+  - EESI: Fueltype != 'Hydro' and not (Country == 'Germany' and Fueltype == 'Battery')
   - MASTR
 
 
@@ -214,6 +215,12 @@ MASTR:
   status: ["In Betrieb", "In Planung", "Endgültig stillgelegt", "Vorübergehend stillgelegt"]
   fn: bnetza_open_mastr_2025-02-09.zip
   url: https://zenodo.org/records/14783581/files/bnetza_open_mastr_2025-02-09.zip
+EESI:
+  net_capacity: true
+  reliability_score: 5
+  status: ["Operational"] # since no start years given
+  fn: european-energy-storage-inventory-20250817-2245.json
+  url: https://tubcloud.tu-berlin.de/s/RXWgYbYJpePsWAZ/download/european-energy-storage-inventory-20250817-2245.json
 
 # ---------------------------------------------------------------------------- #
 #                             Data Structure Config                            #
@@ -334,6 +341,9 @@ target_fueltypes:
   Waste: ["abfall.*", "waste", "mva", "müll", "afval", "affald", "energy recovery", "incineration", "reststoffe", "refuse", "déchets", "ordures", "residuos", "basura", "rifiuti", "scarti", "odpady", "śmieci", "abfälle"]
   Wind: ""
   Battery: [Electro-chemical, battery]
+  Mechanical Storage: ""
+  Heat Storage: ""
+  Hydrogen Storage: ""
 target_sets:
   # Provide a mapping of the keys to a list or a regex expression which are used for parsing.
   # A list will be converted to a regex expression matching all words (case-insensitive)
@@ -489,5 +499,6 @@ fuel_to_color:
   Geothermal: darkgoldenrod
   Battery: purple
   Hydrogen Storage: teal
-  Electro-mechanical: teal
+  Mechanical Storage: darkslategray
+  Heat Storage: darkorange
   Total: gold

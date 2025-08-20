@@ -21,6 +21,7 @@ import logging
 import os
 from zipfile import ZipFile
 
+import json
 import entsoe
 import numpy as np
 import pandas as pd
@@ -2438,6 +2439,116 @@ def MASTR(
 )
 def GEM_GGPT(*args, **kwargs):
     return GGPT(*args, **kwargs)
+
+
+def EESI(
+    raw=False,
+    update=False,
+    config=None,
+):
+    """
+    Get the European Energy Storage Inventory (EESI) dataset.
+
+    Provided by the European Commission's Joint Research Centre. Contains
+    chemical, electrochemical, thermal and mechanical energy storage
+    technologies in Europe.
+
+    https://ses.jrc.ec.europa.eu/storage-inventory-maps
+
+    https://ses.jrc.ec.europa.eu/storage-inventory-tool/api/projects
+
+    Parameters
+    ----------
+    raw : Boolean, default False
+        Whether to return the original dataset
+    update: bool, default False
+        Whether to update the data from the url.
+    config : dict, default None
+        Add custom specific configuration, e.g.
+        powerplantmatching.config.get_config(target_countries='Italy'), defaults
+        to powerplantmatching.config.get_config()
+    """
+
+    config = get_config() if config is None else config
+
+    fn = get_raw_file("EESI", update=update, config=config)
+
+    with open(fn) as f:
+        data = json.load(f)
+
+    df = pd.json_normalize(data["projects"], sep="_")
+    float_cols = ["power", "capacity", "facility_latitude", "facility_longitude"]
+    df[float_cols] = df[float_cols].astype(float)
+
+    if raw:
+        return df
+
+    status_list = config["EESI"].get("status", ["Operational"])  # noqa: F841
+
+    RENAME_COLUMNS = {
+        "title": "Name",
+        "power": "Capacity",
+        "capacity": "StorageCapacity_MWh",
+        "facility_latitude": "lat",
+        "facility_longitude": "lon",
+        "facility_country": "Country",
+        "id": "projectID",
+        "technology_name": "Technology",
+        "status": "Status",
+    }
+
+    df_processed = (
+        df.rename(columns=RENAME_COLUMNS)
+        .query("Status in @status_list")
+        .assign(
+            projectID=lambda df: "EESI-" + df.projectID.astype(str),
+            StorageCapacity_MWh=lambda df: df.StorageCapacity_MWh.where(
+                df.StorageCapacity_MWh > 0
+            ),
+            Capacity=lambda df: df.Capacity.where(df.Capacity > 0),
+            Set="Store",
+        )
+    )
+
+    sel = df_processed.query("technology_parentName == 'ElectroChemical'").index
+    df_processed.loc[sel, "Fueltype"] = "Battery"
+
+    sel = df_processed.query("technology_parentName == 'Thermal'").index
+    df_processed.loc[sel, "Fueltype"] = "Heat Storage"
+
+    sel = df_processed.query("technology_parentName == 'Mechanical'").index
+    df_processed.loc[sel, "Fueltype"] = "Mechanical Storage"
+
+    sel = df_processed.query("Technology == 'Power to Gas (H2)'").index
+    df_processed.loc[sel, "Fueltype"] = "Hydrogen Storage"
+
+    sel = df_processed.query("Technology == 'Pumped Hydro Storage (PHS)'").index
+    df_processed.loc[sel, "Fueltype"] = "Hydro"
+
+    TECHNOLOGY_MAPPING = {
+        "Power to Gas (H2)": np.nan,
+        "Lithium-ion batteries": "Li",
+        "Lead Acid batteries": "Pb",
+        "Sodium Sulphur batteries": "NaS",
+        "Redox flow batteries Vanadium": "V",
+        "Sodium Nickel Chloride batteries": "NaNiCl",
+        "Lithium-titanate battery (LTO)": "Li",
+        "Pumped Hydro Storage (PHS)": "Pumped Storage",
+        "Unespecified Storage - mechanical": np.nan,
+        "Compressed Air Energy Storage (CAES)": "CAES",
+        "Flywheel Energy Storage": "Flywheel",
+        "Unspecific Thermal Storage": np.nan,
+        "Molten salts (Sensible Thermal Energy Storage (STES))": "Molten Salt",
+    }
+    df_processed.Technology = df_processed.Technology.map(TECHNOLOGY_MAPPING)
+
+    df_final = (
+        df_processed.pipe(clean_name)
+        .pipe(set_column_name, "EESI")
+        .pipe(config_filter, config)
+    )
+
+    return df_final
 
 
 def EXTERNAL_DATABASE(raw=False, update=True, config=None):
