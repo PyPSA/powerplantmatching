@@ -2581,7 +2581,7 @@ def GND(
 
     if raw:
         return df
-    
+
     status_list = config["GND"].get("status", ["Operational"])  # noqa: F841
 
     RENAME_COLUMNS = {
