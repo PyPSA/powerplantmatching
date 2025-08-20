@@ -2408,11 +2408,11 @@ def MASTR(
     ).index
     df_processed.loc[bat, ["Fueltype", "Set"]] = ["Battery", "Store"]
     BATTERY_MAPPING = {
-        "Blei-Batterie": "Lead",
-        "Lithium-Batterie": "Lithium",
+        "Blei-Batterie": "Pb",
+        "Lithium-Batterie": "Li",
         "Sonstige Batterie": np.nan,
-        "Hochtemperaturbatterie": "High-Temperature",
-        "Nickel-Cadmium- / Nickel-Metallhydridbatterie": "Nickel",
+        "Hochtemperaturbatterie": "NaS",
+        "Nickel-Cadmium- / Nickel-Metallhydridbatterie": "NiCd",
     }
     df_processed.loc[bat, "Technology"] = df_processed.loc[
         bat, "Batterietechnologie"
