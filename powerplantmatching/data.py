@@ -250,6 +250,10 @@ def OPSD(
     )
 
 
+@deprecated(
+    deprecated_in="0.8.0",
+    details="Deprecated since data is not maintained. Use GEM instead.",
+)
 def GEO(raw=False, update=False, config=None):
     """
     Importer for the GEO database.
@@ -621,6 +625,10 @@ def GPD(raw=False, update=False, config=None, filter_other_dbs=True):
     )
 
 
+@deprecated(
+    deprecated_in="0.8.0",
+    details="Removed since data is not maintained. Use GNPT instead.",
+)
 def WIKIPEDIA(raw=False, update=False, config=None):
     """
     Importer for the WIKIPEDIA nuclear power plant database.
@@ -1150,7 +1158,7 @@ def WEPP(raw=False, config=None):
 
 @deprecated(
     deprecated_in="0.5.0",
-    details="This function is not maintained anymore.",
+    details="This function is not maintained anymore. Use MASTR instead.",
 )
 def UBA(
     raw=False,
@@ -1273,7 +1281,7 @@ def UBA(
 
 @deprecated(
     deprecated_in="0.5.0",
-    details="This function is not maintained anymore.",
+    details="This function is not maintained anymore. Use MASTR instead.",
 )
 def BNETZA(
     raw=False,
@@ -1434,6 +1442,10 @@ def BNETZA(
     )
 
 
+@deprecated(
+    deprecated_in="0.8.0",
+    details="Removed since data is not maintained. Use GSPT, GWPT and GHPT instead.",
+)
 def OPSD_VRE(raw=False, update=False, config=None):
     """
     Importer for the OPSD (Open Power Systems Data) renewables (VRE)
@@ -1482,7 +1494,10 @@ def OPSD_VRE(raw=False, update=False, config=None):
         .pipe(config_filter, config)
     )
 
-
+@deprecated(
+    deprecated_in="0.8.0",
+    details="Removed since data is not maintained. Use GSPT, GWPT and GHPT instead.",
+)
 def OPSD_VRE_country(country, raw=False, update=False, config=None):
     """
     Get country specific data from OPSD for renewables, if available.
