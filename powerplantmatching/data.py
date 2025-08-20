@@ -111,28 +111,30 @@ def BEYONDCOAL(raw=False, update=False, config=None):
     # for retired plants
     unit_capacity = df_units.groupby("BFF plant ID").Capacity.sum()
 
-    df = (
-        df.rename(columns=RENAME_COLUMNS)
-        .query("status in @status_list")
-        .assign(
-            DateOut=lambda df: df.rename(columns=RENAME_COLUMNS)
-            .DateOut.replace({"After 2030": np.nan, "By 2030": 2030})
-            .infer_objects(copy=False)
-            .combine_first(unit_phaseout),
-            projectID=lambda df: "BEYOND-" + df.projectID,
-            Fueltype=lambda df: df.Fueltype.str.title(),
-            Set=unit_set,
-            Technology=np.nan,
-            Capacity=lambda df: df.Capacity.add(
-                df["Coal capacity under construction"], fill_value=0
-            ).combine_first(unit_capacity),
+    with pd.option_context("future.no_silent_downcasting", True):
+        df = (
+            df.rename(columns=RENAME_COLUMNS)
+            .query("status in @status_list")
+            .assign(
+                DateOut=lambda df: df.rename(columns=RENAME_COLUMNS)
+                .DateOut.replace({"After 2030": np.nan, "By 2030": 2030})
+                .astype(float)
+                .combine_first(unit_phaseout),
+                projectID=lambda df: "BEYOND-" + df.projectID,
+                Fueltype=lambda df: df.Fueltype.str.title(),
+                Set=unit_set,
+                Technology=np.nan,
+                Capacity=lambda df: df.Capacity.add(
+                    df["Coal capacity under construction"], fill_value=0
+                ).combine_first(unit_capacity),
+            )
+            .pipe(scale_to_net_capacities)
+            .pipe(clean_name)
+            .pipe(convert_to_short_name)
+            .pipe(set_column_name, "BEYONDCOAL")
+            .pipe(config_filter, config)
         )
-        .pipe(scale_to_net_capacities)
-        .pipe(clean_name)
-        .pipe(convert_to_short_name)
-        .pipe(set_column_name, "BEYONDCOAL")
-        .pipe(config_filter, config)
-    )
+
     return df
 
 
@@ -251,10 +253,10 @@ def OPSD(
     )
 
 
-@deprecated(
-    deprecated_in="0.8.0",
-    details="Deprecated since data is not maintained. Use GEM instead.",
-)
+# @deprecated(
+#     deprecated_in="0.8.0",
+#     details="Deprecated since data is not maintained. Use GEM instead.",
+# )
 def GEO(raw=False, update=False, config=None):
     """
     Importer for the GEO database.
@@ -626,10 +628,10 @@ def GPD(raw=False, update=False, config=None, filter_other_dbs=True):
     )
 
 
-@deprecated(
-    deprecated_in="0.8.0",
-    details="Removed since data is not maintained. Use GNPT instead.",
-)
+# @deprecated(
+#     deprecated_in="0.8.0",
+#     details="Removed since data is not maintained. Use GNPT instead.",
+# )
 def WIKIPEDIA(raw=False, update=False, config=None):
     """
     Importer for the WIKIPEDIA nuclear power plant database.
@@ -1443,10 +1445,10 @@ def BNETZA(
     )
 
 
-@deprecated(
-    deprecated_in="0.8.0",
-    details="Removed since data is not maintained. Use GSPT, GWPT and GHPT instead.",
-)
+# @deprecated(
+#     deprecated_in="0.8.0",
+#     details="Removed since data is not maintained. Use GSPT, GWPT and GHPT instead.",
+# )
 def OPSD_VRE(raw=False, update=False, config=None):
     """
     Importer for the OPSD (Open Power Systems Data) renewables (VRE)
@@ -1496,10 +1498,10 @@ def OPSD_VRE(raw=False, update=False, config=None):
     )
 
 
-@deprecated(
-    deprecated_in="0.8.0",
-    details="Removed since data is not maintained. Use GSPT, GWPT and GHPT instead.",
-)
+# @deprecated(
+#     deprecated_in="0.8.0",
+#     details="Removed since data is not maintained. Use GSPT, GWPT and GHPT instead.",
+# )
 def OPSD_VRE_country(country, raw=False, update=False, config=None):
     """
     Get country specific data from OPSD for renewables, if available.
