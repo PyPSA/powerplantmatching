@@ -49,6 +49,8 @@ Data Sources
 -  GNPT - `Global Nuclear Powerplant Tracker by Global Energy Monitor <https://globalenergymonitor.org/projects/global-nuclear-power-tracker/>`__
 -  GSPT - `Global Solar Powerplant Tracker by Global Energy Monitor <https://globalenergymonitor.org/projects/global-solar-power-tracker/>`__
 -  GWPT - `Global Wind Powerplant Tracker by Global Energy Monitor <https://globalenergymonitor.org/projects/global-wind-power-tracker/>`__
+-  EESI - `European Energy Storage Inventory <https://ses.jrc.ec.europa.eu/storage-inventory-maps>`__
+-  GND - `GeoNuclearData <https://github.com/cristianst85/GeoNuclearData>`__
 -  CARMA - `Carbon Monitoring for Action <http://carma.org/plant>`__
 -  ENTSOe - `European Network of Transmission System Operators for
    Electricity <http://entsoe.eu/>`__, annually provides statistics

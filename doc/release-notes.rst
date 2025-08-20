@@ -8,6 +8,24 @@ Upcoming Version
 
 * Drop support for Python 3.9, add support for Python 3.13. Minimum required Python version is now 3.10.
 
+* Added [GeoNuclearData](github.com/cristianst85/GeoNuclearData) dataset as `pm.data.GND()`.
+
+* Added [European Energy Storage Inventory](https://ses.jrc.ec.europa.eu/storage-inventory-maps) dataset as `pm.data.EESI()`.
+
+* Updated ENTSOE, BEYONDCOAL, JRC, IRENASTAT and the Global Energy Monitor datasets to the latest versions.
+
+* Fix in `pm.data.MASTR()` the distinction of hydro technologies and between offshore and onshore wind. Also read in storage technologies.
+
+* Improved recognition of CHP power plants.
+
+* In Global Energy Monitor datasets, also read entries below capacity threshold.
+
+* In `pm.data.GCPT()`, add estimate for coal plant efficiency.
+
+* Include mothballed gas, oil and coal power plants.
+
+* Updating matching logic configuration.
+
 
 `v0.7.1 <https://github.com/PyPSA/powerplantmatching/releases/tag/v0.7.1>`__ (30th January 2024)
 =================================================================================================
