@@ -1823,7 +1823,9 @@ def GCPT(raw=False, update=False, config=None):
 
     # conservative assumption that mothballed plants (without fixed retirement
     # date) went out of operation in 2024
-    mothballed_retirement = df["Status"].apply(lambda x: 2024 if x == "mothballed" else np.nan)
+    mothballed_retirement = df["Status"].apply(
+        lambda x: 2024 if x == "mothballed" else np.nan
+    )
 
     status_list = config["GCPT"].get("status", ["operating"])  # noqa: F841
 
@@ -2118,7 +2120,9 @@ def GGPT(raw=False, update=False, config=None):
 
     # conservative assumption that mothballed plants (without fixed retirement
     # date) went out of operation in 2024
-    mothballed_retirement = df["Status"].apply(lambda x: 2024 if x == "mothballed" else np.nan)
+    mothballed_retirement = df["Status"].apply(
+        lambda x: 2024 if x == "mothballed" else np.nan
+    )
 
     df_final = (
         df.pipe(clean_name)
