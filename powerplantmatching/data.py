@@ -1821,6 +1821,10 @@ def GCPT(raw=False, update=False, config=None):
 
     planned_retirement = df["Planned retirement"].apply(pd.to_numeric, errors="coerce")
 
+    # conservative assumption that mothballed plants (without fixed retirement
+    # date) went out of operation in 2024
+    mothballed_retirement = df["Status"].apply(lambda x: 2024 if x == "mothballed" else np.nan)
+
     status_list = config["GCPT"].get("status", ["operating"])  # noqa: F841
 
     BTU_PER_KWH = 3412.14
@@ -1835,7 +1839,8 @@ def GCPT(raw=False, update=False, config=None):
             DateIn=df["DateIn"].apply(pd.to_numeric, errors="coerce"),
             DateOut=df["DateOut"]
             .apply(pd.to_numeric, errors="coerce")
-            .combine_first(planned_retirement),
+            .combine_first(planned_retirement)
+            .combine_first(mothballed_retirement),
             lat=df["lat"].apply(pd.to_numeric, errors="coerce"),
             lon=df["lon"].apply(pd.to_numeric, errors="coerce"),
             Set=df["CHP"].replace({"yes": "CHP", "no": "PP"}),
@@ -2110,6 +2115,11 @@ def GGPT(raw=False, update=False, config=None):
     status_list = config["GGPT"].get("status", ["operating"])  # noqa: F841
 
     df = df.rename(columns=RENAME_COLUMNS)
+
+    # conservative assumption that mothballed plants (without fixed retirement
+    # date) went out of operation in 2024
+    mothballed_retirement = df["Status"].apply(lambda x: 2024 if x == "mothballed" else np.nan)
+
     df_final = (
         df.pipe(clean_name)
         .pipe(set_column_name, "GGPT")
@@ -2119,7 +2129,8 @@ def GGPT(raw=False, update=False, config=None):
             DateIn=df["DateIn"].apply(pd.to_numeric, errors="coerce"),
             DateOut=df["DateOut"]
             .apply(pd.to_numeric, errors="coerce")
-            .combine_first(df["Planned retire"]),
+            .combine_first(df["Planned retire"])
+            .combine_first(mothballed_retirement),
             lat=df["lat"].apply(pd.to_numeric, errors="coerce"),
             lon=df["lon"].apply(pd.to_numeric, errors="coerce"),
             Capacity=df["Capacity"].apply(pd.to_numeric, errors="coerce"),

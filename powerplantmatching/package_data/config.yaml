@@ -167,7 +167,7 @@ GEM:
 GCPT:
   net_capacity: false
   reliability_score: 4
-  status: ["operating", "retired", "construction"]
+  status: ["operating", "retired", "construction", "mothballed"]
   fn: Global-Coal-Plant-Tracker-July-2025.xlsx
   url: https://tubcloud.tu-berlin.de/s/etMB7qawKNwfgnk/download/Global-Coal-Plant-Tracker-July-2025.xlsx
 GGTPT:
