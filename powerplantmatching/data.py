@@ -2551,6 +2551,66 @@ def EESI(
     return df_final
 
 
+def GND(
+    raw=False,
+    update=False,
+    config=None,
+):
+    """
+    Get the GeoNuclearData (GND) dataset.
+
+    https://github.com/cristianst85/GeoNuclearData
+
+    Parameters
+    ----------
+    raw : Boolean, default False
+        Whether to return the original dataset
+    update: bool, default False
+        Whether to update the data from the url.
+    config : dict, default None
+        Add custom specific configuration, e.g.
+        powerplantmatching.config.get_config(target_countries='Italy'), defaults
+        to powerplantmatching.config.get_config()
+    """
+
+    config = get_config() if config is None else config
+
+    fn = get_raw_file("GND", update=update, config=config)
+
+    df = pd.read_csv(fn)
+
+    if raw:
+        return df
+    
+    status_list = config["GND"].get("status", ["Operational"])  # noqa: F841
+
+    RENAME_COLUMNS = {
+        "Id": "projectID",
+        "Latitude": "lat",
+        "Longitude": "lon",
+        "OperationalFrom": "DateIn",
+        "OperationalTo": "DateOut",
+    }
+
+    df_final = (
+        df.rename(columns=RENAME_COLUMNS)
+        .query("Status in @status_list")
+        .assign(
+            projectID=lambda df: "GND-" + df.projectID.astype(str),
+            Capacity=lambda df: df.Capacity.where(df.Capacity > 0),
+            DateIn=lambda df: pd.to_datetime(df.DateIn).dt.year,
+            DateOut=lambda df: pd.to_datetime(df.DateOut).dt.year,
+            Set="PP",
+            Fueltype="Nuclear",
+        )
+        .pipe(clean_name)
+        .pipe(set_column_name, "GND")
+        .pipe(config_filter, config)
+    )
+
+    return df_final
+
+
 def EXTERNAL_DATABASE(raw=False, update=True, config=None):
     """
     Importer for external custom databases.

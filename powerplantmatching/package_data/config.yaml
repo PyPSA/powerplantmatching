@@ -26,6 +26,7 @@ matching_sources:
   - GEM
   - MASTR
   - EESI
+  - GND
 
 # fully_included_sources, these sources are included even without match to the final dataset
 fully_included_sources:
@@ -74,8 +75,8 @@ CARMA:
   fn: Full_CARMA_2009_Dataset_1.csv
 ENTSOE:
   reliability_score: 5
-  url: https://raw.githubusercontent.com/pypsa-meets-earth/ppm-data-backup/main/entsoe_powerplants.csv
-  fn: entsoe_powerplants.csv
+  url: https://tubcloud.tu-berlin.de/s/QaHLH38J4A7ZF5m/download/entsoe_transparency_platform_20250820.csv
+  fn: entsoe_transparency_platform_20250820.csv
 ENTSOE-EIC:
   url: https://eepublicdownloads.blob.core.windows.net/cio-lio/csv/W_eicCodes.csv
   fn: W_eicCodes.csv
@@ -221,6 +222,12 @@ EESI:
   status: ["Operational"] # since no start years given
   fn: european-energy-storage-inventory-20250817-2245.json
   url: https://tubcloud.tu-berlin.de/s/RXWgYbYJpePsWAZ/download/european-energy-storage-inventory-20250817-2245.json
+GND:
+  net_capacity: true
+  reliability_score: 4
+  status: ["Shutdown", "Operational", "Planned", "Under Construction", "Decommissioning Completed"]
+  url: https://raw.githubusercontent.com/cristianst85/GeoNuclearData/1bc8b4ac106af236902385b87e46c540b4864815/data/csv/denormalized/nuclear_power_plants.csv
+  fn: nuclear_power_plants.csv
 
 # ---------------------------------------------------------------------------- #
 #                             Data Structure Config                            #
