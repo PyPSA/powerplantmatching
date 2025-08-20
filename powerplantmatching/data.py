@@ -2286,6 +2286,7 @@ def MASTR(
         "Energietraeger",
         "Hauptbrennstoff",
         "NameStromerzeugungseinheit",
+        "NameWindpark",
         "Technologie",
     ]
 
@@ -2316,6 +2317,7 @@ def MASTR(
                         "Ort",
                         "Gemeinde",
                         "Landkreis",
+                        "Lage",
                     ]
                     target_columns = (
                         target_columns + PARSE_COLUMNS + list(RENAME_COLUMNS.keys())
@@ -2368,7 +2370,9 @@ def MASTR(
         .query("Status in @status_list")
         .assign(
             projectID=lambda df: "MASTR-" + df.projectID,
-            Name=lambda df: df.Name.combine_first(df.NameStromerzeugungseinheit),
+            Name=lambda df: df.Name.combine_first(df.NameWindpark).combine_first(
+                df.NameStromerzeugungseinheit
+            ),
             Country=lambda df: df.Country.map(COUNTRY_MAP),
             Capacity=lambda df: df.Capacity / 1e3,  # kW to MW
             DateIn=lambda df: pd.to_datetime(df.DateIn).dt.year.combine_first(
@@ -2417,6 +2421,15 @@ def MASTR(
     df_processed.loc[bat, "Technology"] = df_processed.loc[
         bat, "Batterietechnologie"
     ].map(BATTERY_MAPPING)
+
+    WIND_MAPPING = {
+        "Windkraft auf See": "Offshore",
+        "Windkraft an Land": "Onshore",
+    }
+    wind = df_processed.query("Energietraeger == 'Wind'").index
+    df_processed.loc[wind, "Technology"] = df_processed.loc[wind, "Lage"].map(
+        WIND_MAPPING
+    )
 
     mask = df_processed.query(
         "Energietraeger in ['Hydro', 'Wind', 'Solar', 'Battery'] and Set == 'Store'"
