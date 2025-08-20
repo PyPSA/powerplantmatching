@@ -17,11 +17,11 @@
 Collection of power plant data bases and statistical data
 """
 
+import json
 import logging
 import os
 from zipfile import ZipFile
 
-import json
 import entsoe
 import numpy as np
 import pandas as pd
