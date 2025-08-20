@@ -1494,6 +1494,7 @@ def OPSD_VRE(raw=False, update=False, config=None):
         .pipe(config_filter, config)
     )
 
+
 @deprecated(
     deprecated_in="0.8.0",
     details="Removed since data is not maintained. Use GSPT, GWPT and GHPT instead.",
