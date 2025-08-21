@@ -2401,6 +2401,7 @@ def MASTR(
             ),
             lat=lambda df: df.lat.combine_first(df.PLZ_lat),
             lon=lambda df: df.lon.combine_first(df.PLZ_lon),
+            Duration=lambda df: df.StorageCapacity_MWh.div(df.Capacity, fill_value=np.nan),
         )
         .pipe(
             gather_specifications,
