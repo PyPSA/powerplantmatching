@@ -2086,7 +2086,7 @@ def GGPT(raw=False, update=False, config=None):
         "Retired year": "DateOut",
         "CHP": "Set",
         "Fuel": "Fueltype",
-        "GEM location ID": "projectID",
+        "GEM unit ID": "projectID",
         "Country/Area": "Country",
         "Turbine/Engine Technology": "Technology",
     }
