@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------- #
 #                                   IO Config                                  #
 # ---------------------------------------------------------------------------- #
-entsoe_token:
+entsoe_token: "17f212db-55c5-49a5-b7e4-5b4036f22249"
 google_api_key:
 
 # ---------------------------------------------------------------------------- #
@@ -39,8 +39,8 @@ fully_included_sources:
   - GND
 
 
-parallel_duke_processes: false
-process_limit: 4
+parallel_duke_processes: true
+process_limit: 14
 matched_data_url: https://raw.githubusercontent.com/PyPSA/powerplantmatching/{tag}/powerplants.csv
 
 # ---------------------------------------------------------------------------- #
@@ -293,58 +293,133 @@ target_fueltypes:
   # given by the list. An empty string results in a regex expression containing only the key.
   # Parsed of representatives at the top may be overwritten by representatives further below.
   Other: ".*"
-  Solid Biomass: [biological, bioenergy, agricultural, biomass, feste biomasse, biomasa, biomassa, feste biogene stoffe, pellets, stroh, straw]
-  Biogas: [biogas, biogaz, biomethan, gasförmige biomasse]
-  Nuclear: [nuclear, kernkraft, atomkraft, nucléaire, atomowa, jądrowa, kjernekraft, atoom]
+  Solid Biomass: 
+    - biological
+    - bioenergy
+    - agricultural
+    - biomass
+    - feste biomasse
+    - biomasa
+    - biomassa
+    - feste biogene stoffe
+    - pellets
+    - stroh
+    - straw
+  Biogas: 
+    - biogas
+    - biogaz
+    - biomethan
+    - gasförmige biomasse
+  Nuclear: 
+    - nuclear
+    - kernkraft
+    - atomkraft
+    - nucléaire
+    - atomowa
+    - jądrowa
+    - kjernekraft
+    - atoom
   Natural Gas:
-    [
-      ccgt,
-      gas,
-      natural gas,
-      ocgt,
-      lng,
-      combined cycle,
-      fossil gas,
-      mixed fossil fuels,
-      erdgas,
-      andere gase,
-      gaz,
-      gaz naturel,
-      gas natural,
-      naturgass,
-      gaz ziemny,
-      gass,
-      aardgas,
-      flüssiggas
-    ]
+    - ccgt
+    - gas
+    - natural gas
+    - ocgt
+    - lng
+    - combined cycle
+    - fossil gas
+    - mixed fossil fuels
+    - erdgas
+    - andere gase
+    - gaz
+    - gaz naturel
+    - gas natural
+    - naturgass
+    - gaz ziemny
+    - gass
+    - aardgas
+    - flüssiggas
   Hydro:
-    [
-      run-off,
-      run off,
-      run of river,
-      run-of-river,
-      ror,
-      hydro,
-      hidro,
-      hydraulique,
-      hydroelectric,
-      wasserkraft,
-      waterkracht,
-      wasser,
-      vannkraft,
-      vattenkraft,
-      wodna,
-      idroelettrica,
-      idraulica,
-    ]
-  Hard Coal: [coal, coke, steinkohle, houille, charbon dur, hulla, carbón duro, carbone duro, antracite, steinkul, węgiel kamienny, steenkool]
-  Lignite: [brown coal, lignite, peat, braunkohle, ligni.*, brunatny, brunkul, bruinkool]
-  Oil: [oil, diesel, biodiesel, methanol, heizöl, ethanol, mineralölprodukte, öl, fioul, mazout, petrol, olio, olej, carburante, olie]
+    - run-off
+    - run off
+    - run of river
+    - run-of-river
+    - ror
+    - hydro
+    - hidro
+    - hydraulique
+    - hydroelectric
+    - wasserkraft
+    - waterkracht
+    - wasser
+    - vannkraft
+    - vattenkraft
+    - wodna
+    - idroelettrica
+    - idraulica
+  Hard Coal:
+    - coal
+    - coke
+    - steinkohle
+    - houille
+    - charbon dur
+    - hulla
+    - carbón duro
+    - carbone duro
+    - antracite
+    - steinkul
+    - węgiel kamienny
+    - steenkool
+  Lignite:
+    - brown coal
+    - lignite
+    - peat
+    - braunkohle
+    - ligni.*
+    - brunatny
+    - brunkul
+    - bruinkool
+  Oil:
+    - oil
+    - diesel
+    - biodiesel
+    - methanol
+    - heizöl
+    - ethanol
+    - mineralölprodukte
+    - öl
+    - fioul
+    - mazout
+    - petrol
+    - olio
+    - olej
+    - carburante
+    - olie
   Geothermal: ""
   Solar: ""
-  Waste: ["abfall.*", "waste", "mva", "müll", "afval", "affald", "energy recovery", "incineration", "reststoffe", "refuse", "déchets", "ordures", "residuos", "basura", "rifiuti", "scarti", "odpady", "śmieci", "abfälle"]
+  Waste:
+    - "abfall.*"
+    - waste
+    - mva
+    - müll
+    - afval
+    - affald
+    - energy recovery
+    - incineration
+    - reststoffe
+    - refuse
+    - déchets
+    - ordures
+    - residuos
+    - basura
+    - rifiuti
+    - scarti
+    - odpady
+    - śmieci
+    - abfälle
   Wind: ""
-  Battery: [Electro-chemical, battery]
+  Battery:
+    - Electro-chemical
+    - battery
   Mechanical Storage: ""
   Heat Storage: ""
   Hydrogen Storage: ""
@@ -355,52 +430,137 @@ target_sets:
   # Parsed of representatives at the top may be overwritten by representatives further below.
   PP: ".*"
   CHP:
-    [
-      heizkraftwerk,
-      hkw,
-      kwk,
-      fhkw,
-      gud,
-      hp,
-      bhkw,
-      cogeneration,
-      power and heat,
-      heat and power,
-      chp,
-      cogen,
-      heat & power,
-      power & heat,
-      cogeneración,
-      cogenerazione,
-      kogeneracja,
-      combinada calor y electricidad,
-      kraftvarmeverk,
-      kraftvarmeværk,
-      samproduktion,
-      samproduksjon,
-      kvv,
-      wkk,
-      warmtekrachtkoppeling,
-      warmte-krachtcentrale,
-    ]
-  Store: [battery, storage, store, speicher, pumped]
+    - heizkraftwerk
+    - hkw
+    - kwk
+    - fhkw
+    - gud
+    - hp
+    - bhkw
+    - cogeneration
+    - power and heat
+    - heat and power
+    - chp
+    - cogen
+    - heat & power
+    - power & heat
+    - cogeneración
+    - cogenerazione
+    - kogeneracja
+    - combinada calor y electricidad
+    - kraftvarmeverk
+    - kraftvarmeværk
+    - samproduktion
+    - samproduksjon
+    - kvv
+    - wkk
+    - warmtekrachtkoppeling
+    - warmte-krachtcentrale
+  Storage:
+    - battery
+    - storage
+    - store
+    - speicher
+    - pumped
 target_technologies:
   # Provide a mapping of the keys to a list or a regex expression which are used for parsing.
   # A list will be converted to a regex expression matching all words (case-insensitive)
   # given by the list. An empty string results in a regex expression containing only the key.
   # Parsed of representatives at the top may be overwritten by representatives further below.
-  CCGT: [ccgt, gas, natural gas, gasturbinen mit abhitzekessel]
-  OCGT: [ocgt, gasturbinen ohne abhitzekessel]
-  Steam Turbine: [steam, turbine, kondensationsmaschine, gegendruckmaschine, dampfmotor]
-  Combustion Engine: [combustion engine, verbrennungsmotor, stirlingmotor]
-  Run-Of-River: [run-off, run off, run of river, run-of-river, ror, laufwasseranlage, laufwasser, abwasserkraft, trinkwassersystem, brauchwassersystem, pasada, przepływowa, fluente, elvekraft, doorstroom, älvkraft]
-  Reservoir: [reservoir, réservoir, impoundment, talsperre, stausee, speicherwasseranlage, speicherwasser, barrage, embalse, bacino, zbiornik, magasinverk, damkraftverk, reguleringsmagasin]
-  Pumped Storage: [pumped hydro, pumped, kavernen, bombeo, reversible, reversibel, oberbecken, unterbecken, pompage, pompaggio, pompowa, pumpekraftverk]
+  CCGT:
+   - ccgt
+   - gas
+   - natural gas
+   - gasturbinen mit abhitzekessel
+  OCGT:
+   - ocgt
+   - gasturbinen ohne abhitzekessel
+  Steam Turbine:
+   - steam
+   - turbine
+   - kondensationsmaschine
+   - gegendruckmaschine
+   - dampfmotor
+  Combustion Engine:
+   - combustion engine
+   - verbrennungsmotor
+   - stirlingmotor
+  Run-Of-River:
+   - run-off
+   - run off
+   - run of river
+   - run-of-river
+   - ror
+   - laufwasseranlage
+   - laufwasser
+   - abwasserkraft
+   - trinkwassersystem
+   - brauchwassersystem
+   - pasada
+   - przepływowa
+   - fluente
+   - elvekraft
+   - doorstroom
+   - älvkraft
+  Reservoir:
+   - reservoir
+   - réservoir
+   - impoundment
+   - talsperre
+   - stausee
+   - speicherwasseranlage
+   - speicherwasser
+   - barrage
+   - embalse
+   - bacino
+   - zbiornik
+   - magasinverk
+   - damkraftverk
+   - reguleringsmagasin
+  Pumped Storage:
+   - pumped hydro
+   - pumped
+   - kavernen
+   - bombeo
+   - reversible
+   - reversibel
+   - oberbecken
+   - unterbecken
+   - pompage
+   - pompaggio
+   - pompowa
+   - pumpekraftverk
   Marine: ""
-  PV: [pv, photo-voltaic, photo voltaic]
+  PV:
+   - pv
+   - photo-voltaic
+   - photo voltaic
   CSP: ""
-  Onshore: ["onshore", "an land", "terrestre", "landvind", "på land", "op land", "lądowy", "su terra", "en tierra", "à terre"]
-  Offshore: ["offshore", "nearshore", "auf see", "en mer", "marino", "en mar", "in mare", "morski", "havvind", "til havs", "på havet", "op zee", "zeewind"]
+  Onshore:
+   - onshore
+   - an land
+   - terrestre
+   - landvind
+   - på land
+   - op land
+   - lądowy
+   - su terra
+   - en tierra
+   - à terre
+  Offshore:
+   - offshore
+   - nearshore
+   - auf see
+   - en mer
+   - marino
+   - en mar
+   - in mare
+   - morski
+   - havvind
+   - til havs
+   - på havet
+   - op zee
+   - zeewind
 clean_name:
   remove_common_words: false # remove words which appear more that 20 times in all entries
   remove_duplicated_words: true
@@ -408,51 +568,49 @@ clean_name:
     " ": "[^a-zA-Z]" # non-alphabetical symbols
     "":
       # This should be a list, if remove_common_words is true.
-      [
-        I,
-        II,
-        III,
-        IV,
-        V,
-        VI,
-        VII,
-        VIII,
-        IX,
-        X,
-        XI,
-        parque,
-        grupo,
-        station,
-        power,
-        plant,
-        unit,
-        kraftwerk,
-        kw,
-        hkw,
-        nuclear,
-        thermal,
-        heizkraftwerk,
-        eolico,
-        project,
-        hydroelectric,
-        pumped,
-        storage,
-        france,
-        austria,
-        sweden,
-        serbia,
-        ukraine,
-        switzerland,
-        slovakia,
-        croatia,
-        poland,
-        slovenia,
-        portugal,
-        bosnia,
-        and,
-        herzegovina,
-        \w, #remove single letters
-      ]
+      - I
+      - II
+      - III
+      - IV
+      - V
+      - VI
+      - VII
+      - VIII
+      - IX
+      - X
+      - XI
+      - parque
+      - grupo
+      - station
+      - power
+      - plant
+      - unit
+      - kraftwerk
+      - kw
+      - hkw
+      - nuclear
+      - thermal
+      - heizkraftwerk
+      - eolico
+      - project
+      - hydroelectric
+      - pumped
+      - storage
+      - france
+      - austria
+      - sweden
+      - serbia
+      - ukraine
+      - switzerland
+      - slovakia
+      - croatia
+      - poland
+      - slovenia
+      - portugal
+      - bosnia
+      - and
+      - herzegovina
+      - \w #remove single letters
     "ss": "ß"
 
 # ---------------------------------------------------------------------------- #
