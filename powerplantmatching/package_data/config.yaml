@@ -293,9 +293,9 @@ target_fueltypes:
   # given by the list. An empty string results in a regex expression containing only the key.
   # Parsed of representatives at the top may be overwritten by representatives further below.
   Other: ".*"
-  Solid Biomass: [biological, bioenergy, agricultural, wood, holz, biomass, feste biomasse, biomasa, biomassa, feste biogene stoffe, pellets, stroh, straw]
+  Solid Biomass: [biological, bioenergy, agricultural, biomass, feste biomasse, biomasa, biomassa, feste biogene stoffe, pellets, stroh, straw]
   Biogas: [biogas, biogaz, biomethan, gasförmige biomasse]
-  Nuclear: [nuclear, kernkraft, atomkraft, nucléaire, atomowa, jądrowa, kjernekraft, kern, atom, atoom]
+  Nuclear: [nuclear, kernkraft, atomkraft, nucléaire, atomowa, jądrowa, kjernekraft, atoom]
   Natural Gas:
     [
       ccgt,
