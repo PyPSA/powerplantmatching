@@ -56,7 +56,7 @@ BNETZA:
 BEYONDCOAL:
   net_capacity: false
   aggregated_units: true
-  reliability_score: 7
+  reliability_score: 4
   status: ["Construction", "Open", "Planned", "Retired"]
   fn: 2025-07-24-BeyondFossilFuels-Europe_Coal_Plants_Database.xlsx
   url: https://beyondfossilfuels.org/wp-content/uploads/2025/07/2025-07-24-BeyondFossilFuels-Europe_Coal_Plants_Database.xlsx
@@ -221,7 +221,7 @@ EESI:
   url: https://tubcloud.tu-berlin.de/s/RXWgYbYJpePsWAZ/download/european-energy-storage-inventory-20250817-2245.json
 GND:
   net_capacity: true
-  reliability_score: 4
+  reliability_score: 5
   status: ["Shutdown", "Operational", "Planned", "Under Construction", "Decommissioning Completed"]
   url: https://raw.githubusercontent.com/cristianst85/GeoNuclearData/1bc8b4ac106af236902385b87e46c540b4864815/data/csv/denormalized/nuclear_power_plants.csv
   fn: nuclear_power_plants.csv
