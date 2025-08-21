@@ -2273,7 +2273,7 @@ def MASTR(
 
     config = get_config() if config is None else config
 
-    THRESHOLD_KW = 1000  # noqa: F841
+    THRESHOLD_KW = 100  # noqa: F841
 
     RENAME_COLUMNS = {
         "EinheitMastrNummer": "projectID",
