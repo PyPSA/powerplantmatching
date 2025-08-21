@@ -476,7 +476,9 @@ def JRC(raw=False, update=False, config=None):
             Set=lambda df: np.where(df.Technology == "Run-Of-River", "PP", "Store"),
             Fueltype="Hydro",
             Duration=lambda df: df.Duration.where(df.Duration > 0),
-            StorageCapacity_MWh=lambda df: df.StorageCapacity_MWh.where(df.StorageCapacity_MWh > 0),
+            StorageCapacity_MWh=lambda df: df.StorageCapacity_MWh.where(
+                df.StorageCapacity_MWh > 0
+            ),
             Volume_Mm3=lambda df: df.Volume_Mm3.where(df.Volume_Mm3 > 0),
         )
         .drop(columns=["pypsa_id", "GEO"])
@@ -1863,7 +1865,11 @@ def GCPT(raw=False, update=False, config=None):
         )
         .query("Status in @status_list")
         .pipe(lambda x: x[df.columns.intersection(config.get("target_columns"))])
-        .pipe(lambda x: x.replace({"Fueltype": fueltype_dict, "Technology": technology_dict}))
+        .pipe(
+            lambda x: x.replace(
+                {"Fueltype": fueltype_dict, "Technology": technology_dict}
+            )
+        )
         .pipe(config_filter, config)
     )
 
@@ -2401,7 +2407,9 @@ def MASTR(
             ),
             lat=lambda df: df.lat.combine_first(df.PLZ_lat),
             lon=lambda df: df.lon.combine_first(df.PLZ_lon),
-            Duration=lambda df: df.StorageCapacity_MWh.div(df.Capacity, fill_value=np.nan),
+            Duration=lambda df: df.StorageCapacity_MWh.div(
+                df.Capacity, fill_value=np.nan
+            ),
         )
         .pipe(
             gather_specifications,
@@ -2445,7 +2453,9 @@ def MASTR(
         WIND_MAPPING
     )
 
-    sel = df_processed.query("Fueltype == 'Natural Gas' and Filesuffix == 'Bioenergy'").index
+    sel = df_processed.query(
+        "Fueltype == 'Natural Gas' and Filesuffix == 'Bioenergy'"
+    ).index
     df_processed.loc[sel, "Fueltype"] = "Biogas"
 
     # one biogas unit has 'Wind' in name
@@ -2453,21 +2463,31 @@ def MASTR(
     df_processed.loc[sel, "Fueltype"] = "Biogas"
 
     # some combi-units are named wind-solar
-    sel = df_processed.query("Fueltype in ['Wind', 'Waste'] and Filesuffix == 'Solar'").index
+    sel = df_processed.query(
+        "Fueltype in ['Wind', 'Waste'] and Filesuffix == 'Solar'"
+    ).index
     df_processed.loc[sel, ["Fueltype", "Technology"]] = ["Solar", "PV"]
 
     # some technologies are wrongly allocated
     sel = df_processed.query("Fueltype == 'Biogas' and Technology == 'PV'").index
     df_processed.loc[sel, "Technology"] = "Combustion Engine"
-    sel = df_processed.query("Fueltype == 'Hydro' and Technology == 'Steam Turbine'").index
+    sel = df_processed.query(
+        "Fueltype == 'Hydro' and Technology == 'Steam Turbine'"
+    ).index
     df_processed.loc[sel, "Technology"] = "Run-Of-River"
     sel = df_processed.query("Fueltype == 'Solar' and Technology == 'CCGT'").index
     df_processed.loc[sel, "Technology"] = "PV"
-    sel = df_processed.query("Fueltype == 'Solar' and Technology == 'OCGT' and Filesuffix == 'Combustion'").index
+    sel = df_processed.query(
+        "Fueltype == 'Solar' and Technology == 'OCGT' and Filesuffix == 'Combustion'"
+    ).index
     df_processed.loc[sel, "Fueltype"] = "Natural Gas"
-    sel = df_processed.query("Fueltype == 'Wind' and Technology == 'PV' and Filesuffix == 'Solar'").index
+    sel = df_processed.query(
+        "Fueltype == 'Wind' and Technology == 'PV' and Filesuffix == 'Solar'"
+    ).index
     df_processed.loc[sel, "Fueltype"] = "Solar"
-    sel = df_processed.query("Fueltype == 'Wind' and Technology == 'Combustion Engine' and Filesuffix == 'Bioenergy'").index
+    sel = df_processed.query(
+        "Fueltype == 'Wind' and Technology == 'Combustion Engine' and Filesuffix == 'Bioenergy'"
+    ).index
     df_processed.loc[sel, "Fueltype"] = "Biogas"
 
     mask = df_processed.query(
