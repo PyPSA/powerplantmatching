@@ -293,7 +293,7 @@ target_fueltypes:
   # given by the list. An empty string results in a regex expression containing only the key.
   # Parsed of representatives at the top may be overwritten by representatives further below.
   Other: ".*"
-  Solid Biomass: 
+  Solid Biomass:
     - biological
     - bioenergy
     - agricultural
@@ -305,12 +305,12 @@ target_fueltypes:
     - pellets
     - stroh
     - straw
-  Biogas: 
+  Biogas:
     - biogas
     - biogaz
     - biomethan
     - gasförmige biomasse
-  Nuclear: 
+  Nuclear:
     - nuclear
     - kernkraft
     - atomkraft
