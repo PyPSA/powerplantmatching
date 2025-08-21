@@ -2424,6 +2424,7 @@ def MASTR(
         "Energietraeger == 'Speicher' and Technologie == 'Batterie'"
     ).index
     df_processed.loc[bat, ["Fueltype", "Set"]] = ["Battery", "Store"]
+
     BATTERY_MAPPING = {
         "Blei-Batterie": "Pb",
         "Lithium-Batterie": "Li",
@@ -2444,8 +2445,33 @@ def MASTR(
         WIND_MAPPING
     )
 
+    sel = df_processed.query("Fueltype == 'Natural Gas' and Filesuffix == 'Bioenergy'").index
+    df_processed.loc[sel, "Fueltype"] = "Biogas"
+
+    # one biogas unit has 'Wind' in name
+    sel = df_processed.query("Fueltype == 'Wind' and Filesuffix == 'Biomass'").index
+    df_processed.loc[sel, "Fueltype"] = "Biogas"
+
+    # some combi-units are named wind-solar
+    sel = df_processed.query("Fueltype in ['Wind', 'Waste'] and Filesuffix == 'Solar'").index
+    df_processed.loc[sel, ["Fueltype", "Technology"]] = ["Solar", "PV"]
+
+    # some technologies are wrongly allocated
+    sel = df_processed.query("Fueltype == 'Biogas' and Technology == 'PV'").index
+    df_processed.loc[sel, "Technology"] = "Combustion Engine"
+    sel = df_processed.query("Fueltype == 'Hydro' and Technology == 'Steam Turbine'").index
+    df_processed.loc[sel, "Technology"] = "Run-Of-River"
+    sel = df_processed.query("Fueltype == 'Solar' and Technology == 'CCGT'").index
+    df_processed.loc[sel, "Technology"] = "PV"
+    sel = df_processed.query("Fueltype == 'Solar' and Technology == 'OCGT' and Filesuffix == 'Combustion'").index
+    df_processed.loc[sel, "Fueltype"] = "Natural Gas"
+    sel = df_processed.query("Fueltype == 'Wind' and Technology == 'PV' and Filesuffix == 'Solar'").index
+    df_processed.loc[sel, "Fueltype"] = "Solar"
+    sel = df_processed.query("Fueltype == 'Wind' and Technology == 'Combustion Engine' and Filesuffix == 'Bioenergy'").index
+    df_processed.loc[sel, "Fueltype"] = "Biogas"
+
     mask = df_processed.query(
-        "Energietraeger in ['Hydro', 'Wind', 'Solar', 'Battery'] and Set == 'Store'"
+        "Energietraeger in ['Hydro', 'Wind', 'Solar', 'Battery'] and Set in ['Store', 'CHP']"
     ).index
     df_processed.loc[mask, "Set"] = "PP"
 
