@@ -475,6 +475,9 @@ def JRC(raw=False, update=False, config=None):
         .assign(
             Set=lambda df: np.where(df.Technology == "Run-Of-River", "PP", "Store"),
             Fueltype="Hydro",
+            Duration=lambda df: df.Duration.where(df.Duration > 0),
+            StorageCapacity_MWh=lambda df: df.StorageCapacity_MWh.where(df.StorageCapacity_MWh > 0),
+            Volume_Mm3=lambda df: df.Volume_Mm3.where(df.Volume_Mm3 > 0),
         )
         .drop(columns=["pypsa_id", "GEO"])
         .powerplant.convert_alpha2_to_country()
