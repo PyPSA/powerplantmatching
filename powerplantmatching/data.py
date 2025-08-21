@@ -1821,6 +1821,13 @@ def GCPT(raw=False, update=False, config=None):
         "unknown with CCS": "Hard Coal",
         "waste coal": "Hard Coal",
     }
+    technology_dict = {
+        "IGCC": "CCGT",
+        "subcritical": "Steam Turbine",
+        "unknown": np.nan,
+        "supercritical": "Steam Turbine",
+        "ultra-supercritical": "Steam Turbine",
+    }
 
     planned_retirement = df["Planned retirement"].apply(pd.to_numeric, errors="coerce")
 
@@ -1853,7 +1860,7 @@ def GCPT(raw=False, update=False, config=None):
         )
         .query("Status in @status_list")
         .pipe(lambda x: x[df.columns.intersection(config.get("target_columns"))])
-        .pipe(lambda x: x.replace({"Fueltype": fueltype_dict}))
+        .pipe(lambda x: x.replace({"Fueltype": fueltype_dict, "Technology": technology_dict}))
         .pipe(config_filter, config)
     )
 
