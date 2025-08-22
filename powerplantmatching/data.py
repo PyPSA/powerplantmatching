@@ -1763,7 +1763,8 @@ def GNPT(raw=False, update=False, config=None):
         .pipe(convert_to_short_name)
         .dropna(subset="Capacity")
         .assign(
-            Name=lambda df: df["Name"] + df["Unit Name"].fillna("").apply(lambda x: f" {x}" if x else ""),
+            Name=lambda df: df["Name"]
+            + df["Unit Name"].fillna("").apply(lambda x: f" {x}" if x else ""),
             DateIn=df["DateIn"].apply(pd.to_numeric, errors="coerce"),
             DateOut=df["DateOut"].apply(pd.to_numeric, errors="coerce"),
             lat=df["lat"].apply(pd.to_numeric, errors="coerce"),
