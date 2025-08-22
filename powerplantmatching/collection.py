@@ -71,6 +71,10 @@ def collect(
         get_df = getattr(data, name)
         df = get_df(config=config)
 
+        for source in config["matching_sources"]:
+            if isinstance(source, dict) and next(iter(source)) == name:
+                df = df.query(source[name])
+
         if not conf.get("aggregated_units", False):
             return aggregate_units(df, dataset_name=name, config=config)
         else:

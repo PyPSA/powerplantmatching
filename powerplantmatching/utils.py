@@ -124,16 +124,7 @@ def config_filter(df, config):
 
     main_query = config.get("main_query", "")
 
-    # individual filter from config.yaml
-    queries = {}
-    for source in config["matching_sources"]:
-        if isinstance(source, dict):
-            queries.update(source)
-        else:
-            queries[source] = ""
-    ds_query = queries.get(name, "")
-
-    query = " and ".join([q for q in [target_query, main_query, ds_query] if q])
+    query = " and ".join([q for q in [target_query, main_query] if q])
 
     df = correct_manually(df, name, config=config)
 
