@@ -33,7 +33,7 @@ fully_included_sources:
   - GEM: not (Country == 'Germany' and Fueltype in ['Solar', 'Wind']) # wind and solar in Germany is covered by MASTR
   - EESI: Fueltype != 'Hydro' and not (Country == 'Germany' and Fueltype == 'Battery') # battery in Germany is covered by MASTR
   - MASTR: Capacity >= 0.1 and Fueltype != 'Nuclear'
-  - OPSD: Country != 'Germany' and Capacity < 1 and Capacity >= 0.1 and Fueltype == 'Hydro'# take small hydro outside Germany from OPSD (highest coverage)
+  - OPSD: Country != 'Germany' and Capacity < 1 and Capacity >= 0.1 and Fueltype == 'Hydro' # take small hydro outside Germany from OPSD (highest coverage)
   - BEYONDCOAL
   - JRC: Country in ['Italy', 'Croatia', 'Serbia', 'Slovakia']
 

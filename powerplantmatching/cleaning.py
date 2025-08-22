@@ -492,7 +492,7 @@ def aggregate_units(
     if ds_name in config.get("aggregate_only_matching_sources", []):
         for source in config["matching_sources"]:
             if isinstance(source, dict) and ds_name in source:
-                query = source[ds_name]
+                agg_query = source[ds_name]
                 break
 
     block_query = None
