@@ -24,6 +24,12 @@ Upcoming Version
 
 * Include mothballed gas, oil and coal power plants.
 
+* Added option to retain blocks for subsets of fuel types (e.g. `clean_name: fueltypes_with_blocks: ['Nuclear']`).
+
+* For fully included datasets, add option to only aggregate units included in the matching process (e.g. `aggregate_only_matching_sources: ['MASTR']`).
+
+* Added option for multiprocessing when aggregating units of non-matched power plants (e.g. `threads_extend_by_non_matched: 16`).
+
 * Updating matching logic configuration.
 
 
