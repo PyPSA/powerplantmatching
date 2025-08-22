@@ -387,6 +387,7 @@ def aggregate_units(
     pre_clean_name=False,
     country_wise=True,
     config=None,
+    threads=1,
     **kwargs,
 ):
     """
@@ -405,6 +406,8 @@ def aggregate_units(
         Whether to clean the 'Name'-column before aggregating.
     country_wise : Boolean, default True
         Whether to aggregate only entries with a identical country.
+    threads : int, default 1
+        Number of threads to use
     """
     deprecated_args = {"use_saved_aggregation", "save_aggregation"}
     used_deprecated_args = deprecated_args.intersection(kwargs)
@@ -445,9 +448,11 @@ def aggregate_units(
 
     if country_wise:
         countries = df.Country.unique()
-        duplicates = pd.concat([duke(df.query("Country == @c")) for c in countries])
+        duplicates = pd.concat(
+            [duke(df.query("Country == @c"), threads=threads) for c in countries]
+        )
     else:
-        duplicates = duke(df)
+        duplicates = duke(df, threads=threads)
 
     df = cliques(df, duplicates)
     df = df.groupby("grouped").agg(props_for_groups)

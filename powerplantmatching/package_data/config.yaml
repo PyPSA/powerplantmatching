@@ -39,8 +39,8 @@ fully_included_sources:
   - GND
 
 
-parallel_duke_processes: true
-process_limit: 14
+parallel_duke_processes: 16
+threads_extend_by_non_matched: 16
 matched_data_url: https://raw.githubusercontent.com/PyPSA/powerplantmatching/{tag}/powerplants.csv
 
 # ---------------------------------------------------------------------------- #
