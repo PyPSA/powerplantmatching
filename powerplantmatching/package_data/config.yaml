@@ -30,14 +30,9 @@ matching_sources:
 # fully_included_sources, these sources are included even without match to the final dataset
 fully_included_sources:
   # Make individual queries for the datasets
-  - ENTSOE: (Country not in ['Switzerland', 'Ireland', 'Albania', 'Greece', 'Czech Republic', 'Bulgaria', 'United Kingdom', 'Italy', 'Serbia'] and not (Country == 'Spain' and Fueltype == 'Hydro')) or (Fueltype == 'Geothermal')
-  - JRC: Country not in ['Switzerland', 'Albania', 'United Kingdom', 'Norway']
-  - OPSD: Country not in ['Switzerland', 'Italy', 'Spain', 'Norway', 'Austria']
-  - GEM: not (Country == 'Germany' and Fueltype in ['Solar', 'Wind'])
-  - EESI: Fueltype != 'Hydro' and not (Country == 'Germany' and Fueltype == 'Battery')
+# these sources skip unit aggregation for fully_included_sources not covered in matching_sources
+aggregate_only_matching_sources:
   - MASTR
-  - GND
-
 
 parallel_duke_processes: 16
 threads_extend_by_non_matched: 16
@@ -222,7 +217,7 @@ EESI:
 GND:
   net_capacity: true
   reliability_score: 5
-  status: ["Shutdown", "Operational", "Planned", "Under Construction", "Decommissioning Completed"]
+  status: ["Shutdown", "Operational", "Under Construction", "Decommissioning Completed"]
   url: https://raw.githubusercontent.com/cristianst85/GeoNuclearData/1bc8b4ac106af236902385b87e46c540b4864815/data/csv/denormalized/nuclear_power_plants.csv
   fn: nuclear_power_plants.csv
 
@@ -562,6 +557,8 @@ target_technologies:
    - op zee
    - zeewind
 clean_name:
+  fueltypes_with_blocks:
+    - Nuclear
   remove_common_words: false # remove words which appear more that 20 times in all entries
   remove_duplicated_words: true
   replace:
@@ -586,6 +583,9 @@ clean_name:
       - plant
       - unit
       - kraftwerk
+      - kernkraftwerk
+      - gemeinschaftskernkraftwerk
+      - kernkw
       - kw
       - hkw
       - nuclear

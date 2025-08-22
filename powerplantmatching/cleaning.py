@@ -87,20 +87,63 @@ def clean_name(df, config=None):
 
     name = df.Name.astype(str).copy().apply(unidecode.unidecode)
 
+    roman_to_arabic = {
+        "I": "1",
+        "II": "2",
+        "III": "3",
+        "IV": "4",
+        "V": "5",
+        "VI": "6",
+        "VII": "7",
+        "VIII": "8",
+        "IX": "9",
+        "X": "10",
+        "XI": "11",
+    }
+    for roman, arabic in roman_to_arabic.items():
+        name = name.str.replace(rf"\b{roman}\b", arabic, regex=True)
+
     replace = config["clean_name"]["replace"]
     replace.setdefault("", [])
+
+    keep_blocks = config["clean_name"].get("fueltypes_with_blocks", [])
+    if len(keep_blocks) > 0:
+        mask = df.Fueltype.isin(keep_blocks)
 
     for key, pattern in replace.items():
         if config["clean_name"]["remove_common_words"] and (key == ""):
             common_words = pd.Series(sum(name.str.split(), [])).value_counts()
             common_words = list(common_words[common_words >= 20].index)
             pattern += common_words
-        if isinstance(pattern, list):
-            # if pattern is a list, concat all entries in a case-insensitive regex
+
+        pattern = np.atleast_1d(pattern)
+
+        # do not remove block numbers for fuel types with blocks
+        if len(keep_blocks) > 0 and key == " " and "[^a-zA-Z]" in pattern:
+            base = [rf"\b{p}\b" for p in pattern if p != "[^a-zA-Z]"]
+            pattern_keep = r"(?i)" + "|".join(base + [r"[^a-zA-Z0-9]"])
+            pattern_default = r"(?i)" + "|".join(base + [r"[^a-zA-Z]"])
+            name.loc[mask] = name.loc[mask].str.replace(pattern_keep, key, regex=True)
+            name.loc[~mask] = name.loc[~mask].str.replace(
+                pattern_default, key, regex=True
+            )
+
+        # do not remove block letters for fuel types with blocks
+        elif key == "" and "\w" in pattern:
+            pattern_keep = r"(?i)" + "|".join(
+                [rf"\b{p}\b" for p in pattern if p != "\w"]
+            )
+            pattern_default = r"(?i)" + "|".join(
+                [rf"\b{p}\b" for p in pattern if p != "\w"]
+            )
+            name.loc[mask] = name.loc[mask].str.replace(pattern_keep, key, regex=True)
+            name.loc[~mask] = name.loc[~mask].str.replace(
+                pattern_default, key, regex=True
+            )
+
+        else:
             pattern = r"(?i)" + "|".join([rf"\b{p}\b" for p in pattern])
-        elif not isinstance(pattern, str):
-            raise ValueError(f"Pattern must be string or list, not {type(pattern)}")
-        name = name.str.replace(pattern, key, regex=True)
+            name = name.str.replace(pattern, key, regex=True)
 
     if config["clean_name"]["remove_duplicated_words"]:
         name = name.str.replace(r"\b(\w+)(?:\W\1\b)+", r"\1", regex=True, case=False)
@@ -445,13 +488,30 @@ def aggregate_units(
         df = clean_name(df)
 
     logger.info(f"Aggregating blocks in data source '{ds_name}'.")
+    agg_query = None
+    if ds_name in config.get("aggregate_only_matching_sources", []):
+        for source in config["matching_sources"]:
+            if isinstance(source, dict) and ds_name in source:
+                query = source[ds_name]
+                break
+
+    block_query = None
+    if with_blocks := config["clean_name"].get("fuel_type_with_blocks", []):  # noqa
+        block_query = "Fueltype in @with_blocks"
 
     if country_wise:
         countries = df.Country.unique()
+        country_query = "Country == @c"
+        query = " and ".join(filter(None, [agg_query, block_query, country_query]))
+        duplicates = pd.concat(
+            [duke(df.query(query), threads=threads) for c in countries]
+        )
         duplicates = pd.concat(
             [duke(df.query("Country == @c"), threads=threads) for c in countries]
         )
     else:
+        query = " and ".join(filter(None, [agg_query, block_query]))
+        duplicates = duke(df.query(query) if query else df, threads=threads)
         duplicates = duke(df, threads=threads)
 
     df = cliques(df, duplicates)

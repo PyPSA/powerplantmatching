@@ -670,7 +670,6 @@ def WIKIPEDIA(raw=False, update=False, config=None):
 
     df = (
         df.rename(columns=RENAME_COLUMNS)
-        .pipe(clean_name)
         .pipe(convert_to_short_name)
         .assign(
             Fueltype="Nuclear",
@@ -679,6 +678,7 @@ def WIKIPEDIA(raw=False, update=False, config=None):
             # plants which are not yet built are set to 2027
             DateIn=lambda df: df.DateIn.where(~df.Status.str.contains("In Bau"), 2027),
         )
+        .pipe(clean_name)
         .pipe(set_column_name, "WIKIPEDIA")
         .pipe(config_filter, config)
     )
@@ -1700,8 +1700,7 @@ def GBPT(raw=False, update=False, config=None):
 
     df = df.rename(columns=RENAME_COLUMNS)
     df_final = (
-        df.pipe(clean_name)
-        .pipe(set_column_name, "GBPT")
+        df.pipe(set_column_name, "GBPT")
         .pipe(convert_to_short_name)
         .dropna(subset="Capacity")
         .assign(
@@ -1717,6 +1716,7 @@ def GBPT(raw=False, update=False, config=None):
         .pipe(lambda x: x[df.columns.intersection(config.get("target_columns"))])
         .assign(Technology=np.nan)
         .assign(Set=np.nan)
+        .pipe(clean_name)
         .pipe(config_filter, config)
     )
     return df_final
@@ -1739,7 +1739,7 @@ def GNPT(raw=False, update=False, config=None):
     """
     config = get_config() if config is None else config
     fn = get_raw_file("GNPT", update=update, config=config)
-    df = pd.read_excel(fn, sheet_name="Data")
+    df = pd.read_excel(fn, sheet_name="Data", na_values=["--"])
 
     if raw:
         return df
@@ -1759,11 +1759,11 @@ def GNPT(raw=False, update=False, config=None):
 
     df = df.rename(columns=RENAME_COLUMNS)
     df_final = (
-        df.pipe(clean_name)
-        .pipe(set_column_name, "GNPT")
+        df.pipe(set_column_name, "GNPT")
         .pipe(convert_to_short_name)
         .dropna(subset="Capacity")
         .assign(
+            Name=lambda df: df["Name"] + df["Unit Name"].fillna("").apply(lambda x: f" {x}" if x else ""),
             DateIn=df["DateIn"].apply(pd.to_numeric, errors="coerce"),
             DateOut=df["DateOut"].apply(pd.to_numeric, errors="coerce"),
             lat=df["lat"].apply(pd.to_numeric, errors="coerce"),
@@ -1774,6 +1774,7 @@ def GNPT(raw=False, update=False, config=None):
         .assign(Fueltype="Nuclear")
         .assign(Technology="Steam Turbine")
         .assign(Set="PP")
+        .pipe(clean_name)
         .pipe(config_filter, config)
     )
     return df_final
@@ -1848,8 +1849,7 @@ def GCPT(raw=False, update=False, config=None):
 
     df = df.rename(columns=RENAME_COLUMNS)
     df_final = (
-        df.pipe(clean_name)
-        .pipe(set_column_name, "GCPT")
+        df.pipe(set_column_name, "GCPT")
         .pipe(convert_to_short_name)
         .dropna(subset="Capacity")
         .assign(
@@ -1870,6 +1870,7 @@ def GCPT(raw=False, update=False, config=None):
                 {"Fueltype": fueltype_dict, "Technology": technology_dict}
             )
         )
+        .pipe(clean_name)
         .pipe(config_filter, config)
     )
 
@@ -1913,8 +1914,7 @@ def GGTPT(raw=False, update=False, config=None):
 
     df = df.rename(columns=RENAME_COLUMNS)
     df_final = (
-        df.pipe(clean_name)
-        .pipe(set_column_name, "GGTPT")
+        df.pipe(set_column_name, "GGTPT")
         .pipe(convert_to_short_name)
         .dropna(subset="Capacity")
         .assign(
@@ -1928,6 +1928,7 @@ def GGTPT(raw=False, update=False, config=None):
         .assign(Fueltype="Geothermal")
         .assign(Technology="Steam Turbine")
         .assign(Set="PP")
+        .pipe(clean_name)
         .pipe(config_filter, config)
     )
     return df_final
@@ -1980,8 +1981,7 @@ def GWPT(raw=False, update=False, config=None):
 
     df = df.rename(columns=RENAME_COLUMNS)
     df_final = (
-        df.pipe(clean_name)
-        .pipe(set_column_name, "GWPT")
+        df.pipe(set_column_name, "GWPT")
         .pipe(convert_to_short_name)
         .dropna(subset="Capacity")
         .assign(
@@ -1995,6 +1995,7 @@ def GWPT(raw=False, update=False, config=None):
         .pipe(lambda x: x.replace({"Technology": technology_dict}))
         .assign(Fueltype="Wind")
         .assign(Set="PP")
+        .pipe(clean_name)
         .pipe(config_filter, config)
     )
     return df_final
@@ -2047,8 +2048,7 @@ def GSPT(raw=False, update=False, config=None):
 
     df = df.rename(columns=RENAME_COLUMNS)
     df_final = (
-        df.pipe(clean_name)
-        .pipe(set_column_name, "GSPT")
+        df.pipe(set_column_name, "GSPT")
         .pipe(convert_to_short_name)
         .dropna(subset="Capacity")
         .assign(
@@ -2062,6 +2062,7 @@ def GSPT(raw=False, update=False, config=None):
         .pipe(lambda x: x.replace({"Technology": technology_dict}))
         .assign(Fueltype="Solar")
         .assign(Set="PP")
+        .pipe(clean_name)
         .pipe(config_filter, config)
     )
     return df_final
@@ -2144,8 +2145,7 @@ def GGPT(raw=False, update=False, config=None):
     )
 
     df_final = (
-        df.pipe(clean_name)
-        .pipe(set_column_name, "GGPT")
+        df.pipe(set_column_name, "GGPT")
         .pipe(convert_to_short_name)
         .dropna(subset="Capacity")
         .assign(
@@ -2163,6 +2163,7 @@ def GGPT(raw=False, update=False, config=None):
         .pipe(lambda x: x[df.columns.intersection(config.get("target_columns"))])
         .pipe(lambda x: x.replace({"Technology": technology_dict}))
         .pipe(lambda x: x.replace({"Set": set_dict}))
+        .pipe(clean_name)
         .pipe(config_filter, config)
     )
     return df_final
@@ -2214,8 +2215,7 @@ def GHPT(raw=False, update=False, config=None):
     status_list = config["GHPT"].get("status", ["operating"])  # noqa: F841
     df = df.rename(columns=RENAME_COLUMNS)
     df_final = (
-        df.pipe(clean_name)
-        .pipe(set_column_name, "GHPT")
+        df.pipe(set_column_name, "GHPT")
         .pipe(convert_to_short_name)
         .dropna(subset="Capacity")
         .assign(
@@ -2229,6 +2229,7 @@ def GHPT(raw=False, update=False, config=None):
         .pipe(lambda x: x.replace({"Technology": technology_dict}))
         .assign(Fueltype="Hydro")
         .assign(Set="PP")
+        .pipe(clean_name)
         .pipe(config_filter, config)
     )
     return df_final
