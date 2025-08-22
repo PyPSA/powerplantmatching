@@ -506,13 +506,9 @@ def aggregate_units(
         duplicates = pd.concat(
             [duke(df.query(query), threads=threads) for c in countries]
         )
-        duplicates = pd.concat(
-            [duke(df.query("Country == @c"), threads=threads) for c in countries]
-        )
     else:
         query = " and ".join(filter(None, [agg_query, block_query]))
         duplicates = duke(df.query(query) if query else df, threads=threads)
-        duplicates = duke(df, threads=threads)
 
     df = cliques(df, duplicates)
     df = df.groupby("grouped").agg(props_for_groups)
