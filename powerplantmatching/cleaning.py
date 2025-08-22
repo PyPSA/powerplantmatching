@@ -340,7 +340,16 @@ def clean_technology(df, generalize_hydros=False):
         .str.split(", ")
         .apply(lambda x: ", ".join(i.strip() for i in np.unique(x)))
     )
-    tech = tech.replace({"Ccgt": "CCGT", "Ocgt": "OCGT"}, regex=True)
+    ABBREVIATIONS = {
+        "Ccgt": "CCGT",
+        "Ocgt": "OCGT",
+        "Pv": "PV",
+        "Nas": "NaS",
+        "Nicd": "NiCd",
+        "Nanicl": "NaNiCl",
+        "Caes": "CAES",
+    }
+    tech = tech.replace(ABBREVIATIONS, regex=True)
     return df.assign(Technology=tech)
 
 
