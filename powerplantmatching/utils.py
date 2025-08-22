@@ -187,7 +187,6 @@ def set_uncommon_fueltypes_to_other(df, fillna_other=True, config=None, **kwargs
     default = [
         "Mixed fuel types",
         "Electro-mechanical",
-        "Hydrogen Storage",
     ]
     fueltypes = kwargs.get("fueltypes", default)
     df.loc[df.Fueltype.isin(fueltypes), "Fueltype"] = "Other"
