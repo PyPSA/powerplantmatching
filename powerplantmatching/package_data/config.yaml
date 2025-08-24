@@ -58,9 +58,9 @@ BNETZA:
   url: https://www.bundesnetzagentur.de/SharedDocs/Downloads/DE/Sachgebiete/Energie/Unternehmen_Institutionen/Versorgungssicherheit/Erzeugungskapazitaeten/Kraftwerksliste/Kraftwerksliste_2019_1.xlsx;jsessionid=17E419F28D025C7DD9FC6E2BEB3D088F?__blob=publicationFile&v=2
 BEYONDCOAL:
   net_capacity: false
-  aggregated_units: true
+  aggregated_units: false
   reliability_score: 4
-  status: ["Construction", "Open", "Planned", "Retired"]
+  status: ["construction", "operational", "no longer coal", "retired", "standby", "deactivated", "retrofitting"]
   fn: 2025-07-24-BeyondFossilFuels-Europe_Coal_Plants_Database.xlsx
   url: https://beyondfossilfuels.org/wp-content/uploads/2025/07/2025-07-24-BeyondFossilFuels-Europe_Coal_Plants_Database.xlsx
 IRENA:
