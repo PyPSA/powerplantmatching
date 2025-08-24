@@ -526,4 +526,9 @@ def aggregate_units(
         .reindex(columns=cols)
         .pipe(set_column_name, ds_name)
     )
+
+    # Remove zero values from summed non-weighted numeric columns
+    numeric_cols = df.select_dtypes(include="number").columns
+    df[numeric_cols] = df[numeric_cols].where(lambda df: df != 0)
+
     return df
