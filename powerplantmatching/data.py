@@ -1799,7 +1799,7 @@ def GCPT(raw=False, update=False, config=None):
 
     config = get_config() if config is None else config
     fn = get_raw_file("GCPT", update=update, config=config)
-    df = pd.read_excel(fn, sheet_name="Units", na_values=["not found"])
+    df = pd.read_excel(fn, sheet_name="Units", na_values=["not found", "-"])
 
     if raw:
         return df
@@ -1854,6 +1854,8 @@ def GCPT(raw=False, update=False, config=None):
         .pipe(convert_to_short_name)
         .dropna(subset="Capacity")
         .assign(
+            Name=lambda df: df["Name"]
+            + df["Unit Name"].fillna("").apply(lambda x: f" {x}" if x else ""),
             DateIn=df["DateIn"].apply(pd.to_numeric, errors="coerce"),
             DateOut=df["DateOut"]
             .apply(pd.to_numeric, errors="coerce")
