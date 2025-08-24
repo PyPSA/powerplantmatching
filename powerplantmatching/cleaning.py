@@ -146,8 +146,15 @@ def clean_name(df, config=None):
             name = name.str.replace(pattern, key, regex=True)
 
     if config["clean_name"]["remove_duplicated_words"]:
-        name = name.str.replace(r"\b(\w+)(?:\W\1\b)+", r"\1", regex=True, case=False)
-    name = name.str.strip().str.title().str.replace(r" +", " ", regex=True)
+        name = (
+            name.str.replace(r"\b(\w+)(?:\W\1\b)+", r"\1", regex=True, case=False)
+            .str.strip()
+            .str.replace(r" +", " ", regex=True)
+            .str.title()
+            .str.replace(r"\b(\w+)(?:\W\1\b)+", r"\1", regex=True, case=False)
+        )
+    else:
+        name = name.str.strip().str.title().str.replace(r" +", " ", regex=True)
 
     return df.assign(Name=name).sort_values("Name")
 

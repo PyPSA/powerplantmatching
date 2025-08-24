@@ -2685,6 +2685,77 @@ def GND(
     return df_final
 
 
+def GHR(
+    raw=False,
+    update=False,
+    config=None,
+):
+    """
+    Get the GloHydroRes (GHR) dataset.
+
+    https://www.nature.com/articles/s41597-025-04975-0
+
+    https://zenodo.org/records/14526360
+
+    Parameters
+    ----------
+    raw : Boolean, default False
+        Whether to return the original dataset
+    update: bool, default False
+        Whether to update the data from the url.
+    config : dict, default None
+        Add custom specific configuration, e.g.
+        powerplantmatching.config.get_config(target_countries='Italy'), defaults
+        to powerplantmatching.config.get_config()
+    """
+
+    config = get_config() if config is None else config
+
+    fn = get_raw_file("GHR", update=update, config=config)
+
+    df = pd.read_csv(fn)
+
+    if raw:
+        return df
+
+    RENAME_COLUMNS = {
+        "ID": "projectID",
+        "name": "Name",
+        "country": "Country",
+        "Latitude": "plant_lat",
+        "Longitude": "plant_lon",
+        "plant_type": "Technology",
+        "dam_height_m": "DamHeight_m",
+        "year": "DateIn",
+    }
+    TECHNOLOGY_MAP = {
+        "STO": "Reservoir",
+        "RTO": "Run-Of-River",
+        "PHS": "Pumped Hydro",
+        "canal": np.nan,
+    }
+
+    df_final = (
+        df.rename(columns=RENAME_COLUMNS)
+        .assign(
+            projectID=lambda df: "GHR-" + df.projectID.astype(str),
+            Name=lambda df: df.Name.str.split(" - ").str[0].combine_first(df.dam_name),
+            DateIn=lambda df: pd.to_datetime(df.DateIn).dt.year,
+            Technology=lambda df: df.Technology.map(TECHNOLOGY_MAP),
+            Volume_Mm3=lambda df: df.res_vol_km3 * 1e3,
+            # StorageCapacity_MWh=lambda df: 9.81 * df.dam_height_m * df.Volume_Mm3 * 0.9 / 3.6,
+            # Duration=lambda df: df.StorageCapacity_MWh / df.Capacity,
+            Set="PP",
+            Fueltype="Hydro",
+        )
+        .pipe(clean_name)
+        .pipe(set_column_name, "GHR")
+        .pipe(config_filter, config)
+    )
+
+    return df_final
+
+
 def EXTERNAL_DATABASE(raw=False, update=True, config=None):
     """
     Importer for external custom databases.

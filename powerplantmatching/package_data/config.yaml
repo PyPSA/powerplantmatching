@@ -26,6 +26,7 @@ matching_sources:
   # do not match units below 1 MW (2 MW for biogas, 3 MW for solar), exclude wind in Germany from any matching
   - MASTR: (Fueltype != 'Wind') and ((Fueltype == 'Solar' and Capacity >= 3) or (Fueltype == 'Biogas' and Capacity >= 2) or (Fueltype not in ['Solar', 'Biogas'] and Capacity >= 1))
   - EESI
+  - GHR
 
 # # fully_included_sources, these sources are included even without match to the final dataset
 fully_included_sources:
@@ -227,6 +228,10 @@ GND:
   status: ["Shutdown", "Operational", "Under Construction", "Decommissioning Completed"]
   url: https://raw.githubusercontent.com/cristianst85/GeoNuclearData/1bc8b4ac106af236902385b87e46c540b4864815/data/csv/denormalized/nuclear_power_plants.csv
   fn: nuclear_power_plants.csv
+GHR:
+  reliability_score: 4
+  fn: GloHydroRes_vs1.csv
+  url: https://zenodo.org/records/14526360/files/GloHydroRes_vs1.csv
 
 # ---------------------------------------------------------------------------- #
 #                             Data Structure Config                            #
@@ -591,16 +596,23 @@ clean_name:
       - unit
       - kraftwerk
       - kernkraftwerk
+      - wehrkraftwerk
+      - rheinkraftwerk
       - gemeinschaftskernkraftwerk
       - kernkw
       - kw
       - hkw
       - nuclear
+      - hydro
       - thermal
       - heizkraftwerk
       - eolico
       - project
       - hydroelectric
+      - hydropower
+      - hydroelectrique
+      - hydraulique
+      - embassament
       - pumped
       - storage
       - france
@@ -617,6 +629,13 @@ clean_name:
       - bosnia
       - and
       - herzegovina
+      - bulgaria
+      - generating
+      - romania
+      - macedonia
+      - latvia
+      - lithuania
+      - hungary
       - \w #remove single letters
     "ss": "ß"
 
