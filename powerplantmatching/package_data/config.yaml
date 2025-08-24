@@ -594,6 +594,7 @@ clean_name:
       - power
       - plant
       - unit
+      - block
       - kraftwerk
       - kernkraftwerk
       - wehrkraftwerk

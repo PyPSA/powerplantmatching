@@ -329,6 +329,9 @@ def GEO(raw=False, update=False, config=None):
 
     res = units.join(ppl.set_index("projectID"), "projectID", rsuffix="_ppl")
     res["DateIn"] = res.DateIn.fillna(res.DateIn_ppl)
+    res["Name"] = res.Name + res["Unit_Nbr"].fillna("").apply(
+        lambda x: f" {x}" if x else ""
+    )
     not_included_ppl = ppl.query("projectID not in @res.projectID")
     res = pd.concat([res, not_included_ppl]).pipe(set_column_name, "GEO")
     res = scale_to_net_capacities(res)
@@ -1855,7 +1858,7 @@ def GCPT(raw=False, update=False, config=None):
         .dropna(subset="Capacity")
         .assign(
             Name=lambda df: df["Name"]
-            + df["Unit Name"].fillna("").apply(lambda x: f" {x}" if x else ""),
+            + df["Unit name"].fillna("").apply(lambda x: f" {x}" if x else ""),
             DateIn=df["DateIn"].apply(pd.to_numeric, errors="coerce"),
             DateOut=df["DateOut"]
             .apply(pd.to_numeric, errors="coerce")
@@ -2295,6 +2298,7 @@ def MASTR(
         "EinheitBetriebsstatus": "Status",
         "Laengengrad": "lon",
         "Breitengrad": "lat",
+        "WEIC": "EIC",
     }
     COUNTRY_MAP = {
         "Deutschland": "Germany",
@@ -2308,6 +2312,7 @@ def MASTR(
         "Energietraeger",
         "Hauptbrennstoff",
         "NameStromerzeugungseinheit",
+        "NameKraftwerksblock",
         "NameWindpark",
         "Technologie",
     ]
@@ -2498,6 +2503,15 @@ def MASTR(
         "Energietraeger in ['Hydro', 'Wind', 'Solar', 'Battery'] and Set in ['Store', 'CHP']"
     ).index
     df_processed.loc[mask, "Set"] = "PP"
+
+    df_processed["Name"] = df_processed.apply(
+        lambda x: f"{x.Name} {x.NameKraftwerksblock.replace(x.Name, '').strip()}"
+        if x.NameKraftwerksblock
+        and x.NameKraftwerksblock != x.Name
+        and x.Fueltype in config["clean_name"]["fueltypes_with_blocks"]
+        else x.Name,
+        axis=1,
+    )
 
     df_final = (
         df_processed.pipe(clean_name)
