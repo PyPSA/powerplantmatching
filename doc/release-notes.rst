@@ -12,6 +12,8 @@ Upcoming Version
 
 * Added [European Energy Storage Inventory](https://ses.jrc.ec.europa.eu/storage-inventory-maps) dataset as `pm.data.EESI()`.
 
+* Added [GloHydroRES](https://zenodo.org/records/14526360) dataset as `pm.data.GHR()`.
+
 * Updated ENTSOE, BEYONDCOAL, JRC, IRENASTAT and the Global Energy Monitor datasets to the latest versions.
 
 * Fix in `pm.data.MASTR()` the distinction of hydro technologies and between offshore and onshore wind. Also read in storage technologies.
