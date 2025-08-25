@@ -7,7 +7,7 @@ Parts of the repository may be licensed under different licenses, especially dep
 This repository uses the [REUSE](https://reuse.software/) conventions to indicate the licenses that apply to individual files and parts of the repository.
 For details on the licenses that apply, see the the header information of the respective files and [REUSE.toml](REUSE.toml) for details.
 
-Copyright 2018-2024 Fabian Gotzens (FZ Jülich), Jonas Hörsch (KIT), Fabian Hofmann (FIAS)  
+Copyright 2018-2024 Fabian Gotzens (FZ Jülich), Jonas Hörsch (KIT), Fabian Hofmann (FIAS)
 Copyright 2025- Contributors to powerplantmatching <https://github.com/pypsa/powerplantmatching>
 
 You can find a list of contributors in the [contributors page](https://github.com/PyPSA/powerplantmatching/graphs/contributors) and in the [contributors file](../contributors).
