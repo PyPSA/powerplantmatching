@@ -3,7 +3,7 @@
 The **original authors** were:
 
 - Fabian Gotzens (:octicons-mark-github-16: [@fgotzens](https://github.com/fgotzens))
-- Heidi Heinrichs ([website](https://www.fz-juelich.de/profile/heinrichs_h))
+- Heidi Heinrichs (:house: [website](https://www.fz-juelich.de/profile/heinrichs_h))
 - Jonas Hörsch (:octicons-mark-github-16: [@coroa](https://github.com/coroa))
 - Fabian Hofmann (:octicons-mark-github-16: [@FabianHofmann](https://github.com/FabianHofmann))
 
