@@ -16,12 +16,18 @@ main_query: "Name != '' and (lat >= 30 or lat != lat)"
 matching_sources:
   # Make individual queries for the datasets as done in `fully_included_sources`
   # Queries are combined with `main_query` with an `and` operator
-  - ENTSOE: not (Country == 'Germany' and Fueltype  == 'Wind') # wind is per turbine rather than park in MASTR and unsuitable for matching
+  # capacity filters avoid matching of too small units (which is too time-consuming)
+  # wind is per turbine rather than park in MASTR and unsuitable for matching
+  - ENTSOE: not (Country == 'Germany' and Fueltype  == 'Wind')
+  # wind in germany is provided by MASTR, other filters are due to large deviations to other datasets
   - GEO: Capacity >= 1 and not (Country == 'Germany' and Fueltype  == 'Wind') and Fueltype not in ['Oil', 'Nuclear'] and not (Country in ['Bulgaria', 'Slovakia'] and Fueltype == 'Hard Coal')
+  # wind in germany is provided by MASTR, nuclear is not block-wise, other filters are due to large deviations to other datasets
   - GPD: Capacity >= 1 and not (Country == 'Germany' and Fueltype  == 'Wind') and not (Country in ['Czechia', 'Bulgaria', 'Romania'] and Fueltype == 'Hard Coal') and Fueltype != 'Nuclear'
-  - JRC: Capacity >= 1 and not (Country == 'Germany' and Fueltype  == 'Wind') # do not match small hydro
+  - JRC: Capacity >= 1
+  # wind in germany is provided by MASTR, other filters are due to large deviations to other datasets
   - OPSD: not (Country == 'Germany' and Fueltype  == 'Wind') and ((Capacity >= 1 and Fueltype != 'Solar') or Capacity >= 3) and not (Country == 'Spain' and Fueltype == 'Hard Coal') and not (Country == 'Italy' and Fueltype == 'Natural Gas')
   - BEYONDCOAL
+  # wind in germany is provided by MASTR
   - GEM: Capacity >= 3 and not (Country == 'Germany' and Fueltype  == 'Wind')
   # do not match units below 1 MW (2 MW for biogas, 3 MW for solar), exclude wind in Germany from any matching
   - MASTR: (Fueltype != 'Wind') and ((Fueltype == 'Solar' and Capacity >= 3) or (Fueltype == 'Biogas' and Capacity >= 2) or (Fueltype not in ['Solar', 'Biogas'] and Capacity >= 1))
@@ -31,16 +37,21 @@ matching_sources:
 # # fully_included_sources, these sources are included even without match to the final dataset
 fully_included_sources:
   # Make individual queries for the datasets
-  - GEM: not (Country == 'Germany' and Fueltype in ['Solar', 'Wind']) # wind and solar in Germany is covered by MASTR
-  - EESI: Fueltype != 'Hydro' and not (Country == 'Germany' and Fueltype == 'Battery') # battery in Germany is covered by MASTR
+  # wind and solar in Germany is covered by MASTR
+  - GEM: not (Country == 'Germany' and Fueltype in ['Solar', 'Wind'])
+  # battery in Germany is covered by MASTR
+  - EESI: Fueltype != 'Hydro' and not (Country == 'Germany' and Fueltype == 'Battery')
+  # exclude units smaller than 100 kW (low total capacity) and take nuclear from other datasets (good matching)
   - MASTR: Capacity >= 0.1 and Fueltype != 'Nuclear'
-  - OPSD: Country != 'Germany' and Capacity < 1 and Capacity >= 0.1 and Fueltype == 'Hydro' # take small hydro outside Germany from OPSD (highest coverage)
+  # take small hydro outside Germany from OPSD (highest coverage)
+  - OPSD: Country != 'Germany' and Capacity < 1 and Capacity >= 0.1 and Fueltype == 'Hydro'
   - BEYONDCOAL
+  # include this selection of countries as they have poorer coverage in all other datasets
   - JRC: Country in ['Italy', 'Croatia', 'Serbia', 'Slovakia']
 
 # these sources skip unit aggregation for fully_included_sources not covered in matching_sources
 aggregate_only_matching_sources:
-  - MASTR
+  - MASTR # the matching process of very small units is not efficient
 
 parallel_duke_processes: 16
 threads_extend_by_non_matched: 16
