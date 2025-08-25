@@ -127,9 +127,7 @@ def clean_name(df, config=None):
             pattern_keep = r"(?i)" + "|".join(
                 [rf"\b{p}\b" for p in pattern if p != "\w"]
             )
-            pattern_default = r"(?i)" + "|".join(
-                [rf"\b{p}\b" for p in pattern]
-            )
+            pattern_default = r"(?i)" + "|".join([rf"\b{p}\b" for p in pattern])
             name.loc[mask] = name.loc[mask].str.replace(pattern_keep, key, regex=True)
             name.loc[~mask] = name.loc[~mask].str.replace(
                 pattern_default, key, regex=True
