@@ -1,9 +1,6 @@
-#!/usr/bin/env python3
-"""
-Created on Tue Jul 16 18:09:56 2019
-
-@author: fabian
-"""
+# SPDX-FileCopyrightText: Contributors to powerplantmatching <https://github.com/pypsa/powerplantmatching>
+#
+# SPDX-License-Identifier: MIT
 
 import pandas
 

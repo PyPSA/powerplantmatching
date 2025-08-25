@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2021 The Atlite Authors
+# SPDX-FileCopyrightText: Contributors to powerplantmatching <https://github.com/pypsa/powerplantmatching>
 #
 # SPDX-License-Identifier: CC0-1.0
 ci:
@@ -16,7 +16,7 @@ repos:
 
 # Run ruff to lint and format
 -   repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.12.2
+    rev: v0.12.7
     hooks:
     # Run the linter.
     -   id: ruff
@@ -34,3 +34,9 @@ repos:
             --ignore-words, .codespell.ignore
             ]
         types_or: [python, rst, markdown]
+
+# Reuse compliance
+- repo: https://github.com/fsfe/reuse-tool
+  rev: v5.0.2
+  hooks:
+  - id: reuse
