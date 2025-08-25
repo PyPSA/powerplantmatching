@@ -11,6 +11,20 @@ SPDX-License-Identifier: MIT
 * Update Marktstammdatenregister data for Germany from [open-MaStR (February 25, 2025)](https://zenodo.org/records/14783581).
 * Drop support for Python 3.9, add support for Python 3.13. Minimum required Python version is now 3.10.
 * Restructure documentation and move to use `mkdocs` for a nicer user experience.
+* Added [GeoNuclearData](github.com/cristianst85/GeoNuclearData) dataset as `pm.data.GND()`.
+* Added [European Energy Storage Inventory](https://ses.jrc.ec.europa.eu/storage-inventory-maps) dataset as `pm.data.EESI()`.
+* Added [GloHydroRES](https://zenodo.org/records/14526360) dataset as `pm.data.GHR()`.
+* Updated ENTSOE, BEYONDCOAL, JRC, IRENASTAT and the Global Energy Monitor datasets to the latest versions.
+* Fix in `pm.data.MASTR()` the distinction of hydro technologies and between offshore and onshore wind. Also read in storage technologies.
+* Improved recognition of CHP power plants.
+* In Global Energy Monitor datasets, also read entries below capacity threshold.
+* In `pm.data.GCPT()`, add estimate for coal plant efficiency.
+* Include mothballed gas, oil and coal power plants.
+* Initially, include unit/block name in power plant name before matching.
+* Added option to retain blocks for subsets of fuel types (e.g. `clean_name: fueltypes_with_blocks: ['Nuclear']`).
+* For fully included datasets, add option to only aggregate units included in the matching process (e.g. `aggregate_only_matching_sources: ['MASTR']`).
+* Added option for multiprocessing when aggregating units of non-matched power plants (e.g. `threads_extend_by_non_matched: 16`).
+* Updating matching logic configuration.
 
 ## [v0.7.1](https://github.com/PyPSA/powerplantmatching/releases/tag/v0.7.1) (30th January 2024)
 
