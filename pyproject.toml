@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Contributors to powerplantmatching <https://github.com/pypsa/powerplantmatching>
+#
+# SPDX-License-Identifier: MIT
+
 [build-system]
 requires = ["setuptools>=64", "setuptools_scm>=8"]
 build-backend = "setuptools.build_meta"
@@ -18,7 +22,7 @@ classifiers=[
     "Programming Language :: Python :: 3.13",
     "Environment :: Console",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "License :: OSI Approved :: MIT License",
     "Natural Language :: English",
     "Operating System :: OS Independent",
 ]
@@ -52,11 +56,19 @@ Source = "https://github.com/PyPSA/powerplantmatching"
 
 [project.optional-dependencies]
 docs= [
-    "numpydoc",
-    "sphinx",
-    "sphinx-book-theme",
-    "nbsphinx",
-    "sphinx-automodapi",
+    "mkdocs-material",
+    "mkdocs-ezlinks-plugin",
+    "mkdocs-autolinks-plugin",
+    "mkdocs-redirects",
+    "mkdocs-video",
+    "mkdocs-git-revision-date-localized-plugin",
+    "mkdocs-git-committers-plugin",
+    "mkdocs-argref-plugin",
+    "mkdocs-table-reader-plugin",
+    "mkdocstrings-python",
+    "mkdocs-jupyter",
+    "cairosvg",
+    "pillow",
 ]
 dev= [
     "pre-commit",
@@ -67,7 +79,8 @@ dev= [
     "types-PyYAML",
     "pandas-stubs",
     "types-tqdm",
-    "types-six"
+    "types-six",
+    "reuse>=5.0.2",
 ]
 
 # Add optional dependencies for plotting
