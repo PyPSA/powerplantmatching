@@ -118,7 +118,10 @@ def clean_name(df, config=None):
 
         pattern = np.atleast_1d(pattern)
 
-        # do not remove block numbers for fuel types with blocks
+        # do not remove block numbers for fuel types with blocks; the regular
+        # regex [^a-zA-Z] removes non-alphabetical characters; for fueltypes to
+        # keep, the regex [^a-zA-Z0-9] is used which only removes
+        # non-alphanumerical characters
         if len(keep_blocks) > 0 and key == " " and "[^a-zA-Z]" in pattern:
             base = [rf"\b{p}\b" for p in pattern if p != "[^a-zA-Z]"]
             pattern_keep = r"(?i)" + "|".join(base + [r"[^a-zA-Z0-9]"])
@@ -128,13 +131,15 @@ def clean_name(df, config=None):
                 pattern_default, key, regex=True
             )
 
-        # do not remove block letters for fuel types with blocks
+        # do not remove block letters for fuel types with blocks; the regular
+        # regex \w would remove standalone letters, this one is skipped for
+        # fueltypes in mask
         elif key == "" and "\w" in pattern:
             pattern_keep = r"(?i)" + "|".join(
                 [rf"\b{p}\b" for p in pattern if p != "\w"]
             )
             pattern_default = r"(?i)" + "|".join(
-                [rf"\b{p}\b" for p in pattern if p != "\w"]
+                [rf"\b{p}\b" for p in pattern]
             )
             name.loc[mask] = name.loc[mask].str.replace(pattern_keep, key, regex=True)
             name.loc[~mask] = name.loc[~mask].str.replace(
@@ -145,6 +150,7 @@ def clean_name(df, config=None):
             pattern = r"(?i)" + "|".join([rf"\b{p}\b" for p in pattern])
             name = name.str.replace(pattern, key, regex=True)
 
+    # remove duplicated words; second pass necessary for edge cases
     if config["clean_name"]["remove_duplicated_words"]:
         name = (
             name.str.replace(r"\b(\w+)(?:\W\1\b)+", r"\1", regex=True, case=False)
