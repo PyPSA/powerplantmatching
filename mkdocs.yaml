@@ -88,40 +88,40 @@ plugins:
             show_inheritance_diagram: true
 
 markdown_extensions:
-# Callouts/ Admonitions
-- admonition
-- pymdownx.details
-- pymdownx.superfences:
-    custom_fences:
-    - name: mermaid
-      class: mermaid
-      format: !!python/name:pymdownx.superfences.fence_code_format
-- pymdownx.arithmatex:
-    generic: true
-# Footnotes
-- footnotes
-# Tabbed content
-- pymdownx.tabbed:
-    alternate_style: true  # Abbreviations
-- pymdownx.snippets:
-    auto_append:
-    - includes/abbreviations.md
-- abbr
-- attr_list
-- md_in_html
+  # Callouts/ Admonitions
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+      - name: mermaid
+        class: mermaid
+        format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.arithmatex:
+      generic: true
+  # Footnotes
+  - footnotes
+  # Tabbed content
+  - pymdownx.tabbed:
+      alternate_style: true  # Abbreviations
+  - pymdownx.snippets:
+      auto_append:
+      - includes/abbreviations.md
+  - abbr
+  - attr_list
+  - md_in_html
   # Emojis
-- pymdownx.emoji:
-    emoji_index: !!python/name:material.extensions.emoji.twemoji
-    emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.emoji:
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
   # Toctree with permalinks
-- toc:
-    title: On this page
-    permalink: true
-    toc_depth: 3
-  # Grids
-- md_in_html
-- pymdownx.caret
-- pymdownx.tilde
+  - toc:
+      title: On this page
+      permalink: true
+      toc_depth: 3
+    # Grids
+  - md_in_html
+  - pymdownx.caret
+  - pymdownx.tilde
 
 
 extra:
