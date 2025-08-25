@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2025 Contributors to powerplantmatching <https://github.com/pypsa/powerplantmatching>
+
+SPDX-License-Identifier: MIT
+-->
+
 # Citing powerplantmatching
 
 If you use `powerplantmatching` in your work, please consider citing the following paper:

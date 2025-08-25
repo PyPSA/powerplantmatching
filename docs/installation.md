@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2025 Contributors to powerplantmatching <https://github.com/pypsa/powerplantmatching>
+
+SPDX-License-Identifier: MIT
+-->
+
 # Installation
 
 This package is available on [PyPI](https://pypi.org/project/powerplantmatching/) and [Conda-Forge](https://anaconda.org/conda-forge/powerplantmatching).

@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2025 Contributors to powerplantmatching <https://github.com/pypsa/powerplantmatching>
+
+SPDX-License-Identifier: MIT
+-->
+
 # General Structure
 
 The dataset combines the data of all the data sources listed in [Data-Sources](#data-sources) and provides the following information:

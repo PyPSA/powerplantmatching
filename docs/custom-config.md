@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2025 Contributors to powerplantmatching <https://github.com/pypsa/powerplantmatching>
+
+SPDX-License-Identifier: MIT
+-->
+
 # Make your own configuration
 
 You have the option to easily manipulate the resulting data by modifying the global configuration. Just save the [config.yaml file](https://github.com/PyPSA/powerplantmatching/blob/master/powerplantmatching/package_data/config.yaml) as `~/.powerplantmatching_config.yaml` manually or for Linux users:

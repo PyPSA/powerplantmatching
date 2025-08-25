@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2025 Contributors to powerplantmatching <https://github.com/pypsa/powerplantmatching>
+
+SPDX-License-Identifier: MIT
+-->
+
 # License
 
 `powerplantmatching` is released as free software under the [MIT](LICENSES/MIT.txt) license.

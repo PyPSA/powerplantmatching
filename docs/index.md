@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2025 Contributors to powerplantmatching <https://github.com/pypsa/powerplantmatching>
+
+SPDX-License-Identifier: MIT
+-->
+
 # Welcome to powerplantmatching's documentation!
 
 ![PyPI](https://img.shields.io/pypi/v/powerplantmatching.svg)
