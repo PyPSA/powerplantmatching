@@ -399,7 +399,7 @@ def clean_technology(df, generalize_hydros=False):
         "Nanicl": "NaNiCl",
         "Caes": "CAES",
     }
-    tech = tech.replace(ABBREVIATIONS, regex=True)
+    tech = tech.replace(ABBREVIATIONS, regex=False)
     return df.assign(Technology=tech)
 
 
