@@ -1,0 +1,40 @@
+version = 1
+SPDX-PackageName = "powerplantmatching"
+SPDX-PackageSupplier = "PyPSA <https://pypsa.org>"
+SPDX-PackageDownloadLocation = "https://github.com/pypsa/powerplantmatching"
+
+[[annotations]]
+path = [
+    "powerplants.csv",
+    "doc/**",
+]
+SPDX-FileCopyrightText = "Contributors to powerplantmatching <https://github.com/pypsa/powerplantmatching>"
+SPDX-License-Identifier = "CC-BY-4.0"
+
+[[annotations]]
+path = [
+    ".codespell.ignore",
+    ".github/**",
+    ".gitignore",
+    ".readthedocs.yaml",
+    ".pre-commit-config.yaml",
+]
+SPDX-FileCopyrightText = "Contributors to powerplantmatching <https://github.com/pypsa/powerplantmatching>"
+SPDX-License-Identifier = "CC0-1.0"
+
+[[annotations]]
+path = [
+    "powerplantmatching/package_data/*.yaml",
+    "powerplantmatching/package_data/*.csv",
+    "powerplantmatching/package_data/*.xml",
+]
+SPDX-FileCopyrightText = "Contributors to powerplantmatching <https://github.com/pypsa/powerplantmatching>"
+SPDX-License-Identifier = "CC0-1.0"
+
+
+[[annotations]]
+path = [
+    "powerplantmatching/package_data/duke_binaries/*.jar",
+]
+SPDX-FileCopyrightText = "Lars Marius Garshol <larsga@garshol.priv.no>"
+SPDX-License-Identifier = "Apache-2.0"
