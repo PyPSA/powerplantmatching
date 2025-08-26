@@ -6,8 +6,7 @@ SPDX-PackageDownloadLocation = "https://github.com/pypsa/powerplantmatching"
 [[annotations]]
 path = [
     "powerplants.csv",
-    "docs/assets/images/powerplants.png",
-    "docs/examples/example.ipynb",
+    "doc/**",
 ]
 SPDX-FileCopyrightText = "Contributors to powerplantmatching <https://github.com/pypsa/powerplantmatching>"
 SPDX-License-Identifier = "CC-BY-4.0"
