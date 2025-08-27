@@ -56,11 +56,19 @@ Source = "https://github.com/PyPSA/powerplantmatching"
 
 [project.optional-dependencies]
 docs= [
-    "numpydoc",
-    "sphinx",
-    "sphinx-book-theme",
-    "nbsphinx",
-    "sphinx-automodapi",
+    "mkdocs-material",
+    "mkdocs-ezlinks-plugin",
+    "mkdocs-autolinks-plugin",
+    "mkdocs-redirects",
+    "mkdocs-video",
+    "mkdocs-git-revision-date-localized-plugin",
+    "mkdocs-git-committers-plugin",
+    "mkdocs-argref-plugin",
+    "mkdocs-table-reader-plugin",
+    "mkdocstrings-python",
+    "mkdocs-jupyter",
+    "cairosvg",
+    "pillow",
 ]
 dev= [
     "pre-commit",
