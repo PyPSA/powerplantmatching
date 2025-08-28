@@ -4,6 +4,7 @@
 
 import copy
 
+import geoviews  # noqa
 import hvplot
 import hvplot.pandas  # noqa
 import hvplot.xarray  # noqa
@@ -25,7 +26,7 @@ config_de2020["hash"] = "DE-2020"
 
 config_de2030 = copy.copy(config)
 config_de2030["main_query"] = query.format(year=2030)
-config_de2030["matching_sources"].remove("WIKIPEDIA")
+config_de2030["matching_sources"].remove({"WIKIPEDIA": "Fueltype != 'Solar'"})
 config_de2030["hash"] = "DE-2030"
 
 
@@ -51,7 +52,7 @@ for config in [config_de2020, config_de2030]:
         name="Select", options=["Fueltype", "Country"]
     )
 
-    map = df.hvplot.points(
+    point_map = df.hvplot.points(
         "lon",
         "lat",
         color="Fueltype",
@@ -83,6 +84,6 @@ for config in [config_de2020, config_de2030]:
     )
     # bars.opts(opts.Overlay(title=None))
 
-    plot = map + bars
+    plot = point_map + bars
 
     hvplot.save(plot, "figures/" + label + ".html")
