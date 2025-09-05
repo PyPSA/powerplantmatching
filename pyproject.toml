@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Contributors to powerplantmatching <https://github.com/pypsa/powerplantmatching>
+#
+# SPDX-License-Identifier: MIT
+
 [build-system]
 requires = ["setuptools>=64", "setuptools_scm>=8"]
 build-backend = "setuptools.build_meta"
@@ -12,18 +16,18 @@ authors = [{ name = "Fabian Hofmann (FIAS)", email = "fabianmarikhofmann@gmail.c
 { name = "Fabian Gotzens (FZ Jülich)" }]
 license = { file = "LICENSE" }
 classifiers=[
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Environment :: Console",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "License :: OSI Approved :: MIT License",
     "Natural Language :: English",
     "Operating System :: OS Independent",
 ]
 
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 
 dependencies = [
     "numpy",
@@ -67,7 +71,8 @@ dev= [
     "types-PyYAML",
     "pandas-stubs",
     "types-tqdm",
-    "types-six"
+    "types-six",
+    "reuse>=5.0.2",
 ]
 
 # Add optional dependencies for plotting
@@ -110,7 +115,7 @@ select = [
 
 # Add basic mypy configuration
 [tool.mypy]
-python_version = "3.9"
+python_version = "3.13"
 warn_unused_configs = true
 disallow_untyped_defs = false
 disallow_incomplete_defs = false

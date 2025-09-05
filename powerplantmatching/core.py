@@ -1,9 +1,6 @@
-#!/usr/bin/env python3
-"""
-Created on Tue Jul 16 15:47:46 2019
-
-@author: fabian
-"""
+# SPDX-FileCopyrightText: Contributors to powerplantmatching <https://github.com/pypsa/powerplantmatching>
+#
+# SPDX-License-Identifier: MIT
 
 import logging
 from os import environ, makedirs

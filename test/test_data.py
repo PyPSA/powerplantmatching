@@ -1,9 +1,6 @@
-#!/usr/bin/env python3
-"""
-Created on Wed Nov 25 08:48:04 2020
-
-@author: fabian
-"""
+# SPDX-FileCopyrightText: Contributors to powerplantmatching <https://github.com/pypsa/powerplantmatching>
+#
+# SPDX-License-Identifier: MIT
 
 import pytest
 
