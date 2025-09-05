@@ -83,7 +83,7 @@ def test_gather_specifications(data):
 def test_clean_name(data):
     res = clean_name(data)
     assert res.Name[0] == "Powerplant"
-    assert res.Name[1] == "An Hydro Powerplant"
+    assert res.Name[1] == "An Powerplant"
     assert res.Name[2] == "Another Powerplant With Whitespaces"
     assert res.Name[3] == "Coalition"
     assert res.Name[4] == "Besonders Chp"
