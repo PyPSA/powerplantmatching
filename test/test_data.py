@@ -54,4 +54,7 @@ def test_url_retrieval():
 
 
 def test_reduced_retrieval():
-    pm.powerplants(reduced=False)
+    config = pm.get_config()
+    config["matching_sources"] = ["GEO", "GPD"]
+    config["fully_included_sources"] = []
+    pm.powerplants(reduced=False, config=config)

@@ -55,6 +55,8 @@ def extend_by_non_matched(
     if config is None:
         config = get_config()
 
+    threads = config.get("threads_extend_by_non_matched", 1)
+
     if isinstance(extend_by, str):
         label = extend_by
         extend_by = getattr(data, extend_by)(config=config)
@@ -71,7 +73,7 @@ def extend_by_non_matched(
 
     if aggregate_added_data and not extend_by.empty:
         extend_by = aggregate_units(
-            extend_by, dataset_name=label, config=config, **aggkwargs
+            extend_by, dataset_name=label, config=config, threads=threads, **aggkwargs
         )
         extend_by["projectID"] = extend_by.projectID.map(lambda x: {label: x})
     else:
