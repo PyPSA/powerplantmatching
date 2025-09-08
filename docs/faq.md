@@ -4,12 +4,7 @@ SPDX-FileCopyrightText: 2025 Contributors to powerplantmatching <https://github.
 SPDX-License-Identifier: MIT
 -->
 
-# Utility Modules
+# Frequently Asked Questions (FAQ)
 
-::: powerplantmatching.utils
-
-::: powerplantmatching.export
-
-::: powerplantmatching.heuristics
-
-::: powerplantmatching.plot
+> This section is to be expanded and could host your contribution :tada:
+> (TODO)

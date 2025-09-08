@@ -1,14 +1,15 @@
-=======================
-Data Processing Modules
-=======================
+<!--
+SPDX-FileCopyrightText: 2025 Contributors to powerplantmatching <https://github.com/pypsa/powerplantmatching>
 
-.. automodapi:: powerplantmatching.data
+SPDX-License-Identifier: MIT
+-->
 
+# Data Processing Modules
 
-.. automodapi:: powerplantmatching.cleaning
+::: powerplantmatching.data
 
+::: powerplantmatching.cleaning
 
-.. automodapi:: powerplantmatching.matching
+::: powerplantmatching.matching
 
-
-.. automodapi:: powerplantmatching.collection
+::: powerplantmatching.collection

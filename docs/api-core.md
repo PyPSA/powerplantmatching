@@ -1,9 +1,13 @@
-============
-Core Modules
-============
+<!--
+SPDX-FileCopyrightText: 2025 Contributors to powerplantmatching <https://github.com/pypsa/powerplantmatching>
 
-.. automodapi:: powerplantmatching.core
+SPDX-License-Identifier: MIT
+-->
 
-.. automodapi:: powerplantmatching.duke
+# Core Modules
 
-.. automodapi:: powerplantmatching.accessor
+::: powerplantmatching.core
+
+::: powerplantmatching.duke
+
+::: powerplantmatching.accessor

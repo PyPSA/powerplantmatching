@@ -1,40 +1,39 @@
-Get the Data
-------------
+<!--
+SPDX-FileCopyrightText: 2025 Contributors to powerplantmatching <https://github.com/pypsa/powerplantmatching>
 
-In order to directly load the already build data into a pandas dataframe
-just call
+SPDX-License-Identifier: MIT
+-->
 
-.. code:: python
+# Getting Started
 
-   import powerplantmatching as pm
-   pm.powerplants(from_url=True)
+This guide will help you get started with Powerplantmatching.
 
-which will parse and store the `actual dataset of powerplants of this
-repository <https://github.com/PyPSA/powerplantmatching/blob/master/powerplants.csv>`__.
-Setting ``from_url=False`` (default) will load all the necessary data
-files and combine them. Note that this might take some minutes.
+## Get the Data
 
-The resulting dataset compared with the capacity statistics provided by
-the `ENTSOE
-SO&AF <https://data.open-power-system-data.org/national_generation_capacity/2019-02-22>`__:
+To directly load the already built data into a pandas dataframe, just call:
 
-.. figure:: https://raw.githubusercontent.com/PyPSA/powerplantmatching/master/matching_analysis/factor_plot_Matched%20Data.png
-   :alt: Capacity statistics comparison
+```python
+import powerplantmatching as pm
+pm.powerplants(from_url=True)
+```
 
+This will parse and store the [actual dataset of powerplants of this repository](https://github.com/PyPSA/powerplantmatching/blob/master/powerplants.csv).
+Setting `from_url=False` (default) will load all the necessary data files and combine them. Note that this might take some minutes.
 
-The merged data is also available as a bigger dataset which provides the original data entries
+The resulting dataset compared with the capacity statistics provided by the [ENTSOE SO&AF](https://data.open-power-system-data.org/national_generation_capacity/2019-02-22):
 
-.. code:: python
+![Capacity statistics comparison](assets/images/powerplants.png)
 
-    pm.powerplants(reduced=False)
+The merged data is also available as a bigger dataset which provides the original data entries:
 
-It links the entries of the matched power plants and lists all the related
-properties given by the different data-sources.
+```python
+pm.powerplants(reduced=False)
+```
 
-.. note::
+It links the entries of the matched power plants and lists all the related properties given by the different data-sources.
 
-   Calling the function with ``reduced=False`` will trigger the matching process which requires **Java** to be installed on your system. Please ensure that you have Java installed and that it is in your system's PATH.
+!!! note
+    Calling the function with `reduced=False` will trigger the matching process which requires **Java** to be installed on your system. Please ensure that you have Java installed and that it is in your system's PATH.
 
-   You can download and install Java from the official website: https://www.java.com/en/download/
-
-   If Java is not installed or not in your system's PATH, you may encounter runtime errors.
+    You can download and install Java from the official website: https://www.java.com/en/download/
+    If Java is not installed or not in your system's PATH, you may encounter runtime errors.
