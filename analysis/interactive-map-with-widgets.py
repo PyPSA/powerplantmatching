@@ -16,7 +16,7 @@ config = pm.get_config()
 cmap = {k: v for k, v in config["fuel_to_color"].items() if k in df.Fueltype.unique()}
 checkbox = pn.widgets.CheckButtonGroup(name="Select", options=["Fueltype", "Country"])
 
-map = df.hvplot.points(
+point_map = df.hvplot.points(
     "lon",
     "lat",
     color="Fueltype",
@@ -38,5 +38,5 @@ map = df.hvplot.points(
 )
 
 
-panel = pn.Column(checkbox, map)
+panel = pn.Column(checkbox, point_map)
 panel.show()
