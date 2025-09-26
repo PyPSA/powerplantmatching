@@ -28,6 +28,23 @@ Core features include:
 
 The module is fully integrated with powerplantmatching's object model and can be used through high-level functions (`OSM(config)`), custom pipelines, or interactive notebooks.
 
+OSM Data Analysis & Coverage Reports
+------------------------------------
+
+For comprehensive analysis of OSM data coverage and contribution patterns across Europe, see the dedicated analysis documentation:
+
+:doc:`osm-data-analysis`
+
+This analysis provides:
+
+- **Interactive Map Visualization**: Explore 39,155+ European power plants with OSM involvement comparison
+- **Comprehensive Statistics**: Detailed breakdown of OSM's 55.0% capacity coverage (850+ GW)
+- **Technology Coverage Analysis**: OSM coverage patterns across different generation technologies
+- **Geographic Distribution**: Country-by-country analysis of OSM contributions
+
+The analysis demonstrates how OSM contributes both through discovering new plants (17.5% of plants, 7.4% of capacity) and validating existing infrastructure (21.0% of plants, 47.6% of capacity).
+
+
 PowerPlantMatching OSM Processing Pipeline
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -200,10 +217,17 @@ Work with the caching system and quality tracking:
 .. code-block:: python
 
    # Check cache status
-   show_country_coverage(
-       show_missing=False,
-       check_live_counts=False  # Set True to compare with live OSM
+   data = get_country_coverage_data(
+      show_missing=False,
+      check_live_counts=False,  # Set True to compare with live OSM
    )
+
+   # Print formatted report
+   print_coverage_report(
+      coverage_data=data,
+      show_missing=False,
+      check_live_counts=False,
+      )
 
    # Find outdated caches
    outdated = find_outdated_caches(
@@ -392,7 +416,7 @@ Main Functions
                   update_country_caches=True)
 
    # Cache management
-   show_country_coverage(cache_dir=None, show_missing=False,
+   data = get_country_coverage_data(cache_dir=None, show_missing=False,
                         check_live_counts=False)
    populate_cache(countries, cache_dir=None, force_refresh=False)
 

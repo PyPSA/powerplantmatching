@@ -1,4 +1,9 @@
-"""Base classes for parsing OpenStreetMap power plant elements.
+# SPDX-FileCopyrightText: Contributors to powerplantmatching <https://github.com/pypsa/powerplantmatching>
+#
+# SPDX-License-Identifier: MIT
+
+"""
+Base classes for parsing OpenStreetMap power plant elements.
 
 This module provides the abstract base class for parsing OSM elements
 (nodes, ways, relations) into standardized power plant units. It handles
@@ -9,6 +14,8 @@ capacities from OSM tags.
 import logging
 from abc import ABC, abstractmethod
 from typing import Any
+
+import numpy as np
 
 from powerplantmatching.osm.enhancement.estimation import CapacityEstimator
 from powerplantmatching.osm.enhancement.geometry import GeometryHandler
@@ -451,7 +458,7 @@ class ElementProcessor(ABC):
 
         return None
 
-    def _parse_date_string(self, element: dict[str, Any], date_string: str) -> str:
+    def _parse_date_string(self, element: dict[str, Any], date_string: str) -> float:
         """Parse various date formats into standardized YYYY-MM-DD format."""
         import re
 
@@ -461,7 +468,7 @@ class ElementProcessor(ABC):
             logger.warning(
                 f"Empty date string provided for plant {element['type']}/{element['id']}"
             )
-            return ""
+            return np.nan
 
         date_string = date_string.strip()
 
@@ -470,9 +477,9 @@ class ElementProcessor(ABC):
             logger.warning(
                 f"No valid year found for plant {element['type']}/{element['id']} in '{date_string}'"
             )
-            return ""
+            return np.nan
 
-        year = int(year_match.group(1))
+        year = float(int(year_match.group(1)))
 
         try:
             date_obj = parser.parse(date_string, fuzzy=True)
@@ -499,19 +506,19 @@ class ElementProcessor(ABC):
                 day_detected = re.search(r"\b\d{1,2}\b", date_string) and month_detected
 
                 if month_detected and day_detected:
-                    return date_obj.strftime("%Y-%m-%d")
+                    return float(date_obj.year)
                 elif month_detected:
-                    return f"{date_obj.year}-{date_obj.month:02d}-01"
+                    return float(date_obj.year)
                 else:
-                    return f"{date_obj.year}-01-01"
+                    return float(date_obj.year)
 
-            return f"{year}-01-01"
+            return year
 
         except (ValueError, TypeError) as e:
             logger.warning(
                 f"Date parsing failed {element['type']}/{element['id']} in '{date_string}': {str(e)}. Using year only."
             )
-            return f"{year}-01-01"
+            return year
 
     @abstractmethod
     def process_element(

@@ -1,4 +1,9 @@
-"""Quality tracking for OSM power plant data processing.
+# SPDX-FileCopyrightText: Contributors to powerplantmatching <https://github.com/pypsa/powerplantmatching>
+#
+# SPDX-License-Identifier: MIT
+
+"""
+Quality tracking for OSM power plant data processing.
 
 This module provides comprehensive tracking of rejected OSM elements,
 helping to identify data quality issues and generate reports for
@@ -220,9 +225,9 @@ class RejectionTracker:
         if id in self.rejected_elements:
             del self.rejected_elements[id]
             success = True
-            logger.debug(f"Deleted rejection with ID: {id}")
+            logger.debug(f"Removed rejection with ID: {id}")
         else:
-            logger.debug(f"Rejection with ID {id} not found for deletion.")
+            logger.debug(f"Rejection with ID {id} not found for removal.")
 
         if id in self.ids:
             self.ids.remove(id)
@@ -249,9 +254,11 @@ class RejectionTracker:
                 if success:
                     deleted += 1
             else:
-                logger.warning(f"Unit {unit} has None id, skipping rejection deletion")
+                logger.warning(f"Unit {unit} has None id, skipping rejection removal")
 
-        logger.info(f"Deleted {deleted} rejections for {len(units)} units")
+        logger.info(
+            f"Removed {deleted} rejections for {len(units)} units successfully processed"
+        )
         return deleted
 
     def get_summary(self) -> dict[str, int]:

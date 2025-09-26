@@ -1,4 +1,9 @@
-"""OpenStreetMap power plant data interface.
+# SPDX-FileCopyrightText: Contributors to powerplantmatching <https://github.com/pypsa/powerplantmatching>
+#
+# SPDX-License-Identifier: MIT
+
+"""
+OpenStreetMap power plant data interface.
 
 This module provides the main interface for extracting and processing power plant
 data from OpenStreetMap. It handles country validation, multi-level caching,
@@ -72,16 +77,19 @@ def get_client_params(osm_config, api_url, cache_dir):
         "timeout": osm_config.get("overpass_api", {}).get("timeout", 300),
         "max_retries": osm_config.get("overpass_api", {}).get("max_retries", 3),
         "retry_delay": osm_config.get("overpass_api", {}).get("retry_delay", 5),
+        "cache_size_gb": osm_config.get("overpass_api", {}).get("cache_size_gb", 12),
         "show_progress": osm_config.get("overpass_api", {}).get("show_progress", True),
     }
 
 
-def validate_countries(countries: list[str]) -> tuple[list[str], dict[str, str]]:
+def validate_countries(
+    countries: list[str], omitted_countries: list[str] = []
+) -> tuple[list[str], dict[str, str]]:
     """Validate country names and provide helpful suggestions for invalid entries.
 
     Uses pycountry to validate country names, supporting full names, ISO codes,
     and common variations. Provides fuzzy matching suggestions for typos or
-    incorrect names.
+    incorrect names. Checks against omitted countries list from configuration.
 
     Parameters
     ----------
@@ -92,10 +100,13 @@ def validate_countries(countries: list[str]) -> tuple[list[str], dict[str, str]]
         - ISO 3166-1 alpha-3: 'DEU', 'USA'
         - Common variations: 'USA', 'UK', 'South Korea'
 
+    omitted_countries : list of str, optional
+        List of countries to omit from processing
+
     Returns
     -------
     valid_countries : list of str
-        List of validated country names as provided
+        List of validated country names as provided (minus omitted ones)
     country_code_map : dict
         Mapping of country names to ISO alpha-2 codes
 
@@ -117,6 +128,27 @@ def validate_countries(countries: list[str]) -> tuple[list[str], dict[str, str]]
          ℹ️  Did you mean: 'Germany', 'Armenia'
     """
     import pycountry
+
+    countries_to_be_omitted = []
+    if omitted_countries:
+        # Filter out omitted countries
+        filtered_countries = []
+        for country in countries:
+            if country in omitted_countries:
+                logger.info(
+                    f"Omitting country '{country}' as specified in configuration (omitted_countries)"
+                )
+                countries_to_be_omitted.append(country)
+            else:
+                filtered_countries.append(country)
+        countries = filtered_countries
+
+    # If no countries left after omission, return empty results
+    if not countries:
+        logger.warning(
+            "No countries left to process after applying omitted_countries filter"
+        )
+        return [], {}
 
     valid_countries = []
     invalid_countries = []
@@ -154,9 +186,15 @@ def validate_countries(countries: list[str]) -> tuple[list[str], dict[str, str]]
         all_country_names.extend(country_variations.keys())
 
         error_parts = [
-            f"❌ Invalid country names detected: {len(invalid_countries)} out of {len(countries)} countries",
-            "\nInvalid entries:",
+            f"❌ Invalid country names detected: {len(invalid_countries)} out of {len(countries + countries_to_be_omitted)} countries",
         ]
+
+        if countries_to_be_omitted:
+            error_parts.append(
+                f"\n⏭️  Omitted countries (from countries_to_be_omitted config): {', '.join(countries_to_be_omitted)}"
+            )
+
+        error_parts.append("\nInvalid entries:")
 
         for invalid in invalid_countries:
             error_parts.append(f"  ❌ '{invalid}'")
@@ -198,6 +236,10 @@ def validate_countries(countries: list[str]) -> tuple[list[str], dict[str, str]]
         raise ValueError(error_msg)
 
     logger.info(f"✅ Successfully validated all {len(valid_countries)} countries")
+    if countries_to_be_omitted:
+        logger.info(
+            f"ℹ️  Note: {len(countries_to_be_omitted)} countries were omitted per configuration"
+        )
     logger.debug(
         f"Country codes: {', '.join(f'{c}={code}' for c, code in country_code_map.items())}"
     )
@@ -261,8 +303,15 @@ def process_countries(
     4. Live API (slowest)
     """
     logger.info(f"Starting country validation for {len(countries)} countries...")
+
+    api_url = osm_config.get("overpass_api", {}).get("url")
+    current_config_hash = Unit._generate_config_hash(osm_config)
+    force_refresh = osm_config.get("force_refresh", False)
+    omitted_countries = osm_config.get("omitted_countries", [])
     try:
-        valid_countries, country_code_map = validate_countries(countries)
+        valid_countries, country_code_map = validate_countries(
+            countries, omitted_countries
+        )
     except ValueError as e:
         raise ValueError(
             f"Country validation failed. Cannot proceed with OSM data processing.\n{str(e)}"
@@ -274,45 +323,46 @@ def process_countries(
         f"{f' and {len(valid_countries) - 5} more' if len(valid_countries) > 5 else ''}"
     )
 
-    api_url = osm_config.get("overpass_api", {}).get("url")
-    current_config_hash = Unit._generate_config_hash(osm_config)
-
     all_valid_data = pd.DataFrame()
 
-    for i, country in enumerate(valid_countries, 1):
-        logger.info(
-            f"Processing country {i}/{len(valid_countries)}: {country} ({country_code_map[country]})"
-        )
+    # Create single client for all countries
+    client_params = get_client_params(osm_config, api_url, cache_dir)
 
-        country_data = process_single_country(
-            country,
-            csv_cache_path,
-            cache_dir,
-            api_url,
-            current_config_hash,
-            update,
-            osm_config,
-        )
-
-        if country_data is not None and not country_data.empty:
-            if not raw:
-                country_data = validate_and_standardize_df(
-                    country_data,
-                    target_columns,
-                    VALID_FUELTYPES,
-                    VALID_TECHNOLOGIES,
-                    VALID_SETS,
-                )
-            all_valid_data = pd.concat(
-                [all_valid_data, country_data], ignore_index=True
+    with OverpassAPIClient(**client_params) as client:
+        for i, country in enumerate(valid_countries, 1):
+            logger.info(
+                f"Processing country {i}/{len(valid_countries)}: {country} ({country_code_map[country]})"
             )
+
+            country_data = process_single_country(
+                country,
+                csv_cache_path,
+                current_config_hash,
+                update,
+                force_refresh,
+                osm_config,
+                client,
+            )
+
+            if country_data is not None and not country_data.empty:
+                if not raw:
+                    country_data = validate_and_standardize_df(
+                        country_data,
+                        target_columns,
+                        VALID_FUELTYPES,
+                        VALID_TECHNOLOGIES,
+                        VALID_SETS,
+                    )
+                all_valid_data = pd.concat(
+                    [all_valid_data, country_data], ignore_index=True
+                )
 
     logger.info(f"✅ Successfully processed all {len(valid_countries)} countries")
     return all_valid_data
 
 
 def process_single_country(
-    country, csv_cache_path, cache_dir, api_url, config_hash, update, osm_config
+    country, csv_cache_path, config_hash, update, force_refresh, osm_config, client
 ):
     """Process a single country with cache hierarchy.
 
@@ -346,23 +396,19 @@ def process_single_country(
     force_refresh = osm_config.get("force_refresh", False)
 
     if force_refresh:
-        return process_from_api(csv_cache_path, cache_dir, api_url, country, osm_config)
+        return process_from_api(csv_cache_path, country, osm_config, client)
 
+    # Check CSV cache first
     country_data = check_csv_cache(csv_cache_path, country, config_hash, update)
+    if country_data is not None:
+        return country_data
 
-    if country_data is None:
-        client_params = get_client_params(osm_config, api_url, cache_dir)
+    country_data = check_units_cache(csv_cache_path, country, config_hash, client)
+    if country_data is not None:
+        return country_data
 
-        country_data = check_units_cache(
-            csv_cache_path, country, config_hash, client_params
-        )
-
-    if country_data is None:
-        country_data = process_from_api(
-            csv_cache_path, cache_dir, api_url, country, osm_config
-        )
-
-    return country_data
+    # Process from API using existing client
+    return process_from_api(csv_cache_path, country, osm_config, client)
 
 
 def check_csv_cache(cache_path, country, config_hash, update):
@@ -371,7 +417,13 @@ def check_csv_cache(cache_path, country, config_hash, update):
         return None
 
     try:
-        csv_data = pd.read_csv(cache_path)
+        # More robust CSV reading with proper error handling
+        csv_data = pd.read_csv(
+            cache_path,
+            quoting=1,  # QUOTE_ALL
+            escapechar="\\",
+            on_bad_lines="skip",
+        )
 
         if csv_data.empty:
             logger.debug(f"CSV cache exists but is empty: {cache_path}")
@@ -394,15 +446,19 @@ def check_csv_cache(cache_path, country, config_hash, update):
             logger.debug(f"CSV cache for {country} has outdated config_hash")
             return None
 
-    except pd.errors.EmptyDataError:
-        logger.debug(f"CSV cache file is empty: {cache_path}")
+    except (pd.errors.EmptyDataError, pd.errors.ParserError) as e:
+        logger.warning(f"CSV cache file corrupted: {str(e)}, removing file")
+        try:
+            os.remove(cache_path)
+        except OSError:
+            pass
         return None
     except Exception as e:
         logger.debug(f"Error reading CSV cache: {str(e)}")
         return None
 
 
-def check_units_cache(csv_cache_path, country, config_hash, client_params):
+def check_units_cache(csv_cache_path, country, config_hash, client):
     """Check if valid units exist in units cache for country."""
     country_code = get_country_code(country)
     if country_code is None:
@@ -410,60 +466,54 @@ def check_units_cache(csv_cache_path, country, config_hash, client_params):
         return None
 
     try:
-        with OverpassAPIClient(**client_params) as client:
-            cached_units = client.cache.get_units(country_code)
+        cached_units = client.cache.get_units(country_code)
 
-            valid_units = []
-            for unit in cached_units:
-                if hasattr(unit, "config_hash") and unit.config_hash == config_hash:
-                    valid_units.append(unit)
+        valid_units = []
+        for unit in cached_units:
+            if hasattr(unit, "config_hash") and unit.config_hash == config_hash:
+                valid_units.append(unit)
 
-            if valid_units:
-                logger.info(
-                    f"Found {len(valid_units)} valid cached units for {country}"
-                )
-                country_data = pd.DataFrame([unit.to_dict() for unit in valid_units])
+        if valid_units:
+            logger.info(f"Found {len(valid_units)} valid cached units for {country}")
+            country_data = pd.DataFrame([unit.to_dict() for unit in valid_units])
 
-                update_csv_cache(csv_cache_path, country, country_data)
-                return country_data
+            update_csv_cache(csv_cache_path, country, country_data)
+            return country_data
     except Exception as e:
         logger.error(f"Error accessing units cache for {country}: {str(e)}")
 
     return None
 
 
-def process_from_api(csv_cache_path, cache_dir, api_url, country, osm_config):
+def process_from_api(csv_cache_path, country, osm_config, client):
     """Download and process country data from Overpass API."""
     logger.info(f"No valid cache for {country}, processing from API")
 
     try:
-        client_params = get_client_params(osm_config, api_url, cache_dir)
+        units_collection = Units()
+        rejection_tracker = RejectionTracker()
 
-        with OverpassAPIClient(**client_params) as client:
-            units_collection = Units()
-            rejection_tracker = RejectionTracker()
+        workflow = Workflow(
+            client=client,
+            rejection_tracker=rejection_tracker,
+            units=units_collection,
+            config=osm_config,
+        )
 
-            workflow = Workflow(
-                client=client,
-                rejection_tracker=rejection_tracker,
-                units=units_collection,
-                config=osm_config,
-            )
+        updated_units_collection, _ = workflow.process_country_data(country)
 
-            updated_units_collection, _ = workflow.process_country_data(country)
+        country_units = updated_units_collection.filter_by_country(country)
 
-            country_units = updated_units_collection.filter_by_country(country)
+        if len(country_units) > 0:
+            logger.info(f"Processed {len(country_units)} units for {country}")
+            country_data = pd.DataFrame([unit.to_dict() for unit in country_units])
 
-            if len(country_units) > 0:
-                logger.info(f"Processed {len(country_units)} units for {country}")
-                country_data = pd.DataFrame([unit.to_dict() for unit in country_units])
+            update_csv_cache(csv_cache_path, country, country_data)
 
-                update_csv_cache(csv_cache_path, country, country_data)
-
-                return country_data
-            else:
-                logger.warning(f"No units found for {country}")
-                return None
+            return country_data
+        else:
+            logger.warning(f"No units found for {country}")
+            return None
     except Exception as e:
         logger.error(f"Error processing {country} from API: {str(e)}")
         return None
@@ -479,20 +529,44 @@ def update_csv_cache(cache_path, country, country_data):
 
         if os.path.exists(cache_path):
             try:
-                full_csv = pd.read_csv(cache_path)
+                # More robust CSV reading with proper quoting and error handling
+                full_csv = pd.read_csv(
+                    cache_path,
+                    quoting=1,  # QUOTE_ALL
+                    escapechar="\\",
+                    on_bad_lines="skip",
+                )
                 full_csv = full_csv[full_csv["Country"] != country]
                 updated_csv = pd.concat([full_csv, country_data], ignore_index=True)
-                updated_csv.to_csv(cache_path, index=False)
+                # Write with proper quoting to handle special characters
+                updated_csv.to_csv(
+                    cache_path,
+                    index=False,
+                    quoting=1,  # QUOTE_ALL
+                    escapechar="\\",
+                )
                 logger.info(
                     f"Updated CSV cache with {len(country_data)} entries for {country}"
                 )
-            except pd.errors.EmptyDataError:
-                country_data.to_csv(cache_path, index=False)
+            except (pd.errors.EmptyDataError, pd.errors.ParserError) as e:
+                logger.warning(f"CSV cache corrupted, recreating: {str(e)}")
+                # If cache is corrupted, start fresh
+                country_data.to_csv(
+                    cache_path,
+                    index=False,
+                    quoting=1,  # QUOTE_ALL
+                    escapechar="\\",
+                )
                 logger.info(
-                    f"Created new CSV cache with {len(country_data)} entries for {country}"
+                    f"Recreated CSV cache with {len(country_data)} entries for {country}"
                 )
         else:
-            country_data.to_csv(cache_path, index=False)
+            country_data.to_csv(
+                cache_path,
+                index=False,
+                quoting=1,  # QUOTE_ALL
+                escapechar="\\",
+            )
             logger.info(
                 f"Created new CSV cache with {len(country_data)} entries for {country}"
             )
@@ -591,5 +665,7 @@ def validate_and_standardize_df(
 
     cols_to_keep = [col for col in target_columns if col in df.columns]
     df = df[cols_to_keep]
+    if "DateIn" in df.columns:
+        df["DateIn"] = pd.to_numeric(df["DateIn"], errors="coerce")
 
     return df

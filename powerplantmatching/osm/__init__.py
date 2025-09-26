@@ -1,4 +1,9 @@
-"""OpenStreetMap (OSM) power plant data extraction and processing.
+# SPDX-FileCopyrightText: Contributors to powerplantmatching <https://github.com/pypsa/powerplantmatching>
+#
+# SPDX-License-Identifier: MIT
+
+"""
+OpenStreetMap (OSM) power plant data extraction and processing.
 
 This module provides comprehensive tools for extracting, processing, and analyzing
 power plant data from OpenStreetMap. It handles the complete pipeline from raw OSM
@@ -18,7 +23,8 @@ Data Models:
 
 Quality Control:
     RejectionTracker : Tracks why elements were rejected
-    show_country_coverage : Analyze cache coverage
+    get_country_coverage_data: Analyze cache coverage
+    print_coverage_report: Print formatted coverage report
     find_outdated_caches : Identify stale data
 
 Data Retrieval:
@@ -49,8 +55,9 @@ Basic usage for loading OSM data:
 
 Check cache coverage:
 
->>> from powerplantmatching.osm import show_country_coverage
->>> show_country_coverage(show_missing=True)
+>>> from powerplantmatching.osm import get_country_coverage_data, print_coverage_report
+>>> data = get_country_coverage_data(show_missing=True)
+>>> print_coverage_report(data)
 
 Notes
 -----
@@ -95,7 +102,8 @@ from .parsing.factory import UnitFactory
 from .quality.coverage import (
     find_outdated_caches,
     get_continent_mapping,
-    show_country_coverage,
+    get_country_coverage_data,
+    print_coverage_report,
 )
 from .quality.rejection import RejectedElement, RejectionTracker
 from .retrieval.cache import ElementCache
@@ -143,7 +151,8 @@ __all__ = [
     # Regional and Coverage
     "region_download",
     "populate_cache",
-    "show_country_coverage",
+    "get_country_coverage_data",
+    "print_coverage_report",
     "find_outdated_caches",
     "get_continent_mapping",
     # Constants

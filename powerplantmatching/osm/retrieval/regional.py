@@ -1,4 +1,9 @@
-"""Regional download functionality for OpenStreetMap power plant data.
+# SPDX-FileCopyrightText: Contributors to powerplantmatching <https://github.com/pypsa/powerplantmatching>
+#
+# SPDX-License-Identifier: MIT
+
+"""
+Regional download functionality for OpenStreetMap power plant data.
 
 This module provides tools for downloading OSM data for custom regions
 (bounding boxes, circles, polygons) rather than entire countries. It

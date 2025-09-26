@@ -24,25 +24,32 @@ OSM:
 from powerplantmatching.core import get_config
 from powerplantmatching.osm import (
     find_outdated_caches,
+    get_country_coverage_data,
     populate_cache,
-    show_country_coverage,
+    print_coverage_report,
 )
 
 # Example 1: Check what's in the cache
 # ====================================
 print("=== Current Cache Status ===")
 
-# NEW: You can specify a custom cache directory
+# You can specify a custom cache directory
 # If not specified, it uses the value from config.yaml
 # or defaults to ./osm_cache
-show_country_coverage(
+data = get_country_coverage_data(
     cache_dir=None,  # Uses config value or default
-    show_missing=False,  # Don't list countries without data
     check_live_counts=False,  # Don't query live OSM data
 )
 
+print_coverage_report(
+    coverage_data=data,
+    show_missing=False,
+    check_live_counts=False,
+    show_outdated_only=False,
+)
+
 # Using a specific cache directory:
-# show_country_coverage(cache_dir="~/osm_caches/europe")
+# get_country_coverage_data(cache_dir="~/osm_caches/europe")
 
 # Note: check_live_counts=True would:
 # - Query the Overpass API for current element counts

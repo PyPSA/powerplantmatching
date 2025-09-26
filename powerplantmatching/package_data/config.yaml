@@ -25,6 +25,7 @@ matching_sources:
   - WIKIPEDIA: Fueltype != 'Solar'
   - GEM
   - MASTR
+  - OSM
 
 # fully_included_sources, these sources are included even without match to the final dataset
 fully_included_sources:
@@ -37,6 +38,7 @@ fully_included_sources:
   - BEYONDCOAL
   - GEM: Country != 'Germany' or Fueltype == 'Solar'
   - MASTR
+  - OSM
 
 
 parallel_duke_processes: false
@@ -214,7 +216,7 @@ MASTR:
 
 OSM:
   reliability_score: 3
-  net_capacity: false
+  net_capacity: true
   fn: osm_data.csv
   cache_dir: null  # Default: auto-generate from fn location
   # cache_dir: /custom/path/to/osm_cache  # Custom path
@@ -232,7 +234,7 @@ OSM:
     #   - ^(\d+(?:\.\d+)?)([a-zA-Z]+(?:p|el|e)?)$
     #   - ^(\d+(?:\.\d+)?)\s*([a-zA-Z]+(?:p|el|e)?)$
   capacity_estimation:
-    enabled: true
+    enabled: false
   units_clustering:
     enabled: false
   units_reconstruction:
@@ -283,8 +285,8 @@ OSM:
     Waste: [waste, waste_heat, waste_gas, waste;gas, waste;biomass, waste;coal, waste;oil, waste;solar, waste;gasification, waste_heat;gas, wastewater;gas]
     Other: [tidal, wave, osmotic]
   technology_mapping:
-    Combustion Engine: [combustion, reciprocating_engine, gas_engine, internal_combustion, motor_generator, anaerobic_digestion, bioreactor, gasification, combustion;thermal, combustion;anaerobic_digestion, cogeneration]
-    Steam Turbine: [steam_turbine, steam_generator, thermal, boiler, condensing_turbine, fission, geothermal, hydrothermal, steam, combustion;thermal, combustion;steam, combustion]
+    Combustion Engine: [combustion, reciprocating_engine, gas_engine, internal_combustion, motor_generator, anaerobic_digestion, bioreactor, gasification, combustion;thermal, combustion;anaerobic_digestion]
+    Steam Turbine: [steam_turbine, steam_generator, thermal, boiler, condensing_turbine, fission, geothermal, hydrothermal, steam, combustion;thermal, combustion;steam, combustion, cogeneration]
     OCGT: [gas_turbine, open_cycle]
     CCGT: [combined_cycle, ccpp, thermal\uff1bcombined_cycle, thermal;combined_cycle, ccgt]
     Run-Of-River: [run-of-the-river, stream, hydrodynamic_screw, mini_hydro, francis_turbine, kaplan_turbine, pelton_turbine, pelton_wheel, vlh, crossflow_turbine, water_turbine, horizontal_axis, vertical_axis, kaplan, three-level]
@@ -309,6 +311,27 @@ OSM:
     Geothermal: [Steam Turbine]
     Waste: [Combustion Engine, Steam Turbine]
     Other: [Marine]
+  set_mapping:
+    # Store: Storage and energy storage technologies
+    Store:
+      - Reservoir          # 95.8% are Store
+      - Pumped Storage     # 85.2% are Store
+      - Marine             # 100% are Store
+    # PP: Regular power plant technologies
+    PP:
+      - PV                 # 99.9% are PP
+      - CSP                # 100% are PP
+      - Onshore            # 99.9% are PP
+      - Offshore           # 100% are PP
+      - Run-Of-River       # 97.3% are PP
+      - Combustion Engine  # 100% are PP
+      - OCGT               # Not in data, but typically peaking plants = PP
+      - CCGT               # For now assumed as PP, could be CHP in some cases
+      - Steam Turbine      # For now assumed as PP, could be CHP in some cases
+    # CHP: Not implemented yet, remains for future use (CCGT and steam turbines can be used in CHP mode)
+    CHP:
+      # - CCGT
+      # - Steam Turbine
   sources:
     Solar:
       units_clustering:
@@ -347,11 +370,13 @@ OSM:
     #   capacity_estimation:
     #     method: default_value
     #     unit_capacity: 10.0
+  omitted_countries: ["Kosovo"]  # List of names of countries to omit from OSM as can not be queried via Overpass API
   overpass_api:
     api_url: https://overpass-api.de/api/interpreter  # Default Overpass API endpoint https://overpass.private.coffee/api/interpreter   https://overpass-api.de/api/interpreter
     timeout: 1200
     max_retries: 3
     retry_delay: 60
+    cache_size_gb: 12
     show_progress: true
 
   # Algorithm parameters (for reference)
@@ -391,42 +416,11 @@ target_columns:
   - EIC
   - projectID
 target_countries:
-  - Albania
-  - Austria
   - Belgium
-  - Bosnia and Herzegovina
-  - Bulgaria
-  - Croatia
-  - Czechia
-  - Denmark
-  - Estonia
-  - Finland
-  - France
-  - Germany
-  - Greece
-  - Hungary
-  - Ireland
-  - Italy
   - Kosovo
   - Latvia
-  - Lithuania
-  - Luxembourg
-  - North Macedonia
-  - Moldova
-  - Montenegro
-  - Netherlands
-  - Norway
-  - Poland
-  - Portugal
-  - Romania
-  - Serbia
-  - Slovakia
   - Slovenia
-  - Spain
-  - Sweden
-  - Switzerland
-  - United Kingdom
-  - Ukraine
+
 target_fueltypes:
   # Provide a mapping of the keys to a list or a regex expression which are used for parsing.
   # A list will be converted to a regex expression matching all words (case-insensitive)

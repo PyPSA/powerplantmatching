@@ -1,4 +1,9 @@
-"""Data models for OpenStreetMap power plant processing.
+# SPDX-FileCopyrightText: Contributors to powerplantmatching <https://github.com/pypsa/powerplantmatching>
+#
+# SPDX-License-Identifier: MIT
+
+"""
+Data models for OpenStreetMap power plant processing.
 
 This module defines the core data structures used throughout the OSM module,
 including power plant units, geometries, and rejection tracking. It provides
@@ -153,8 +158,8 @@ class Unit:
         Plant set type (PP, CHP, Store)
     capacity_source : str, optional
         How capacity was determined ('tag', 'estimated', etc.)
-    DateIn : str, optional
-        Commissioning date
+    DateIn : int, optional
+        Commissioning year
     id : str, optional
         OSM element ID (e.g., 'node/123456')
     created_at : str, optional
@@ -191,7 +196,7 @@ class Unit:
     generator_count: int | None = None
     Set: str | None = None
     capacity_source: str | None = None
-    DateIn: str | None = None
+    DateIn: int | None = None
     id: str | None = None
 
     created_at: str | None = None

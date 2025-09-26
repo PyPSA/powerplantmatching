@@ -1,4 +1,9 @@
-"""Overpass API client for retrieving OpenStreetMap power plant data.
+# SPDX-FileCopyrightText: Contributors to powerplantmatching <https://github.com/pypsa/powerplantmatching>
+#
+# SPDX-License-Identifier: MIT
+
+"""
+Overpass API client for retrieving OpenStreetMap power plant data.
 
 This module provides a robust client for querying the Overpass API with
 features like automatic retrying, caching, progress tracking, and country
@@ -59,6 +64,7 @@ class OverpassAPIClient:
         timeout: int = 300,
         max_retries: int = 3,
         retry_delay: int = 5,
+        cache_size_gb: int = 12,
         show_progress: bool = True,
         country_cache: Union[dict, "CountryCoordinateCache"] | None = None,
     ):
@@ -76,6 +82,8 @@ class OverpassAPIClient:
             Maximum retry attempts
         retry_delay : int
             Seconds between retries
+        cache_size_gb : int
+            Maximum cache size in GB
         show_progress : bool
             Show progress bars during downloads
         country_cache : dict or CountryCoordinateCache, optional
@@ -86,7 +94,7 @@ class OverpassAPIClient:
             cache_dir, _ = get_osm_cache_paths(config)
 
         self.api_url = api_url or "https://overpass-api.de/api/interpreter"
-        self.cache = ElementCache(cache_dir)
+        self.cache = ElementCache(cache_dir, cache_size_gb=cache_size_gb)
         self.cache.load_all_caches()
 
         self.timeout = timeout
@@ -112,19 +120,34 @@ class OverpassAPIClient:
         self.close()
 
     def close(self):
-        """Save modified caches on client close."""
+        """Save country caches and close connections."""
         if hasattr(self, "cache"):
-            if any(
-                [
-                    self.cache.plants_modified,
-                    self.cache.generators_modified,
-                    self.cache.ways_modified,
-                    self.cache.nodes_modified,
-                    self.cache.relations_modified,
-                ]
-            ):
-                logging.getLogger(__name__).info("Saving caches")
-                self.cache.save_all_caches(force=False)
+            try:
+                # Only check country cache modifications (global caches auto-save)
+                if any(
+                    [
+                        self.cache.plants_modified,
+                        self.cache.generators_modified,
+                        self.cache.units_modified,
+                    ]
+                ):
+                    logging.getLogger(__name__).info("Saving country caches")
+                    self.cache.save_all_caches(force=False)
+
+                # Close diskcache connections
+                self.cache.close()
+                logger.debug("Closed all cache connections")
+
+            except Exception as e:
+                logger.warning(f"Error during cache cleanup: {e}")
+
+    def __del__(self):
+        """Ensure cleanup when object is garbage collected."""
+        try:
+            self.close()
+        except Exception:
+            # Ignore errors during cleanup to prevent exceptions in __del__
+            pass
 
     def query_overpass(self, query: str) -> dict:
         """Execute an Overpass API query with retry logic.

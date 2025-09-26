@@ -1,4 +1,9 @@
-"""Parser for OpenStreetMap power plant relations.
+# SPDX-FileCopyrightText: Contributors to powerplantmatching <https://github.com/pypsa/powerplantmatching>
+#
+# SPDX-License-Identifier: MIT
+
+"""
+Parser for OpenStreetMap power plant relations.
 
 This module handles the parsing of OSM relations tagged as power plants.
 It processes plant-level attributes, handles member generators, and can
@@ -82,9 +87,18 @@ class PlantParser(ElementProcessor):
 
         reconstruct_config = self.config.get("units_reconstruction", {})
         if reconstruct_config.get("enabled", False):
-            self.name_aggregator = NameAggregator(config)
+            similarity_threshold = reconstruct_config.get(
+                "name_similarity_threshold", 0.7
+            )
+            min_generators = reconstruct_config.get(
+                "min_generators_for_reconstruction", 2
+            )
+
+            self.name_aggregator = NameAggregator(similarity_threshold)
             self.plant_reconstructor = PlantReconstructor(
-                config, self.name_aggregator, generator_parser=self.generator_parser
+                min_generators,
+                self.name_aggregator,
+                generator_parser=self.generator_parser,
             )
             self.rejected_plant_info: dict[str, RejectedPlantInfo] = {}
 
@@ -410,9 +424,10 @@ class PlantParser(ElementProcessor):
         """
         if existing_capacity is not None and existing_capacity > 0:
             final_capacity = existing_capacity
-            assert existing_capacity_source, (
-                "Existing capacity source should not be None if existing_capacity is not None"
-            )
+            if existing_capacity_source is None:
+                raise ValueError(
+                    "Existing capacity source should not be None if existing_capacity is not None"
+                )
             capacity_source = existing_capacity_source
 
             generator_capacity = 0.0

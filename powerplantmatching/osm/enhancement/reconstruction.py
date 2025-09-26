@@ -1,4 +1,9 @@
-"""Plant reconstruction from incomplete OSM data.
+# SPDX-FileCopyrightText: Contributors to powerplantmatching <https://github.com/pypsa/powerplantmatching>
+#
+# SPDX-License-Identifier: MIT
+
+"""
+Plant reconstruction from incomplete OSM data.
 
 This module provides functionality to reconstruct power plants from
 orphaned generators and incomplete plant relations.
@@ -22,24 +27,20 @@ class NameAggregator:
 
     Attributes
     ----------
-    config : dict
-        Configuration settings
     similarity_threshold : float
         Minimum similarity ratio for common substrings
     """
 
-    def __init__(self, config: dict[str, Any]):
+    def __init__(self, similarity_threshold: float = 0.7):
         """Initialize name aggregator.
 
         Parameters
         ----------
-        config : dict
-            Configuration with reconstruction settings
+        similarity_threshold : float, optional
+            Minimum similarity ratio for common substrings.
+            Default is 0.7.
         """
-        self.config = config
-        self.similarity_threshold = config.get("units_reconstruction", {}).get(
-            "name_similarity_threshold", 0.7
-        )
+        self.similarity_threshold = similarity_threshold
 
     def aggregate_names(self, names: set[str]) -> str:
         """Aggregate multiple names into one representative name.
@@ -115,8 +116,6 @@ class PlantReconstructor:
 
     Attributes
     ----------
-    config : dict
-        Reconstruction configuration
     name_aggregator : NameAggregator
         Name aggregation utility
     generator_parser : GeneratorParser
@@ -126,14 +125,14 @@ class PlantReconstructor:
 
     Examples
     --------
-    >>> reconstructor = PlantReconstructor(config, name_aggregator)
+    >>> reconstructor = PlantReconstructor(2, name_aggregator)
     >>> if reconstructor.can_reconstruct(len(generators)):
     ...     plant_info = reconstructor.aggregate_generator_info(generators, country)
     """
 
     def __init__(
         self,
-        config: dict[str, Any],
+        min_generators: int,
         name_aggregator: NameAggregator,
         generator_parser: Optional["GeneratorParser"] = None,
     ):
@@ -141,19 +140,16 @@ class PlantReconstructor:
 
         Parameters
         ----------
-        config : dict
-            Configuration with reconstruction settings
+        min_generators : int
+            Minimum number of generators needed for reconstruction
         name_aggregator : NameAggregator
             Name aggregation utility
         generator_parser : GeneratorParser, optional
             Parser for generator processing
         """
-        self.config = config
         self.name_aggregator = name_aggregator
         self.generator_parser = generator_parser
-        self.min_generators = config.get("units_reconstruction", {}).get(
-            "min_generators_for_reconstruction", 2
-        )
+        self.min_generators = min_generators
 
     def can_reconstruct(self, generator_count: int) -> bool:
         """Check if enough generators for reconstruction."""

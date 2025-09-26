@@ -1,4 +1,9 @@
-"""Factory for creating standardized power plant units.
+# SPDX-FileCopyrightText: Contributors to powerplantmatching <https://github.com/pypsa/powerplantmatching>
+#
+# SPDX-License-Identifier: MIT
+
+"""
+Factory for creating standardized power plant units.
 
 This module provides a factory class that creates Unit objects with
 consistent formatting and metadata. It handles different unit types
@@ -10,7 +15,7 @@ import logging
 from typing import Any
 
 from powerplantmatching.osm.models import PROCESSING_PARAMETERS, Unit
-from powerplantmatching.osm.utils import standardize_country_name
+from powerplantmatching.osm.utils import determine_set_type, standardize_country_name
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +64,7 @@ class UnitFactory:
         technology: str,
         capacity: float | None,
         capacity_source: str,
-        start_date: str | None = None,
+        start_date: int | None = None,
         generator_count: int | None = None,
         unit_type: str = "plant",
     ) -> Unit:
@@ -85,7 +90,7 @@ class UnitFactory:
             Capacity in MW
         capacity_source : str
             How capacity was determined
-        start_date : str, optional
+        start_date : int, optional
             Commissioning date (YYYY-MM-DD)
         generator_count : int, optional
             Number of generators (for aggregated units)
@@ -108,7 +113,7 @@ class UnitFactory:
             Capacity=capacity,
             Name=name,
             generator_count=generator_count,
-            Set="PP",
+            Set=determine_set_type(technology, self.config),
             capacity_source=capacity_source,
             DateIn=start_date,
             id=f"{element_type}/{element_id}",
@@ -129,7 +134,7 @@ class UnitFactory:
         technology: str,
         capacity: float | None,
         generator_count: int,
-        start_date: str | None = None,
+        start_date: int | None = None,
     ) -> Unit:
         """Create a plant reconstructed from member generators.
 
@@ -151,7 +156,7 @@ class UnitFactory:
             Total capacity from generators
         generator_count : int
             Number of member generators
-        start_date : str, optional
+        start_date : int, optional
             Earliest commissioning date
 
         Returns
@@ -186,7 +191,7 @@ class UnitFactory:
         technology: str | None,
         capacity: float | None,
         generator_count: int,
-        start_date: str | None = None,
+        start_date: int | None = None,
     ) -> Unit:
         """Create a plant from orphaned generators within a rejected plant boundary.
 
@@ -208,7 +213,7 @@ class UnitFactory:
             Total capacity
         generator_count : int
             Number of orphaned generators
-        start_date : str, optional
+        start_date : int, optional
             Earliest date
 
         Returns
@@ -227,7 +232,7 @@ class UnitFactory:
             Capacity=capacity,
             Name=name,
             generator_count=generator_count,
-            Set="PP",
+            Set=determine_set_type(technology, self.config),
             capacity_source="aggregated_from_orphaned_generators",
             DateIn=start_date,
             id=f"relation/{plant_id}",
@@ -249,7 +254,7 @@ class UnitFactory:
         technology: str,
         capacity: float,
         capacity_source: str,
-        start_date: str | None = None,
+        start_date: int | None = None,
     ) -> Unit:
         """Create a standalone generator unit.
 
@@ -273,7 +278,7 @@ class UnitFactory:
             Capacity in MW
         capacity_source : str
             How capacity was determined
-        start_date : str, optional
+        start_date : int, optional
             Commissioning date
 
         Returns
@@ -307,7 +312,7 @@ class UnitFactory:
         technology: str | None,
         capacity: float,
         generator_count: int,
-        start_date: str | None = None,
+        start_date: int | None = None,
     ) -> Unit:
         """Create a plant from clustered nearby generators.
 
@@ -329,7 +334,7 @@ class UnitFactory:
             Total cluster capacity
         generator_count : int
             Number of clustered generators
-        start_date : str, optional
+        start_date : int, optional
             Earliest date
 
         Returns
@@ -348,7 +353,7 @@ class UnitFactory:
             Capacity=capacity,
             Name=name,
             generator_count=generator_count,
-            Set="PP",
+            Set=determine_set_type(technology, self.config),
             capacity_source="aggregated_cluster",
             DateIn=start_date,
             id=f"cluster/{source}_{cluster_id}",

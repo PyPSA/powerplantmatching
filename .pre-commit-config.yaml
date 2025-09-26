@@ -33,9 +33,3 @@ repos:
             --ignore-words, .codespell.ignore
             ]
         types_or: [python, rst, markdown]
-
-# Run pyright for type checking (same engine as Pylance)
-# -   repo: https://github.com/RobertCraigie/pyright-python
-#     rev: v1.1.383
-#     hooks:
-#     -   id: pyright

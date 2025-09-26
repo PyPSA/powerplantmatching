@@ -1,4 +1,9 @@
-"""Geometry handling for OSM power plant elements.
+# SPDX-FileCopyrightText: Contributors to powerplantmatching <https://github.com/pypsa/powerplantmatching>
+#
+# SPDX-License-Identifier: MIT
+
+"""
+Geometry handling for OSM power plant elements.
 
 This module provides geometric operations for OSM elements including
 coordinate extraction, polygon creation, and spatial relationship checks.

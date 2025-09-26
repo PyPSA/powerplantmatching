@@ -1,4 +1,9 @@
-"""Core workflow orchestration for OSM power plant processing.
+# SPDX-FileCopyrightText: Contributors to powerplantmatching <https://github.com/pypsa/powerplantmatching>
+#
+# SPDX-License-Identifier: MIT
+
+"""
+Core workflow orchestration for OSM power plant processing.
 
 This module contains the main Workflow class that coordinates the entire
 processing pipeline for extracting power plant data from OpenStreetMap.

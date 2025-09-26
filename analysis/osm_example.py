@@ -60,7 +60,7 @@ if __name__ == "__main__":
     with OverpassAPIClient(
         api_url=config["overpass_api"]["api_url"], cache_dir=cache_dir
     ) as client:
-        validate_countries(countries)
+        validate_countries(countries, config["omitted_countries"])
         for country_name in countries:
             logger.info(f"Processing {country_name}...")
             workflow = Workflow(client, rejection_tracker, all_units, config)

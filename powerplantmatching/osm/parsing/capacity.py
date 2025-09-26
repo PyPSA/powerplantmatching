@@ -1,4 +1,9 @@
-"""Capacity extraction from OpenStreetMap tags.
+# SPDX-FileCopyrightText: Contributors to powerplantmatching <https://github.com/pypsa/powerplantmatching>
+#
+# SPDX-License-Identifier: MIT
+
+"""
+Capacity extraction from OpenStreetMap tags.
 
 This module handles the extraction and parsing of power plant capacity
 values from various OSM tag formats, including unit conversion and

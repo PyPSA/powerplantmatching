@@ -216,7 +216,7 @@ def main():
     with OverpassAPIClient(
         api_url=config["overpass_api"]["api_url"], cache_dir=cache_dir
     ) as client:
-        validate_countries(countries)
+        validate_countries(countries, config["omitted_countries"])
         for country in countries:
             run_country_pipeline(
                 country=country,

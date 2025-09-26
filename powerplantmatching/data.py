@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Contributors to powerplantmatching <https://github.com/pypsa/powerplantmatching>
+#
+# SPDX-License-Identifier: MIT
+
 """
 Collection of power plant data bases and statistical data
 """

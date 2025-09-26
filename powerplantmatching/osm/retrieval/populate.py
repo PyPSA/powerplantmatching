@@ -1,4 +1,9 @@
-"""Cache population utilities for OSM power plant data.
+# SPDX-FileCopyrightText: Contributors to powerplantmatching <https://github.com/pypsa/powerplantmatching>
+#
+# SPDX-License-Identifier: MIT
+
+"""
+Cache population utilities for OSM power plant data.
 
 This module provides functions to populate the OSM cache with data from
 multiple countries, useful for batch processing and overnight cache building.
@@ -179,7 +184,7 @@ def populate_cache(
 
     See Also
     --------
-    show_country_coverage : Check what's already cached
+    get_country_coverage_data : Check what's already cached
     find_outdated_caches : Identify countries needing updates
     """
     config = get_config()
@@ -214,13 +219,13 @@ def populate_cache(
     logger.info(f"Total countries to process: {len(all_countries)}")
 
     if dry_run:
-        print("\nDry run - would download the following countries:")
+        logger.info("\nDry run - would download the following countries:")
         current_continent = None
         for country in all_countries:
             if sort_by_continent and country.get("continent") != current_continent:
                 current_continent = country.get("continent", "Unknown")
-                print(f"\n{current_continent}:")
-            print(f"  {country['name']} ({country['code']})")
+                logger.info(f"\n{current_continent}:")
+            logger.info(f"  {country['name']} ({country['code']})")
 
         return {
             "total_countries": len(all_countries),
@@ -236,8 +241,8 @@ def populate_cache(
     retry_delay = osm_config.get("overpass_api", {}).get("retry_delay", 5)
 
     if show_progress:
-        print(f"Starting download of {len(all_countries)} countries...")
-        print("-" * 60)
+        logger.info(f"Starting download of {len(all_countries)} countries...")
+        logger.info("-" * 60)
 
     start_time = time.time()
     succeeded = 0
@@ -350,22 +355,10 @@ def populate_cache(
     logger.info(f"Cache directory: {cache_dir}")
     logger.info("=" * 60)
 
-    if show_progress:
-        print("\n" + "=" * 60)
-        print("CACHE POPULATION COMPLETE")
-        print("=" * 60)
-        print(f"Total countries: {len(all_countries)}")
-        print(f"  ✓ Downloaded: {succeeded}")
-        print(f"  ⟳ Skipped (cached): {skipped}")
-        print(f"  ✗ Failed: {failed}")
-        print(f"Total time: {str(timedelta(seconds=int(total_time)))}")
-        print(f"Cache directory: {cache_dir}")
-        print("=" * 60)
-
-        if failed > 0:
-            print(f"\nFailed countries ({failed}):")
-            for fc in failed_countries:
-                print(f"  - {fc['country']} ({fc['code']}): {fc['error']}")
+    if failed > 0:
+        logger.info(f"\nFailed countries ({failed}):")
+        for fc in failed_countries:
+            logger.info(f"  - {fc['country']} ({fc['code']}): {fc['error']}")
 
     return {
         "total_countries": len(all_countries),

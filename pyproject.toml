@@ -45,6 +45,7 @@ dependencies = [
     "openpyxl",
     "scikit-learn",
     "shapely",
+    "diskcache",
 ]
 
 [project.urls]

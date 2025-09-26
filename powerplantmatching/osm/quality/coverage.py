@@ -1,11 +1,17 @@
-"""Cache coverage analysis for OSM power plant data.
+# SPDX-FileCopyrightText: Contributors to powerplantmatching <https://github.com/pypsa/powerplantmatching>
+#
+# SPDX-License-Identifier: MIT
+
+"""
+Cache coverage analysis for OSM power plant data.
 
 This module provides tools to analyze cache coverage, compare cached
 data with live OpenStreetMap data, and identify countries that need
 updating. Useful for cache maintenance and data quality monitoring.
 
 Functions:
-    show_country_coverage: Display or return cache coverage statistics
+    get_country_coverage_data: Display or return cache coverage statistics
+    print_coverage_report: Print formatted coverage report
     find_outdated_caches: Identify countries with stale data
     get_continent_mapping: Map country codes to continents
     format_table: Format data as ASCII table
@@ -41,7 +47,7 @@ def format_table(data, headers, col_widths=None):
 
     lines = []
 
-    lines.append(format_str.format(*[str(h) for h in headers]))
+    lines.append("\n" + format_str.format(*[str(h) for h in headers]))
     lines.append("-" * (sum(col_widths) + 3 * (len(headers) - 1)))
 
     for row in data:
@@ -303,62 +309,58 @@ def get_continent_mapping() -> dict[str, str]:
     }
 
 
-def show_country_coverage(
+def _init_country_entry(
+    country_code: str, all_countries: dict, include_live_fields: bool = False
+) -> dict:
+    """Initialize a country entry with default values."""
+    entry = {
+        "name": all_countries.get(country_code, f"Unknown ({country_code})"),
+        "plants_cached": 0,
+        "generators_cached": 0,
+        "total_cached": 0,
+        "cache_status": "unknown",
+    }
+
+    if include_live_fields:
+        entry.update(
+            {
+                "plants_live": None,
+                "generators_live": None,
+                "total_live": None,
+                "plants_diff": None,
+                "generators_diff": None,
+            }
+        )
+
+    return entry
+
+
+def get_country_coverage_data(
     cache_dir: str | None = None,
-    show_missing: bool = False,
-    return_data: bool = False,
     check_live_counts: bool = False,
     countries_to_check: list[str] | None = None,
-    show_outdated_only: bool = False,
     outdated_threshold: float = 0.95,
-) -> dict[str, Any] | None:
-    """Display or return cache coverage statistics by country.
-
-    Analyzes the OSM cache to show which countries have data cached,
-    optionally comparing with live OSM data to identify outdated caches.
+    show_progress: bool = True,
+) -> dict[str, Any]:
+    """Collect country coverage data from cache and optionally live OSM.
 
     Parameters
     ----------
     cache_dir : str, optional
         Cache directory path. If None, uses config value.
-    show_missing : bool
-        Whether to list countries without cached data
-    return_data : bool
-        If True, return dict instead of printing
     check_live_counts : bool
-        If True, query live OSM for comparison (slower)
+        If True, query live OSM for comparison
     countries_to_check : list[str], optional
         Specific country codes to check live counts for
-    show_outdated_only : bool
-        Only show countries with outdated data
     outdated_threshold : float
         Ratio below which cache is considered outdated
+    show_progress : bool
+        Whether to show progress messages
 
     Returns
     -------
-    dict or None
-        If return_data=True, returns coverage statistics dict.
-        Otherwise prints report and returns None.
-
-    Examples
-    --------
-    >>> # Print coverage report
-    >>> show_country_coverage(show_missing=True)
-
-    >>> # Get data for analysis
-    >>> data = show_country_coverage(return_data=True)
-    >>> print(f"Countries cached: {data['countries_cached']}")
-
-    >>> # Check if Germany needs update
-    >>> show_country_coverage(
-    ...     check_live_counts=True,
-    ...     countries_to_check=['DE']
-    ... )
-
-    Notes
-    -----
-    Live count checking makes API calls and can be slow for many countries.
-    The coverage report includes breakdowns by continent and cache status.
+    dict[str, Any]
+        Coverage statistics including cached_countries, totals, and continent stats
     """
     config = get_config()
     osm_config = config.get("OSM", {})
@@ -368,8 +370,8 @@ def show_country_coverage(
 
     cache = ElementCache(cache_dir)
 
-    if not return_data:
-        print("Loading cache data...")
+    if show_progress:
+        logger.info("Loading cache data...")
 
     cache.load_all_caches()
 
@@ -382,36 +384,18 @@ def show_country_coverage(
 
     for country_code, data in cache.plants_cache.items():
         if country_code not in cached_countries:
-            cached_countries[country_code] = {
-                "name": all_countries.get(country_code, f"Unknown ({country_code})"),
-                "plants_cached": 0,
-                "generators_cached": 0,
-                "total_cached": 0,
-                "plants_live": None,
-                "generators_live": None,
-                "total_live": None,
-                "plants_diff": None,
-                "generators_diff": None,
-                "cache_status": "unknown",
-            }
+            cached_countries[country_code] = _init_country_entry(
+                country_code, all_countries, include_live_fields=check_live_counts
+            )
         plants_count = len(data.get("elements", []))
         cached_countries[country_code]["plants_cached"] = plants_count
         total_plants += plants_count
 
     for country_code, data in cache.generators_cache.items():
         if country_code not in cached_countries:
-            cached_countries[country_code] = {
-                "name": all_countries.get(country_code, f"Unknown ({country_code})"),
-                "plants_cached": 0,
-                "generators_cached": 0,
-                "total_cached": 0,
-                "plants_live": None,
-                "generators_live": None,
-                "total_live": None,
-                "plants_diff": None,
-                "generators_diff": None,
-                "cache_status": "unknown",
-            }
+            cached_countries[country_code] = _init_country_entry(
+                country_code, all_countries, include_live_fields=check_live_counts
+            )
         generators_count = len(data.get("elements", []))
         cached_countries[country_code]["generators_cached"] = generators_count
         total_generators += generators_count
@@ -422,181 +406,344 @@ def show_country_coverage(
     total_elements = total_plants + total_generators
 
     if check_live_counts:
-        api_url = osm_config.get("overpass_api", {}).get(
-            "url", "https://overpass-api.de/api/interpreter"
-        )
-        timeout = osm_config.get("overpass_api", {}).get("timeout", 300)
-        max_retries = osm_config.get("overpass_api", {}).get("max_retries", 3)
-        retry_delay = osm_config.get("overpass_api", {}).get("retry_delay", 5)
-
-        if not return_data:
-            print("\nChecking live counts from Overpass API...")
-
-        with OverpassAPIClient(
-            api_url=api_url,
+        _check_live_counts(
+            cached_countries=cached_countries,
+            countries_to_check=countries_to_check,
             cache_dir=cache_dir,
-            timeout=timeout,
-            max_retries=max_retries,
-            retry_delay=retry_delay,
-            show_progress=False,
-        ) as client:
-            countries_to_check_list = countries_to_check or list(
-                cached_countries.keys()
-            )
+            osm_config=osm_config,
+            outdated_threshold=outdated_threshold,
+            show_progress=show_progress,
+        )
 
-            iterator = (
-                tqdm(
-                    countries_to_check_list, desc="Checking live counts", unit="country"
+    # Build continent statistics
+    continent_map = get_continent_mapping()
+    continent_stats = {}
+
+    for code, data in cached_countries.items():
+        continent = continent_map.get(code, "Unknown")
+        if continent not in continent_stats:
+            continent_stats[continent] = {
+                "countries": 0,
+                "plants_cached": 0,
+                "generators_cached": 0,
+                "total_cached": 0,
+                "outdated_countries": 0,
+            }
+        continent_stats[continent]["countries"] += 1
+        continent_stats[continent]["plants_cached"] += data["plants_cached"]
+        continent_stats[continent]["generators_cached"] += data["generators_cached"]
+        continent_stats[continent]["total_cached"] += data["total_cached"]
+        if data.get("cache_status") == "outdated":
+            continent_stats[continent]["outdated_countries"] += 1
+
+    # Find missing countries
+    missing_countries = []
+    for code, name in all_countries.items():
+        if code not in cached_countries:
+            missing_countries.append({"name": name, "code": code})
+
+    # Build result dictionary
+    result = {
+        "cache_dir": cache_dir,
+        "countries_cached": len(cached_countries),
+        "countries_total": total_possible_countries,
+        "coverage_percentage": len(cached_countries) / total_possible_countries * 100,
+        "total_elements": total_elements,
+        "total_plants": total_plants,
+        "total_generators": total_generators,
+        "cached_countries": cached_countries,
+        "missing_countries": missing_countries,
+        "continent_stats": continent_stats,
+    }
+
+    if check_live_counts:
+        result["timestamp"] = datetime.now(timezone.utc).isoformat()
+
+    return result
+
+
+def find_outdated_caches(
+    cache_dir: str | None = None,
+    threshold: float = 0.95,
+    check_specific_countries: list[str] | None = None,
+    show_progress: bool = False,
+) -> list[dict[str, Any]]:
+    """Find countries where cached data is outdated compared to live OSM.
+
+    Parameters
+    ----------
+    cache_dir : str, optional
+        Cache directory path. If None, uses config value.
+    threshold : float
+        Coverage ratio below which cache is considered outdated
+    check_specific_countries : list[str], optional
+        ISO codes of specific countries to check
+
+    Returns
+    -------
+    list[dict]
+        List of outdated countries with details:
+        - code: ISO country code
+        - name: Country name
+        - plants_cached/live/missing: Plant counts
+        - generators_cached/live/missing: Generator counts
+        - total_missing: Total missing elements
+        - cache_coverage_ratio: Current coverage ratio
+
+    Examples
+    --------
+    >>> # Find all significantly outdated caches
+    >>> outdated = find_outdated_caches(threshold=0.9)
+    >>> for country in outdated:
+    ...     logger.info(f"{country['name']}: {country['total_missing']} new elements")
+
+    >>> # Check specific countries
+    >>> outdated = find_outdated_caches(
+    ...     check_specific_countries=['DE', 'FR', 'IT']
+    ... )
+
+    Notes
+    -----
+    This function makes API calls to check live counts, so it can be
+    slow for many countries. Results are sorted by total missing elements.
+    """
+    coverage_data = get_country_coverage_data(
+        cache_dir=cache_dir,
+        check_live_counts=True,
+        countries_to_check=check_specific_countries,
+        outdated_threshold=threshold,
+        show_progress=show_progress,
+    )
+
+    outdated_countries = []
+
+    if coverage_data is None:
+        return outdated_countries
+
+    for code, data in coverage_data["cached_countries"].items():
+        if data and data.get("cache_status") == "outdated":
+            outdated_info = {
+                "code": code,
+                "name": data["name"],
+                "plants_cached": data["plants_cached"],
+                "plants_live": data["plants_live"],
+                "plants_missing": data["plants_live"] - data["plants_cached"],
+                "generators_cached": data["generators_cached"],
+                "generators_live": data["generators_live"],
+                "generators_missing": data["generators_live"]
+                - data["generators_cached"],
+                "total_missing": (
+                    (data["plants_live"] - data["plants_cached"])
+                    + (data["generators_live"] - data["generators_cached"])
+                ),
+                "cache_coverage_ratio": data["total_cached"] / data["total_live"]
+                if data["total_live"] and data["total_live"] > 0
+                else 0.0,
+            }
+            outdated_countries.append(outdated_info)
+
+    outdated_countries.sort(key=lambda x: x["total_missing"], reverse=True)
+
+    return outdated_countries
+
+
+def _check_live_counts(
+    cached_countries: dict,
+    countries_to_check: list[str] | None,
+    cache_dir: str,
+    osm_config: dict,
+    outdated_threshold: float,
+    show_progress: bool,
+) -> None:
+    """Check live OSM counts and update cache status for countries."""
+    api_url = osm_config.get("overpass_api", {}).get(
+        "url", "https://overpass-api.de/api/interpreter"
+    )
+    timeout = osm_config.get("overpass_api", {}).get("timeout", 300)
+    max_retries = osm_config.get("overpass_api", {}).get("max_retries", 3)
+    retry_delay = osm_config.get("overpass_api", {}).get("retry_delay", 5)
+
+    if show_progress:
+        logger.info("\nChecking live counts from Overpass API...")
+
+    with OverpassAPIClient(
+        api_url=api_url,
+        cache_dir=cache_dir,
+        timeout=timeout,
+        max_retries=max_retries,
+        retry_delay=retry_delay,
+        show_progress=False,
+    ) as client:
+        countries_to_check_list = countries_to_check or list(cached_countries.keys())
+
+        iterator = (
+            tqdm(countries_to_check_list, desc="Checking live counts", unit="country")
+            if show_progress
+            else countries_to_check_list
+        )
+
+        for country_code in iterator:
+            if country_code not in cached_countries:
+                continue
+
+            country_name = cached_countries[country_code]["name"]
+
+            try:
+                live_counts = client.count_country_elements(country_name, "both")
+
+                cached_countries[country_code]["plants_live"] = live_counts.get(
+                    "plants", -1
                 )
-                if not return_data
-                else countries_to_check_list
-            )
+                cached_countries[country_code]["generators_live"] = live_counts.get(
+                    "generators", -1
+                )
 
-            for country_code in iterator:
-                if country_code not in cached_countries:
-                    continue
-
-                country_name = cached_countries[country_code]["name"]
-
-                try:
-                    live_counts = client.count_country_elements(country_name, "both")
-
-                    cached_countries[country_code]["plants_live"] = live_counts.get(
-                        "plants", -1
+                if (
+                    live_counts.get("plants", -1) >= 0
+                    and live_counts.get("generators", -1) >= 0
+                ):
+                    cached_countries[country_code]["total_live"] = (
+                        live_counts["plants"] + live_counts["generators"]
                     )
-                    cached_countries[country_code]["generators_live"] = live_counts.get(
-                        "generators", -1
+
+                    cached_countries[country_code]["plants_diff"] = (
+                        cached_countries[country_code]["plants_cached"]
+                        - live_counts["plants"]
+                    )
+                    cached_countries[country_code]["generators_diff"] = (
+                        cached_countries[country_code]["generators_cached"]
+                        - live_counts["generators"]
+                    )
+
+                    plants_ratio = (
+                        cached_countries[country_code]["plants_cached"]
+                        / live_counts["plants"]
+                        if live_counts["plants"] > 0
+                        else 1.0
+                    )
+                    generators_ratio = (
+                        cached_countries[country_code]["generators_cached"]
+                        / live_counts["generators"]
+                        if live_counts["generators"] > 0
+                        else 1.0
                     )
 
                     if (
-                        live_counts.get("plants", -1) >= 0
-                        and live_counts.get("generators", -1) >= 0
+                        plants_ratio < outdated_threshold
+                        or generators_ratio < outdated_threshold
                     ):
-                        cached_countries[country_code]["total_live"] = (
-                            live_counts["plants"] + live_counts["generators"]
-                        )
-
-                        cached_countries[country_code]["plants_diff"] = (
-                            cached_countries[country_code]["plants_cached"]
-                            - live_counts["plants"]
-                        )
-                        cached_countries[country_code]["generators_diff"] = (
-                            cached_countries[country_code]["generators_cached"]
-                            - live_counts["generators"]
-                        )
-
-                        plants_ratio = (
-                            cached_countries[country_code]["plants_cached"]
-                            / live_counts["plants"]
-                            if live_counts["plants"] > 0
-                            else 1.0
-                        )
-                        generators_ratio = (
-                            cached_countries[country_code]["generators_cached"]
-                            / live_counts["generators"]
-                            if live_counts["generators"] > 0
-                            else 1.0
-                        )
-
-                        if (
-                            plants_ratio < outdated_threshold
-                            or generators_ratio < outdated_threshold
-                        ):
-                            cached_countries[country_code]["cache_status"] = "outdated"
-                        elif plants_ratio > 1.0 or generators_ratio > 1.0:
-                            cached_countries[country_code]["cache_status"] = "ahead"
-                        else:
-                            cached_countries[country_code]["cache_status"] = "current"
+                        cached_countries[country_code]["cache_status"] = "outdated"
+                    elif plants_ratio > 1.0 or generators_ratio > 1.0:
+                        cached_countries[country_code]["cache_status"] = "ahead"
                     else:
-                        cached_countries[country_code]["cache_status"] = "error"
-
-                except Exception as e:
-                    logger.error(
-                        f"Error checking live counts for {country_name}: {str(e)}"
-                    )
+                        cached_countries[country_code]["cache_status"] = "current"
+                else:
                     cached_countries[country_code]["cache_status"] = "error"
 
-    if return_data:
-        continent_map = get_continent_mapping()
-        continent_stats = {}
+            except Exception as e:
+                logger.error(f"Error checking live counts for {country_name}: {str(e)}")
+                cached_countries[country_code]["cache_status"] = "error"
 
-        for code, data in cached_countries.items():
-            continent = continent_map.get(code, "Unknown")
-            if continent not in continent_stats:
-                continent_stats[continent] = {
-                    "countries": 0,
-                    "plants_cached": 0,
-                    "generators_cached": 0,
-                    "total_cached": 0,
-                    "outdated_countries": 0,
-                }
-            continent_stats[continent]["countries"] += 1
-            continent_stats[continent]["plants_cached"] += data["plants_cached"]
-            continent_stats[continent]["generators_cached"] += data["generators_cached"]
-            continent_stats[continent]["total_cached"] += data["total_cached"]
-            if data.get("cache_status") == "outdated":
-                continent_stats[continent]["outdated_countries"] += 1
 
-        missing_countries = []
-        for code, name in all_countries.items():
-            if code not in cached_countries:
-                missing_countries.append({"name": name, "code": code})
+def print_coverage_report(
+    coverage_data: dict[str, Any],
+    show_missing: bool = False,
+    check_live_counts: bool = False,
+    show_outdated_only: bool = False,
+) -> None:
+    """Print formatted coverage report to console.
 
-        result = {
-            "cache_dir": cache_dir,
-            "countries_cached": len(cached_countries),
-            "countries_total": total_possible_countries,
-            "coverage_percentage": len(cached_countries)
-            / total_possible_countries
-            * 100,
-            "total_elements": total_elements,
-            "total_plants": total_plants,
-            "total_generators": total_generators,
-            "cached_countries": cached_countries,
-            "missing_countries": missing_countries,
-            "continent_stats": continent_stats,
-        }
+    Parameters
+    ----------
+    coverage_data : dict
+        Coverage statistics from get_country_coverage_data
+    show_missing : bool
+        Whether to list countries without cached data
+    check_live_counts : bool
+        Whether live counts were checked
+    show_outdated_only : bool
+        Only show outdated countries
+    """
+    cached_countries = coverage_data["cached_countries"]
+    total_possible_countries = coverage_data["countries_total"]
+    total_elements = coverage_data["total_elements"]
+    total_plants = coverage_data["total_plants"]
+    total_generators = coverage_data["total_generators"]
 
-        if check_live_counts:
-            result["timestamp"] = datetime.now(timezone.utc).isoformat()
-
-        return result
-
-    print("\n" + "=" * (100 if check_live_counts else 80))
-    print(
+    # Print header
+    logger.info("\n" + "=" * (100 if check_live_counts else 80))
+    logger.info(
         "OSM CACHE COUNTRY COVERAGE"
         + (" WITH LIVE COMPARISON" if check_live_counts else "")
     )
-    print("=" * (100 if check_live_counts else 80))
-    print(
-        f"\nCountries in cache: {len(cached_countries)} / {total_possible_countries} "
+    logger.info("=" * (100 if check_live_counts else 80))
+
+    # Print summary
+    logger.info(
+        f"Countries in cache: {len(cached_countries)} / {total_possible_countries} "
         f"({len(cached_countries) / total_possible_countries * 100:.1f}%)"
     )
-    print(
+    logger.info(
         "Total "
         + ("cached " if check_live_counts else "")
         + f"elements: {total_elements:,} (Plants: {total_plants:,}, Generators: {total_generators:,})"
     )
 
+    # Print status summary if live counts were checked
     if check_live_counts:
-        status_counts = {
-            "current": 0,
-            "outdated": 0,
-            "ahead": 0,
-            "error": 0,
-            "unknown": 0,
-        }
-        for data in cached_countries.values():
-            status_counts[data["cache_status"]] += 1
+        _print_status_summary(cached_countries)
 
-        print("\nCache Status Summary:")
-        print(f"  ✓ Current: {status_counts['current']} countries")
-        print(f"  ⚠ Outdated: {status_counts['outdated']} countries")
-        print(f"  ⟳ Ahead: {status_counts['ahead']} countries")
-        print(f"  ✗ Error: {status_counts['error']} countries")
-        if status_counts["unknown"] > 0:
-            print(f"  ? Unknown: {status_counts['unknown']} countries")
+    # Print country table
+    _print_country_table(
+        cached_countries=cached_countries,
+        check_live_counts=check_live_counts,
+        show_outdated_only=show_outdated_only,
+        total_plants=total_plants,
+        total_generators=total_generators,
+        total_elements=total_elements,
+    )
 
+    # Print missing countries if requested
+    if show_missing and not show_outdated_only:
+        _print_missing_countries(coverage_data["missing_countries"])
+
+    # Print continent breakdown
+    if not show_outdated_only:
+        _print_continent_breakdown(
+            coverage_data["continent_stats"], total_elements, check_live_counts
+        )
+
+
+def _print_status_summary(cached_countries: dict) -> None:
+    """Print cache status summary."""
+    status_counts = {
+        "current": 0,
+        "outdated": 0,
+        "ahead": 0,
+        "error": 0,
+        "unknown": 0,
+    }
+    for data in cached_countries.values():
+        status_counts[data["cache_status"]] += 1
+
+    logger.info("\nCache Status Summary:")
+    logger.info(f"  ✓ Current: {status_counts['current']} countries")
+    logger.info(f"  ⚠ Outdated: {status_counts['outdated']} countries")
+    logger.info(f"  ⟳ Ahead: {status_counts['ahead']} countries")
+    logger.info(f"  ✗ Error: {status_counts['error']} countries")
+    if status_counts["unknown"] > 0:
+        logger.info(f"  ? Unknown: {status_counts['unknown']} countries")
+
+
+def _print_country_table(
+    cached_countries: dict,
+    check_live_counts: bool,
+    show_outdated_only: bool,
+    total_plants: int,
+    total_generators: int,
+    total_elements: int,
+) -> None:
+    """Print formatted table of countries and their cache data."""
     table_data = []
     for code, data in sorted(
         cached_countries.items(), key=lambda x: x[1]["total_cached"], reverse=True
@@ -679,11 +826,10 @@ def show_country_coverage(
 
     if table_data:
         if show_outdated_only:
-            print("\nOUTDATED COUNTRIES:")
+            logger.info("\nOUTDATED COUNTRIES:")
         else:
-            print(
-                "\n"
-                + ("COUNTRY DETAILS:" if check_live_counts else "CACHED COUNTRIES:")
+            logger.info(
+                "COUNTRY DETAILS:" if check_live_counts else "CACHED COUNTRIES:"
             )
 
         if check_live_counts:
@@ -712,170 +858,73 @@ def show_country_coverage(
                 "T%",
             ]
 
-        print(format_table(table_data, headers))
+        logger.info(format_table(table_data, headers))
 
         if check_live_counts:
-            print("\nLegend: (C)=Cached, (L)=Live, Diff=Cached-Live")
-            print("Status: ✓=Current, ⚠=Outdated, ⟳=Ahead, ✗=Error, ?=Unknown")
-
-    if show_missing and not show_outdated_only:
-        missing_countries = []
-        for code, name in all_countries.items():
-            if code not in cached_countries:
-                missing_countries.append((name, code))
-
-        if missing_countries:
-            print(f"\nMISSING COUNTRIES ({len(missing_countries)}):")
-            missing_sorted = sorted(missing_countries, key=lambda x: x[0])
-
-            cols = 3
-            for i in range(0, len(missing_sorted), cols):
-                row = missing_sorted[i : i + cols]
-                print("  " + "  ".join(f"{name:<30} ({code})" for name, code in row))
-        else:
-            print("\nAll countries are cached!")
-
-    if not show_outdated_only:
-        print("\nBREAKDOWN BY CONTINENT:")
-        continent_map = get_continent_mapping()
-        continent_stats = {}
-
-        for code, data in cached_countries.items():
-            continent = continent_map.get(code, "Unknown")
-            if continent not in continent_stats:
-                continent_stats[continent] = {
-                    "countries": 0,
-                    "plants": 0,
-                    "generators": 0,
-                    "total": 0,
-                    "outdated": 0,
-                }
-            continent_stats[continent]["countries"] += 1
-            continent_stats[continent]["plants"] += data["plants_cached"]
-            continent_stats[continent]["generators"] += data["generators_cached"]
-            continent_stats[continent]["total"] += data["total_cached"]
-            if data.get("cache_status") == "outdated":
-                continent_stats[continent]["outdated"] += 1
-
-        continent_table = []
-        for continent in [
-            "Europe",
-            "Asia",
-            "Africa",
-            "North America",
-            "South America",
-            "Oceania",
-            "Antarctica",
-            "Unknown",
-        ]:
-            if continent in continent_stats:
-                stats = continent_stats[continent]
-                row = [
-                    continent,
-                    stats["countries"],
-                    f"{stats['plants']:,}",
-                    f"{stats['generators']:,}",
-                    f"{stats['total']:,}",
-                    f"{stats['total'] / total_elements * 100:.1f}%"
-                    if total_elements > 0
-                    else "0.0%",
-                ]
-                if check_live_counts:
-                    row.append(f"{stats['outdated']}")
-                continent_table.append(row)
-
-        headers = [
-            "Continent",
-            "Countries",
-            "Plants",
-            "Generators",
-            "Total",
-            "% of Total",
-        ]
-        if check_live_counts:
-            headers.append("Outdated")
-        print(format_table(continent_table, headers))
+            logger.info("\nLegend: (C)=Cached, (L)=Live, Diff=Cached-Live")
+            logger.info("Status: ✓=Current, ⚠=Outdated, ⟳=Ahead, ✗=Error, ?=Unknown")
 
 
-def find_outdated_caches(
-    cache_dir: str | None = None,
-    threshold: float = 0.95,
-    check_specific_countries: list[str] | None = None,
-) -> list[dict[str, Any]]:
-    """Find countries where cached data is outdated compared to live OSM.
+def _print_missing_countries(missing_countries: list[dict]) -> None:
+    """Print list of missing countries."""
+    if missing_countries:
+        logger.info(f"\nMISSING COUNTRIES ({len(missing_countries)}):")
+        missing_sorted = sorted(missing_countries, key=lambda x: x["name"])
 
-    Parameters
-    ----------
-    cache_dir : str, optional
-        Cache directory path. If None, uses config value.
-    threshold : float
-        Coverage ratio below which cache is considered outdated
-    check_specific_countries : list[str], optional
-        ISO codes of specific countries to check
+        cols = 3
+        for i in range(0, len(missing_sorted), cols):
+            row = missing_sorted[i : i + cols]
+            logger.info(
+                "  "
+                + "  ".join(
+                    f"{country['name']:<30} ({country['code']})" for country in row
+                )
+            )
+    else:
+        logger.info("\nAll countries are cached!")
 
-    Returns
-    -------
-    list[dict]
-        List of outdated countries with details:
-        - code: ISO country code
-        - name: Country name
-        - plants_cached/live/missing: Plant counts
-        - generators_cached/live/missing: Generator counts
-        - total_missing: Total missing elements
-        - cache_coverage_ratio: Current coverage ratio
 
-    Examples
-    --------
-    >>> # Find all significantly outdated caches
-    >>> outdated = find_outdated_caches(threshold=0.9)
-    >>> for country in outdated:
-    ...     print(f"{country['name']}: {country['total_missing']} new elements")
+def _print_continent_breakdown(
+    continent_stats: dict, total_elements: int, check_live_counts: bool
+) -> None:
+    """Print continent-wise statistics."""
+    logger.info("BREAKDOWN BY CONTINENT:")
 
-    >>> # Check specific countries
-    >>> outdated = find_outdated_caches(
-    ...     check_specific_countries=['DE', 'FR', 'IT']
-    ... )
+    continent_table = []
+    for continent in [
+        "Europe",
+        "Asia",
+        "Africa",
+        "North America",
+        "South America",
+        "Oceania",
+        "Antarctica",
+        "Unknown",
+    ]:
+        if continent in continent_stats:
+            stats = continent_stats[continent]
+            row = [
+                continent,
+                stats["countries"],
+                f"{stats['plants_cached']:,}",
+                f"{stats['generators_cached']:,}",
+                f"{stats['total_cached']:,}",
+                f"{stats['total_cached'] / total_elements * 100:.1f}%"
+                if total_elements > 0
+                else "0.0%",
+            ]
+            if check_live_counts:
+                row.append(f"{stats['outdated_countries']}")
+            continent_table.append(row)
 
-    Notes
-    -----
-    This function makes API calls to check live counts, so it can be
-    slow for many countries. Results are sorted by total missing elements.
-    """
-    coverage_data = show_country_coverage(
-        cache_dir=cache_dir,
-        return_data=True,
-        check_live_counts=True,
-        countries_to_check=check_specific_countries,
-        outdated_threshold=threshold,
-    )
-
-    outdated_countries = []
-
-    if coverage_data is None:
-        return outdated_countries
-
-    for code, data in coverage_data["cached_countries"].items():
-        if data and data.get("cache_status") == "outdated":
-            outdated_info = {
-                "code": code,
-                "name": data["name"],
-                "plants_cached": data["plants_cached"],
-                "plants_live": data["plants_live"],
-                "plants_missing": data["plants_live"] - data["plants_cached"],
-                "generators_cached": data["generators_cached"],
-                "generators_live": data["generators_live"],
-                "generators_missing": data["generators_live"]
-                - data["generators_cached"],
-                "total_missing": (
-                    (data["plants_live"] - data["plants_cached"])
-                    + (data["generators_live"] - data["generators_cached"])
-                ),
-                "cache_coverage_ratio": data["total_cached"] / data["total_live"]
-                if data["total_live"] and data["total_live"] > 0
-                else 0.0,
-            }
-            outdated_countries.append(outdated_info)
-
-    outdated_countries.sort(key=lambda x: x["total_missing"], reverse=True)
-
-    return outdated_countries
+    headers = [
+        "Continent",
+        "Countries",
+        "Plants",
+        "Generators",
+        "Total",
+        "% of Total",
+    ]
+    if check_live_counts:
+        headers.append("Outdated")
+    logger.info(format_table(continent_table, headers))

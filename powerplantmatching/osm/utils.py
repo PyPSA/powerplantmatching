@@ -1,4 +1,9 @@
-"""Utility functions for OSM power plant processing.
+# SPDX-FileCopyrightText: Contributors to powerplantmatching <https://github.com/pypsa/powerplantmatching>
+#
+# SPDX-License-Identifier: MIT
+
+"""
+Utility functions for OSM power plant processing.
 
 This module provides helper functions for capacity parsing, country
 validation, geometric calculations, and configuration handling.
@@ -101,7 +106,9 @@ def parse_capacity_value(
     else:
         if regex_patterns is None:
             regex_patterns = [
+                # Matches: "100 MW", "15.5 kW", "50 MWp" (number with optional space and unit)
                 r"^(\d+(?:\.\d+)?)\s*([a-zA-Z]+(?:p|el|e)?)$",
+                # Matches: "100MW", "15.5kW", "50MWp" (number directly followed by unit)
                 r"^(\d+(?:\.\d+)?)([a-zA-Z]+(?:p|el|e)?)$",
             ]
 
@@ -337,3 +344,20 @@ def get_osm_cache_paths(config: dict | None = None) -> tuple[str, str]:
     csv_cache_path = os.path.join(cache_dir, fn)
 
     return cache_dir, csv_cache_path
+
+
+def determine_set_type(technology: str | None, config: dict[str, Any]) -> str | None:
+    """Determine Set type based on technology using simple mapping."""
+    if technology is None:
+        return None
+    technology = technology.strip()
+    if technology == "":
+        return None
+
+    set_mapping = config.get("set_mapping", {})
+
+    for set_type, technologies in set_mapping.items():
+        if technology in technologies:
+            return set_type
+
+    return None

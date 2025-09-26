@@ -1,14 +1,22 @@
-"""Multi-level caching system for OpenStreetMap data.
+# SPDX-FileCopyrightText: Contributors to powerplantmatching <https://github.com/pypsa/powerplantmatching>
+#
+# SPDX-License-Identifier: MIT
+
+"""
+Multi-level caching system for OpenStreetMap data.
 
 This module provides caching functionality for OSM elements, processed units,
 and country coordinate lookups. It reduces API calls and improves performance
 by storing data locally in JSON format.
 """
 
+import gc
 import json
 import logging
 import os
 from functools import lru_cache
+
+import diskcache
 
 from powerplantmatching.osm.models import Unit
 
@@ -42,62 +50,98 @@ class ElementCache:
         Flags tracking which caches have unsaved changes
     """
 
-    def __init__(self, cache_dir: str):
+    def __init__(self, cache_dir: str, cache_size_gb: int = 12):
         """Initialize cache with specified directory.
 
         Parameters
         ----------
         cache_dir : str
             Directory path for cache files
+        cache_size_gb : int
+            Total cache size limit in GB
         """
         self.cache_dir = cache_dir
         os.makedirs(cache_dir, exist_ok=True)
 
+        # Country-specific caches (keep as dicts - small)
         self.plants_cache: dict[str, dict] = {}
         self.generators_cache: dict[str, dict] = {}
-        self.ways_cache: dict[str, dict] = {}
-        self.nodes_cache: dict[str, dict] = {}
-        self.relations_cache: dict[str, dict] = {}
         self.units_cache: dict[str, list[Unit]] = {}
 
+        # Global caches (replace with diskcache - large)
+        cache_size = cache_size_gb * (2**30)  # GB to bytes
+        self.nodes_cache = diskcache.Cache(
+            directory=f"{cache_dir}/nodes_dc", size_limit=cache_size // 3
+        )
+        self.ways_cache = diskcache.Cache(
+            directory=f"{cache_dir}/ways_dc", size_limit=cache_size // 3
+        )
+        self.relations_cache = diskcache.Cache(
+            directory=f"{cache_dir}/relations_dc", size_limit=cache_size // 3
+        )
+
+        # File paths for country-specific caches
         self.plants_cache_file = os.path.join(self.cache_dir, "plants_power.json")
         self.generators_cache_file = os.path.join(
             self.cache_dir, "generators_power.json"
         )
-        self.ways_cache_file = os.path.join(self.cache_dir, "ways_data.json")
-        self.nodes_cache_file = os.path.join(self.cache_dir, "nodes_data.json")
-        self.relations_cache_file = os.path.join(self.cache_dir, "relations_data.json")
         self.units_cache_file = os.path.join(self.cache_dir, "processed_units.json")
 
+        # Modification flags
         self.plants_modified = False
         self.generators_modified = False
-        self.ways_modified = False
-        self.nodes_modified = False
-        self.relations_modified = False
         self.units_modified = False
 
+    def close(self):
+        """Properly close diskcache connections."""
+        # Close all diskcache connections with error handling
+        caches_to_close = ["nodes_cache", "ways_cache", "relations_cache"]
+
+        for cache_name in caches_to_close:
+            if hasattr(self, cache_name):
+                try:
+                    cache = getattr(self, cache_name)
+                    if hasattr(cache, "close") and callable(cache.close):
+                        cache.close()
+                        logger.debug(f"Closed {cache_name} successfully")
+                        # Remove reference to help garbage collection
+                        delattr(self, cache_name)
+                except Exception as e:
+                    # Log but don't raise - we want to close all caches even if one fails
+                    logger.debug(f"Error closing {cache_name}: {e}")
+
+        # Force garbage collection to clean up any remaining references
+        gc.collect()
+
+    def __del__(self):
+        """Ensure cleanup when object is garbage collected."""
+        try:
+            self.close()
+        except Exception:
+            # Ignore errors during cleanup to prevent exceptions in __del__
+            pass
+
+    def __enter__(self):
+        """Context manager entry."""
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Context manager exit with proper cleanup."""
+        self.close()
+
     def load_all_caches(self) -> None:
-        """Load all cache files into memory."""
+        """Load country caches and migrate JSON to diskcache if needed."""
+        # Load small country-specific caches
         self.plants_cache = self._load_cache(self.plants_cache_file)
         self.generators_cache = self._load_cache(self.generators_cache_file)
-        self.ways_cache = self._load_cache(self.ways_cache_file)
-        self.nodes_cache = self._load_cache(self.nodes_cache_file)
-        self.relations_cache = self._load_cache(self.relations_cache_file)
         self.units_cache = self._load_units_cache(self.units_cache_file)
 
     def save_all_caches(self, force: bool = False) -> None:
-        """Save all modified caches to disk.
-
-        Parameters
-        ----------
-        force : bool
-            Save all caches regardless of modification status
-        """
+        """Save country caches to disk. Global caches use diskcache auto-save."""
         os.makedirs(self.cache_dir, exist_ok=True)
-        logger.info(
-            f"Saving caches to {self.cache_dir} (modified only unless force={force})"
-        )
+        logger.info(f"Saving country caches to {self.cache_dir}")
 
+        # Only save country-specific caches (small, still use JSON)
         if self.plants_modified or force:
             self._save_cache(self.plants_cache_file, self.plants_cache)
             self.plants_modified = False
@@ -106,38 +150,12 @@ class ElementCache:
             self._save_cache(self.generators_cache_file, self.generators_cache)
             self.generators_modified = False
 
-        if self.ways_modified or force:
-            self._save_cache(self.ways_cache_file, self.ways_cache)
-            self.ways_modified = False
-
-        if self.nodes_modified or force:
-            self._save_cache(self.nodes_cache_file, self.nodes_cache)
-            self.nodes_modified = False
-
-        if self.relations_modified or force:
-            self._save_cache(self.relations_cache_file, self.relations_cache)
-            self.relations_modified = False
-
         if self.units_modified or force:
             self._save_units_cache(self.units_cache_file, self.units_cache)
             self.units_modified = False
 
-        cache_files = {
-            "plants": (self.plants_cache_file, self.plants_modified),
-            "generators": (self.generators_cache_file, self.generators_modified),
-            "ways": (self.ways_cache_file, self.ways_modified),
-            "nodes": (self.nodes_cache_file, self.nodes_modified),
-            "relations": (self.relations_cache_file, self.relations_modified),
-            "units": (self.units_cache_file, self.units_modified),
-        }
-
-        for _, (file_path, modified) in cache_files.items():
-            if os.path.exists(file_path):
-                if force or modified:
-                    size = os.path.getsize(file_path) / 1024
-                    logger.debug(f"Cache file exists: {file_path} ({size:.1f} KB)")
-            elif force or modified:
-                logger.warning(f"Cache file was not created: {file_path}")
+        # Global caches (diskcache) auto-save - no manual action needed
+        logger.debug("Global caches (nodes/ways/relations) use diskcache auto-save")
 
     def _load_cache(self, cache_path: str) -> dict:
         """Load JSON cache file."""
@@ -152,7 +170,7 @@ class ElementCache:
 
     def _save_cache(self, cache_path: str, data: dict) -> None:
         """Save dictionary to JSON cache file."""
-        cache_data = data if data else {}
+        cache_data = data or {}
         try:
             os.makedirs(os.path.dirname(cache_path), exist_ok=True)
             with open(cache_path, "w") as f:
@@ -199,33 +217,21 @@ class ElementCache:
 
     def store_nodes_bulk(self, nodes: list[dict]) -> None:
         """Store multiple nodes at once."""
-        modified = False
         for node in nodes:
             if node["type"] == "node":
-                self.nodes_cache[str(node["id"])] = node
-                modified = True
-        if modified:
-            self.nodes_modified = True
+                self.nodes_cache.set(str(node["id"]), node)
 
     def store_ways_bulk(self, ways: list[dict]) -> None:
         """Store multiple ways at once."""
-        modified = False
         for way in ways:
             if way["type"] == "way":
-                self.ways_cache[str(way["id"])] = way
-                modified = True
-        if modified:
-            self.ways_modified = True
+                self.ways_cache.set(str(way["id"]), way)
 
     def store_relations_bulk(self, relations: list[dict]) -> None:
         """Store multiple relations at once."""
-        modified = False
         for relation in relations:
             if relation["type"] == "relation":
-                self.relations_cache[str(relation["id"])] = relation
-                modified = True
-        if modified:
-            self.relations_modified = True
+                self.relations_cache.set(str(relation["id"]), relation)
 
     def _load_units_cache(self, cache_path: str) -> dict[str, list[Unit]]:
         """Load processed units from JSON cache."""

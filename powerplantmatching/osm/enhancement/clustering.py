@@ -1,4 +1,9 @@
-"""Generator clustering for OSM power plant data.
+# SPDX-FileCopyrightText: Contributors to powerplantmatching <https://github.com/pypsa/powerplantmatching>
+#
+# SPDX-License-Identifier: MIT
+
+"""
+Generator clustering for OSM power plant data.
 
 This module provides clustering algorithms to group nearby generators
 into logical power plant units based on spatial proximity.

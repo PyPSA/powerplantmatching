@@ -1,4 +1,9 @@
-"""Parser for OpenStreetMap generator elements.
+# SPDX-FileCopyrightText: Contributors to powerplantmatching <https://github.com/pypsa/powerplantmatching>
+#
+# SPDX-License-Identifier: MIT
+
+"""
+Parser for OpenStreetMap generator elements.
 
 This module handles the parsing of OSM elements tagged as generators.
 It can process individual generators and group orphaned generators
@@ -68,7 +73,10 @@ class GeneratorParser(ElementProcessor):
 
         reconstruct_config = self.config.get("units_reconstruction", {})
         if reconstruct_config.get("enabled", False):
-            self.name_aggregator = NameAggregator(config)
+            similarity_threshold = reconstruct_config.get(
+                "name_similarity_threshold", 0.7
+            )
+            self.name_aggregator = NameAggregator(similarity_threshold)
             self.rejected_plant_polygons: dict[str, PlantGeometry] = {}
             self.generator_groups: dict[str, GeneratorGroup] = {}
 

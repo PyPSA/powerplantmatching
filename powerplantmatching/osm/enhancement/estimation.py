@@ -1,4 +1,9 @@
-"""Capacity estimation for power plants without explicit data.
+# SPDX-FileCopyrightText: Contributors to powerplantmatching <https://github.com/pypsa/powerplantmatching>
+#
+# SPDX-License-Identifier: MIT
+
+"""
+Capacity estimation for power plants without explicit data.
 
 This module estimates missing capacity values using various methods
 including area-based calculations and default values.
