@@ -8,7 +8,7 @@ title: "Performing energy modelling exercises in a transparent way - The issue o
 journal: Energy Strategy Reviews
 doi: 10.1016/j.esr.2018.11.004
 repository: https://github.com/pypsa/powerplantmatching
-version: 0.7.1
+version: 0.7.1 # Don't touch, will be updated by the release script
 license: MIT
 authors:
   - family-names: Gotzens
