@@ -1,0 +1,25 @@
+# SPDX-FileCopyrightText: Contributors to powerplantmatching <https://github.com/pypsa/powerplantmatching>
+#
+# SPDX-License-Identifier: MIT
+
+cff-version: 1.2.0
+message: "If you use this package, please cite the corresponding manuscript in Journal of Open Research Software."
+title: "Performing energy modelling exercises in a transparent way - The issue of data quality in power plant databases"
+journal: Energy Strategy Reviews
+doi: 10.1016/j.esr.2018.11.004
+repository: https://github.com/pypsa/powerplantmatching
+version: 0.7.1
+license: MIT
+authors:
+  - family-names: Gotzens
+    given-names: Fabian
+    orcid: https://orcid.org/0000-0001-8546-2033
+  - family-names: Heinrichs
+    given-names: Heidi
+    orcid: https://orcid.org/0000-0001-9536-9465
+  - family-names: Hörsch
+    given-names: Jonas
+    orcid: https://orcid.org/0000-0001-9438-767X
+  - family-names: Hofmann
+    given-names: Fabian
+    orcid: https://orcid.org/0000-0002-6604-5450
