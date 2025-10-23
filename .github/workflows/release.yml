@@ -89,6 +89,23 @@ jobs:
         fig.savefig('doc/powerplants.png')
       shell: python
 
+    - name: Update CITATION.cff
+      run: |
+        import re
+        from setuptools_scm import get_version
+
+        version = get_version()
+
+        with open('CITATION.cff', 'r') as file:
+          cff_content = file.read()
+        cff_content = open('CITATION.cff', 'r').read()
+
+        updated_cff_content = re.sub(r"(?<=version: ).+(?= #)",version,cff_content,flags=re.MULTILINE)
+
+        with open('CITATION.cff', 'w') as file:
+          file.write(updated_cff_content)
+      shell: python
+
     # End of preparation script
 
     - name: Remove previous tag
