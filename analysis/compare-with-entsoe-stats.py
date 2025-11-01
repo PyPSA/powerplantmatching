@@ -20,12 +20,13 @@ warnings.simplefilter(action="ignore", category=(FutureWarning, XMLParsedAsHTMLW
 root = pathlib.Path(__file__).parent.absolute()
 figpath = root / "figures"
 
-UPDATE = True
+# whether to update the used dataset or use the precalculated data
+UPDATE = False
 
 
 config = pm.get_config()
 
-powerplants = pm.powerplants(update=UPDATE)
+powerplants = pm.powerplants(update=UPDATE, from_url=not UPDATE)
 
 
 powerplants = powerplants.powerplant.convert_country_to_alpha2()
@@ -47,7 +48,7 @@ def parse(c):
                 rename.get(c, c), **kwargs
             ).iloc[0]
         except Exception as e:
-            print(f"Country {c} failed with {e}")
+            print(f"Country {c} failed with {repr(e)}")
             time.sleep(3)
     return np.nan
 
@@ -68,14 +69,17 @@ totals = powerplants.powerplant.lookup().fillna(0)
 
 sources = [s if isinstance(s, str) else list(s)[0] for s in config["matching_sources"]]
 
-input_dbs = {
-    s.title(): getattr(pm.data, s)()
-    .powerplant.convert_country_to_alpha2()
-    .query(query)
-    .powerplant.lookup()
-    .fillna(0)
-    for s in sources
-}
+input_dbs = {}
+for s in sources:
+    print(s.title())
+    input_dbs[s.title()] = (
+        getattr(pm.data, s)()
+        .powerplant.convert_country_to_alpha2()
+        .query(query)
+        .powerplant.lookup()
+        .fillna(0)
+    )
+
 output_dbs = {
     s.title(): powerplants[
         powerplants.projectID.apply(lambda ds: s in ds)
@@ -103,7 +107,9 @@ for s in sources:
     diff[s.title() + " (%)"] = ds.fillna(0)
 
 diff = diff[out_compare.Statistics != 0]
-diff = diff.loc[:, list(set(out_compare.index.unique(1)) - {"Wind", "Solar"}), :]
+diff = diff.loc[
+    :, list(set(out_compare.index.unique(1)) - {"Biogas", "Wind", "Solar"}), :
+]
 diff.index = diff.index.get_level_values(0) + " " + diff.index.get_level_values(1)
 
 df = (diff[diff.Difference > 1]).sort_values("Difference", ascending=False)
@@ -124,6 +130,8 @@ print(f"\nMissing Capacities per Country: \n\n{df.round(2)}")
 # ---------------------------------------------------------------------------- #
 #                                country figures                               #
 # ---------------------------------------------------------------------------- #
+
+(figpath / "country-comparison").mkdir(parents=True, exist_ok=True)
 
 fig, ax = plt.subplots(figsize=(5, 20))
 diff[diff.abs() > 2].plot.barh(ax=ax, zorder=3)

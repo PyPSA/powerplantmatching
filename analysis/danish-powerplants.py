@@ -16,7 +16,7 @@ config = pm.get_config()
 config_da2020 = copy.copy(config)
 config_da2020["main_query"] = "Country == 'Denmark'"
 config_da2020["hash"] = "DA-2020"
-config_da2020["matching_sources"].remove("WIKIPEDIA")
+config_da2020["matching_sources"].remove({"WIKIPEDIA": "Fueltype != 'Solar'"})
 config_da2020["matching_sources"].remove("JRC")
 
 
@@ -42,7 +42,7 @@ for config in [config_da2020]:
         name="Select", options=["Fueltype", "Country"]
     )
 
-    map = df.hvplot.points(
+    point_map = df.hvplot.points(
         "lon",
         "lat",
         color="Fueltype",
@@ -74,6 +74,6 @@ for config in [config_da2020]:
     )
     # bars.opts(opts.Overlay(title=None))
 
-    plot = map + bars
+    plot = point_map + bars
 
     hvplot.save(plot, "figures/" + label + ".html")
