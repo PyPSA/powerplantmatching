@@ -2255,8 +2255,8 @@ def GEM(raw=False, update=False, config=None):
         Custom configuration, by default None
 
     """
-    GEMS_FUNTIONS = [GBPT, GGPT, GCPT, GGTPT, GNPT, GSPT, GWPT, GHPT]
-    data = [f(raw=raw, update=update, config=config) for f in GEMS_FUNTIONS]
+    GEM_FUNCTIONS = [GBPT, GGPT, GCPT, GGTPT, GNPT, GSPT, GWPT, GHPT]
+    data = [f(raw=raw, update=update, config=config) for f in GEM_FUNCTIONS]
     return pd.concat(data, ignore_index=True)
 
 
