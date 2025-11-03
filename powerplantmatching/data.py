@@ -2268,7 +2268,7 @@ def MASTR(
     """
     Get the Marktstammdatenregister (MaStR) dataset.
 
-    Provided by the German Federal Network Agency (Bundesnetzagentur / BNetza) and
+    Provided by the German Federal Network Agency (Bundesnetzagentur / BNetzA) and
     contains data on Germany, Austria and Switzerland.
 
     Parameters

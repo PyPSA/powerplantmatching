@@ -262,7 +262,7 @@ def gather_fueltype_info(
     Parses in a set of columns for distinct fueltype specifications.
 
     This function uses the mappings (key -> regex pattern) given
-    by the `config` under the section `target_technologies`.
+    by the `config` under the section `target_fueltypes`.
     The representative keys are set if any of the columns
     in `search_col` matches the regex pattern.
 

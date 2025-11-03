@@ -25,6 +25,11 @@ SPDX-License-Identifier: MIT
 * For fully included datasets, add option to only aggregate units included in the matching process (e.g. `aggregate_only_matching_sources: ['MASTR']`).
 * Added option for multiprocessing when aggregating units of non-matched power plants (e.g. `threads_extend_by_non_matched: 16`).
 * Updating matching logic configuration.
+* Update GBPT importer to support newer version of the database (from V3 on without sheet "Below Threshold").
+* Corrects GPD file name in `config.yaml`.
+* Sets `parallel_duke_processes` to false (instead of 16) to make powerplantmatching executable out-of-the-box also for Windows systems.
+* Updates path to `powerplants.png` in README.
+* Fixes typo in docstring of `gather_fueltype_info()` (`cleaning.py`) and `MASTR()` (`data.py`).
 
 ## [v0.7.1](https://github.com/PyPSA/powerplantmatching/releases/tag/v0.7.1) (30th January 2024)
 
