@@ -53,7 +53,7 @@ fully_included_sources:
 aggregate_only_matching_sources:
   - MASTR # the matching process of very small units is not efficient
 
-parallel_duke_processes: 16
+parallel_duke_processes: false
 threads_extend_by_non_matched: 16
 matched_data_url: https://raw.githubusercontent.com/PyPSA/powerplantmatching/{tag}/powerplants.csv
 
