@@ -108,7 +108,7 @@ GEO_units:
   fn: global_energy_observatory_ppl_units.csv
 GPD:
   reliability_score: 3
-  fn: globalpowerplantdatabasev120.zip
+  fn: globalpowerplantdatabase_v_1_3_0.zip
   #if outdated, look at http://datasets.wri.org/dataset/globalpowerplantdatabase
   url: https://wri-dataportal-prod.s3.amazonaws.com/manual/global_power_plant_database_v_1_3.zip
 WIKIPEDIA:
