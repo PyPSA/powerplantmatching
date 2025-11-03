@@ -1642,9 +1642,18 @@ def GBPT(raw=False, update=False, config=None):
     """
     config = get_config() if config is None else config
     fn = get_raw_file("GBPT", update=update, config=config)
-    large = pd.read_excel(fn, sheet_name="Data")
-    small = pd.read_excel(fn, sheet_name="Below Threshold")
-    df = pd.concat([large, small], ignore_index=True)
+    try:
+        large = pd.read_excel(fn, sheet_name="Data")
+        small = pd.read_excel(fn, sheet_name="Below Threshold")
+        df = pd.concat([large, small], ignore_index=True)
+    except Exception as e:
+        if e.args[0] == ("Worksheet named 'Below Threshold' not found"):
+            logger.info(
+                'In newer versions of the dataset, the sheet "Below Threshold" does not exist anymore.'
+            )
+            df = pd.read_excel(fn, sheet_name="Data")
+        else:
+            logger.error(e)
 
     if raw:
         return df
@@ -1664,12 +1673,19 @@ def GBPT(raw=False, update=False, config=None):
     fueltype_dict = {
         # solid biomass
         "bioenergy: agricultural waste (solids)": "Solid Biomass",
+        "bioenergy: agricultural waste (solids) [90%]": "Solid Biomass",
         "bioenergy: agricultural waste (unknown)": "Solid Biomass",
         "bioenergy: paper mill wastes": "Solid Biomass",
         "bioenergy: unknown": "Solid Biomass",
         "bioenergy: wood & other biomass (biocoal)": "Solid Biomass",
         "bioenergy: wood & other biomass (solids)": "Solid Biomass",
         "bioenergy: agricultural waste (syngas)": "Solid Biomass",
+        "bioenergy: wood & other biomass (solids) [95%]": "Solid Biomass",        "bioenergy: wood & other biomass (solids) [92%]": "Solid Biomass",
+        "bioenergy: wood & other biomass (solids) [80%]": "Solid Biomass",
+        "bioenergy: wood & other biomass (solids) [75%]": "Solid Biomass",
+        "bioenergy: wood & other biomass (solids) [60%]": "Solid Biomass",
+        "bioenergy: wood & other biomass (solids) [51%]": "Solid Biomass",
+        "bioenergy: wood & other biomass (solids) [50%]": "Solid Biomass",
         # biogas
         "bioenergy: agricultural waste (biogas)": "Biogas",
         "bioenergy: refuse (landfill gas)": "Biogas",
@@ -1677,6 +1693,7 @@ def GBPT(raw=False, update=False, config=None):
         # oil
         "bioenergy: ethanol": "Oil",
         "bioenergy: biodiesel": "Oil",
+        "bioenergy: bio-heavy oil": "Oil",
         # waste
         "bioenergy: refuse (municipal and industrial wastes)": "Waste",
         "bioenergy: refuse (syngas)": "Solid Biomass",
