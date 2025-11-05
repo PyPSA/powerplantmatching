@@ -48,7 +48,7 @@ out simulations.
 
 ## Map
 
-![powerplants.png](doc/powerplants.png)
+![powerplants.png](docs/assets/images/powerplants.png)
 
 ## Installation
 
