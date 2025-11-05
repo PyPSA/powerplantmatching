@@ -76,24 +76,78 @@ def clean_name(df, config=None):
 
     name = df.Name.astype(str).copy().apply(unidecode.unidecode)
 
+    roman_to_arabic = {
+        "I": "1",
+        "II": "2",
+        "III": "3",
+        "IV": "4",
+        "V": "5",
+        "VI": "6",
+        "VII": "7",
+        "VIII": "8",
+        "IX": "9",
+        "X": "10",
+        "XI": "11",
+    }
+    for roman, arabic in roman_to_arabic.items():
+        name = name.str.replace(rf"\b{roman}\b", arabic, regex=True)
+
     replace = config["clean_name"]["replace"]
     replace.setdefault("", [])
+
+    keep_blocks = config["clean_name"].get("fueltypes_with_blocks", [])
+    if len(keep_blocks) > 0:
+        mask = df.Fueltype.isin(keep_blocks)
 
     for key, pattern in replace.items():
         if config["clean_name"]["remove_common_words"] and (key == ""):
             common_words = pd.Series(sum(name.str.split(), [])).value_counts()
             common_words = list(common_words[common_words >= 20].index)
             pattern += common_words
-        if isinstance(pattern, list):
-            # if pattern is a list, concat all entries in a case-insensitive regex
-            pattern = r"(?i)" + "|".join([rf"\b{p}\b" for p in pattern])
-        elif not isinstance(pattern, str):
-            raise ValueError(f"Pattern must be string or list, not {type(pattern)}")
-        name = name.str.replace(pattern, key, regex=True)
 
+        pattern = np.atleast_1d(pattern)
+
+        # do not remove block numbers for fuel types with blocks; the regular
+        # regex [^a-zA-Z] removes non-alphabetical characters; for fueltypes to
+        # keep, the regex [^a-zA-Z0-9] is used which only removes
+        # non-alphanumerical characters
+        if len(keep_blocks) > 0 and key == " " and "[^a-zA-Z]" in pattern:
+            base = [rf"\b{p}\b" for p in pattern if p != "[^a-zA-Z]"]
+            pattern_keep = r"(?i)" + "|".join(base + [r"[^a-zA-Z0-9]"])
+            pattern_default = r"(?i)" + "|".join(base + [r"[^a-zA-Z]"])
+            name.loc[mask] = name.loc[mask].str.replace(pattern_keep, key, regex=True)
+            name.loc[~mask] = name.loc[~mask].str.replace(
+                pattern_default, key, regex=True
+            )
+
+        # do not remove block letters for fuel types with blocks; the regular
+        # regex \w would remove standalone letters, this one is skipped for
+        # fueltypes in mask
+        elif key == "" and "\w" in pattern:
+            pattern_keep = r"(?i)" + "|".join(
+                [rf"\b{p}\b" for p in pattern if p != "\w"]
+            )
+            pattern_default = r"(?i)" + "|".join([rf"\b{p}\b" for p in pattern])
+            name.loc[mask] = name.loc[mask].str.replace(pattern_keep, key, regex=True)
+            name.loc[~mask] = name.loc[~mask].str.replace(
+                pattern_default, key, regex=True
+            )
+
+        else:
+            pattern = r"(?i)" + "|".join([rf"\b{p}\b" for p in pattern])
+            name = name.str.replace(pattern, key, regex=True)
+
+    # remove duplicated words; second pass necessary for edge cases
     if config["clean_name"]["remove_duplicated_words"]:
-        name = name.str.replace(r"\b(\w+)(?:\W\1\b)+", r"\1", regex=True, case=False)
-    name = name.str.strip().str.title().str.replace(r" +", " ", regex=True)
+        name = (
+            name.str.replace(r"\b(\w+)(?:\W\1\b)+", r"\1", regex=True, case=False)
+            .str.strip()
+            .str.replace(r" +", " ", regex=True)
+            .str.title()
+            .str.replace(r"\b(\w+)(?:\W\1\b)+", r"\1", regex=True, case=False)
+        )
+    else:
+        name = name.str.strip().str.title().str.replace(r" +", " ", regex=True)
 
     return df.assign(Name=name).sort_values("Name")
 
@@ -208,7 +262,7 @@ def gather_fueltype_info(
     Parses in a set of columns for distinct fueltype specifications.
 
     This function uses the mappings (key -> regex pattern) given
-    by the `config` under the section `target_technologies`.
+    by the `config` under the section `target_fueltypes`.
     The representative keys are set if any of the columns
     in `search_col` matches the regex pattern.
 
@@ -329,7 +383,16 @@ def clean_technology(df, generalize_hydros=False):
         .str.split(", ")
         .apply(lambda x: ", ".join(i.strip() for i in np.unique(x)))
     )
-    tech = tech.replace({"Ccgt": "CCGT", "Ocgt": "OCGT"}, regex=True)
+    ABBREVIATIONS = {
+        "Ccgt": "CCGT",
+        "Ocgt": "OCGT",
+        "Pv": "PV",
+        "Nas": "NaS",
+        "Nicd": "NiCd",
+        "Nanicl": "NaNiCl",
+        "Caes": "CAES",
+    }
+    tech = tech.replace(ABBREVIATIONS, regex=False)
     return df.assign(Technology=tech)
 
 
@@ -367,6 +430,7 @@ def aggregate_units(
     pre_clean_name=False,
     country_wise=True,
     config=None,
+    threads=1,
     **kwargs,
 ):
     """
@@ -385,6 +449,8 @@ def aggregate_units(
         Whether to clean the 'Name'-column before aggregating.
     country_wise : Boolean, default True
         Whether to aggregate only entries with a identical country.
+    threads : int, default 1
+        Number of threads to use
     """
     deprecated_args = {"use_saved_aggregation", "save_aggregation"}
     used_deprecated_args = deprecated_args.intersection(kwargs)
@@ -422,12 +488,27 @@ def aggregate_units(
         df = clean_name(df)
 
     logger.info(f"Aggregating blocks in data source '{ds_name}'.")
+    agg_query = None
+    if ds_name in config.get("aggregate_only_matching_sources", []):
+        for source in config["matching_sources"]:
+            if isinstance(source, dict) and ds_name in source:
+                agg_query = source[ds_name]
+                break
+
+    block_query = None
+    if with_blocks := config["clean_name"].get("fuel_type_with_blocks", []):  # noqa
+        block_query = "Fueltype in @with_blocks"
 
     if country_wise:
         countries = df.Country.unique()
-        duplicates = pd.concat([duke(df.query("Country == @c")) for c in countries])
+        country_query = "Country == @c"
+        query = " and ".join(filter(None, [agg_query, block_query, country_query]))
+        duplicates = pd.concat(
+            [duke(df.query(query), threads=threads) for c in countries]
+        )
     else:
-        duplicates = duke(df)
+        query = " and ".join(filter(None, [agg_query, block_query]))
+        duplicates = duke(df.query(query) if query else df, threads=threads)
 
     df = cliques(df, duplicates)
     df = df.groupby("grouped").agg(props_for_groups)
@@ -445,4 +526,9 @@ def aggregate_units(
         .reindex(columns=cols)
         .pipe(set_column_name, ds_name)
     )
+
+    # Remove zero values from summed non-weighted numeric columns
+    numeric_cols = df.select_dtypes(include="number").columns
+    df[numeric_cols] = df[numeric_cols].where(lambda df: df != 0)
+
     return df

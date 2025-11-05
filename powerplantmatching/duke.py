@@ -40,6 +40,7 @@ def duke(
     showmatches=False,
     keepfiles=False,
     showoutput=False,
+    threads=1,
 ):
     """
     Run duke in different modes (Deduplication or Record Linkage Mode) to
@@ -107,6 +108,7 @@ def duke(
             "-Dfile.encoding=UTF-8",
             "no.priv.garshol.duke.Duke",
             "--linkfile=linkfile.txt",
+            f"--threads={threads}",
         ]
         if singlematch:
             args.append("--singlematch")

@@ -113,16 +113,7 @@ def config_filter(df, config):
 
     main_query = config.get("main_query", "")
 
-    # individual filter from config.yaml
-    queries = {}
-    for source in config["matching_sources"]:
-        if isinstance(source, dict):
-            queries.update(source)
-        else:
-            queries[source] = ""
-    ds_query = queries.get(name, "")
-
-    query = " and ".join([q for q in [target_query, main_query, ds_query] if q])
+    query = " and ".join([q for q in [target_query, main_query] if q])
 
     df = correct_manually(df, name, config=config)
 
@@ -185,7 +176,6 @@ def set_uncommon_fueltypes_to_other(df, fillna_other=True, config=None, **kwargs
     default = [
         "Mixed fuel types",
         "Electro-mechanical",
-        "Hydrogen Storage",
     ]
     fueltypes = kwargs.get("fueltypes", default)
     df.loc[df.Fueltype.isin(fueltypes), "Fueltype"] = "Other"
@@ -342,7 +332,7 @@ def fun(f, q_in, q_out):
         q_out.put((i, f(x)))
 
 
-def parmap(f, arg_list, config=None):
+def parmap(f, arg_list, config=None, threads=None):
     """
     Parallel mapping function. Use this function to parallelly map function
     f onto arguments in arg_list. The maximum number of parallel threads is
@@ -355,11 +345,21 @@ def parmap(f, arg_list, config=None):
         python function with one argument
     arg_list : list
         list of arguments mapped to f
+    config : dict, default None
+        configuration dictionary
+    threads : int, default None
+        number of parallel threads
     """
     if config is None:
         config = get_config()
-    if config["parallel_duke_processes"]:
-        nprocs = min(multiprocessing.cpu_count(), config["process_limit"])
+
+    if threads is None:
+        threads = config["parallel_duke_processes"]
+    if isinstance(threads, bool):
+        threads = config.get("process_limit", 1)
+
+    if threads > 1:
+        nprocs = min(multiprocessing.cpu_count(), threads)
         logger.info(f"Run process with {nprocs} parallel threads.")
         q_in = multiprocessing.Queue(1)
         q_out = multiprocessing.Queue()
