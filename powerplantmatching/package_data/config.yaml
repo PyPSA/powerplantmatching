@@ -41,8 +41,8 @@ fully_included_sources:
   - GEM: not (Country == 'Germany' and Fueltype in ['Solar', 'Wind'])
   # battery in Germany is covered by MASTR
   - EESI: Fueltype != 'Hydro' and not (Country == 'Germany' and Fueltype == 'Battery')
-  # exclude units smaller than 100 kW (low total capacity) and take nuclear from other datasets (good matching)
-  - MASTR: Capacity >= 0.1 and Fueltype != 'Nuclear'
+  # take nuclear from other datasets (good matching)
+  - MASTR: Fueltype != 'Nuclear'
   # take small hydro outside Germany from OPSD (highest coverage)
   - OPSD: Country != 'Germany' and Capacity < 1 and Capacity >= 0.1 and Fueltype == 'Hydro'
   - BEYONDCOAL
@@ -225,6 +225,7 @@ MASTR:
   net_capacity: true
   reliability_score: 7
   status: ["In Betrieb", "In Planung", "Endgültig stillgelegt", "Vorübergehend stillgelegt"]
+  capacity_threshold: 0.1  # all values below will be filtered out, given in MW
   fn: bnetza_open_mastr_2025-02-09.zip
   url: https://zenodo.org/records/14783581/files/bnetza_open_mastr_2025-02-09.zip
 EESI:
