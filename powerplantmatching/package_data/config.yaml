@@ -79,7 +79,7 @@ IRENA:
   aggregated_units: true
   fn: IRENASTAT_capacities_2000-2024.csv
   # compiled from https://pxweb.irena.org/pxweb/en/IRENASTAT/IRENASTAT__Power%20Capacity%20and%20Generation/Country_ELECSTAT_2025_H2_PX.px/
-  url: https://tubcloud.tu-berlin.de/s/p2D5E9MLWE8HPHE/download/IRENASTAT_capacities_2000-2024.csv
+  url: https://tubcloud.tu-berlin.de/s/dDS9erreKPNH4Ey/download/IRENASTAT_capacities_2000-2024.csv
 CARMA:
   net_capacity: false
   reliability_score: 1
@@ -87,7 +87,7 @@ CARMA:
   fn: Full_CARMA_2009_Dataset_1.csv
 ENTSOE:
   reliability_score: 5
-  url: https://tubcloud.tu-berlin.de/s/QaHLH38J4A7ZF5m/download/entsoe_transparency_platform_20250820.csv
+  url: https://tubcloud.tu-berlin.de/s/N7qo3AGyRYZyisS/download/entsoe_transparency_platform_20250820.csv
   fn: entsoe_transparency_platform_20250820.csv
 ENTSOE-EIC:
   url: https://eepublicdownloads.blob.core.windows.net/cio-lio/csv/W_eicCodes.csv
@@ -173,7 +173,7 @@ GGPT:
   reliability_score: 6
   status: ["operating", "retired", "construction"]
   fn: Global-Oil-and-Gas-Plant-Tracker-GOGPT-August-2025.xlsx
-  url: https://tubcloud.tu-berlin.de/s/aKrt7dyNgazmgAm/download/Global-Oil-and-Gas-Plant-Tracker-GOGPT-August-2025.xlsx
+  url: https://tubcloud.tu-berlin.de/s/WrmNX5awNJFcXrQ/download/Global-Oil-and-Gas-Plant-Tracker-GOGPT-August-2025.xlsx
 GEM:
   # combined data set of all GEM trackers
   net_capacity: true
@@ -183,32 +183,32 @@ GCPT:
   reliability_score: 6
   status: ["operating", "retired", "construction", "mothballed"]
   fn: Global-Coal-Plant-Tracker-July-2025.xlsx
-  url: https://tubcloud.tu-berlin.de/s/etMB7qawKNwfgnk/download/Global-Coal-Plant-Tracker-July-2025.xlsx
+  url: https://tubcloud.tu-berlin.de/s/ijzbscopNTgNB2r/download/Global-Coal-Plant-Tracker-July-2025.xlsx
 GGTPT:
   net_capacity: false
   reliability_score: 6
   aggregated_units: false
   status: ["operating", "retired", "construction", "mothballed"]
   fn: Geothermal-Power-Tracker-March-2025-Final.xlsx
-  url: https://tubcloud.tu-berlin.de/s/dNoEsLeGtCWDkoc/download/Geothermal-Power-Tracker-March-2025-Final.xlsx
+  url: https://tubcloud.tu-berlin.de/s/ypr3eL2K5kckAK4/download/Geothermal-Power-Tracker-March-2025-Final.xlsx
 GWPT:
   net_capacity: false
   reliability_score: 6
   status: ["operating", "retired", "construction"]
   fn:  Global-Wind-Power-Tracker-February-2025.xlsx
-  url: https://tubcloud.tu-berlin.de/s/8NSXSjPmJPXpg4W/download/Global-Wind-Power-Tracker-February-2025.xlsx
+  url: https://tubcloud.tu-berlin.de/s/L4AssxsisA6ENRb/download/Global-Wind-Power-Tracker-February-2025.xlsx
 GSPT:
   net_capacity: false
   reliability_score: 6
   status: ["operating", "retired", "construction"]
   fn: Global-Solar-Power-Tracker-February-2025.xlsx
-  url: https://tubcloud.tu-berlin.de/s/7eo4dZXMp6eB3mz/download/Global-Solar-Power-Tracker-February-2025.xlsx
+  url: https://tubcloud.tu-berlin.de/s/iWZ7j3zsCGfyJ5f/download/Global-Solar-Power-Tracker-February-2025.xlsx
 GBPT:
   net_capacity: false
   reliability_score: 6
   status: ["operating", "retired", "construction"]
-  fn: Global-Bioenergy-Power-Tracker-GBPT-September-2024.xlsx
-  url: https://tubcloud.tu-berlin.de/s/CzMBKe2rAcsoq7c/download/Global-Bioenergy-Power-Tracker-GBPT-September-2024.xlsx
+  fn:  Global-Bioenergy-Power-Tracker-GBPT-V3.xlsx
+  url: https://tubcloud.tu-berlin.de/s/ZkaQonLYdakrN75/download/Global-Bioenergy-Power-Tracker-GBPT-V3.xlsx
 GNPT:
   net_capacity: false
   reliability_score: 6
@@ -220,7 +220,7 @@ GHPT:
   reliability_score: 6
   status: ["operating", "retired", "construction"]
   fn: Global-Hydropower-Tracker-April-2025.xlsx
-  url: https://tubcloud.tu-berlin.de/s/2xqxRmfP4FKTrLf/download/Global-Hydropower-Tracker-April-2025.xlsx
+  url: https://tubcloud.tu-berlin.de/s/aDyd3MJWZNgeEH4/download/Global-Hydropower-Tracker-April-2025.xlsx
 MASTR:
   net_capacity: true
   reliability_score: 7
@@ -232,7 +232,7 @@ EESI:
   reliability_score: 5
   status: ["Operational"] # since no start years given
   fn: european-energy-storage-inventory-20250817-2245.json
-  url: https://tubcloud.tu-berlin.de/s/RXWgYbYJpePsWAZ/download/european-energy-storage-inventory-20250817-2245.json
+  url: https://tubcloud.tu-berlin.de/s/5KqMDMZfb2pN3Aw/download/european-energy-storage-inventory-20250817-2245.json
 GND:
   net_capacity: true
   reliability_score: 5

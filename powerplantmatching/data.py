@@ -1647,9 +1647,9 @@ def GBPT(raw=False, update=False, config=None):
         small = pd.read_excel(fn, sheet_name="Below Threshold")
         df = pd.concat([large, small], ignore_index=True)
     except Exception as e:
-        if e.args[0] == ("Worksheet named 'Below Threshold' not found"):
+        if "Below Threshold" in e.args[0]:
             logger.info(
-                'In newer versions of the dataset, the sheet "Below Threshold" does not exist anymore.'
+                "In newer versions of the dataset, the sheet 'Below Threshold' does not exist anymore."
             )
             df = pd.read_excel(fn, sheet_name="Data")
         else:
