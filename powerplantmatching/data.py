@@ -2287,7 +2287,7 @@ def MASTR(
 
     config = get_config() if config is None else config
 
-    THRESHOLD_KW = 100  # noqa: F841
+    THRESHOLD_KW = config["MASTR"].get("capacity_threshold", 0.1) * 1e3  # noqa: F841
 
     RENAME_COLUMNS = {
         "EinheitMastrNummer": "projectID",
