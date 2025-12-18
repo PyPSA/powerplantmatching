@@ -6,7 +6,9 @@ SPDX-License-Identifier: MIT
 
 # Release Notes
 
-## Upcoming Version
+<!-- ## Upcoming Version -->
+
+## [v0.8.0](https:://github.com/PyPSA/powerplantmatching/releases/tag/v0.8.0) (1st December 2025)
 
 * Update Marktstammdatenregister data for Germany from [open-MaStR (February 25, 2025)](https://zenodo.org/records/14783581).
 * Drop support for Python 3.9, add support for Python 3.13. Minimum required Python version is now 3.10.
