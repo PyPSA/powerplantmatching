@@ -853,6 +853,49 @@ def ENTSOE_EIC(raw=False, update=False, config=None, entsoe_token=None):
     )
 
 
+def OSM(raw=False, update=False, config=None):
+    """
+    Importer for the OpenStreetMap power plant data.
+
+    Downloads pre-processed OSM data from the osm-powerplants repository.
+
+    Parameters
+    ----------
+    raw : boolean, default False
+        Whether to return the original dataset
+    update : bool, default False
+        Whether to update the data from the url.
+    config : dict, default None
+        Add custom specific configuration,
+        e.g. powerplantmatching.config.get_config(target_countries='Italy'),
+        defaults to powerplantmatching.config.get_config()
+
+    Returns
+    -------
+    pd.DataFrame
+        Power plant data from OpenStreetMap
+    """
+    config = get_config() if config is None else config
+
+    fn = get_raw_file("OSM", update, config)
+    df = pd.read_csv(fn)
+
+    if raw:
+        return df
+
+    return (
+        df.pipe(convert_to_short_name)
+        .pipe(
+            gather_specifications,
+            parse_columns=["Name", "Fueltype", "Technology", "Set"],
+            config=config,
+        )
+        .pipe(clean_name)
+        .pipe(set_column_name, "OSM")
+        .pipe(config_filter, config)
+    )
+
+
 # def OSM():
 #    """
 #    Parser and Importer for Open Street Map power plant data.
