@@ -27,3 +27,4 @@ All data files of the package will be stored in the folder given by `pm.core.pac
 
 - OPSD - [Open Power System Data](http://data.open-power-system-data.org/) publish their [data](http://data.open-power-system-data.org/conventional_power_plants/) under a free license
 - GEO - [Global Energy Observatory](http://globalenergyobservatory.org/), the data is not directly available on the website, but can be obtained from an sqlite
+- OSM - [OpenStreetMap Power Plants](https://github.com/open-energy-transition/osm-powerplants) provides power plant data extracted from OpenStreetMap via the `osm-powerplants` package (optional, not included in default configuration)

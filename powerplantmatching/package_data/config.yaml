@@ -33,8 +33,6 @@ matching_sources:
   - MASTR: (Fueltype != 'Wind') and ((Fueltype == 'Solar' and Capacity >= 3) or (Fueltype == 'Biogas' and Capacity >= 2) or (Fueltype not in ['Solar', 'Biogas'] and Capacity >= 1))
   - EESI
   - GHR
-  # OSM data from osm-powerplants, wind in germany is provided by MASTR
-  - OSM: Capacity >= 1 and not (Country == 'Germany' and Fueltype in ['Solar', 'Wind'])
 
 # # fully_included_sources, these sources are included even without match to the final dataset
 fully_included_sources:
@@ -50,8 +48,6 @@ fully_included_sources:
   - BEYONDCOAL
   # include this selection of countries as they have poorer coverage in all other datasets
   - JRC: Country in ['Italy', 'Croatia', 'Serbia', 'Slovakia']
-  # OSM data for countries with poorer coverage in other datasets
-  - OSM: Country in ['Portugal', 'Ireland', 'Greece', 'Estonia', 'Latvia', 'Lithuania', 'Albania', 'North Macedonia', 'Montenegro', 'Bosnia and Herzegovina', 'Serbia', 'Ukraine']
 
 # these sources skip unit aggregation for fully_included_sources not covered in matching_sources
 aggregate_only_matching_sources:
@@ -252,7 +248,7 @@ OSM:
   reliability_score: 3
   net_capacity: true
   fn: osm_europe.csv
-  url: https://raw.githubusercontent.com/open-energy-transition/osm-powerplants/main/osm_europe.csv
+  url: https://raw.githubusercontent.com/open-energy-transition/osm-powerplants/96b22e2/osm_europe.csv
 
 # ---------------------------------------------------------------------------- #
 #                             Data Structure Config                            #
