@@ -15,7 +15,7 @@ jobs:
     outputs:
       prepared: ${{ steps.validate.outputs.prepared }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Validate commit message
         id: validate
@@ -51,7 +51,7 @@ jobs:
         app-id: ${{ vars.PYPSA_BOT_ID }}
         private-key: ${{ secrets.PYPSA_BOT_PRIVATE_KEY }}
 
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
       with:
         fetch-depth: 0
 
@@ -61,7 +61,7 @@ jobs:
         echo "Branch found: $branch"
         echo "BRANCH_NAME=$branch" >> $GITHUB_ENV
 
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
       with:
         fetch-depth: 0
         ref: ${{ env.BRANCH_NAME }}
@@ -114,7 +114,7 @@ jobs:
         git push origin --delete ${{ github.ref_name }}
 
     - name: Commit changes
-      uses: stefanzweifel/git-auto-commit-action@v6
+      uses: stefanzweifel/git-auto-commit-action@v7
       with:
         branch: ${{ env.BRANCH_NAME }}
         commit_message: '${{ env.PREPARATION_COMMIT }}'
@@ -127,7 +127,7 @@ jobs:
     if: ${{ needs.check-preparation.outputs.prepared == 'true' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: hynek/build-and-inspect-python-package@v2
         with:
           upload-name-suffix: "-release"
@@ -137,7 +137,7 @@ jobs:
     needs: [build]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: softprops/action-gh-release@v2
         with:
           body: |
@@ -155,7 +155,7 @@ jobs:
     permissions:
       id-token: write
     steps:
-    - uses: actions/download-artifact@v5
+    - uses: actions/download-artifact@v6
       with:
         name: Packages-release
         path: dist
