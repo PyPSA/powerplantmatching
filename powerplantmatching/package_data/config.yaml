@@ -244,6 +244,11 @@ GHR:
   reliability_score: 4
   fn: GloHydroRes_vs1.csv
   url: https://zenodo.org/records/14526360/files/GloHydroRes_vs1.csv
+OSM:
+  reliability_score: 3
+  net_capacity: true
+  fn: osm_europe.csv
+  url: https://raw.githubusercontent.com/open-energy-transition/osm-powerplants/96b22e2/osm_europe.csv
 
 # ---------------------------------------------------------------------------- #
 #                             Data Structure Config                            #
