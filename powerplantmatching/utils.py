@@ -78,12 +78,13 @@ def get_raw_file(name, update=False, config=None, skip_retrieve=False):
     df_config = config[name]
     path = _data_in(df_config["fn"])
 
-    base_version = parse(version(__package__)).base_version
-    user_agent = f"{__package__}/{base_version}"
     if (not os.path.exists(path) or update) and not skip_retrieve:
         url = df_config["url"]
         logger.info(f"Retrieving data from {url}")
-        r = requests.get(url, headers={"User-Agent": user_agent})
+        base_version = parse(version(__package__)).base_version
+        user_agent = f"{__package__}/{base_version}"
+        r = requests.get(url, headers={"User-Agent": user_agent}, timeout=60)
+        r.raise_for_status()
         with open(path, "wb") as outfile:
             outfile.write(r.content)
 
