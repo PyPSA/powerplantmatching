@@ -8,6 +8,7 @@ SPDX-License-Identifier: MIT
 
 ## Upcoming Version
 
+* Fix 403 Forbidden responses for Zenodo downloads by sending `powerplantmatching/{base_version}` as user agent. ([PR #276](https://github.com/PyPSA/powerplantmatching/pull/276))
 * Added [OpenStreetMap (OSM)](https://github.com/open-energy-transition/osm-powerplants) power plant data as optional data source via `pm.data.OSM()`. Data is provided by the external `osm-powerplants` package. ([PR #272](https://github.com/PyPSA/powerplantmatching/pull/272))
 
 ## [v0.8.0](https:://github.com/PyPSA/powerplantmatching/releases/tag/v0.8.0) (1st December 2025)

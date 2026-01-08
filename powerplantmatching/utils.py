@@ -10,6 +10,7 @@ import multiprocessing
 import os
 import re
 from ast import literal_eval as liteval
+from importlib.metadata import version
 
 import country_converter as coco
 import numpy as np
@@ -18,6 +19,7 @@ import pycountry as pyc
 import requests
 import six
 from numpy import atleast_1d
+from packaging.version import parse
 from tqdm import tqdm
 
 from .core import _data_in, _package_data, get_config, get_obj_if_Acc, logger
@@ -79,7 +81,10 @@ def get_raw_file(name, update=False, config=None, skip_retrieve=False):
     if (not os.path.exists(path) or update) and not skip_retrieve:
         url = df_config["url"]
         logger.info(f"Retrieving data from {url}")
-        r = requests.get(url, headers={"User-Agent": "Mozilla/5.0"})
+        base_version = parse(version(__package__)).base_version
+        user_agent = f"{__package__}/{base_version}"
+        r = requests.get(url, headers={"User-Agent": user_agent}, timeout=60)
+        r.raise_for_status()
         with open(path, "wb") as outfile:
             outfile.write(r.content)
 
