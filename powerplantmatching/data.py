@@ -749,19 +749,17 @@ def ENTSOE(
     if os.path.exists(path) and not update:
         df = pd.read_csv(path, index_col=0)
     else:
-        if entsoe_token:
-            df = retrieve_data(entsoe_token)
+        token = entsoe_token or config.get("entsoe_token")
+        try:
+            if not token:
+                raise ValueError("No entsoe_token given")
+            df = retrieve_data(token)
             df.to_csv(path)
-        else:
-            token = config.get("entsoe_token")
-            if token is not None:
-                df = retrieve_data(token)
-                df.to_csv(path)
-            else:
-                logger.info(
-                    "No entsoe_token in config.yaml given, falling back to stored version."
-                )
-                df = pd.read_csv(get_raw_file("ENTSOE", update, config), index_col=0)
+        except Exception as e:
+            logger.warning(
+                f"ENTSOE API retrieval failed: {e}. Falling back to archive."
+            )
+            df = pd.read_csv(get_raw_file("ENTSOE", config=config), index_col=0)
 
     if raw:
         return df
