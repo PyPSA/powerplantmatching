@@ -86,7 +86,7 @@ jobs:
         df.to_csv("powerplants.csv", index_label="id")
 
         fig, ax = df.powerplant.plot_map(figsize=(22, 16))
-        fig.savefig('doc/powerplants.png')
+        fig.savefig('docs/powerplants.png')
       shell: python
 
     - name: Update CITATION.cff
