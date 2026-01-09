@@ -6,14 +6,13 @@ SPDX-License-Identifier: MIT
 
 # Release Notes
 
-## Upcoming Version
+<!--## Upcoming Version-->
+
+## [v0.8.0](https:://github.com/PyPSA/powerplantmatching/releases/tag/v0.8.0) (9th Januarary 2026)
 
 * Fix 403 Forbidden responses for Zenodo downloads by sending `powerplantmatching/{base_version}` as user agent. ([PR #276](https://github.com/PyPSA/powerplantmatching/pull/276))
 * Added [OpenStreetMap (OSM)](https://github.com/open-energy-transition/osm-powerplants) power plant data as optional data source via `pm.data.OSM()`. Data is provided by the external `osm-powerplants` package. ([PR #272](https://github.com/PyPSA/powerplantmatching/pull/272))
 * ENTSOE API retrieval now falls back to URL download if API call fails. ([PR #278](https://github.com/PyPSA/powerplantmatching/pull/278))
-
-## [v0.8.0](https:://github.com/PyPSA/powerplantmatching/releases/tag/v0.8.0) (1st December 2025)
-
 * Update Marktstammdatenregister data for Germany from [open-MaStR (February 25, 2025)](https://zenodo.org/records/14783581).
 * Drop support for Python 3.9, add support for Python 3.13. Minimum required Python version is now 3.10.
 * Restructure documentation and move to use `mkdocs` for a nicer user experience.
