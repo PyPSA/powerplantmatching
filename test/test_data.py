@@ -48,6 +48,12 @@ def test_OPSD_VRE_country():
     assert df.Capacity.sum() > 0
 
 
+def test_IRENASTAT():
+    df = pm.data.IRENASTAT()
+    assert not df.empty
+    assert df.Capacity.sum() > 0
+
+
 @pytest.mark.github_actions
 def test_url_retrieval():
     pm.powerplants(from_url=True)
