@@ -123,9 +123,9 @@ def clean_name(df, config=None):
         # do not remove block letters for fuel types with blocks; the regular
         # regex \w would remove standalone letters, this one is skipped for
         # fueltypes in mask
-        elif key == "" and "\w" in pattern:
+        elif key == "" and r"\w" in pattern:
             pattern_keep = r"(?i)" + "|".join(
-                [rf"\b{p}\b" for p in pattern if p != "\w"]
+                [rf"\b{p}\b" for p in pattern if p != r"\w"]
             )
             pattern_default = r"(?i)" + "|".join([rf"\b{p}\b" for p in pattern])
             name.loc[mask] = name.loc[mask].str.replace(pattern_keep, key, regex=True)
