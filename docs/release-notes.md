@@ -6,7 +6,9 @@ SPDX-License-Identifier: MIT
 
 # Release Notes
 
-<!--## Upcoming Version-->
+## Upcoming Version
+
+* Updated Global Energy Monitor / Transition Zero datasets to the latest versions (February 2026) for wind and solar power plants.
 
 ## [v0.8.0](https:://github.com/PyPSA/powerplantmatching/releases/tag/v0.8.0) (13th Januarary 2026)
 

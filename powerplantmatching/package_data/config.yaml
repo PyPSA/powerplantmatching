@@ -195,14 +195,14 @@ GWPT:
   net_capacity: false
   reliability_score: 6
   status: ["operating", "retired", "construction"]
-  fn:  Global-Wind-Power-Tracker-February-2025.xlsx
-  url: https://tubcloud.tu-berlin.de/s/L4AssxsisA6ENRb/download/Global-Wind-Power-Tracker-February-2025.xlsx
+  fn: Global-Wind-Power-Tracker-February-2026.xlsx
+  url: https://tubcloud.tu-berlin.de/s/mN7sbGDAQqd8yLD/download/Global-Wind-Power-Tracker-February-2026.xlsx
 GSPT:
   net_capacity: false
   reliability_score: 6
   status: ["operating", "retired", "construction"]
-  fn: Global-Solar-Power-Tracker-February-2025.xlsx
-  url: https://tubcloud.tu-berlin.de/s/iWZ7j3zsCGfyJ5f/download/Global-Solar-Power-Tracker-February-2025.xlsx
+  fn: Global-Solar-Power-Tracker-February-2026.xlsx
+  url: https://tubcloud.tu-berlin.de/s/Lx8KRcKBMPd2QrZ/download/Global-Solar-Power-Tracker-February-2026.xlsx
 GBPT:
   net_capacity: false
   reliability_score: 6
