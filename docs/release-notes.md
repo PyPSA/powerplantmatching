@@ -6,11 +6,13 @@ SPDX-License-Identifier: MIT
 
 # Release Notes
 
-## Upcoming Version
+<!-- ## Upcoming Version -->
+
+## [v0.8.1](https:://github.com/PyPSA/powerplantmatching/releases/tag/v0.8.1) (11th February 2026)
 
 * Updated Global Energy Monitor / Transition Zero datasets to the latest versions (February 2026) for wind and solar power plants.
 
-## [v0.8.0](https:://github.com/PyPSA/powerplantmatching/releases/tag/v0.8.0) (13th Januarary 2026)
+## [v0.8.0](https:://github.com/PyPSA/powerplantmatching/releases/tag/v0.8.0) (13th January 2026)
 
 * Fix 403 Forbidden responses for Zenodo downloads by sending `powerplantmatching/{base_version}` as user agent. ([PR #276](https://github.com/PyPSA/powerplantmatching/pull/276))
 * Added [OpenStreetMap (OSM)](https://github.com/open-energy-transition/osm-powerplants) power plant data as optional data source via `pm.data.OSM()`. Data is provided by the external `osm-powerplants` package. ([PR #272](https://github.com/PyPSA/powerplantmatching/pull/272))
