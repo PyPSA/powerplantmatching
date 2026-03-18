@@ -194,7 +194,9 @@ def OPSD(
         .assign(
             Name=lambda df: df.Name.str.replace("\x96", " "),  # for geoparsing
             projectID=lambda s: "OEU-" + s.index.astype(str),
-            Fueltype=lambda d: d.Fueltype.fillna(d.Energy_Source_Level_1),
+            Fueltype=lambda d: d.Energy_Source_Level_3.where(
+                d.Energy_Source_Level_3.notna(), d.Fueltype
+            ).fillna(d.Energy_Source_Level_1),
             # We don't want to include this as this is overestimating CHP capacities
             # Set=lambda df: np.where(df.Set.isin(["yes", "Yes"]), "CHP", "PP"),
         )
