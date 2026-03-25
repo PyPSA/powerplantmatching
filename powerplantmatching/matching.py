@@ -84,15 +84,19 @@ def _match_by_eic(df0, df1, labels):
         return empty
 
     matches = pd.DataFrame(
-        {labels[0]: list(matched_0_to_1.keys()),
-         labels[1]: list(matched_0_to_1.values())}
+        {
+            labels[0]: list(matched_0_to_1.keys()),
+            labels[1]: list(matched_0_to_1.values()),
+        }
     )
     matched_idx0 = set(matched_0_to_1)
     matched_idx1 = claimed_idx1
 
     logger.info(
         "EIC matching: %d deterministic matches between `%s` and `%s`",
-        len(matches), labels[0], labels[1],
+        len(matches),
+        labels[0],
+        labels[1],
     )
 
     return matches, matched_idx0, matched_idx1
