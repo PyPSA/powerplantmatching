@@ -248,7 +248,7 @@ OSM:
   reliability_score: 3
   net_capacity: true
   fn: osm_global.csv.gz
-  url: https://raw.githubusercontent.com/open-energy-transition/osm-powerplants/main/osm_global.csv.gz
+  url: https://raw.githubusercontent.com/open-energy-transition/osm-powerplants/13bb6a3/osm_global.csv.gz
 
 # ---------------------------------------------------------------------------- #
 #                             Data Structure Config                            #

@@ -8,7 +8,7 @@ SPDX-License-Identifier: MIT
 
 ## Upcoming Version
 
-* OSM dataset upgraded from a frozen Europe-only snapshot (`osm_europe.csv`, pinned to `96b22e2`) to the live global dataset (`osm_global.csv.gz`, ~29,000 plants / ~2,900 GW across 173 countries) on the `main` branch of [`osm-powerplants`](https://github.com/open-energy-transition/osm-powerplants), regenerated monthly by CI. A recommended overlay for activating OSM as a fully-included source in 35 selected countries is published alongside (`evaluation/config.ppm_with_osm.yaml`) — see the upstream evaluation report for the methodology.
+* OSM dataset upgraded from a frozen Europe-only snapshot (`osm_europe.csv`, pinned to `96b22e2`) to a global snapshot (`osm_global.csv.gz`, ~29,000 plants / ~2,900 GW across 173 countries) pinned to commit `13bb6a3` of [`osm-powerplants`](https://github.com/open-energy-transition/osm-powerplants). The upstream dataset is regenerated monthly; bumping the pinned SHA in `package_data/config.yaml` picks up a refresh. A recommended overlay for activating OSM as a fully-included source in 35 selected countries is published alongside (`evaluation/config.ppm_with_osm.yaml`) — see the upstream evaluation report for the methodology.
 
 ## [v0.8.1](https:://github.com/PyPSA/powerplantmatching/releases/tag/v0.8.1) (11th February 2026)
 
