@@ -194,7 +194,9 @@ def OPSD(
         .assign(
             Name=lambda df: df.Name.str.replace("\x96", " "),  # for geoparsing
             projectID=lambda s: "OEU-" + s.index.astype(str),
-            Fueltype=lambda d: d.Fueltype.fillna(d.Energy_Source_Level_1),
+            Fueltype=lambda d: d.Energy_Source_Level_3.where(
+                d.Energy_Source_Level_3.notna(), d.Fueltype
+            ).fillna(d.Energy_Source_Level_1),
             # We don't want to include this as this is overestimating CHP capacities
             # Set=lambda df: np.where(df.Set.isin(["yes", "Yes"]), "CHP", "PP"),
         )
@@ -1409,8 +1411,10 @@ def BNETZA(
             regex=True,
         ),
     )[
-        lambda df: df.projectID.notna()
-        & df.Status.str.contains(pattern, regex=True, case=False)
+        lambda df: (
+            df.projectID.notna()
+            & df.Status.str.contains(pattern, regex=True, case=False)
+        )
     ].pipe(
         gather_specifications,
         search_col=["Name", "Fueltype", "Blockname"],
@@ -1418,8 +1422,9 @@ def BNETZA(
     )
 
     add_location_b = bnetza[bnetza.Ort.notnull()].apply(
-        lambda ds: (ds["Ort"] not in ds["Name"])
-        and (str.title(ds["Ort"]) not in ds["Name"]),
+        lambda ds: (
+            (ds["Ort"] not in ds["Name"]) and (str.title(ds["Ort"]) not in ds["Name"])
+        ),
         axis=1,
     )
     bnetza.loc[bnetza.Ort.notnull() & add_location_b, "Name"] = (
@@ -1808,8 +1813,10 @@ def GNPT(raw=False, update=False, config=None):
         .pipe(convert_to_short_name)
         .dropna(subset="Capacity")
         .assign(
-            Name=lambda df: df["Name"]
-            + df["Unit Name"].fillna("").apply(lambda x: f" {x}" if x else ""),
+            Name=lambda df: (
+                df["Name"]
+                + df["Unit Name"].fillna("").apply(lambda x: f" {x}" if x else "")
+            ),
             DateIn=df["DateIn"].apply(pd.to_numeric, errors="coerce"),
             DateOut=df["DateOut"].apply(pd.to_numeric, errors="coerce"),
             lat=df["lat"].apply(pd.to_numeric, errors="coerce"),
@@ -1899,8 +1906,10 @@ def GCPT(raw=False, update=False, config=None):
         .pipe(convert_to_short_name)
         .dropna(subset="Capacity")
         .assign(
-            Name=lambda df: df["Name"]
-            + df["Unit name"].fillna("").apply(lambda x: f" {x}" if x else ""),
+            Name=lambda df: (
+                df["Name"]
+                + df["Unit name"].fillna("").apply(lambda x: f" {x}" if x else "")
+            ),
             DateIn=df["DateIn"].apply(pd.to_numeric, errors="coerce"),
             DateOut=df["DateOut"]
             .apply(pd.to_numeric, errors="coerce")
@@ -2545,11 +2554,13 @@ def MASTR(
     df_processed.loc[mask, "Set"] = "PP"
 
     df_processed["Name"] = df_processed.apply(
-        lambda x: f"{x.Name} {x.NameKraftwerksblock.replace(x.Name, '').strip()}"
-        if x.NameKraftwerksblock
-        and x.NameKraftwerksblock != x.Name
-        and x.Fueltype in config["clean_name"]["fueltypes_with_blocks"]
-        else x.Name,
+        lambda x: (
+            f"{x.Name} {x.NameKraftwerksblock.replace(x.Name, '').strip()}"
+            if x.NameKraftwerksblock
+            and x.NameKraftwerksblock != x.Name
+            and x.Fueltype in config["clean_name"]["fueltypes_with_blocks"]
+            else x.Name
+        ),
         axis=1,
     )
 

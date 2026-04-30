@@ -102,3 +102,10 @@ uv.lock
 
 # jupyter
 *.ipynb
+
+# claude
+.claude/
+
+# local analysis files
+NL_plants_comparison.xlsx
+powerplants_custom.csv
