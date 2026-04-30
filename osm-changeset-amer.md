@@ -19,9 +19,9 @@
 ## Source tags
 
 <!-- TODO: cite verifiable source(s) for each numeric/categorical change -->
-- `source:plant:source` = 
-- `source:plant:output:electricity` = 
-- `source:start_date` = 
+- `source:plant:source` =
+- `source:plant:output:electricity` =
+- `source:start_date` =
 
 ---
 
