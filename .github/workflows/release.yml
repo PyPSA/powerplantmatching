@@ -139,7 +139,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           body: |
             Revised release notes are available in the [documentation](https://${{ github.event.repository.name }}.readthedocs.io/en/latest/release-notes.html).
