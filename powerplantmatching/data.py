@@ -2408,8 +2408,12 @@ def MASTR(
 
     cols = ["NutzbareSpeicherkapazitaet", "VerknuepfteEinheit"]
     with ZipFile(fn, "r") as file:
-        fn_storage_units = (
-            "bnetza_open_mastr_2025-02-09/bnetza_mastr_storage_units_raw.csv"
+        # Match by suffix rather than a hardcoded dated folder, so newer
+        # open-mastr dumps (different bnetza_open_mastr_<date>/ prefix) load.
+        fn_storage_units = next(
+            name
+            for name in file.namelist()
+            if name.endswith("bnetza_mastr_storage_units_raw.csv")
         )
         storage_units = pd.read_csv(file.open(fn_storage_units), usecols=cols)
 
@@ -2473,8 +2477,16 @@ def MASTR(
             parse_columns=PARSE_COLUMNS,
         )
         .assign(
+            # ThermischeNutzleistung is present in the Zenodo CSV dump but absent
+            # from the open-mastr bulk export; fall back to KwkMastrNummer alone.
             Set=lambda df: df["Set"].where(
-                df["KwkMastrNummer"].isna() & df["ThermischeNutzleistung"].isna(), "CHP"
+                df["KwkMastrNummer"].isna()
+                & (
+                    df["ThermischeNutzleistung"].isna()
+                    if "ThermischeNutzleistung" in df.columns
+                    else True
+                ),
+                "CHP",
             ),
         )
     )

@@ -226,7 +226,12 @@ MASTR:
   reliability_score: 7
   status: ["In Betrieb", "In Planung", "Endgültig stillgelegt", "Vorübergehend stillgelegt"]
   capacity_threshold: 0.1  # all values below will be filtered out, given in MW
-  fn: bnetza_open_mastr_2025-02-09.zip
+  # fn may be a glob: when it contains a wildcard the most recent matching
+  # local bnetza_open_mastr_<date>.zip is auto-selected (ISO dates sort
+  # chronologically, so the newest wins). url is the frozen Zenodo seed,
+  # downloaded only when no local match exists, so it never clobbers a newer
+  # local build. Use a literal filename to pin one specific dump instead.
+  fn: bnetza_open_mastr_*.zip
   url: https://zenodo.org/records/14783581/files/bnetza_open_mastr_2025-02-09.zip
 EESI:
   net_capacity: true
