@@ -61,7 +61,9 @@ def test_dedup_returns_symmetric_pairs(left):
     out = lk.match(dup, labels=["one", "two"])
     assert list(out.columns) == ["one", "two"]
     forward = set(zip(out["one"], out["two"]))
-    assert forward == set(zip(out["two"], out["one"]))  # reciprocal, as cliques() requires
+    assert forward == set(
+        zip(out["two"], out["one"])
+    )  # reciprocal, as cliques() requires
     assert (0, len(dup) - 1) in forward
 
 

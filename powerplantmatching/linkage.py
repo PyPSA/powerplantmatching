@@ -68,7 +68,10 @@ class FieldSpec:
             "label_for_charts": "null",
             "is_null_level": True,
         }
-        return {"output_column_name": self.output, "comparison_levels": [null_level, *graded]}
+        return {
+            "output_column_name": self.output,
+            "comparison_levels": [null_level, *graded],
+        }
 
 
 def _name(low: float, high: float) -> FieldSpec:
@@ -77,8 +80,14 @@ def _name(low: float, high: float) -> FieldSpec:
         '"Name_l" IS NULL OR "Name_r" IS NULL',
         [
             ('jaro_winkler_similarity("Name_l","Name_r") >= 0.95', high),
-            ('jaro_winkler_similarity("Name_l","Name_r") >= 0.85', low + 0.7 * (high - low)),
-            ('jaro_winkler_similarity("Name_l","Name_r") >= 0.7', low + 0.35 * (high - low)),
+            (
+                'jaro_winkler_similarity("Name_l","Name_r") >= 0.85',
+                low + 0.7 * (high - low),
+            ),
+            (
+                'jaro_winkler_similarity("Name_l","Name_r") >= 0.7',
+                low + 0.35 * (high - low),
+            ),
             ("ELSE", low),
         ],
     )
@@ -93,7 +102,9 @@ def _exact(col: str, low: float, high: float) -> FieldSpec:
 
 
 def _capacity(low: float, high: float) -> FieldSpec:
-    ratio = 'least("Capacity_l","Capacity_r")/nullif(greatest("Capacity_l","Capacity_r"),0)'
+    ratio = (
+        'least("Capacity_l","Capacity_r")/nullif(greatest("Capacity_l","Capacity_r"),0)'
+    )
     return FieldSpec(
         "Capacity",
         '"Capacity_l" IS NULL OR "Capacity_r" IS NULL',
@@ -151,8 +162,12 @@ def _settings(link_type: str, fields) -> dict:
 
 def _predict(tables, link_type, fields, threshold) -> pd.DataFrame:
     aliases = ["df_left", "df_right"] if isinstance(tables, list) else None
-    linker = Linker(tables, _settings(link_type, fields), DuckDBAPI(), input_table_aliases=aliases)
-    return linker.inference.predict(threshold_match_probability=threshold).as_pandas_dataframe()
+    linker = Linker(
+        tables, _settings(link_type, fields), DuckDBAPI(), input_table_aliases=aliases
+    )
+    return linker.inference.predict(
+        threshold_match_probability=threshold
+    ).as_pandas_dataframe()
 
 
 def _deduplicate(df: pd.DataFrame, labels, threshold: float) -> pd.DataFrame:

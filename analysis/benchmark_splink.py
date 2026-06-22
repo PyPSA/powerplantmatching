@@ -76,7 +76,10 @@ def link_pairs(matcher, geo, gpd, countries, **kw):
 
 def _haversine_km(a, b):
     la1, lo1, la2, lo2 = map(np.radians, [a.lat, a.lon, b.lat, b.lon])
-    h = np.sin((la2 - la1) / 2) ** 2 + np.cos(la1) * np.cos(la2) * np.sin((lo2 - lo1) / 2) ** 2
+    h = (
+        np.sin((la2 - la1) / 2) ** 2
+        + np.cos(la1) * np.cos(la2) * np.sin((lo2 - lo1) / 2) ** 2
+    )
     return 2 * 6371 * np.arcsin(np.sqrt(h))
 
 
@@ -113,7 +116,9 @@ def main():
     geo_c = geo.set_index("projectID").Country.to_dict()
     gpd_c = gpd.set_index("projectID").Country.to_dict()
     link_countries = top_countries(gt_link, geo_c, shared, N_LINK_COUNTRIES)
-    dedup_countries = top_countries(gt_dedup, gpd_c, set(gpd.Country), N_DEDUP_COUNTRIES)
+    dedup_countries = top_countries(
+        gt_dedup, gpd_c, set(gpd.Country), N_DEDUP_COUNTRIES
+    )
 
     print(f"== record linkage (GEO x GPD, {len(link_countries)} countries) ==")
     print(f"ground-truth pairs: {len(gt_link)}")
