@@ -20,86 +20,122 @@ from .utils import get_name, parmap, read_csv_if_string
 logger = logging.getLogger(__name__)
 
 
-def _match_by_eic(df0, df1, labels):
+def _match_by_eic(df0, df1, label0, label1):
     """
     Deterministic matching of two datasets by EIC (Energy Identification Code).
 
-    Performs an exact join on EIC codes before Duke fuzzy matching, so that
-    plants with known unique identifiers are matched with certainty. This
-    prevents co-located plants with similar names but different fuels from
-    being incorrectly merged by the fuzzy matcher (e.g. Eemshavencentrale
-    coal vs Eemscentrale gas in the Netherlands).
+    Matches plants that share EIC codes before Duke fuzzy matching, so plants
+    with known unique identifiers are paired with certainty. This prevents
+    co-located plants with similar names but different fuels from being merged
+    by the fuzzy matcher (e.g. Eemshavencentrale coal vs Eemscentrale gas in the
+    Netherlands).
+
+    Only *unambiguous* 1-to-1 links are accepted: two rows are matched only when
+    their shared EIC codes link them to no other row on either side. Ambiguous
+    links are deliberately left to Duke. They arise when one source reports an
+    aggregated scheme under a single scheme-level EIC while the other splits it
+    into stations that all carry that same code (common for Alpine hydro: e.g.
+    ENTSOE "Oberhasli Ag Kwo" 1307 MW vs eight OPSD stations all tagged
+    ``12W-0000000031-O``). A single shared code cannot deterministically pick the
+    right pair there, so such clusters fall through to fuzzy matching.
 
     Parameters
     ----------
     df0, df1 : pd.DataFrame
-        Source dataframes with an 'EIC' column containing sets of EIC codes
+        Source dataframes with an 'EIC' column holding sets/lists of EIC codes
         (as produced by ``aggregate_units``).
-    labels : list of str
-        Two-element list of dataset names for the output columns.
+    label0, label1 : str
+        Dataset names, used as the output column names.
 
     Returns
     -------
-    matches : pd.DataFrame
-        DataFrame with columns ``labels``, containing matched index pairs.
-    matched_idx0 : set
-        Indices from df0 that were matched.
-    matched_idx1 : set
-        Indices from df1 that were matched.
+    pd.DataFrame
+        Columns ``[label0, label1]`` with the matched index pairs (empty when no
+        EIC column is present or no unambiguous match exists).
     """
-    empty = pd.DataFrame(columns=labels), set(), set()
-
+    cols = [label0, label1]
     if "EIC" not in df0.columns or "EIC" not in df1.columns:
-        return empty
+        return pd.DataFrame(columns=cols)
 
-    def _build_eic_index(df):
-        """Map each valid EIC code to its row index."""
-        code_to_idx = {}
-        for row_idx, eic_set in df["EIC"].items():
-            if not isinstance(eic_set, set):
-                continue
-            for code in eic_set:
-                if isinstance(code, str) and code:
-                    code_to_idx[code] = row_idx
-        return code_to_idx
+    def codes(df, label):
+        # explode the per-row EIC collections into one (row index, code) per row
+        s = df["EIC"].explode()
+        s = s[s.map(lambda x: isinstance(x, str) and x != "")]
+        return s.rename_axis(label).reset_index(name="EIC")
 
-    eic_to_idx0 = _build_eic_index(df0)
-    eic_to_idx1 = _build_eic_index(df1)
+    # rows that share at least one EIC code (deduplicated to one row per pair)
+    links = pd.merge(codes(df0, label0), codes(df1, label1), on="EIC")[cols]
+    links = links.drop_duplicates()
+    if links.empty:
+        return pd.DataFrame(columns=cols)
 
-    shared_codes = eic_to_idx0.keys() & eic_to_idx1.keys()
-    if not shared_codes:
-        return empty
-
-    # Greedy 1-to-1: first shared code claims the pair, skip already-matched
-    matched_0_to_1 = {}
-    claimed_idx1 = set()
-    for code in shared_codes:
-        i0 = eic_to_idx0[code]
-        i1 = eic_to_idx1[code]
-        if i0 not in matched_0_to_1 and i1 not in claimed_idx1:
-            matched_0_to_1[i0] = i1
-            claimed_idx1.add(i1)
-
-    if not matched_0_to_1:
-        return empty
-
-    matches = pd.DataFrame(
-        {
-            labels[0]: list(matched_0_to_1.keys()),
-            labels[1]: list(matched_0_to_1.values()),
-        }
-    )
-    matched_idx0 = set(matched_0_to_1)
-    matched_idx1 = claimed_idx1
+    # keep only unambiguous 1-to-1 links: an isolated pair in the shared-code
+    # bipartite graph has degree 1 on both ends (equivalent to a size-2
+    # connected component, verified against scipy on the OPSD/ENTSOE slice).
+    one_to_one = links.groupby(label0)[label1].transform("size").eq(1) & links.groupby(
+        label1
+    )[label0].transform("size").eq(1)
+    matches = links[one_to_one].reset_index(drop=True)
 
     logger.info(
-        "EIC matching: %d deterministic matches between `%s` and `%s`",
+        "EIC matching: %d deterministic 1-to-1 matches between `%s` and `%s` "
+        "(%d ambiguous link(s) left to fuzzy matching)",
         len(matches),
-        labels[0],
-        labels[1],
+        label0,
+        label1,
+        int((~one_to_one).sum()),
     )
+    return matches
 
-    return matches, matched_idx0, matched_idx1
+
+class DirectMatcher:
+    """
+    Deterministic (non-fuzzy) matching step, run before Duke.
+
+    Holds a sequence of exact-identifier matchers, each a callable
+    ``matcher(df0, df1, label0, label1) -> pd.DataFrame`` that returns matched
+    index pairs in columns ``[label0, label1]``. :meth:`run` applies them in
+    order, removing matched rows from the residual between matchers, and returns
+    the combined matches together with the residual dataframes, so the fuzzy
+    matcher only ever sees the unmatched remainder. This keeps the workflow
+    steps cleanly separated and makes the deterministic phase extensible (a
+    name+country or project-id matcher can join the list without touching Duke).
+
+    Parameters
+    ----------
+    matchers : list of callable, optional
+        Direct matchers to apply. Defaults to ``[_match_by_eic]``.
+    """
+
+    def __init__(self, matchers=None):
+        self.matchers = list(matchers) if matchers is not None else [_match_by_eic]
+
+    def run(self, df0, df1, label0, label1):
+        """
+        Apply the direct matchers to a pair of datasets.
+
+        Returns
+        -------
+        matches : pd.DataFrame
+            Combined matched index pairs, columns ``[label0, label1]``.
+        remaining : list of pd.DataFrame
+            ``[df0, df1]`` with matched rows removed.
+        """
+        cols = [label0, label1]
+        collected = []
+        rem0, rem1 = df0, df1
+        for matcher in self.matchers:
+            m = matcher(rem0, rem1, label0, label1)
+            if m.empty:
+                continue
+            collected.append(m)
+            rem0 = rem0.drop(index=m[label0], errors="ignore")
+            rem1 = rem1.drop(index=m[label1], errors="ignore")
+        if collected:
+            matches = pd.concat(collected, ignore_index=True)
+        else:
+            matches = pd.DataFrame(columns=cols)
+        return matches, [rem0, rem1]
 
 
 def best_matches(links):
@@ -159,14 +195,10 @@ def compare_two_datasets(dfs, labels, country_wise=True, config=None, **dukeargs
     if "singlematch" not in dukeargs:
         dukeargs["singlematch"] = True
 
-    # ── Deterministic EIC matching (before fuzzy) ────────────────────
-    eic_matches, matched_idx0, matched_idx1 = _match_by_eic(dfs[0], dfs[1], labels)
-
-    # Remove EIC-matched rows from the Duke input
-    remaining = [
-        dfs[0].drop(index=matched_idx0, errors="ignore"),
-        dfs[1].drop(index=matched_idx1, errors="ignore"),
-    ]
+    # ── Deterministic matching (before fuzzy) ────────────────────────
+    # Pair plants sharing exact identifiers (EIC) and drop them from the Duke
+    # input, so the fuzzy matcher only handles the unmatched remainder.
+    direct_matches, remaining = DirectMatcher().run(dfs[0], dfs[1], labels[0], labels[1])
 
     # ── Duke fuzzy matching on residual ──────────────────────────────
     def country_link(dfs, country):
@@ -196,8 +228,8 @@ def compare_two_datasets(dfs, labels, country_wise=True, config=None, **dukeargs
     else:
         duke_matches = best_matches(links)
 
-    # ── Combine EIC + Duke matches ───────────────────────────────────
-    matches = pd.concat([eic_matches, duke_matches], ignore_index=True)
+    # ── Combine direct + Duke matches ────────────────────────────────
+    matches = pd.concat([direct_matches, duke_matches], ignore_index=True)
     return matches
 
 
