@@ -89,7 +89,10 @@ def _geo_matrix(left: pd.DataFrame, right: pd.DataFrame):
     lo1 = np.radians(left["lon"].to_numpy(dtype=float))[:, None]
     la2 = np.radians(right["lat"].to_numpy(dtype=float))[None, :]
     lo2 = np.radians(right["lon"].to_numpy(dtype=float))[None, :]
-    h = np.sin((la2 - la1) / 2) ** 2 + np.cos(la1) * np.cos(la2) * np.sin((lo2 - lo1) / 2) ** 2
+    h = (
+        np.sin((la2 - la1) / 2) ** 2
+        + np.cos(la1) * np.cos(la2) * np.sin((lo2 - lo1) / 2) ** 2
+    )
     dist = 2 * r * np.arcsin(np.sqrt(np.clip(h, 0, 1)))
     sim = np.clip(1 - dist / GEO_MAX_DISTANCE_M, 0.0, None)
     return sim, ~np.isnan(dist)
@@ -101,11 +104,17 @@ def _present(a: pd.Series, b: pd.Series) -> np.ndarray:
 
 def _field_contribution(spec: FieldSpec, left: pd.DataFrame, right: pd.DataFrame):
     if spec.kind == "name":
-        return _name_matrix(left[spec.column], right[spec.column]), _present(left[spec.column], right[spec.column])
+        return _name_matrix(left[spec.column], right[spec.column]), _present(
+            left[spec.column], right[spec.column]
+        )
     if spec.kind == "qgram":
-        return _qgram_matrix(left[spec.column], right[spec.column]), _present(left[spec.column], right[spec.column])
+        return _qgram_matrix(left[spec.column], right[spec.column]), _present(
+            left[spec.column], right[spec.column]
+        )
     if spec.kind == "numeric":
-        return _numeric_matrix(left[spec.column], right[spec.column]), _present(left[spec.column], right[spec.column])
+        return _numeric_matrix(left[spec.column], right[spec.column]), _present(
+            left[spec.column], right[spec.column]
+        )
     if spec.kind == "geo":
         return _geo_matrix(left, right)
     raise ValueError(f"Unknown field kind {spec.kind}")
@@ -129,7 +138,9 @@ def _deduplicate(df: pd.DataFrame, labels, threshold: float) -> pd.DataFrame:
     keep = scores[iu, ju] >= threshold
     idx = df.index.to_numpy()
     a, b = idx[iu[keep]], idx[ju[keep]]
-    return pd.DataFrame({labels[0]: np.concatenate([a, b]), labels[1]: np.concatenate([b, a])})
+    return pd.DataFrame(
+        {labels[0]: np.concatenate([a, b]), labels[1]: np.concatenate([b, a])}
+    )
 
 
 def match(datasets, labels=["one", "two"], singlematch=False, threshold=None, **_):
@@ -141,7 +152,9 @@ def match(datasets, labels=["one", "two"], singlematch=False, threshold=None, **
     pass ``singlematch=True`` and reduce with ``best_matches()`` afterwards.
     """
     if isinstance(datasets, pd.DataFrame):
-        return _deduplicate(datasets, labels, DEDUP_THRESHOLD if threshold is None else threshold)
+        return _deduplicate(
+            datasets, labels, DEDUP_THRESHOLD if threshold is None else threshold
+        )
 
     left, right = datasets
     if left.empty or right.empty:
