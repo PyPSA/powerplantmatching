@@ -15,7 +15,7 @@ import unidecode
 from deprecation import deprecated
 
 from .core import get_config, get_obj_if_Acc
-from .duke import duke
+from .duke import get_matcher
 from .utils import get_name, set_column_name
 
 logger = logging.getLogger(__name__)
@@ -499,16 +499,17 @@ def aggregate_units(
     if with_blocks := config["clean_name"].get("fuel_type_with_blocks", []):  # noqa
         block_query = "Fueltype in @with_blocks"
 
+    matcher = get_matcher(config)
     if country_wise:
         countries = df.Country.unique()
         country_query = "Country == @c"
         query = " and ".join(filter(None, [agg_query, block_query, country_query]))
         duplicates = pd.concat(
-            [duke(df.query(query), threads=threads) for c in countries]
+            [matcher(df.query(query), threads=threads) for c in countries]
         )
     else:
         query = " and ".join(filter(None, [agg_query, block_query]))
-        duplicates = duke(df.query(query) if query else df, threads=threads)
+        duplicates = matcher(df.query(query) if query else df, threads=threads)
 
     df = cliques(df, duplicates)
     df = df.groupby("grouped").agg(props_for_groups)

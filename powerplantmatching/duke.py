@@ -16,6 +16,18 @@ from .core import _package_data
 logger = logging.getLogger(__name__)
 
 
+def get_matcher(config=None):
+    """Return the matching backend selected by ``config['matching_backend']``."""
+    from .core import get_config
+
+    cfg = get_config() if config is None else config
+    if cfg.get("matching_backend", "duke") == "recordlinkage":
+        from .duke_recordlinkage import duke as rl_duke
+
+        return rl_duke
+    return duke
+
+
 def add_geoposition_for_duke(df):
     """
     Returns the same pandas.Dataframe with an additional column "Geoposition"

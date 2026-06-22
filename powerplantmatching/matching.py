@@ -14,7 +14,7 @@ import pandas as pd
 
 from .cleaning import clean_technology
 from .core import get_config, get_obj_if_Acc
-from .duke import duke
+from .duke import get_matcher
 from .utils import get_name, parmap, read_csv_if_string
 
 logger = logging.getLogger(__name__)
@@ -74,6 +74,7 @@ def compare_two_datasets(dfs, labels, country_wise=True, config=None, **dukeargs
         logger.warning(msg + f"{used_deprecated_args}")
 
     dfs = list(map(read_csv_if_string, dfs))
+    matcher = get_matcher(config)
     if "singlematch" not in dukeargs:
         dukeargs["singlematch"] = True
 
@@ -82,7 +83,7 @@ def compare_two_datasets(dfs, labels, country_wise=True, config=None, **dukeargs
         sel_country_b = [df["Country"] == country for df in dfs]
         # only append if country appears in both dataframse
         if all(sel.any() for sel in sel_country_b):
-            return duke(
+            return matcher(
                 [df[sel] for df, sel in zip(dfs, sel_country_b)], labels, **dukeargs
             )
         else:
@@ -97,7 +98,7 @@ def compare_two_datasets(dfs, labels, country_wise=True, config=None, **dukeargs
         else:
             links = pd.DataFrame(columns=[*labels, "scores"])
     else:
-        links = duke(dfs, labels=labels, **dukeargs)
+        links = matcher(dfs, labels=labels, **dukeargs)
 
     if links.empty:
         matches = pd.DataFrame(columns=labels)

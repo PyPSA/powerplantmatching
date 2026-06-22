@@ -49,6 +49,7 @@ dependencies = [
     "deprecation",
     "tqdm",
     "openpyxl",
+    "rapidfuzz",
 ]
 
 [project.urls]

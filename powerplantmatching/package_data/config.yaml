@@ -12,6 +12,9 @@ google_api_key:
 # Note: querying "key == key" filters out nan values
 main_query: "Name != '' and (lat >= 30 or lat != lat)"
 
+# Matching backend: "duke" (Java, default) or "recordlinkage" (pure-Python, no JVM)
+matching_backend: duke
+
 # matching_sources, only the matched powerplants are added to the final dataset
 matching_sources:
   # Make individual queries for the datasets as done in `fully_included_sources`
