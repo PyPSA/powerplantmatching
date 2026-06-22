@@ -2,12 +2,10 @@
 #
 # SPDX-License-Identifier: MIT
 
-import numpy as np
 import pandas as pd
 import pytest
 
-from powerplantmatching import duke_recordlinkage as rl
-from powerplantmatching.duke import get_matcher
+from powerplantmatching import linkage as lk
 
 TEST_DATA = {
     "Name": ["Powerplant", "Hydro Station", "Gas Turbine A", "Coal Block 1"],
@@ -34,26 +32,26 @@ def right(left):
 
 
 def test_record_linkage_format(left, right):
-    out = rl.duke([left, right], labels=["one", "two"], singlematch=True)
+    out = lk.match([left, right], labels=["one", "two"], singlematch=True)
     assert list(out.columns) == ["one", "two", "scores"]
     assert out["scores"].between(0, 1).all()
-    assert (out["scores"] >= rl.LINKAGE_THRESHOLD).all()
+    assert (out["scores"] >= lk.LINKAGE_THRESHOLD).all()
 
 
 def test_record_linkage_matches_identical_rows(left, right):
-    out = rl.duke([left, right], labels=["one", "two"], singlematch=True)
+    out = lk.match([left, right], labels=["one", "two"], singlematch=True)
     pairs = set(zip(out["one"], out["two"]))
     assert {(i, i) for i in left.index}.issubset(pairs)
 
 
 def test_singlematch_is_unique_per_left(left, right):
-    out = rl.duke([left, right], labels=["one", "two"], singlematch=True)
+    out = lk.match([left, right], labels=["one", "two"], singlematch=True)
     assert out["one"].is_unique
 
 
 def test_empty_input_returns_empty_links(left):
     empty = left.iloc[0:0]
-    out = rl.duke([left, empty], labels=["one", "two"])
+    out = lk.match([left, empty], labels=["one", "two"])
     assert out.empty
     assert list(out.columns) == ["one", "two", "scores"]
 
@@ -61,7 +59,7 @@ def test_empty_input_returns_empty_links(left):
 def test_dedup_returns_symmetric_pairs(left):
     dup = left.copy()
     dup.loc[len(dup)] = dup.loc[0]  # exact duplicate of row 0
-    out = rl.duke(dup, labels=["one", "two"])
+    out = lk.match(dup, labels=["one", "two"])
     assert list(out.columns) == ["one", "two"]
     forward = set(zip(out["one"], out["two"]))
     backward = set(zip(out["two"], out["one"]))
@@ -69,14 +67,9 @@ def test_dedup_returns_symmetric_pairs(left):
     assert (0, len(dup) - 1) in forward
 
 
-def test_get_matcher_selects_backend():
-    assert get_matcher({"matching_backend": "recordlinkage"}) is rl.duke
-    assert get_matcher({}).__module__.endswith("duke")
-
-
 def test_geo_falloff_zero_beyond_cutoff():
     a = pd.DataFrame({"lat": [0.0], "lon": [0.0]})
     b = pd.DataFrame({"lat": [1.0], "lon": [1.0]})  # ~157 km apart
-    sim, present = rl._geo_matrix(a, b)
+    sim, present = lk._geo_matrix(a, b)
     assert present.all()
     assert sim[0, 0] == 0.0

@@ -3,19 +3,14 @@
 # SPDX-License-Identifier: MIT
 
 """
-Pure-Python record-linkage backend mirroring the DUKE configs without a JVM.
+Vectorised record-linkage and deduplication engine.
 
-Drop-in compatible with ``duke.duke``: same signature and return shapes, so it
-feeds ``matching.compare_two_datasets`` and ``cleaning.aggregate_units``
-unchanged. Pass a list of two frames for record linkage (Comparison.xml) or a
-single frame for deduplication (Deleteduplicates.xml).
-
-Scoring follows DUKE's Fellegi-Sunter belief update (0.5 prior, per-field
-low/high probability bounds taken verbatim from the XML configs). Comparators
-are vectorised: rapidfuzz token-set ratio for names (≈ JaroWinklerTokenized), a
-factorised q-gram Dice for categorical fields, a min/max ratio for capacity
-(NumericComparator) and a haversine linear falloff for position
-(GeopositionComparator, 5 km cutoff).
+``match`` takes a list of two frames for record linkage or a single frame for
+deduplication and returns the matched index pairs. Scoring follows a
+Fellegi-Sunter belief update (0.5 prior, per-field low/high probability bounds).
+Comparators are vectorised: rapidfuzz token-set ratio for names, a factorised
+q-gram Dice for categorical fields, a min/max ratio for capacity and a haversine
+linear falloff for position (5 km cutoff).
 """
 
 import logging
@@ -38,24 +33,22 @@ class FieldSpec:
     high: float
 
 
-# Verbatim from package_data/Comparison.xml
 LINKAGE_FIELDS = [
     FieldSpec("Name", "name", 0.09, 0.99),
     FieldSpec("Fueltype", "qgram", 0.09, 0.7),
     FieldSpec("Country", "qgram", 0.0, 0.53),
     FieldSpec("Capacity", "numeric", 0.3, 0.75),
-    FieldSpec("Geoposition", "geo", 0.1, 0.8),
+    FieldSpec("geo", "geo", 0.1, 0.8),
 ]
 LINKAGE_THRESHOLD = 0.965
 
-# Verbatim from package_data/Deleteduplicates.xml
 DEDUP_FIELDS = [
     FieldSpec("Name", "name", 0.09, 0.99),
     FieldSpec("Fueltype", "qgram", 0.05, 0.65),
     FieldSpec("Technology", "qgram", 0.25, 0.51),
     FieldSpec("Country", "qgram", 0.05, 0.51),
     FieldSpec("Capacity", "numeric", 0.49, 0.51),
-    FieldSpec("Geoposition", "geo", 0.05, 0.75),
+    FieldSpec("geo", "geo", 0.05, 0.75),
 ]
 DEDUP_THRESHOLD = 0.96
 
@@ -119,7 +112,7 @@ def _field_contribution(spec: FieldSpec, left: pd.DataFrame, right: pd.DataFrame
 
 
 def _score_matrix(left: pd.DataFrame, right: pd.DataFrame, fields) -> np.ndarray:
-    """DUKE-style Bayesian belief update over all candidate pairs, 0.5 prior."""
+    """Fellegi-Sunter Bayesian belief update over all candidate pairs, 0.5 prior."""
     prob = np.full((len(left), len(right)), 0.5)
     for spec in fields:
         sim, present = _field_contribution(spec, left, right)
@@ -139,8 +132,14 @@ def _deduplicate(df: pd.DataFrame, labels, threshold: float) -> pd.DataFrame:
     return pd.DataFrame({labels[0]: np.concatenate([a, b]), labels[1]: np.concatenate([b, a])})
 
 
-def duke(datasets, labels=["one", "two"], singlematch=False, threshold=None, **_):
-    """recordlinkage equivalent of ``duke.duke`` (record linkage and dedup)."""
+def match(datasets, labels=["one", "two"], singlematch=False, threshold=None, **_):
+    """
+    Link two datasets or deduplicate one.
+
+    A single frame is deduplicated (returns reciprocal index pairs as
+    ``cliques()`` requires); a list of two frames is linked. In record linkage
+    pass ``singlematch=True`` and reduce with ``best_matches()`` afterwards.
+    """
     if isinstance(datasets, pd.DataFrame):
         return _deduplicate(datasets, labels, DEDUP_THRESHOLD if threshold is None else threshold)
 

@@ -14,7 +14,7 @@ import pandas as pd
 
 from .cleaning import clean_technology
 from .core import get_config, get_obj_if_Acc
-from .duke import get_matcher
+from .linkage import match
 from .utils import get_name, parmap, read_csv_if_string
 
 logger = logging.getLogger(__name__)
@@ -22,13 +22,13 @@ logger = logging.getLogger(__name__)
 
 def best_matches(links):
     """
-    Subsequent to duke() with singlematch=True. Returns reduced list of
+    Subsequent to match() with singlematch=True. Returns reduced list of
     matches on the base of the highest score for each duplicated entry.
 
     Parameters
     ----------
     links : pd.DataFrame
-        Links as returned by duke
+        Links as returned by match
     """
     labels = links.columns.difference({"scores"})
     if links.empty:
@@ -39,9 +39,9 @@ def best_matches(links):
         )
 
 
-def compare_two_datasets(dfs, labels, country_wise=True, config=None, **dukeargs):
+def compare_two_datasets(dfs, labels, country_wise=True, config=None, **kwargs):
     """
-    Duke-based horizontal match of two databases. Returns the matched
+    Horizontal match of two databases. Returns the matched
     dataframe including only the matched entries in a multi-indexed
     pandas.Dataframe. Compares all properties of the given columns
     ['Name','Fueltype', 'Technology', 'Country',
@@ -49,9 +49,7 @@ def compare_two_datasets(dfs, labels, country_wise=True, config=None, **dukeargs
     powerplant in different two datasets. The match is in one-to-one
     mode, that is every entry of the initial databases has maximally
     one link in order to obtain unique entries in the resulting
-    dataframe.  Attention: When aborting this command, the duke
-    process will still continue in the background, wait until the
-    process is finished before restarting.
+    dataframe.
 
     Parameters
     ----------
@@ -66,25 +64,24 @@ def compare_two_datasets(dfs, labels, country_wise=True, config=None, **dukeargs
         config = get_config()
 
     deprecated_args = {"use_saved_matches", "use_saved_aggregation"}
-    used_deprecated_args = deprecated_args.intersection(dukeargs)
+    used_deprecated_args = deprecated_args.intersection(kwargs)
     if used_deprecated_args:
         for arg in used_deprecated_args:
-            dukeargs.pop(arg)
+            kwargs.pop(arg)
         msg = "The following arguments were deprecated and are being ignored: "
         logger.warning(msg + f"{used_deprecated_args}")
 
     dfs = list(map(read_csv_if_string, dfs))
-    matcher = get_matcher(config)
-    if "singlematch" not in dukeargs:
-        dukeargs["singlematch"] = True
+    if "singlematch" not in kwargs:
+        kwargs["singlematch"] = True
 
     def country_link(dfs, country):
         # country_selector for both dataframes
         sel_country_b = [df["Country"] == country for df in dfs]
         # only append if country appears in both dataframse
         if all(sel.any() for sel in sel_country_b):
-            return matcher(
-                [df[sel] for df, sel in zip(dfs, sel_country_b)], labels, **dukeargs
+            return match(
+                [df[sel] for df, sel in zip(dfs, sel_country_b)], labels, **kwargs
             )
         else:
             return pd.DataFrame(columns=[*labels, "scores"])
@@ -98,7 +95,7 @@ def compare_two_datasets(dfs, labels, country_wise=True, config=None, **dukeargs
         else:
             links = pd.DataFrame(columns=[*labels, "scores"])
     else:
-        links = matcher(dfs, labels=labels, **dukeargs)
+        links = match(dfs, labels=labels, **kwargs)
 
     if links.empty:
         matches = pd.DataFrame(columns=labels)
@@ -119,8 +116,7 @@ def cross_matches(sets_of_pairs, labels=None):
     ----------
     sets_of_pairs : list
         list of pd.Dataframe's containing only the matches (without
-        scores), obtained from the linkfile (duke() and
-        best_matches())
+        scores), obtained from match() and best_matches()
     labels : list of strings
         list of names of the databases, used for specifying the order
         of the output
@@ -168,10 +164,10 @@ def cross_matches(sets_of_pairs, labels=None):
 
 
 def link_multiple_datasets(
-    datasets, labels, use_saved_matches=False, config=None, **dukeargs
+    datasets, labels, use_saved_matches=False, config=None, **kwargs
 ):
     """
-    Duke-based horizontal match of multiple databases. Returns the
+    Horizontal match of multiple databases. Returns the
     matching indices of the datasets. Compares all properties of the
     given columns ['Name','Fueltype', 'Technology', 'Country',
     'Capacity','lat', 'lon'] in order to determine the same
@@ -198,7 +194,7 @@ def link_multiple_datasets(
 
     def comp_dfs(dfs_lbs):
         logger.info("Comparing data sources `{}` and `{}`".format(*dfs_lbs[2:]))
-        return compare_two_datasets(dfs_lbs[:2], dfs_lbs[2:], config=config, **dukeargs)
+        return compare_two_datasets(dfs_lbs[:2], dfs_lbs[2:], config=config, **kwargs)
 
     mapargs = [[dfs[c], dfs[d], labels[c], labels[d]] for c, d in combs]
     all_matches = parmap(comp_dfs, mapargs)
@@ -206,9 +202,9 @@ def link_multiple_datasets(
     return cross_matches(all_matches, labels=labels)
 
 
-def combine_multiple_datasets(datasets, labels=None, config=None, **dukeargs):
+def combine_multiple_datasets(datasets, labels=None, config=None, **kwargs):
     """
-    Duke-based horizontal match of multiple databases. Returns the
+    Horizontal match of multiple databases. Returns the
     matched dataframe including only the matched entries in a
     multi-indexed pandas.Dataframe. Compares all properties of the
     given columns ['Name','Fueltype', 'Technology', 'Country',
@@ -253,7 +249,7 @@ def combine_multiple_datasets(datasets, labels=None, config=None, **dukeargs):
             .reset_index(drop=True)
         )
 
-    crossmatches = link_multiple_datasets(datasets, labels, config=config, **dukeargs)
+    crossmatches = link_multiple_datasets(datasets, labels, config=config, **kwargs)
     return combined_dataframe(crossmatches, datasets, config).reindex(
         columns=config["target_columns"], level=0
     )
