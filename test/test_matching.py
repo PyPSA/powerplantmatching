@@ -134,7 +134,7 @@ def test_eic_matching_hydro_scheme_ambiguous():
     )
     opsd = pd.DataFrame(
         {
-            "Name": ["Gental", "Grimsel", "Handeck"],
+            "Name": ["Innertkirchen", "Grimsel", "Handeck"],
             "Capacity": [10.0, 389.0, 316.0],
             "EIC": [{"12W-0000000031-O"}] * 3,
         }
