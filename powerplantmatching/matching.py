@@ -198,7 +198,9 @@ def compare_two_datasets(dfs, labels, country_wise=True, config=None, **dukeargs
     # ── Deterministic matching (before fuzzy) ────────────────────────
     # Pair plants sharing exact identifiers (EIC) and drop them from the Duke
     # input, so the fuzzy matcher only handles the unmatched remainder.
-    direct_matches, remaining = DirectMatcher().run(dfs[0], dfs[1], labels[0], labels[1])
+    direct_matches, remaining = DirectMatcher().run(
+        dfs[0], dfs[1], labels[0], labels[1]
+    )
 
     # ── Duke fuzzy matching on residual ──────────────────────────────
     def country_link(dfs, country):
