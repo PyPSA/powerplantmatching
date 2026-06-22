@@ -341,7 +341,7 @@ def parmap(f, arg_list, config=None, threads=None):
     """
     Parallel mapping function. Use this function to parallelly map function
     f onto arguments in arg_list. The maximum number of parallel threads is
-    taken from config.yaml:parallel_duke_processes.
+    taken from config.yaml:parallel_processes.
 
     Parameters
     ---------
@@ -359,7 +359,7 @@ def parmap(f, arg_list, config=None, threads=None):
         config = get_config()
 
     if threads is None:
-        threads = config["parallel_duke_processes"]
+        threads = config["parallel_processes"]
     if isinstance(threads, bool):
         threads = config.get("process_limit", 1)
 

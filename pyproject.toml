@@ -49,6 +49,7 @@ dependencies = [
     "deprecation",
     "tqdm",
     "openpyxl",
+    "splink>=4",
 ]
 
 [project.urls]
