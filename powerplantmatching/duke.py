@@ -25,8 +25,7 @@ def add_geoposition_for_duke(df):
     if not df.loc[:, ["lat", "lon"]].isnull().all().all():
         return df.assign(
             Geoposition=df[["lat", "lon"]]
-            .astype(str)
-            .apply(lambda s: ",".join(s), axis=1)
+            .apply(lambda s: ",".join(map(str, s)), axis=1)
             .replace("nan,nan", np.nan)
         )
     else:

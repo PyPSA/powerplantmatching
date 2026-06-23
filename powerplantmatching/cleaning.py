@@ -6,6 +6,7 @@
 Functions for vertically cleaning a dataset.
 """
 
+import contextlib
 import logging
 
 import networkx as nx
@@ -14,7 +15,7 @@ import pandas as pd
 import unidecode
 from deprecation import deprecated
 
-from .core import get_config, get_obj_if_Acc
+from .core import PANDAS_V3, get_config, get_obj_if_Acc
 from .duke import duke
 from .utils import get_name, set_column_name
 
@@ -74,7 +75,7 @@ def clean_name(df, config=None):
     if config is None:
         config = get_config()
 
-    name = df.Name.astype(str).copy().apply(unidecode.unidecode)
+    name = df.Name.fillna("").astype(str).copy().apply(unidecode.unidecode)
 
     roman_to_arabic = {
         "I": "1",
@@ -513,9 +514,13 @@ def aggregate_units(
     df = cliques(df, duplicates)
     df = df.groupby("grouped").agg(props_for_groups)
 
-    # Downcasting in replace is deprecated
-    with pd.option_context("future.no_silent_downcasting", True):
-        df[str_cols] = df[str_cols].replace("", pd.NA).infer_objects(copy=False)
+    no_downcast_ctx = (
+        contextlib.nullcontext()
+        if PANDAS_V3
+        else pd.option_context("future.no_silent_downcasting", True)
+    )
+    with no_downcast_ctx:
+        df[str_cols] = df[str_cols].replace("", pd.NA).infer_objects()
 
     df = (
         df.assign(

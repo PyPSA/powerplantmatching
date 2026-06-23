@@ -6,6 +6,7 @@
 Collection of power plant data bases and statistical data
 """
 
+import contextlib
 import json
 import logging
 import os
@@ -24,7 +25,7 @@ from .cleaning import (
     gather_set_info,
     gather_specifications,
 )
-from .core import _package_data, get_config
+from .core import PANDAS_V3, _package_data, get_config
 from .heuristics import PLZ_to_LatLon_map, scale_to_net_capacities
 from .utils import (
     config_filter,
@@ -93,7 +94,12 @@ def BEYONDCOAL(raw=False, update=False, config=None):
         "heat": "CHP",
     }
 
-    with pd.option_context("future.no_silent_downcasting", True):
+    no_downcast_ctx = (
+        contextlib.nullcontext()
+        if PANDAS_V3
+        else pd.option_context("future.no_silent_downcasting", True)
+    )
+    with no_downcast_ctx:
         phaseout_col = "Covered by country phase-out? [if yes: country phase-out year]"
         date_out = (
             df["(Announced) Retirement year"]
@@ -2398,7 +2404,7 @@ def MASTR(
                     )
                     usecols = available_columns.intersection(target_columns)
                     df = (
-                        pd.read_csv(file.open(name), usecols=usecols)
+                        pd.read_csv(file.open(name), usecols=usecols, low_memory=False)
                         .assign(Filesuffix=fueltype)
                         .query("Nettonennleistung >= @THRESHOLD_KW")
                     )
@@ -2434,7 +2440,10 @@ def MASTR(
 
     PLZ_map = PLZ_to_LatLon_map()
     df.Postleitzahl = (
-        df.Postleitzahl.astype(str).str.replace(r"[^0-9]", "0", regex=True).astype(int)
+        df.Postleitzahl.astype(str)
+        .fillna("0")
+        .str.replace(r"[^0-9]", "0", regex=True)
+        .astype(int)
     )
     df["PLZ_lat"] = df.Postleitzahl.map(PLZ_map.lat)
     df["PLZ_lon"] = df.Postleitzahl.map(PLZ_map.lon)
