@@ -483,6 +483,80 @@ def JRC(raw=False, update=False, config=None):
     return df
 
 
+def JRC_PPDB_OPEN(raw=False, update=False, config=None):
+    """
+    Importer for the JRC Open Power Plants Database (JRC-PPDB-OPEN).
+
+    Published by the European Commission's Joint Research Centre
+    (DOI: 10.5281/zenodo.3574566), this database was created
+    specifically to link ENTSO-E EIC codes with geographic
+    coordinates.  It covers ~70% of large European power plants
+    and provides a deterministic bridge between EIC-based
+    operational data (ENTSO-E) and spatial data (OSM/GEM/GEO).
+
+    Parameters
+    ----------
+    raw : bool, default False
+        Whether to return the original dataset
+    update : bool, default False
+        Whether to update the data from the URL
+    config : dict, default None
+        Custom configuration
+    """
+    config = get_config() if config is None else config
+
+    fn = get_raw_file("JRC-PPDB-OPEN", update, config)
+
+    from zipfile import ZipFile
+    with ZipFile(fn, "r") as zf:
+        with zf.open("JRC_OPEN_UNITS.csv") as f:
+            jrc = pd.read_csv(f)
+
+    if raw:
+        return jrc
+
+    jrc = jrc[jrc["eic_p"].notna() & jrc["lat"].notna() & jrc["lon"].notna()]
+
+    # Aggregate generation units to production units
+    jrc_map = (
+        jrc.groupby("eic_p")
+        .agg({
+            "lat": "mean",
+            "lon": "mean",
+            "name_p": "first",
+            "capacity_p": "sum",
+            "type_g": "first",
+            "country": "first",
+        })
+        .reset_index()
+    )
+
+    df = pd.DataFrame()
+    df["Name"] = jrc_map["name_p"]
+    df["Fueltype"] = jrc_map["type_g"]
+    df["Country"] = jrc_map["country"]
+    df["Capacity"] = jrc_map["capacity_p"]
+    df["lat"] = jrc_map["lat"]
+    df["lon"] = jrc_map["lon"]
+    df["EIC"] = jrc_map["eic_p"]
+    df["projectID"] = jrc_map["eic_p"]
+
+    for col in [
+        "Technology", "Set", "Efficiency", "DateIn", "DateRetrofit",
+        "DateOut", "Duration", "Volume_Mm3", "DamHeight_m",
+        "StorageCapacity_MWh",
+    ]:
+        df[col] = None
+
+    df = df[df["Capacity"].notna() & (df["Capacity"] > 0)]
+
+    return (
+        df.pipe(clean_name)
+        .pipe(set_column_name, "JRC-PPDB-OPEN")
+        .pipe(config_filter, config)
+    )
+
+
 @deprecated(
     deprecated_in="0.5.0",
     details="Use the JRC data instead",
