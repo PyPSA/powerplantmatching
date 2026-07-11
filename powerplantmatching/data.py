@@ -508,6 +508,7 @@ def JRC_PPDB_OPEN(raw=False, update=False, config=None):
     fn = get_raw_file("JRC-PPDB-OPEN", update, config)
 
     from zipfile import ZipFile
+
     with ZipFile(fn, "r") as zf:
         with zf.open("JRC_OPEN_UNITS.csv") as f:
             jrc = pd.read_csv(f)
@@ -520,14 +521,16 @@ def JRC_PPDB_OPEN(raw=False, update=False, config=None):
     # Aggregate generation units to production units
     jrc_map = (
         jrc.groupby("eic_p")
-        .agg({
-            "lat": "mean",
-            "lon": "mean",
-            "name_p": "first",
-            "capacity_p": "sum",
-            "type_g": "first",
-            "country": "first",
-        })
+        .agg(
+            {
+                "lat": "mean",
+                "lon": "mean",
+                "name_p": "first",
+                "capacity_p": "sum",
+                "type_g": "first",
+                "country": "first",
+            }
+        )
         .reset_index()
     )
 
@@ -542,8 +545,15 @@ def JRC_PPDB_OPEN(raw=False, update=False, config=None):
     df["projectID"] = jrc_map["eic_p"]
 
     for col in [
-        "Technology", "Set", "Efficiency", "DateIn", "DateRetrofit",
-        "DateOut", "Duration", "Volume_Mm3", "DamHeight_m",
+        "Technology",
+        "Set",
+        "Efficiency",
+        "DateIn",
+        "DateRetrofit",
+        "DateOut",
+        "Duration",
+        "Volume_Mm3",
+        "DamHeight_m",
         "StorageCapacity_MWh",
     ]:
         df[col] = None

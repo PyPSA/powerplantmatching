@@ -288,7 +288,8 @@ def reduce_matched_dataframe(df, show_orig_names=False, config=None):
             "DateOut": "max",
             "projectID": lambda x: dict(x.droplevel(0).dropna()),
             "EIC": lambda x: set(
-                v for val in x.dropna()
+                v
+                for val in x.dropna()
                 for v in (val if isinstance(val, set) else [val])
                 if isinstance(v, str)
             ),

@@ -524,7 +524,9 @@ def aggregate_units(
 
     df = (
         df.assign(
-            **df[weighted_cols].div(df["Capacity"].replace(0, pd.NA), axis=0).where(lambda df: df != 0)
+            **df[weighted_cols]
+            .div(df["Capacity"].replace(0, pd.NA), axis=0)
+            .where(lambda df: df != 0)
         )
         .reset_index(drop=True)
         .pipe(clean_name)
