@@ -81,28 +81,10 @@ def compare_two_datasets(dfs, labels, country_wise=True, config=None, **dukeargs
         # country_selector for both dataframes
         sel_country_b = [df["Country"] == country for df in dfs]
         # only append if country appears in both dataframes
-        if not all(sel.any() for sel in sel_country_b):
-            return pd.DataFrame(columns=[*labels, "scores"])
-
-        df_a = dfs[0][sel_country_b[0]]
-        df_b = dfs[1][sel_country_b[1]]
-
-        # EIC pre-join: deterministic matches via shared EIC codes
-        from powerplantmatching.eic_codes import eic_pre_join
-        eic_matches, df_a, df_b = eic_pre_join(df_a, df_b, labels[0], labels[1])
-
-        # Duke on remaining unmatched records
-        if len(df_a) > 0 and len(df_b) > 0:
-            duke_links = duke([df_a, df_b], labels, **dukeargs)
-            if eic_matches is not None and not eic_matches.empty:
-                eic_matches["scores"] = 1.0
-                if not duke_links.empty:
-                    return pd.concat([eic_matches, duke_links], ignore_index=True)
-                return eic_matches
-            return duke_links
-        elif eic_matches is not None and not eic_matches.empty:
-            eic_matches["scores"] = 1.0
-            return eic_matches
+        if all(sel.any() for sel in sel_country_b):
+            return duke(
+                [df[sel] for df, sel in zip(dfs, sel_country_b)], labels, **dukeargs
+            )
         else:
             return pd.DataFrame(columns=[*labels, "scores"])
 
