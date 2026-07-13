@@ -501,10 +501,10 @@ def aggregate_units(
 
     if country_wise:
         countries = df.Country.unique()
-        country_query = "Country == @c"
-        query = " and ".join(filter(None, [agg_query, block_query, country_query]))
+        query = " and ".join(filter(None, [agg_query, block_query]))
+        df_filtered = df.query(query) if query else df
         duplicates = pd.concat(
-            [match(df.query(query), threads=threads) for c in countries]
+            [match(df_filtered[df_filtered["Country"] == c], threads=threads) for c in countries]
         )
     else:
         query = " and ".join(filter(None, [agg_query, block_query]))
