@@ -430,7 +430,7 @@ def aggregate_units(
     pre_clean_name=False,
     country_wise=True,
     config=None,
-    threads=1,
+    threads=-1,
     **kwargs,
 ):
     """
@@ -449,8 +449,8 @@ def aggregate_units(
         Whether to clean the 'Name'-column before aggregating.
     country_wise : Boolean, default True
         Whether to aggregate only entries with a identical country.
-    threads : int, default 1
-        Number of threads to use
+    threads : int, default -1
+        Number of worker threads passed to the linkage engine, -1 uses all cores.
     """
     deprecated_args = {"use_saved_aggregation", "save_aggregation"}
     used_deprecated_args = deprecated_args.intersection(kwargs)
@@ -499,16 +499,14 @@ def aggregate_units(
     if with_blocks := config["clean_name"].get("fuel_type_with_blocks", []):  # noqa
         block_query = "Fueltype in @with_blocks"
 
+    query = " and ".join(filter(None, [agg_query, block_query]))
+    selection = df.query(query) if query else df
+
     if country_wise:
-        countries = df.Country.unique()
-        query = " and ".join(filter(None, [agg_query, block_query]))
-        df_filtered = df.query(query) if query else df
-        duplicates = pd.concat(
-            [match(df_filtered[df_filtered["Country"] == c], threads=threads) for c in countries]
-        )
+        per_country = [selection[selection.Country == c] for c in df.Country.unique()]
+        duplicates = pd.concat([match(sel, threads=threads) for sel in per_country])
     else:
-        query = " and ".join(filter(None, [agg_query, block_query]))
-        duplicates = match(df.query(query) if query else df, threads=threads)
+        duplicates = match(selection, threads=threads)
 
     df = cliques(df, duplicates)
     df = df.groupby("grouped").agg(props_for_groups)

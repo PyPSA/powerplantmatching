@@ -103,6 +103,17 @@ def get_config(filename=None, **overrides):
             config.update(yaml.load(f, Loader=yaml.FullLoader))
     config.update(overrides)
 
+    if "parallel_duke_processes" in config:
+        config["parallel_processes"] = config.pop("parallel_duke_processes")
+        logger.warning(
+            "The configuration key `parallel_duke_processes` was renamed to "
+            "`parallel_processes` when the Java-based DUKE matching engine was "
+            "replaced. Its value is used for `parallel_processes`, but please rename "
+            f"the key in your custom config file at `{custom_config}`. For more "
+            "information, see the release notes at "
+            "https://powerplantmatching.readthedocs.io/en/latest/release-notes.html."
+        )
+
     sha1digest = sha1(cPickle.dumps(overrides)).digest()
     if len(dict(**overrides)) == 0:
         config["hash"] = "default"

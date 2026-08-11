@@ -55,7 +55,7 @@ def extend_by_non_matched(
     if config is None:
         config = get_config()
 
-    threads = config.get("threads_extend_by_non_matched", 1)
+    threads = config.get("threads_extend_by_non_matched", -1)
 
     if isinstance(extend_by, str):
         label = extend_by
