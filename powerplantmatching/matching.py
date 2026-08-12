@@ -34,9 +34,9 @@ def best_matches(links):
     if links.empty:
         return pd.DataFrame(columns=labels)
     else:
-        return links.groupby(links.iloc[:, 1], as_index=False, sort=False).apply(
-            lambda x: x.loc[x.scores.astype(float).idxmax(), labels]
-        )
+        scores = links["scores"].astype(float)
+        best_idx = scores.groupby(links.iloc[:, 1], sort=False).idxmax()
+        return links.loc[best_idx, labels].reset_index(drop=True)
 
 
 def compare_two_datasets(dfs, labels, country_wise=True, config=None, **kwargs):

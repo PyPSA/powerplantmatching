@@ -6,6 +6,13 @@ import logging
 from os import environ, makedirs
 from os.path import abspath, dirname, exists, expanduser, isdir, join
 
+import pandas as pd
+from packaging.version import parse as parse_version
+
+# pandas >= 3.0 changed several defaults (NA-preserving string dtype,
+# no-silent-downcasting) and removed knobs the loaders previously gated on.
+PANDAS_V3 = parse_version(pd.__version__).major >= 3
+
 # for the writable data directory (i.e. the one where new data goes), follow
 # the XDG guidelines found at
 # https://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html
