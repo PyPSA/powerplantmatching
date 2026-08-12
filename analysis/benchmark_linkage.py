@@ -29,6 +29,7 @@ from powerplantmatching.linkage import (
     LINKAGE_FIELDS,
     LINKAGE_THRESHOLD,
 )
+from powerplantmatching.linkage import _name_matrix as engine_name_matrix
 
 REPO = Path(__file__).resolve().parent.parent
 POWERPLANTS_CSV = REPO / "powerplants.csv"
@@ -40,6 +41,7 @@ NAME_SCORERS = {
     "token_sort_ratio": fuzz.token_sort_ratio,
     "WRatio": fuzz.WRatio,
 }
+DEFAULT_NAME_MATRIX = "jw_tokenized"
 QGRAM_FIELDS = ["Fueltype", "Country"]
 STR_COLUMNS = ["Name", "Fueltype", "Technology", "Set", "Country"]
 
@@ -141,6 +143,12 @@ def _name_matrix(a: pd.Series, b: pd.Series, scorer) -> np.ndarray:
     return (process.cdist(av, bv, scorer=scorer, workers=-1) / 100.0).astype(np.float32)
 
 
+def _jw_tokenized_matrix(a: pd.Series, b: pd.Series) -> np.ndarray:
+    """The production comparator, so the harness tunes what the engine runs."""
+    sim, _ = engine_name_matrix(a.to_frame("Name"), b.to_frame("Name"), "Name", -1)
+    return sim.astype(np.float32)
+
+
 def _present(a: pd.Series, b: pd.Series) -> np.ndarray:
     return a.notna().to_numpy()[:, None] & b.notna().to_numpy()[None, :]
 
@@ -152,10 +160,11 @@ def _build_country_cache(
         key: _name_matrix(left.Name, right.Name, scorer)
         for key, scorer in NAME_SCORERS.items()
     }
+    names[DEFAULT_NAME_MATRIX] = _jw_tokenized_matrix(left.Name, right.Name)
     sims = {col: _qgram_matrix(left[col], right[col]) for col in QGRAM_FIELDS}
     present = {col: _present(left[col], right[col]) for col in QGRAM_FIELDS}
     sims["Name"], present["Name"] = (
-        names["token_set_ratio"],
+        names[DEFAULT_NAME_MATRIX],
         _present(left.Name, right.Name),
     )
     sims["Capacity"], present["Capacity"] = (
@@ -200,7 +209,7 @@ class Harness:
         self,
         fields: Fields = BASELINE_FIELDS,
         threshold: float = LINKAGE_THRESHOLD,
-        name_scorer: str = "token_set_ratio",
+        name_scorer: str = DEFAULT_NAME_MATRIX,
         geo_curve: tuple[float, float] = (1.0, 0.0),
     ) -> tuple[set[tuple[str, str]], set[tuple[str, str]]]:
         """Return the (raw, 1:1 reduced) predicted projectID pairs."""
@@ -287,7 +296,7 @@ def main() -> None:
     print(f"eval cost: {(time.perf_counter() - t0) / repeats * 1000:.0f} ms/config")
     print("baseline:", {k: round(v, 3) for k, v in result.items()})
 
-    for scorer in NAME_SCORERS:
+    for scorer in [DEFAULT_NAME_MATRIX, *NAME_SCORERS]:
         res = harness.evaluate(name_scorer=scorer)
         print(
             f"  name scorer {scorer:17s} F1 {res['f1']:.3f} (P {res['precision']:.3f} / R {res['recall']:.3f})"

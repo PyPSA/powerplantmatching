@@ -30,11 +30,26 @@ Measured on the GEO×GPD harness, ~10 % of accepted linkage pairs differ between
 DUKE's scoring and this one. Neither the field weights nor the thresholds
 therefore transfer, and none of them are inherited on faith: see below.
 
-Name comparison is `rapidfuzz.fuzz.token_set_ratio`, **not** an approximation of
-DUKE's `JaroWinklerTokenized` — a different algorithm family with a consequential
-property: it returns exactly 100 whenever one token set is a subset of the other,
-so *"revin pump 1"* vs *"revin"* scores a perfect match. That is the mechanism
-behind the aggressive unit collapsing described under deduplication.
+Name comparison went the other way: `rapidfuzz.fuzz.token_set_ratio` was tried
+first and had to be abandoned. No character-level ratio can resolve a unit
+designator — *"Doel 1"* vs *"Doel 4"* differs in one character out of six —
+and `token_set_ratio` additionally returns exactly 100 whenever one token set is a
+subset of the other, so *"Neurath"* vs *"Neurath F"* is a perfect match. Both
+failures merge the units of a station into a single record; see "Deduplication".
+The engine therefore aligns token by token like DUKE's `JaroWinklerTokenized`,
+scoring the mismatched designator at 0:
+
+| | `token_set_ratio` | mean best-token Jaro-Winkler |
+|---|---|---|
+| Kozloduy 1 / Kozloduy 5 | 0.90 | 0.50 |
+| Neurath / Neurath F | 1.00 | 0.50 |
+| Revin Pump 1 / Revin | 1.00 | 0.33 |
+| Gravelines 1 / Gravelins 1 (typo) | 0.96 | 0.99 |
+
+The similarity is the mean over one record's tokens of the best Jaro-Winkler
+match in the other, divided by the longer token count. Reducing over the shared
+token vocabulary rather than over record pairs keeps it as fast as the character
+kernel it replaces (6.5 s for a 6000-row dedup, unchanged).
 
 ## Ground truth
 
@@ -75,6 +90,20 @@ Full-harness confirmation at the shipped settings (all 567 pairs):
 | 0.965 (old) | 0.934 | 0.771 | 0.844 |
 | **0.85 (shipped)** | 0.920 | **0.847** | **0.882** |
 
+Swapping the name comparator moves this operating point (F1 0.856, P 0.948 /
+R 0.780 at the same 0.85) and the sweep was repeated: the pooled optimum shifts to
+0.675 for +0.008 F1, the two folds fit 0.675 and 0.605, and every held-out gain is
+under 0.01 — inside the noise of 567 pairs. **0.85 is kept**, at the
+higher-precision end of a flat region, because over-merging is the failure mode
+with real cost (below). Lowering the Capacity bound to make a size mismatch veto a
+merge was searched and rejected: F1 falls monotonically (0.856 at `low = 0.30`,
+0.832 at 0.15) on both folds. DUKE's quadratic curve was re-tested against the new
+comparator too, and remains worse than the linear ramp (F1 0.819 vs 0.864).
+
+Note the direction of the bias: this ground truth is DUKE-era output, and the new
+comparator is the DUKE-like one, so its scores here flatter it. The independent
+check is the statistics comparison below.
+
 ## Earlier DUKE-vs-`linkage` comparison — historical, unreproduced
 
 The original decision to drop DUKE was taken on an earlier evaluation setup that
@@ -94,36 +123,52 @@ rather than pair-level scoring) lands anywhere near 0.39. The "12 countries" the
 original run cites matches nothing here either: 24 countries have rows in both
 frames and 20 carry ground-truth pairs.
 
-The DUKE row cannot be re-measured at all now that the jar is deleted. Treat this
+The DUKE row was never re-measured on this harness. (DUKE itself is still
+runnable: `git worktree` at the merge-base restores the jars, which is how the
+baseline dataset under "Deduplication" was built.) Treat this
 table, and the derived claims that once accompanied it (~17× speedup, raw recall
 0.75, "98 % of true pairs lie within 5 km", capacity median ratio 0.44), as
 historical and unverified. The speed advantage is not in doubt; the quality
 comparison is.
 
-## Deduplication — not validated
+## Deduplication — validated against statistics, not against pairs
 
 A naive scoreboard against the intra-GPD clusters in `powerplants.csv` *looked*
 like a DUKE win (DUKE F1 0.79 at recall 1.00 vs new-engine F1 0.71), but that
 ground truth is **circular**: production used DUKE for dedup, so the clusters are
 DUKE's own output and its recall is 1.00 by construction. No non-circular dedup
 ground truth exists, so the dedup weights and threshold **could not be validated**
-and were deliberately left untouched at their inherited values — under a scoring
-curve they were not fitted for. This is a known, unresolved gap. The comparator
-fixes (missing values neutral, `0` vs `0` capacity identical) shift dedup outcomes
-slightly, and that shift is likewise unvalidated: GEO 1661 → 1655 and GPD
-6640 → 6627 aggregated rows.
+and were left at their inherited values. `DEDUP_FIELDS` and `DEDUP_THRESHOLD` are
+byte-identical to the deleted `Deleteduplicates.xml`, so with the comparator now
+matching DUKE's semantics they are back inside the design they were fitted for.
 
-What could be inspected directly is what each backend merges:
+The gap was closed from the other side instead: **ENTSO-E installed capacity**
+(`analysis/compare-with-entsoe-stats.py`) is an independent reference, and
+aggregating away a station's operating units is visible in it. Summed over the
+country × fueltype cells ENTSO-E reports, for 2025, excluding Wind/Solar (extended
+separately) and Other (incomparable residual):
 
-- On `GEO.head(200)` the new engine collapses 200 units → 73 plants, DUKE only
-  → 172. Many extra merges are genuine multi-unit plants DUKE leaves split (e.g.
-  *Aarberg 1/2*, *Abwinden Asten 1/2/3/4*) — exactly what `aggregate_units` is for.
-  But the collapsing is driven by `token_set_ratio`'s subset rule above, which
-  fires on any name that is a prefix-plus-unit-suffix, so it is aggressive by
-  construction rather than verified correct case by case.
-- Across all GPD countries, 95 % of the engine's 669 dedup merges have high name
-  similarity *and* lie within 5 km *and* share a fueltype. It ran in 2.1 s vs
-  DUKE's 20.9 s (~10×).
+| dedup name comparator | signed gap | Σ&#124;gap&#124; | RMSE |
+|---|---|---|---|
+| DUKE (rebuilt from the merge-base, same inputs) | −17.6 GW | 104.2 GW | 1.234 |
+| `token_set_ratio` | −53.2 GW | 123.2 GW | 1.511 |
+| **mean best-token Jaro-Winkler (shipped)** | **−5.5 GW** | **101.9 GW** | **1.227** |
+
+`token_set_ratio` collapsed each station's units into one record. Capacity was
+conserved, but `AGGREGATION_FUNCTIONS["DateOut"] = "max"` skips NaN, so the merged
+station inherited a retired unit's shutdown year and the whole site dropped out of
+the operating fleet: Kozloduy 1–6 became one 3840 MW record retired in 2006, and
+Belgium, Bulgaria and the Netherlands lost their entire operating nuclear
+capacity. Nuclear was 20.3 GW short of the statistics; it is now 2.9 GW over,
+against DUKE's 4.8 GW over.
+
+Making `DateOut` aggregate to NaN whenever a unit has no shutdown year was tried
+and **rejected**: sources omit `DateOut` for plants that are in fact closed, so it
+resurrects them (Σ|gap| 101.9 → 121.1 GW, Polish hard coal 18.6 → 26.6 GW against
+19.0 reported). `"max"` is the better estimator once units are no longer merged.
+
+- Across all GPD countries, 95 % of the engine's dedup merges have high name
+  similarity *and* lie within 5 km *and* share a fueltype.
 
 ## Outcome
 

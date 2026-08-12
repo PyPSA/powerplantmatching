@@ -83,8 +83,8 @@ def test_links_near_duplicates_and_reports_scores(left, right):
         ),
         pytest.param(
             {"Name": "Delta Works", "Capacity": 5000.0},
-            False,
-            id="capacity-differs-50x",
+            True,
+            id="capacity-differs-50x-at-identical-position",
         ),
         pytest.param(
             {"Name": "Alpha Works", "lat": 51.0 + 10 * KM_IN_DEGREES},
@@ -97,6 +97,33 @@ def test_dissimilar_records_are_rejected(overrides, linked):
     out = lk.match([frame([record()]), frame([record(**overrides)])])
 
     assert out.empty != linked
+
+
+@pytest.mark.parametrize(
+    "first, second",
+    [("Kozloduy 1", "Kozloduy 5"), ("Doel 1", "Doel 4"), ("Neurath", "Neurath F")],
+)
+def test_units_of_one_station_stay_separate(first, second):
+    """Units share site, fueltype and technology -- only the designator separates them."""
+    unit = record(Name=first, Capacity=440.0)
+    other = record(Name=second, Capacity=1040.0)
+
+    assert lk.match(frame([unit, other], index=[0, 1])).empty
+
+
+def test_linkage_prefers_the_matching_unit():
+    """Across sources the 1:1 reduction, not the threshold, resolves sibling units."""
+    left = frame([record(Name="Kozloduy 1", Capacity=440.0)])
+    right = frame(
+        [
+            record(Name="Kozloduy 5", Capacity=1040.0),
+            record(Name="Kozloduy 1", Capacity=440.0),
+        ]
+    )
+
+    out = lk.match([left, right], singlematch=True)
+
+    assert list(out["two"]) == [1]
 
 
 def test_name_matching_ignores_word_order():

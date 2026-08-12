@@ -67,7 +67,7 @@ def collect(
         if not conf.get("aggregated_units", False):
             return aggregate_units(df, dataset_name=name, config=config)
         else:
-            return df.assign(projectID=df.projectID.map(lambda x: {x}))
+            return df.assign(projectID=df.projectID.map(lambda x: [x]))
 
     # Deal with the case that only one dataset is requested
     if isinstance(datasets, str):

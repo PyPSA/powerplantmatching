@@ -28,6 +28,17 @@ def mode(x):
     return x.mode(dropna=False).at[0]
 
 
+def unique_sorted(x):
+    """
+    Get the unique values of a series in a reproducible order.
+
+    Sets iterate in an order that depends on the interpreter's hash seed, which
+    makes the serialised identifier columns differ between otherwise identical
+    runs.
+    """
+    return sorted(set(x.dropna()), key=str)
+
+
 AGGREGATION_FUNCTIONS = {
     "Name": mode,
     "Fueltype": mode,
@@ -42,8 +53,8 @@ AGGREGATION_FUNCTIONS = {
     "DateMothball": "min",
     "DateOut": "max",
     "File": mode,
-    "projectID": set,
-    "EIC": set,
+    "projectID": unique_sorted,
+    "EIC": unique_sorted,
     "Duration": "sum",  # note this is weighted sum
     "Volume_Mm3": "sum",
     "DamHeight_m": "sum",

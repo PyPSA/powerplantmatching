@@ -9,7 +9,7 @@ Vectorised record-linkage and deduplication engine.
 deduplication and returns the matched index pairs. Scoring is a Fellegi-Sunter
 belief update over a 0.5 prior: every field maps its similarity linearly onto
 its ``[low, high]`` probability bounds and updates the running belief. The
-comparators are vectorised: rapidfuzz token-set ratio for names, a factorised
+comparators are vectorised: mean best-token Jaro-Winkler for names, a factorised
 q-gram Dice for categorical fields, a min/max ratio for capacity and a haversine
 linear falloff for position (5 km cutoff).
 
@@ -23,7 +23,8 @@ from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
-from rapidfuzz import fuzz, process
+from rapidfuzz import process
+from rapidfuzz.distance import JaroWinkler
 
 GEO_MAX_DISTANCE_M = 5000.0
 BLOCK_CELLS = 2_000_000
@@ -59,12 +60,46 @@ def _qgram_matrix(
     ]
 
 
+def _token_codes(values: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Pad the per-record token lists into a (records, width) vocabulary index."""
+    tokens = [list(dict.fromkeys(v.split())) for v in values]
+    vocabulary = pd.unique(np.array([t for ts in tokens for t in ts] or [""]))
+    position = {token: i for i, token in enumerate(vocabulary)}
+    width = max(max((len(ts) for ts in tokens), default=1), 1)
+    codes = np.full((len(tokens), width), len(vocabulary), dtype=np.intp)
+    counts = np.zeros(len(tokens), dtype=np.intp)
+    for i, ts in enumerate(tokens):
+        codes[i, : len(ts)] = [position[t] for t in ts]
+        counts[i] = len(ts)
+    return codes, counts, np.append(vocabulary, "")
+
+
 def _name_matrix(
     left: pd.DataFrame, right: pd.DataFrame, column: str, threads: int
 ) -> Comparison:
+    """Mean best-token Jaro-Winkler similarity over the longer token list.
+
+    Character-level ratios cannot resolve unit designators -- ``token_set_ratio``
+    scores "Doel 1" against "Doel 4" at 0.83 and "Neurath" against "Neurath F" at
+    1.0 -- which merges the units of a station into a single record. Aligning
+    token by token scores the mismatched designator at 0 instead.
+    """
     av, present_a = _strings(left, column)
     bv, present_b = _strings(right, column)
-    sim = process.cdist(av, bv, scorer=fuzz.token_set_ratio, workers=threads) / 100.0
+    codes_a, counts_a, vocabulary_a = _token_codes(av)
+    codes_b, counts_b, vocabulary_b = _token_codes(bv)
+    tokens = process.cdist(
+        vocabulary_a, vocabulary_b, scorer=JaroWinkler.similarity, workers=threads
+    )
+    tokens[-1, :] = tokens[:, -1] = 0.0
+    best = np.zeros((len(vocabulary_a), len(bv)))
+    for j in range(codes_b.shape[1]):
+        np.maximum(best, tokens[:, codes_b[:, j]], out=best)
+    total = np.zeros((len(av), len(bv)))
+    for k in range(codes_a.shape[1]):
+        total += np.where(counts_a[:, None] > k, best[codes_a[:, k]], 0.0)
+    width = np.maximum(counts_a[:, None], counts_b[None, :])
+    sim = np.divide(total, width, out=np.zeros_like(total), where=width > 0)
     return sim, present_a[:, None] & present_b[None, :]
 
 

@@ -42,6 +42,15 @@ def test_aggregate_units_merges_only_true_duplicates(units, config):
     assert out.Capacity.to_list() == [40.0, 100.0, 250.0]
 
 
+def test_aggregated_identifiers_are_ordered(units, config):
+    """Set iteration order follows the hash seed, so identical runs would differ."""
+    out = aggregate_units(units, dataset_name="test", config=config)
+
+    assert all(ids == sorted(ids) for ids in out.projectID)
+    assert max(out.projectID, key=len) == ["p0", "p1"]
+    assert out.EIC.to_list() == [[], [], []]
+
+
 def test_aggregate_units_does_not_merge_across_countries(units, config):
     """The country-wise fan-out blocks on Country before matching."""
     single = aggregate_units(
