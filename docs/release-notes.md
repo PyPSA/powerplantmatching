@@ -8,6 +8,8 @@ SPDX-License-Identifier: MIT
 
 ## Upcoming Version
 
+* Replaced the Java-based DUKE matching engine with a pure-Python, vectorised record-linkage backend (`powerplantmatching.linkage`, built on `rapidfuzz` + `numpy`). Matching no longer requires a Java installation or the bundled DUKE binaries, and is substantially faster. **Breaking:** the `powerplantmatching.duke` module is gone and can no longer be imported, and `add_geoposition_for_duke` has been removed. The `parallel_duke_processes` config key is renamed to `parallel_processes`; the old key still works but emits a deprecation warning. Note that `linkage` is not a reimplementation of DUKE — it uses a different scoring curve, and its thresholds were re-tuned against a GEO/GPD ground truth (see `analysis/linkage_findings.md`), so matching results differ from previous versions.
+* The `projectID` and `EIC` columns now hold sorted lists instead of sets, so that two runs over the same inputs produce byte-identical output. Set iteration order depends on the interpreter's hash seed, which made the serialised identifiers differ between otherwise identical builds. **Breaking:** a missing `EIC` is now an empty list rather than `{nan}`, and set operations on these values need an explicit `set(...)`.
 * OSM dataset upgraded from a Europe-only snapshot (`osm_europe.csv`) to a global snapshot (`osm_global.csv.gz` taken from [`osm-powerplants`](https://github.com/open-energy-transition/osm-powerplants).
 
 ## [v0.8.1](https:://github.com/PyPSA/powerplantmatching/releases/tag/v0.8.1) (11th February 2026)

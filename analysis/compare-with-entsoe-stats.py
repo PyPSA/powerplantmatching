@@ -8,82 +8,107 @@ import warnings
 
 import country_converter as cc
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
-from bs4 import XMLParsedAsHTMLWarning
-from entsoe import EntsoePandasClient
+from bs4 import BeautifulSoup, XMLParsedAsHTMLWarning
+from entsoe import EntsoeRawClient
+from entsoe.mappings import PSRTYPE_MAPPINGS
 
 import powerplantmatching as pm
 from powerplantmatching.cleaning import gather_fueltype_info
 
-warnings.simplefilter(action="ignore", category=(FutureWarning, XMLParsedAsHTMLWarning))
+warnings.simplefilter("ignore", category=FutureWarning)
+warnings.simplefilter("ignore", category=XMLParsedAsHTMLWarning)
+
 root = pathlib.Path(__file__).parent.absolute()
 figpath = root / "figures"
+statspath = root / "data"
 
-# whether to update the used dataset or use the precalculated data
+# reference year of the ENTSO-E installed capacity statistics
+YEAR = 2025
+
+# whether to rerun the matching or use the locally built dataset
 UPDATE = False
-
+# whether to requery the ENTSO-E statistics; the cache is fetched when missing
+UPDATE_STATS = False
 
 config = pm.get_config()
 
-powerplants = pm.powerplants(update=UPDATE, from_url=not UPDATE)
+
+def query_installed_capacity(client: EntsoeRawClient, country: str, year: int):
+    """Installed generation capacity per production type in MW.
+
+    entsoe-py's own parser drops yearly-resolution documents whose period does
+    not start at midnight UTC (all CET/EET zones), so the XML is read directly.
+    """
+    start = pd.Timestamp(f"{year}0101", tz="UTC")
+    end = pd.Timestamp(f"{year + 1}0101", tz="UTC")
+    xml = client.query_installed_generation_capacity(
+        country, start=start, end=end, psr_type=None
+    )
+    soup = BeautifulSoup(xml, "html.parser")
+    capacities = {}
+    for timeseries in soup.find_all("timeseries"):
+        fueltype = PSRTYPE_MAPPINGS[timeseries.find("psrtype").text]
+        capacities[fueltype] = float(timeseries.find("point").find("quantity").text)
+    return pd.Series(capacities, dtype=float)
 
 
-powerplants = powerplants.powerplant.convert_country_to_alpha2()
-
-client = EntsoePandasClient(api_key=config["entsoe_token"])
-
-start = pd.Timestamp("20220101", tz="Europe/Berlin")
-end = pd.Timestamp("20230101", tz="Europe/Berlin")
-
-kwargs = dict(start=start, end=end, psr_type=None)
-
-
-def parse(c):
+def query_statistics(countries: list[str], year: int) -> pd.DataFrame:
+    client = EntsoeRawClient(api_key=config["entsoe_token"])
     rename = {"GB": "UK"}
-    for n in range(2):
-        try:
-            print(c, n)
-            return client.query_installed_generation_capacity(
-                rename.get(c, c), **kwargs
-            ).iloc[0]
-        except Exception as e:
-            print(f"Country {c} failed with {repr(e)}")
-            time.sleep(3)
-    return np.nan
+    capacities = {}
+    for c in countries:
+        for attempt in range(2):
+            try:
+                capacities[c] = query_installed_capacity(client, rename.get(c, c), year)
+                break
+            except Exception as e:
+                print(f"Country {c} failed with {repr(e)}")
+                time.sleep(3)
+    return pd.DataFrame(capacities)
 
 
-stats = pd.DataFrame({c: parse(c) for c in powerplants.Country.unique()})
+powerplants = pm.powerplants(update=UPDATE).powerplant.convert_country_to_alpha2()
+
+statsfile = statspath / f"entsoe-installed-capacity-{YEAR}.csv"
+if UPDATE_STATS or not statsfile.exists():
+    stats = query_statistics(sorted(powerplants.Country.unique()), YEAR)
+    statspath.mkdir(parents=True, exist_ok=True)
+    stats.to_csv(statsfile)
+else:
+    stats = pd.read_csv(statsfile, index_col=0)
+
 fueltypes = gather_fueltype_info(pd.DataFrame({"Fueltype": stats.index}), ["Fueltype"])
 stats = stats.groupby(fueltypes.Fueltype.values).sum().unstack()
 
 # Manual correction on the statistics
-
+# ENTSO-E reports no Swiss hydro capacity
 # https://de.wikipedia.org/wiki/Liste_von_Wasserkraftwerken_in_der_Schweiz?oldformat=true
 stats.loc["CH", "Hydro"] = 17038
 
 # %%
-query = "(DateOut > 2022 or DateOut != DateOut) and (DateIn < 2023 or DateIn != DateIn)"
+query = f"(DateOut > {YEAR} or DateOut != DateOut) and (DateIn < {YEAR + 1} or DateIn != DateIn)"
+
+
+def lookup(df):
+    # ENTSO-E reports biogas within its single Biomass category
+    df = df.assign(Fueltype=df.Fueltype.replace("Biogas", "Solid Biomass"))
+    return df.powerplant.lookup().fillna(0)
+
+
 powerplants = powerplants.query(query)
-totals = powerplants.powerplant.lookup().fillna(0)
+totals = lookup(powerplants)
 
 sources = [s if isinstance(s, str) else list(s)[0] for s in config["matching_sources"]]
 
 input_dbs = {}
 for s in sources:
     print(s.title())
-    input_dbs[s.title()] = (
-        getattr(pm.data, s)()
-        .powerplant.convert_country_to_alpha2()
-        .query(query)
-        .powerplant.lookup()
-        .fillna(0)
-    )
+    db = getattr(pm.data, s)().powerplant.convert_country_to_alpha2().query(query)
+    input_dbs[s.title()] = lookup(db)
 
 output_dbs = {
-    s.title(): powerplants[
-        powerplants.projectID.apply(lambda ds: s in ds)
-    ].powerplant.lookup()
+    s.title(): lookup(powerplants[powerplants.projectID.apply(lambda ds: s in ds)])
     for s in sources
 }
 
@@ -107,9 +132,9 @@ for s in sources:
     diff[s.title() + " (%)"] = ds.fillna(0)
 
 diff = diff[out_compare.Statistics != 0]
-diff = diff.loc[
-    :, list(set(out_compare.index.unique(1)) - {"Biogas", "Wind", "Solar"}), :
-]
+# Wind and Solar are not matched but extended separately, "Other" pools
+# incomparable residual categories (ENTSO-E puts batteries and marine in there)
+diff = diff[~diff.index.get_level_values(1).isin(["Wind", "Solar", "Other"])]
 diff.index = diff.index.get_level_values(0) + " " + diff.index.get_level_values(1)
 
 df = (diff[diff.Difference > 1]).sort_values("Difference", ascending=False)

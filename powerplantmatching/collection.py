@@ -31,7 +31,7 @@ def collect(
     update=False,
     reduced=True,
     config=None,
-    **dukeargs,
+    **kwargs,
 ):
     """
     Return the collection for a given list of datasets in matched or
@@ -47,7 +47,7 @@ def collect(
         Switch as to return the reduced (True) or matched (False) dataset.
     config : dict
         Configuration file of powerplantmatching
-    **dukeargs : keyword-args for duke
+    **kwargs : keyword-args for the matcher
     """
 
     from . import data
@@ -67,7 +67,7 @@ def collect(
         if not conf.get("aggregated_units", False):
             return aggregate_units(df, dataset_name=name, config=config)
         else:
-            return df.assign(projectID=df.projectID.map(lambda x: {x}))
+            return df.assign(projectID=df.projectID.map(lambda x: [x]))
 
     # Deal with the case that only one dataset is requested
     if isinstance(datasets, str):
@@ -88,7 +88,7 @@ def collect(
 
     if update:
         dfs = parmap(df_by_name, datasets)
-        matched = combine_multiple_datasets(dfs, datasets, config=config, **dukeargs)
+        matched = combine_multiple_datasets(dfs, datasets, config=config, **kwargs)
         (
             matched.assign(projectID=lambda df: df.projectID.astype(str)).to_csv(
                 outfn_matched, index_label="id"

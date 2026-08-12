@@ -88,12 +88,12 @@ class PowerPlantAccessor:
     def get_name(self):
         return self._obj.columns.name
 
-    def match_with(self, df, labels=None, config=None, reduced=True, **dukeargs):
+    def match_with(self, df, labels=None, config=None, reduced=True, **kwargs):
         from .matching import combine_multiple_datasets, reduce_matched_dataframe
         from .utils import to_list_if_other
 
         dfs = [self._obj] + to_list_if_other(df)
-        res = combine_multiple_datasets(dfs, labels, config=config, **dukeargs)
+        res = combine_multiple_datasets(dfs, labels, config=config, **kwargs)
         if reduced:
             return res.pipe(reduce_matched_dataframe, config=config)
         return res
