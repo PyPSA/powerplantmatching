@@ -2404,7 +2404,7 @@ def MASTR(
             "KwkMastrNummer",
             "Land",
             "Landkreis",
-            "Lage",
+            "WindAnLandOderAufSee",
             "NameKraftwerk",
             "Ort",
             "Postleitzahl",
@@ -2439,7 +2439,7 @@ def MASTR(
                         "Ort",
                         "Gemeinde",
                         "Landkreis",
-                        "Lage",
+                        "WindAnLandOderAufSee",
                     ]
                     target_columns = (
                         target_columns + PARSE_COLUMNS + list(RENAME_COLUMNS.keys())
@@ -2560,9 +2560,9 @@ def MASTR(
         "Windkraft an Land": "Onshore",
     }
     wind = df_processed.query("Energietraeger == 'Wind'").index
-    df_processed.loc[wind, "Technology"] = df_processed.loc[wind, "Lage"].map(
-        WIND_MAPPING
-    )
+    df_processed.loc[wind, "Technology"] = df_processed.loc[
+        wind, "WindAnLandOderAufSee"
+    ].map(WIND_MAPPING)
 
     sel = df_processed.query(
         "Fueltype == 'Natural Gas' and Filesuffix == 'Bioenergy'"
