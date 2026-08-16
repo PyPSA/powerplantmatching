@@ -45,7 +45,7 @@ dependencies = [
     "geopy",
     "xlrd",
     "unidecode",
-    "entsoe-py >=0.3.1",
+    "entsoe-py>=0.8",
     "deprecation",
     "tqdm",
     "openpyxl",
