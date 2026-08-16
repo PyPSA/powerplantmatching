@@ -1636,7 +1636,8 @@ def IRENASTAT(raw=False, update=False, config=None):
 
     # Remove all rows where Technology is just a Total
     df = df[
-        ~df.Technology.str.startswith("Total", na=False) & ~df.Technology.str.contains("Solar energy|Wind energy|Bioenergy", na=False)
+        ~df.Technology.str.startswith("Total", na=False)
+        & ~df.Technology.str.contains("Solar energy|Wind energy|Bioenergy", na=False)
     ]
 
     fueltype_dict = {
