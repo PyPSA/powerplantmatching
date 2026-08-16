@@ -9,6 +9,7 @@ SPDX-License-Identifier: MIT
 ## Upcoming Version
 
 * OSM dataset upgraded from a Europe-only snapshot (`osm_europe.csv`) to a global snapshot (`osm_global.csv.gz` taken from [`osm-powerplants`](https://github.com/open-energy-transition/osm-powerplants).
+* Drop support for Python 3.10, add support for Python 3.14. Minimum required Python version is now 3.11.
 
 ## [v0.8.1](https:://github.com/PyPSA/powerplantmatching/releases/tag/v0.8.1) (11th February 2026)
 
