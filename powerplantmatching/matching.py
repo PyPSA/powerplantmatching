@@ -287,7 +287,12 @@ def reduce_matched_dataframe(df, show_orig_names=False, config=None):
             "DateRetrofit": "max",
             "DateOut": "max",
             "projectID": lambda x: dict(x.droplevel(0).dropna()),
-            "eic_code": set,
+            "EIC": lambda x: {
+                v
+                for val in x.dropna()
+                for v in (val if isinstance(val, set) else [val])
+                if isinstance(v, str)
+            },
         }
     )
     props_for_groups = pd.Series(props_for_groups)[cols].to_dict()
