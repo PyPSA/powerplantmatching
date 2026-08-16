@@ -9,6 +9,7 @@ Utility functions for checking data completeness and supporting other functions
 import multiprocessing
 import os
 import re
+import shutil
 from ast import literal_eval as liteval
 from importlib.metadata import version
 
@@ -80,13 +81,17 @@ def get_raw_file(name, update=False, config=None, skip_retrieve=False):
 
     if (not os.path.exists(path) or update) and not skip_retrieve:
         url = df_config["url"]
-        logger.info(f"Retrieving data from {url}")
-        base_version = parse(version(__package__)).base_version
-        user_agent = f"{__package__}/{base_version}"
-        r = requests.get(url, headers={"User-Agent": user_agent}, timeout=60)
-        r.raise_for_status()
-        with open(path, "wb") as outfile:
-            outfile.write(r.content)
+        if os.path.exists(url):
+            logger.info(f"Copying data from local file {url}")
+            shutil.copyfile(url, path)
+        else:
+            logger.info(f"Retrieving data from {url}")
+            base_version = parse(version(__package__)).base_version
+            user_agent = f"{__package__}/{base_version}"
+            r = requests.get(url, headers={"User-Agent": user_agent}, timeout=60)
+            r.raise_for_status()
+            with open(path, "wb") as outfile:
+                outfile.write(r.content)
 
     return path
 

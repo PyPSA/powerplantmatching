@@ -2330,6 +2330,19 @@ def MASTR(
     Provided by the German Federal Network Agency (Bundesnetzagentur / BNetzA) and
     contains data on Germany, Austria and Switzerland.
 
+    To retrieve an up-to-date version, run:
+
+    ```python
+    # uv add open-mastr
+    from open_mastr import Mastr
+    db = Mastr()
+    db.download()
+    db.to_csv()
+    ```
+
+    This will store the data in `~/.open-MaStR/data/dataversion-YYYY-MM-DD`.
+    Link to a zipped version of this folder in `config.yaml`.
+
     Parameters
     ----------
     raw : Boolean, default False
@@ -2345,7 +2358,7 @@ def MASTR(
 
     config = get_config() if config is None else config
 
-    THRESHOLD_KW = config["MASTR"].get("capacity_threshold", 0.1) * 1e3  # noqa: F841
+    THRESHOLD_KW = config["MASTR"].get("capacity_threshold", 0.05) * 1e3  # noqa: F841
 
     RENAME_COLUMNS = {
         "EinheitMastrNummer": "projectID",
@@ -2375,6 +2388,29 @@ def MASTR(
         "NameWindpark",
         "Technologie",
     ]
+    # columns whose type inference is ambiguous, either between chunks or files
+    STR_COLUMNS = pd.Index(
+        PARSE_COLUMNS
+        + [
+            "Batterietechnologie",
+            "DatumBeginnVoruebergehendeStilllegung",
+            "DatumEndgueltigeStilllegung",
+            "DatumWiederaufnahmeBetrieb",
+            "EinheitBetriebsstatus",
+            "EinheitMastrNummer",
+            "Gemeinde",
+            "GeplantesInbetriebnahmedatum",
+            "Inbetriebnahmedatum",
+            "KwkMastrNummer",
+            "Land",
+            "Landkreis",
+            "Lage",
+            "NameKraftwerk",
+            "Ort",
+            "Postleitzahl",
+            "WEIC",
+        ]
+    )
 
     fn = get_raw_file("MASTR", update=update, config=config)
     file_suffixes = {
@@ -2384,7 +2420,7 @@ def MASTR(
         "Hydro": "hydro_raw.csv",
         "Wind": "wind_raw.csv",
         "Solar": "solar_raw.csv",
-        "Storage": "bnetza_mastr_storage_raw.csv",
+        "Storage": "storage_raw.csv",
     }
     data_frames = []
     with ZipFile(fn, "r") as file:
@@ -2409,21 +2445,25 @@ def MASTR(
                         target_columns + PARSE_COLUMNS + list(RENAME_COLUMNS.keys())
                     )
                     usecols = available_columns.intersection(target_columns)
-                    df = (
-                        pd.read_csv(file.open(name), usecols=usecols, low_memory=False)
-                        .assign(Filesuffix=fueltype)
-                        .query("Nettonennleistung >= @THRESHOLD_KW")
+                    dtypes = {c: "str" for c in usecols.intersection(STR_COLUMNS)}
+                    chunks = pd.read_csv(
+                        file.open(name),
+                        usecols=usecols,
+                        dtype=dtypes,
+                        chunksize=100_000,
                     )
+                    df = pd.concat(
+                        [c.query("Nettonennleistung >= @THRESHOLD_KW") for c in chunks]
+                    ).assign(Filesuffix=fueltype)
                     data_frames.append(df)
                     break
     df = pd.concat(data_frames).reset_index(drop=True)
 
     cols = ["NutzbareSpeicherkapazitaet", "VerknuepfteEinheit"]
     with ZipFile(fn, "r") as file:
-        fn_storage_units = (
-            "bnetza_open_mastr_2025-02-09/bnetza_mastr_storage_units_raw.csv"
-        )
-        storage_units = pd.read_csv(file.open(fn_storage_units), usecols=cols)
+        for name in file.namelist():
+            if name.endswith("storage_units_raw.csv"):
+                storage_units = pd.read_csv(file.open(name), usecols=cols)
 
     storage_mwh = (
         storage_units.assign(
@@ -2664,7 +2704,7 @@ def EESI(
         )
     )
 
-    sel = df_processed.query("technology_parentName == 'ElectroChemical'").index
+    sel = df_processed.query("technology_parentName == 'Electrochemical'").index
     df_processed.loc[sel, "Fueltype"] = "Battery"
 
     sel = df_processed.query("technology_parentName == 'Thermal'").index

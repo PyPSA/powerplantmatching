@@ -225,9 +225,9 @@ MASTR:
   net_capacity: true
   reliability_score: 7
   status: ["In Betrieb", "In Planung", "Endgültig stillgelegt", "Vorübergehend stillgelegt"]
-  capacity_threshold: 0.1  # all values below will be filtered out, given in MW
-  fn: bnetza_open_mastr_2025-02-09.zip
-  url: https://zenodo.org/records/14783581/files/bnetza_open_mastr_2025-02-09.zip
+  capacity_threshold: 0.05  # all values below will be filtered out, given in MW
+  fn: dataversion-2026-08-16.zip
+  url: https://tubcloud.tu-berlin.de/s/KJWoc8rwezoRkcQ/download/dataversion-2026-08-16.zip
 EESI:
   net_capacity: true
   reliability_score: 5
