@@ -1612,17 +1612,22 @@ def IRENASTAT(raw=False, update=False, config=None):
         return df
 
     RENAME_COLUMNS = {
-        "Electricity statistics": "Capacity",
+        "Electricity capacity statistics": "Capacity",
         "Country/area": "Country",
         "Grid connection": "Grid",
     }
     df.rename(columns=RENAME_COLUMNS, inplace=True)
 
-    df.drop(columns="Data Type", inplace=True)
-
-    # Rename all entries "Congo (the)" to "Congo" under the column
-    # "Country"; the former confuses country_converter.
-    df["Country"] = df["Country"].replace("Congo (the)", "Congo")
+    # Rename country entries that confuse country_converter
+    country_renames = {
+        "Congo (the)": "Congo",
+        "Fr Polynesia": "French Polynesia",
+        "Amer Samoa": "American Samoa",
+        "Cent Afr Rep": "Central African Republic",
+        "St Pierre Mq": "Saint Pierre and Miquelon",
+        "New Caledon": "New Caledonia",
+    }
+    df["Country"] = df["Country"].replace(country_renames)
 
     # Consistent country names for dataset
     df = convert_to_short_name(df)
@@ -1631,7 +1636,7 @@ def IRENASTAT(raw=False, update=False, config=None):
 
     # Remove all rows where Technology is just a Total
     df = df[
-        ~df.Technology.str.contains("Total Renewable|Total Non-Renewable", na=False)
+        ~df.Technology.str.startswith("Total", na=False) & ~df.Technology.str.contains("Solar energy|Wind energy|Bioenergy", na=False)
     ]
 
     fueltype_dict = {
@@ -1640,20 +1645,22 @@ def IRENASTAT(raw=False, update=False, config=None):
         "Onshore wind energy": "Wind",
         "Offshore wind energy": "Wind",
         "Renewable hydropower": "Hydro",
-        "Mixed Hydro Plants": "Hydro",
-        "Pumped storage": "Hydro",
+        "Mixed hydropower": "Hydro",
+        "Pumped hydro": "Hydro",
         "Solid biofuels": "Solid Biomass",
-        "Renewable municipal waste": "Waste",
+        "Renewable waste": "Waste",
+        "Non-renewable waste": "Waste",
         "Liquid biofuels": "Solid Biomass",
-        "Biogas": "Biogas",
+        "Gas biofuels": "Biogas",
         "Geothermal energy": "Geothermal",
         "Marine energy": "Marine",
-        "Coal and peat": "Hard Coal",
+        "Coal": "Hard Coal",
         "Oil": "Oil",
         "Natural gas": "Natural Gas",
-        "Nuclear": "Nuclear",
-        "Fossil fuels n.e.s.": "Other",
+        "Nuclear energy": "Nuclear",
+        "Fossil fuels": "Other",
         "Other non-renewable energy": "Other",
+        "Other non-renewable energy n.e.s.": "Other",
     }
 
     technology_dict = {
@@ -1661,9 +1668,7 @@ def IRENASTAT(raw=False, update=False, config=None):
         "Solar thermal energy": "CSP",
         "Onshore wind energy": "Onshore",
         "Offshore wind energy": "Offshore",
-        "Pumped storage": "Pumped Storage",
-        "Geothermal energy": "Geothermal",
-        "Marine energy": "Marine",
+        "Pumped hydro": "Pumped Storage",
     }
 
     df["Fueltype"] = df.Technology.map(fueltype_dict)
@@ -2631,7 +2636,7 @@ def EESI(
     if raw:
         return df
 
-    status_list = config["EESI"].get("status", ["Operational"])  # noqa: F841
+    status_list = config["EESI"].get("status_name", ["Operational"])  # noqa: F841
 
     RENAME_COLUMNS = {
         "title": "Name",
@@ -2639,10 +2644,10 @@ def EESI(
         "capacity": "StorageCapacity_MWh",
         "facility_latitude": "lat",
         "facility_longitude": "lon",
-        "facility_country": "Country",
+        "facility_country_name": "Country",
         "id": "projectID",
         "technology_name": "Technology",
-        "status": "Status",
+        "status_name": "Status",
     }
 
     df_processed = (
@@ -2678,14 +2683,22 @@ def EESI(
         "Lithium-ion batteries": "Li",
         "Lead Acid batteries": "Pb",
         "Sodium Sulphur batteries": "NaS",
+        "Lithium iron phosphate battery (LFP)": "Li",
+        "Lithium nickel manganese cobalt oxide battery (NMC)": "Li",
+        "Lithium nickel cobalt aluminium oxide battery (NCA)": "Li",
+        "Lithium manganese oxide battery (LMO)": "Li",
+        "Lithium-titanate battery (LTO)": "Li",
+        "Lithium-Metal-Polymer batteries": "Li",
         "Redox flow batteries Vanadium": "V",
         "Sodium Nickel Chloride batteries": "NaNiCl",
-        "Lithium-titanate battery (LTO)": "Li",
         "Pumped Hydro Storage (PHS)": "Pumped Storage",
         "Unespecified Storage - mechanical": np.nan,
         "Compressed Air Energy Storage (CAES)": "CAES",
-        "Flywheel Energy Storage": "Flywheel",
+        "Liquid Air Energy Storage (LAES)": "LAES",
+        "Iron air battery": "Fe",
+        "Flywheel": "Flywheel",
         "Unspecific Thermal Storage": np.nan,
+        "Unspecific Sensible Thermal Energy Storage (STES)": np.nan,
         "Molten salts (Sensible Thermal Energy Storage (STES))": "Molten Salt",
     }
     df_processed.Technology = df_processed.Technology.map(TECHNOLOGY_MAPPING)

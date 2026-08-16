@@ -72,14 +72,14 @@ BEYONDCOAL:
   aggregated_units: false
   reliability_score: 4
   status: ["construction", "operational", "no longer coal", "retired", "standby", "deactivated", "retrofitting"]
-  fn: 2025-07-24-BeyondFossilFuels-Europe_Coal_Plants_Database.xlsx
-  url: https://tubcloud.tu-berlin.de/s/bw7tbpo6A3qXYDz/download/2025-07-24-BeyondFossilFuels-Europe_Coal_Plants_Database.xlsx
+  fn:  20260731-BeyondFossilFuels-Europe_Coal_Plants_Database.xlsx
+  url: https://tubcloud.tu-berlin.de/s/qHfNEELYy6EnBSX/download/20260731-BeyondFossilFuels-Europe_Coal_Plants_Database.xlsx 
 IRENA:
   net_capacity: true
   aggregated_units: true
-  fn: IRENASTAT_capacities_2000-2024.csv
-  # compiled from https://pxweb.irena.org/pxweb/en/IRENASTAT/IRENASTAT__Power%20Capacity%20and%20Generation/Country_ELECSTAT_2025_H2_PX.px/
-  url: https://tubcloud.tu-berlin.de/s/dDS9erreKPNH4Ey/download/IRENASTAT_capacities_2000-2024.csv
+  fn: IRENASTAT_capacities_2000-2025.csv
+  # compiled from https://pxweb.irena.org/pxweb/en/IRENASTAT/IRENASTAT__Power%20Capacity%20and%20Generation/Country_ELECCAP_2026_H1_v-PX%201.px/
+  url: https://tubcloud.tu-berlin.de/s/qALFkR8eB73FWA9/download/IRENASTAT_capacities_2000-2025.csv
 CARMA:
   net_capacity: false
   reliability_score: 1
@@ -87,15 +87,15 @@ CARMA:
   fn: Full_CARMA_2009_Dataset_1.csv
 ENTSOE:
   reliability_score: 5
-  url: https://tubcloud.tu-berlin.de/s/N7qo3AGyRYZyisS/download/entsoe_transparency_platform_20250820.csv
-  fn: entsoe_transparency_platform_20250820.csv
+  url: https://tubcloud.tu-berlin.de/s/MfA7aHLKDZzNkeW/download/entsoe_transparency_platform_20260816-1122.csv
+  fn: entsoe_transparency_platform_20260816-1122.csv
 ENTSOE-EIC:
   url: https://eepublicdownloads.blob.core.windows.net/cio-lio/csv/W_eicCodes.csv
   fn: W_eicCodes.csv
 JRC:
   reliability_score: 5
   fn: jrc-hydro-power-plant-database.csv
-  url: https://raw.githubusercontent.com/energy-modelling-toolkit/hydro-power-database/27e80f/data/jrc-hydro-power-plant-database.csv
+  url: https://raw.githubusercontent.com/energy-modelling-toolkit/hydro-power-database/3e8a837/data/jrc-hydro-power-plant-database.csv
 GEO:
   net_capacity: false
   reliability_score: 2
@@ -172,8 +172,8 @@ GGPT:
   net_capacity: false
   reliability_score: 6
   status: ["operating", "retired", "construction"]
-  fn: Global-Oil-and-Gas-Plant-Tracker-GOGPT-August-2025.xlsx
-  url: https://tubcloud.tu-berlin.de/s/WrmNX5awNJFcXrQ/download/Global-Oil-and-Gas-Plant-Tracker-GOGPT-August-2025.xlsx
+  fn: Global-Oil-and-Gas-Plant-Tracker-GOGPT-January-2026.xlsx 
+  url: https://tubcloud.tu-berlin.de/s/oTNEPzKcTZjdEZW/download/Global-Oil-and-Gas-Plant-Tracker-GOGPT-January-2026.xlsx 
 GEM:
   # combined data set of all GEM trackers
   net_capacity: true
@@ -182,15 +182,15 @@ GCPT:
   net_capacity: false
   reliability_score: 6
   status: ["operating", "retired", "construction", "mothballed"]
-  fn: Global-Coal-Plant-Tracker-July-2025.xlsx
-  url: https://tubcloud.tu-berlin.de/s/ijzbscopNTgNB2r/download/Global-Coal-Plant-Tracker-July-2025.xlsx
+  fn: Global-Coal-Plant-Tracker-July-2026.xlsx
+  url: https://tubcloud.tu-berlin.de/s/xyZSXcd4QNSzDsy/download/Global-Coal-Plant-Tracker-July-2026.xlsx
 GGTPT:
   net_capacity: false
   reliability_score: 6
   aggregated_units: false
   status: ["operating", "retired", "construction", "mothballed"]
-  fn: Geothermal-Power-Tracker-March-2025-Final.xlsx
-  url: https://tubcloud.tu-berlin.de/s/ypr3eL2K5kckAK4/download/Geothermal-Power-Tracker-March-2025-Final.xlsx
+  fn: Geothermal-Power-Tracker-March-2026-Final.xlsx
+  url: https://tubcloud.tu-berlin.de/s/spGtyE3oPZrMeB3/download/Geothermal-Power-Tracker-March-2026-Final.xlsx
 GWPT:
   net_capacity: false
   reliability_score: 6
@@ -213,14 +213,14 @@ GNPT:
   net_capacity: false
   reliability_score: 6
   status: ["operating", "retired", "mothballed", "construction"]
-  fn: Global-Nuclear-Power-Tracker-July-2024.xlsx
-  url: https://tubcloud.tu-berlin.de/s/gXFim9EciRHrjeQ/download/Global-Nuclear-Power-Tracker-July-2024.xlsx
+  fn: Global-Nuclear-Power-Tracker-September-2025.xlsx
+  url: https://tubcloud.tu-berlin.de/s/NBX6G2eyZ3T97gq/download/Global-Nuclear-Power-Tracker-September-2025.xlsx
 GHPT:
   net_capacity: false
   reliability_score: 6
   status: ["operating", "retired", "construction"]
-  fn: Global-Hydropower-Tracker-April-2025.xlsx
-  url: https://tubcloud.tu-berlin.de/s/aDyd3MJWZNgeEH4/download/Global-Hydropower-Tracker-April-2025.xlsx
+  fn: Global-Hydropower-Tracker-March-2026.xlsx
+  url: https://tubcloud.tu-berlin.de/s/feKWmAfzPtHPHN2/download/Global-Hydropower-Tracker-March-2026.xlsx
 MASTR:
   net_capacity: true
   reliability_score: 7
@@ -232,8 +232,9 @@ EESI:
   net_capacity: true
   reliability_score: 5
   status: ["Operational"] # since no start years given
-  fn: european-energy-storage-inventory-20250817-2245.json
-  url: https://tubcloud.tu-berlin.de/s/5KqMDMZfb2pN3Aw/download/european-energy-storage-inventory-20250817-2245.json
+  fn: european-energy-storage-inventory-20260816-1026.json 
+  # from https://ses.jrc.ec.europa.eu/storage-inventory-tool/api/projects
+  url: https://tubcloud.tu-berlin.de/s/ijiN2EWjHfg4NXf/download/european-energy-storage-inventory-20260816-1026.json 
 GND:
   net_capacity: true
   reliability_score: 5
