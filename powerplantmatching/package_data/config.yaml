@@ -24,6 +24,7 @@ matching_sources:
   # wind in germany is provided by MASTR, nuclear is not block-wise, other filters are due to large deviations to other datasets
   - GPD: Capacity >= 1 and not (Country == 'Germany' and Fueltype  == 'Wind') and not (Country in ['Czechia', 'Bulgaria', 'Romania'] and Fueltype == 'Hard Coal') and Fueltype != 'Nuclear'
   - JRC: Capacity >= 1
+  - JRC-PPDB-OPEN: Capacity >= 1
   # wind in germany is provided by MASTR, other filters are due to large deviations to other datasets
   - OPSD: not (Country == 'Germany' and Fueltype  == 'Wind') and ((Capacity >= 1 and Fueltype != 'Solar') or Capacity >= 3) and not (Country == 'Spain' and Fueltype == 'Hard Coal') and not (Country == 'Italy' and Fueltype == 'Natural Gas')
   - BEYONDCOAL
@@ -48,6 +49,7 @@ fully_included_sources:
   - BEYONDCOAL
   # include this selection of countries as they have poorer coverage in all other datasets
   - JRC: Country in ['Italy', 'Croatia', 'Serbia', 'Slovakia']
+  - JRC-PPDB-OPEN
 
 # these sources skip unit aggregation for fully_included_sources not covered in matching_sources
 aggregate_only_matching_sources:
@@ -96,6 +98,10 @@ JRC:
   reliability_score: 5
   fn: jrc-hydro-power-plant-database.csv
   url: https://raw.githubusercontent.com/energy-modelling-toolkit/hydro-power-database/27e80f/data/jrc-hydro-power-plant-database.csv
+JRC-PPDB-OPEN:
+  reliability_score: 5
+  fn: JRC-PPDB-OPEN.ver1.0.zip
+  url: https://zenodo.org/records/3574566/files/JRC-PPDB-OPEN.ver1.0.zip
 GEO:
   net_capacity: false
   reliability_score: 2

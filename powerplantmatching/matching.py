@@ -80,7 +80,7 @@ def compare_two_datasets(dfs, labels, country_wise=True, config=None, **dukeargs
     def country_link(dfs, country):
         # country_selector for both dataframes
         sel_country_b = [df["Country"] == country for df in dfs]
-        # only append if country appears in both dataframse
+        # only append if country appears in both dataframes
         if all(sel.any() for sel in sel_country_b):
             return duke(
                 [df[sel] for df, sel in zip(dfs, sel_country_b)], labels, **dukeargs
@@ -287,7 +287,12 @@ def reduce_matched_dataframe(df, show_orig_names=False, config=None):
             "DateRetrofit": "max",
             "DateOut": "max",
             "projectID": lambda x: dict(x.droplevel(0).dropna()),
-            "eic_code": set,
+            "EIC": lambda x: set(
+                v
+                for val in x.dropna()
+                for v in (val if isinstance(val, set) else [val])
+                if isinstance(v, str)
+            ),
         }
     )
     props_for_groups = pd.Series(props_for_groups)[cols].to_dict()
