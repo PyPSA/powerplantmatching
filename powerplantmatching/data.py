@@ -18,6 +18,7 @@ import pandas as pd
 import pycountry
 import requests
 from deprecation import deprecated
+from scipy import optimize
 
 from .cleaning import (
     clean_name,
@@ -2337,6 +2338,45 @@ def MASTR(
 
     """
 
+    def _assign_PP_or_CHP(df):
+        df.loc[:,"Set"] = "PP"
+
+        # KWK plants consist of multiple units, all of which share the same MastrKwkNummer
+        grouped_kwk = df[df["KwkMastrNummer"].notna()].groupby("KwkMastrNummer", sort=False)
+        for _, kwk_units in grouped_kwk:
+            n_units = len(kwk_units)
+            sizes = kwk_units.Capacity.mul(1e3).to_numpy()
+            capacity = kwk_units.ElektrischeKwkLeistung.unique().item()
+            if np.isnan(capacity):
+                capacity = kwk_units.ThermischeNutzleistung.unique().item()
+            if np.isnan(capacity):
+                continue
+            # Solve Knapsack problem to select units that sum up to the capacity, minimizing the deviation from the target capacity.
+            # One binary variable per unit, plus a non-negative deviation variable.
+            objective = np.r_[np.zeros(n_units), 1]
+            integrality = np.r_[np.ones(n_units), 0]
+            bounds = optimize.Bounds(
+                lb=np.zeros(n_units + 1),
+                ub=np.r_[np.ones(n_units), np.inf],
+            )
+            # capacity - deviation <= selected capacity <= capacity + deviation
+            constraints = optimize.LinearConstraint(
+                A=[np.r_[sizes, -1], np.r_[sizes, 1]],
+                lb=[-np.inf, capacity],
+                ub=[capacity, np.inf],
+            )
+            # Minimize the deviation variable.
+            res = optimize.milp(
+                c=objective,
+                constraints=constraints,
+                integrality=integrality,
+                bounds=bounds,
+            )
+            # NB: If the smallest size is at least twice the capacity, nothing gets selected.
+            selected = res.x[:-1] > 0.5
+            df.loc[kwk_units.index[selected], "Set"] = "CHP"
+        return df
+
     config = get_config() if config is None else config
 
     THRESHOLD_KW = config["MASTR"].get("capacity_threshold", 0.1) * 1e3  # noqa: F841
@@ -2388,6 +2428,7 @@ def MASTR(
                     available_columns = pd.read_csv(file.open(name), nrows=0).columns
                     target_columns = [
                         "GeplantesInbetriebnahmedatum",
+                        "ElektrischeKwkLeistung",
                         "ThermischeNutzleistung",
                         "KwkMastrNummer",
                         "Batterietechnologie",
@@ -2448,6 +2489,16 @@ def MASTR(
     df["PLZ_lat"] = df.Postleitzahl.map(PLZ_map.lat)
     df["PLZ_lon"] = df.Postleitzahl.map(PLZ_map.lon)
 
+    # change the Energietraeger from Waerme to the main fuel type of the unit if there are multiple units with the same KwkMastrNummer
+    for unit in df.query("Energietraeger == 'Wärme'").iterrows():
+        kwk_units = df[df.KwkMastrNummer == unit[1].KwkMastrNummer]
+        energietraeger = "Wärme" 
+        if len(kwk_units) > 1:
+            # If Wärme is the dominant fuel type, keep it as Wärme, otherwise use the main fuel type of the unit
+            energietraeger = kwk_units.groupby("Energietraeger").Nettonennleistung.sum().sort_values(ascending=False).index[0]
+        waermeunits = kwk_units.query("Energietraeger == 'Wärme'").index
+        df.loc[waermeunits, "Energietraeger"] = energietraeger
+    
     df_processed = (
         df.rename(columns=RENAME_COLUMNS)
         .query("Status in @status_list")
@@ -2481,10 +2532,8 @@ def MASTR(
             config=config,
             parse_columns=PARSE_COLUMNS,
         )
-        .assign(
-            Set=lambda df: df["Set"].where(
-                df["KwkMastrNummer"].isna() & df["ThermischeNutzleistung"].isna(), "CHP"
-            ),
+        .pipe(
+            _assign_PP_or_CHP
         )
     )
 
