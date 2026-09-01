@@ -2339,10 +2339,12 @@ def MASTR(
     """
 
     def _assign_PP_or_CHP(df):
-        df.loc[:,"Set"] = "PP"
+        df.loc[:, "Set"] = "PP"
 
         # KWK plants consist of multiple units, all of which share the same MastrKwkNummer
-        grouped_kwk = df[df["KwkMastrNummer"].notna()].groupby("KwkMastrNummer", sort=False)
+        grouped_kwk = df[df["KwkMastrNummer"].notna()].groupby(
+            "KwkMastrNummer", sort=False
+        )
         for _, kwk_units in grouped_kwk:
             n_units = len(kwk_units)
             sizes = kwk_units.Capacity.mul(1e3).to_numpy()
@@ -2492,13 +2494,18 @@ def MASTR(
     # change the Energietraeger from Waerme to the main fuel type of the unit if there are multiple units with the same KwkMastrNummer
     for unit in df.query("Energietraeger == 'Wärme'").iterrows():
         kwk_units = df[df.KwkMastrNummer == unit[1].KwkMastrNummer]
-        energietraeger = "Wärme" 
+        energietraeger = "Wärme"
         if len(kwk_units) > 1:
             # If Wärme is the dominant fuel type, keep it as Wärme, otherwise use the main fuel type of the unit
-            energietraeger = kwk_units.groupby("Energietraeger").Nettonennleistung.sum().sort_values(ascending=False).index[0]
+            energietraeger = (
+                kwk_units.groupby("Energietraeger")
+                .Nettonennleistung.sum()
+                .sort_values(ascending=False)
+                .index[0]
+            )
         waermeunits = kwk_units.query("Energietraeger == 'Wärme'").index
         df.loc[waermeunits, "Energietraeger"] = energietraeger
-    
+
     df_processed = (
         df.rename(columns=RENAME_COLUMNS)
         .query("Status in @status_list")
@@ -2532,9 +2539,7 @@ def MASTR(
             config=config,
             parse_columns=PARSE_COLUMNS,
         )
-        .pipe(
-            _assign_PP_or_CHP
-        )
+        .pipe(_assign_PP_or_CHP)
     )
 
     psw = df_processed.query(
