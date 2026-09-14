@@ -2523,7 +2523,7 @@ def MASTR(
     df_processed.loc[sel, "Fueltype"] = "Biogas"
 
     # one biogas unit has 'Wind' in name
-    sel = df_processed.query("Fueltype == 'Wind' and Filesuffix == 'Biomass'").index
+    sel = df_processed.query("Fueltype == 'Wind' and Filesuffix == 'Bioenergy'").index
     df_processed.loc[sel, "Fueltype"] = "Biogas"
 
     # some combi-units are named wind-solar
