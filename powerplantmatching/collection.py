@@ -244,9 +244,11 @@ def powerplants(
             matched = matched[matched.lat.notnull()]
 
     if isinstance(matched.columns, pd.MultiIndex):
-        matched = matched.stack(future_stack=True).drop_duplicates(
-            ["Name", "Fueltype", "Country"]
-        ).unstack(-1)
+        matched = (
+            matched.stack(future_stack=True)
+            .drop_duplicates(["Name", "Fueltype", "Country"])
+            .unstack(-1)
+        )
     else:
         matched = matched.drop_duplicates(["Name", "Fueltype", "Country"])
 
