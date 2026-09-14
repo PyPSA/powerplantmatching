@@ -1087,8 +1087,8 @@ def WEPP(raw=False, config=None):
     }
     wepp.Fueltype = wepp.Fueltype.replace(d)
     # Fill NaNs to allow str actions
-    wepp.Technology.fillna("", inplace=True)
-    wepp.Turbtype.fillna("", inplace=True)
+    wepp["Technology"] = wepp.Technology.fillna("")
+    wepp["Turbtype"] = wepp.Turbtype.fillna("")
     # Correct technology infos:
     wepp.loc[wepp.Technology.str.contains("LIG", case=False), "Fueltype"] = "Lignite"
     wepp.loc[wepp.Turbtype.str.contains("KAPLAN|BULB", case=False), "Technology"] = (
@@ -1448,7 +1448,7 @@ def BNETZA(
             techmap[fuel]
         )
     # Fueltypes
-    bnetza.Fueltype.replace(
+    bnetza["Fueltype"] = bnetza.Fueltype.replace(
         {
             "Erdgas": "Natural Gas",
             "Steinkohle": "Hard Coal",
@@ -1466,7 +1466,6 @@ def BNETZA(
             ".*solar.*": "PV",
         },
         regex=True,
-        inplace=True,
     )
     if prune_wind:
         bnetza = bnetza[lambda x: x.Fueltype != "Wind"]
@@ -2524,7 +2523,7 @@ def MASTR(
     df_processed.loc[sel, "Fueltype"] = "Biogas"
 
     # one biogas unit has 'Wind' in name
-    sel = df_processed.query("Fueltype == 'Wind' and Filesuffix == 'Biomass'").index
+    sel = df_processed.query("Fueltype == 'Wind' and Filesuffix == 'Bioenergy'").index
     df_processed.loc[sel, "Fueltype"] = "Biogas"
 
     # some combi-units are named wind-solar
