@@ -530,7 +530,7 @@ def restore_blocks(df, mode=2, config=None):
     res = res.sort_index(level="id").reset_index(level=[0, 1])
 
     # Now append Block information from OPSD German list:
-    df_blocks = (OPSD(rawDE_withBlocks=True).rename(columns={"name_bnetza": "Name"}))[
+    df_blocks = (OPSD().rename(columns={"name_bnetza": "Name"}))[
         "Name"
     ]
     res.update(df_blocks)
