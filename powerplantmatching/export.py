@@ -311,7 +311,7 @@ def store_open_dataset():
 
     m = matched_data(reduced=False).reindex(
         columns=["CARMA", "ENTSOE", "GEO", "GPD", "OPSD"], level=1
-    )[lambda df: df.Name.notnull().any(1)]
+    )[lambda df: df.Name.notnull().any(axis=1)]
     m.to_csv(_data_out("powerplants_large.csv"))
     m = m.pipe(reduce_matched_dataframe)
     m.to_csv(_data_out("powerplants.csv"))
