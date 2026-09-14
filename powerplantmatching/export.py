@@ -59,7 +59,7 @@ def map_bus(df, buses):
     DataFrame with an extra column 'bus' indicating the nearest bus.
     """
     df = get_obj_if_Acc(df)
-    non_empty_buses = buses.dropna()
+    non_empty_buses = buses.dropna(subset=["x", "y"])
     kdtree = KDTree(non_empty_buses[["x", "y"]])
     if non_empty_buses.empty:
         buses_i = pd.Index([np.nan])
