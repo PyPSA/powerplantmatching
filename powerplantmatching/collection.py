@@ -115,8 +115,8 @@ def powerplants(
     update=False,
     from_url=False,
     extend_by_vres=False,
-    extendby_kwargs={},
-    extend_by_kwargs={},
+    extendby_kwargs=None,
+    extend_by_kwargs=None,
     fill_geopositions=True,
     filter_missing_geopositions=True,
     **collection_kwargs,
@@ -169,6 +169,10 @@ def powerplants(
             config = get_config()
         else:
             config = get_config(**config_update)
+    if extendby_kwargs is None:
+        extendby_kwargs = {}
+    if extend_by_kwargs is None:
+        extend_by_kwargs = {}
 
     deprecated_args = {"update_all", "stored"}
     used_deprecated_args = deprecated_args.intersection(collection_kwargs.keys())
