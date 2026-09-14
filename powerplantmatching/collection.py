@@ -240,11 +240,11 @@ def powerplants(
             matched = matched[matched.lat.notnull()]
 
     if isinstance(matched.columns, pd.MultiIndex):
-        matched.stack(future_stack=True).drop_duplicates(
+        matched = matched.stack(future_stack=True).drop_duplicates(
             ["Name", "Fueltype", "Country"]
         ).unstack(-1)
     else:
-        matched.drop_duplicates(["Name", "Fueltype", "Country"])
+        matched = matched.drop_duplicates(["Name", "Fueltype", "Country"])
 
     matched.reset_index(drop=True).to_csv(fn, index_label="id", encoding="utf-8")
 
