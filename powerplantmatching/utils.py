@@ -195,7 +195,7 @@ def read_csv_if_string(df):
     """
     from . import data
 
-    if isinstance(data, six.string_types):
+    if isinstance(df, six.string_types):
         df = getattr(data, df)()
     return df
 
