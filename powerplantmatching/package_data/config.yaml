@@ -31,6 +31,7 @@ matching_sources:
   - GEM: Capacity >= 3 and not (Country == 'Germany' and Fueltype  == 'Wind')
   # do not match units below 1 MW (2 MW for biogas, 3 MW for solar), exclude wind in Germany from any matching
   - MASTR: (Fueltype != 'Wind') and ((Fueltype == 'Solar' and Capacity >= 3) or (Fueltype == 'Biogas' and Capacity >= 2) or (Fueltype not in ['Solar', 'Biogas'] and Capacity >= 1))
+  - OSM: Capacity >= 1
   - EESI
   - GHR
 
