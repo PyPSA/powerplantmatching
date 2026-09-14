@@ -301,7 +301,7 @@ def reduce_matched_dataframe(df, show_orig_names=False, config=None):
     # turn it since aggregating only possible for axis=0
     sdf = (
         df.assign(Set=lambda df: df.Set.where(df.Set != "PP"))
-        .assign(Fueltype=lambda df: df.Fueltype.where(df.Set != "Other"))
+        .assign(Fueltype=lambda df: df.Fueltype.where(df.Fueltype != "Other"))
         .stack(1, future_stack=True)
         .reindex(rel_scores.index, level=1)
         .groupby(level=0)
