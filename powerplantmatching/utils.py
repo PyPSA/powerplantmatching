@@ -471,7 +471,6 @@ def breakdown_matches(df):
             .set_index("projectID", append=True)
             .droplevel(-2)
             .index,
-            inplace=False,
         )
         .rename_axis(index=["id", "source", "projectID"])
     )

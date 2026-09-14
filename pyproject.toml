@@ -32,7 +32,8 @@ requires-python = ">=3.11"
 dependencies = [
     "numpy",
     "scipy",
-    "pandas>=0.24.0,<4",
+    "pandas>=2.2.3,<4; python_version < '3.14'",
+    "pandas>=2.3.3,<4; python_version >= '3.14'",
     "networkx>=1.10",
     "pycountry",
     "country_converter",
