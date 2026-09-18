@@ -2452,7 +2452,7 @@ def MASTR(
                         chunksize=100_000,
                     )
                     df = pd.concat(
-                        [c.query("Nettonennleistung >= @THRESHOLD_KW") for c in chunks]
+                        [c[c["Nettonennleistung"] >= THRESHOLD_KW] for c in chunks]
                     ).assign(Filesuffix=fueltype)
                     data_frames.append(df)
                     break
