@@ -228,7 +228,7 @@ def factor_comparison(dfs, keys=None, figsize=(12, 9)):
         rcParams["axes.prop_cycle"] = cycler(color=c)
 
         # where both are zero,
-        compare[compare.sum(1) < 0.5] = np.nan
+        compare[compare.sum(axis=1) < 0.5] = np.nan
 
         fig, ax = plt.subplots(1, 1, figsize=figsize)
         compare = (
@@ -622,7 +622,7 @@ def gather_nrows_ncols(x, orientation="landscape"):
 #                [carma, entsoedata, ese, geo, opsd, wri],
 #                keys=['CARMA', 'ENTSOE', 'ESE', 'GEO', 'OPSD', 'WRI'],
 #                by='Fueltype')
-#        databases = databases[databases.sum(1) > 5]
+#        databases = databases[databases.sum(axis=1) > 5]
 #        databases.plot(kind='bar', ax=ax1, edgecolor='none', rot=70)
 #        datamatched = lookup(matched, by='Fueltype')
 #        datamatched.index.name = ''

@@ -260,7 +260,7 @@ def fill_missing_decommissioning_years(df, config=None):
     lifetime = df.Fueltype.map(config["fuel_to_lifetime"])
     df = fill_missing_commissioning_years(df)
     df["DateOut"] = df.DateOut.fillna(
-        df[["DateIn", "DateRetrofit"]].max(1) + lifetime
+        df[["DateIn", "DateRetrofit"]].max(axis=1) + lifetime
     ).astype(float)
     return df
 

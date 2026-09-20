@@ -18,6 +18,7 @@ import pandas as pd
 import pycountry
 import requests
 from deprecation import deprecated
+from scipy import optimize
 
 from .cleaning import (
     clean_name,
@@ -1087,8 +1088,8 @@ def WEPP(raw=False, config=None):
     }
     wepp.Fueltype = wepp.Fueltype.replace(d)
     # Fill NaNs to allow str actions
-    wepp.Technology.fillna("", inplace=True)
-    wepp.Turbtype.fillna("", inplace=True)
+    wepp["Technology"] = wepp.Technology.fillna("")
+    wepp["Turbtype"] = wepp.Turbtype.fillna("")
     # Correct technology infos:
     wepp.loc[wepp.Technology.str.contains("LIG", case=False), "Fueltype"] = "Lignite"
     wepp.loc[wepp.Turbtype.str.contains("KAPLAN|BULB", case=False), "Technology"] = (
@@ -1448,7 +1449,7 @@ def BNETZA(
             techmap[fuel]
         )
     # Fueltypes
-    bnetza.Fueltype.replace(
+    bnetza["Fueltype"] = bnetza.Fueltype.replace(
         {
             "Erdgas": "Natural Gas",
             "Steinkohle": "Hard Coal",
@@ -1466,7 +1467,6 @@ def BNETZA(
             ".*solar.*": "PV",
         },
         regex=True,
-        inplace=True,
     )
     if prune_wind:
         bnetza = bnetza[lambda x: x.Fueltype != "Wind"]
@@ -1612,17 +1612,22 @@ def IRENASTAT(raw=False, update=False, config=None):
         return df
 
     RENAME_COLUMNS = {
-        "Electricity statistics": "Capacity",
+        "Electricity capacity statistics": "Capacity",
         "Country/area": "Country",
         "Grid connection": "Grid",
     }
     df.rename(columns=RENAME_COLUMNS, inplace=True)
 
-    df.drop(columns="Data Type", inplace=True)
-
-    # Rename all entries "Congo (the)" to "Congo" under the column
-    # "Country"; the former confuses country_converter.
-    df["Country"] = df["Country"].replace("Congo (the)", "Congo")
+    # Rename country entries that confuse country_converter
+    country_renames = {
+        "Congo (the)": "Congo",
+        "Fr Polynesia": "French Polynesia",
+        "Amer Samoa": "American Samoa",
+        "Cent Afr Rep": "Central African Republic",
+        "St Pierre Mq": "Saint Pierre and Miquelon",
+        "New Caledon": "New Caledonia",
+    }
+    df["Country"] = df["Country"].replace(country_renames)
 
     # Consistent country names for dataset
     df = convert_to_short_name(df)
@@ -1631,7 +1636,8 @@ def IRENASTAT(raw=False, update=False, config=None):
 
     # Remove all rows where Technology is just a Total
     df = df[
-        ~df.Technology.str.contains("Total Renewable|Total Non-Renewable", na=False)
+        ~df.Technology.str.startswith("Total", na=False)
+        & ~df.Technology.str.contains("Solar energy|Wind energy|Bioenergy", na=False)
     ]
 
     fueltype_dict = {
@@ -1640,20 +1646,22 @@ def IRENASTAT(raw=False, update=False, config=None):
         "Onshore wind energy": "Wind",
         "Offshore wind energy": "Wind",
         "Renewable hydropower": "Hydro",
-        "Mixed Hydro Plants": "Hydro",
-        "Pumped storage": "Hydro",
+        "Mixed hydropower": "Hydro",
+        "Pumped hydro": "Hydro",
         "Solid biofuels": "Solid Biomass",
-        "Renewable municipal waste": "Waste",
+        "Renewable waste": "Waste",
+        "Non-renewable waste": "Waste",
         "Liquid biofuels": "Solid Biomass",
-        "Biogas": "Biogas",
+        "Gas biofuels": "Biogas",
         "Geothermal energy": "Geothermal",
         "Marine energy": "Marine",
-        "Coal and peat": "Hard Coal",
+        "Coal": "Hard Coal",
         "Oil": "Oil",
         "Natural gas": "Natural Gas",
-        "Nuclear": "Nuclear",
-        "Fossil fuels n.e.s.": "Other",
+        "Nuclear energy": "Nuclear",
+        "Fossil fuels": "Other",
         "Other non-renewable energy": "Other",
+        "Other non-renewable energy n.e.s.": "Other",
     }
 
     technology_dict = {
@@ -1661,9 +1669,7 @@ def IRENASTAT(raw=False, update=False, config=None):
         "Solar thermal energy": "CSP",
         "Onshore wind energy": "Onshore",
         "Offshore wind energy": "Offshore",
-        "Pumped storage": "Pumped Storage",
-        "Geothermal energy": "Geothermal",
-        "Marine energy": "Marine",
+        "Pumped hydro": "Pumped Storage",
     }
 
     df["Fueltype"] = df.Technology.map(fueltype_dict)
@@ -2324,6 +2330,19 @@ def MASTR(
     Provided by the German Federal Network Agency (Bundesnetzagentur / BNetzA) and
     contains data on Germany, Austria and Switzerland.
 
+    To retrieve an up-to-date version, run:
+
+    ```python
+    # uv add open-mastr
+    from open_mastr import Mastr
+    db = Mastr()
+    db.download()
+    db.to_csv()
+    ```
+
+    This will store the data in `~/.open-MaStR/data/dataversion-YYYY-MM-DD`.
+    Link to a zipped version of this folder in `config.yaml`.
+
     Parameters
     ----------
     raw : Boolean, default False
@@ -2337,9 +2356,50 @@ def MASTR(
 
     """
 
+    def _assign_PP_or_CHP(df):
+        df.loc[:, "Set"] = "PP"
+
+        # KWK plants consist of multiple units, all of which share the same MastrKwkNummer
+        grouped_kwk = df[df["KwkMastrNummer"].notna()].groupby(
+            "KwkMastrNummer", sort=False
+        )
+        for _, kwk_units in grouped_kwk:
+            n_units = len(kwk_units)
+            sizes = kwk_units.Capacity.mul(1e3).to_numpy()
+            capacity = kwk_units.ElektrischeKwkLeistung.unique().item()
+            if np.isnan(capacity):
+                capacity = kwk_units.ThermischeNutzleistung.unique().item()
+            if np.isnan(capacity):
+                continue
+            # Solve Knapsack problem to select units that sum up to the capacity, minimizing the deviation from the target capacity.
+            # One binary variable per unit, plus a non-negative deviation variable.
+            objective = np.r_[np.zeros(n_units), 1]
+            integrality = np.r_[np.ones(n_units), 0]
+            bounds = optimize.Bounds(
+                lb=np.zeros(n_units + 1),
+                ub=np.r_[np.ones(n_units), np.inf],
+            )
+            # capacity - deviation <= selected capacity <= capacity + deviation
+            constraints = optimize.LinearConstraint(
+                A=[np.r_[sizes, -1], np.r_[sizes, 1]],
+                lb=[-np.inf, capacity],
+                ub=[capacity, np.inf],
+            )
+            # Minimize the deviation variable.
+            res = optimize.milp(
+                c=objective,
+                constraints=constraints,
+                integrality=integrality,
+                bounds=bounds,
+            )
+            # NB: If the smallest size is at least twice the capacity, nothing gets selected.
+            selected = res.x[:-1] > 0.5
+            df.loc[kwk_units.index[selected], "Set"] = "CHP"
+        return df
+
     config = get_config() if config is None else config
 
-    THRESHOLD_KW = config["MASTR"].get("capacity_threshold", 0.1) * 1e3  # noqa: F841
+    THRESHOLD_KW = config["MASTR"].get("capacity_threshold", 0.05) * 1e3  # noqa: F841
 
     RENAME_COLUMNS = {
         "EinheitMastrNummer": "projectID",
@@ -2369,6 +2429,29 @@ def MASTR(
         "NameWindpark",
         "Technologie",
     ]
+    # columns whose type inference is ambiguous, either between chunks or files
+    STR_COLUMNS = pd.Index(
+        PARSE_COLUMNS
+        + [
+            "Batterietechnologie",
+            "DatumBeginnVoruebergehendeStilllegung",
+            "DatumEndgueltigeStilllegung",
+            "DatumWiederaufnahmeBetrieb",
+            "EinheitBetriebsstatus",
+            "EinheitMastrNummer",
+            "Gemeinde",
+            "GeplantesInbetriebnahmedatum",
+            "Inbetriebnahmedatum",
+            "KwkMastrNummer",
+            "Land",
+            "Landkreis",
+            "WindAnLandOderAufSee",
+            "NameKraftwerk",
+            "Ort",
+            "Postleitzahl",
+            "WEIC",
+        ]
+    )
 
     fn = get_raw_file("MASTR", update=update, config=config)
     file_suffixes = {
@@ -2378,7 +2461,7 @@ def MASTR(
         "Hydro": "hydro_raw.csv",
         "Wind": "wind_raw.csv",
         "Solar": "solar_raw.csv",
-        "Storage": "bnetza_mastr_storage_raw.csv",
+        "Storage": "storage_raw.csv",
     }
     data_frames = []
     with ZipFile(fn, "r") as file:
@@ -2388,6 +2471,7 @@ def MASTR(
                     available_columns = pd.read_csv(file.open(name), nrows=0).columns
                     target_columns = [
                         "GeplantesInbetriebnahmedatum",
+                        "ElektrischeKwkLeistung",
                         "ThermischeNutzleistung",
                         "KwkMastrNummer",
                         "Batterietechnologie",
@@ -2397,27 +2481,31 @@ def MASTR(
                         "Ort",
                         "Gemeinde",
                         "Landkreis",
-                        "Lage",
+                        "WindAnLandOderAufSee",
                     ]
                     target_columns = (
                         target_columns + PARSE_COLUMNS + list(RENAME_COLUMNS.keys())
                     )
                     usecols = available_columns.intersection(target_columns)
-                    df = (
-                        pd.read_csv(file.open(name), usecols=usecols, low_memory=False)
-                        .assign(Filesuffix=fueltype)
-                        .query("Nettonennleistung >= @THRESHOLD_KW")
+                    dtypes = {c: "str" for c in usecols.intersection(STR_COLUMNS)}
+                    chunks = pd.read_csv(
+                        file.open(name),
+                        usecols=usecols,
+                        dtype=dtypes,
+                        chunksize=100_000,
                     )
+                    df = pd.concat(
+                        [c[c["Nettonennleistung"] >= THRESHOLD_KW] for c in chunks]
+                    ).assign(Filesuffix=fueltype)
                     data_frames.append(df)
                     break
     df = pd.concat(data_frames).reset_index(drop=True)
 
     cols = ["NutzbareSpeicherkapazitaet", "VerknuepfteEinheit"]
     with ZipFile(fn, "r") as file:
-        fn_storage_units = (
-            "bnetza_open_mastr_2025-02-09/bnetza_mastr_storage_units_raw.csv"
-        )
-        storage_units = pd.read_csv(file.open(fn_storage_units), usecols=cols)
+        for name in file.namelist():
+            if name.endswith("storage_units_raw.csv"):
+                storage_units = pd.read_csv(file.open(name), usecols=cols)
 
     storage_mwh = (
         storage_units.assign(
@@ -2447,6 +2535,21 @@ def MASTR(
     )
     df["PLZ_lat"] = df.Postleitzahl.map(PLZ_map.lat)
     df["PLZ_lon"] = df.Postleitzahl.map(PLZ_map.lon)
+
+    # change the Energietraeger from Waerme to the main fuel type of the unit if there are multiple units with the same KwkMastrNummer
+    for unit in df.query("Energietraeger == 'Wärme'").iterrows():
+        kwk_units = df[df.KwkMastrNummer == unit[1].KwkMastrNummer]
+        energietraeger = "Wärme"
+        if len(kwk_units) > 1:
+            # If Wärme is the dominant fuel type, keep it as Wärme, otherwise use the main fuel type of the unit
+            energietraeger = (
+                kwk_units.groupby("Energietraeger")
+                .Nettonennleistung.sum()
+                .sort_values(ascending=False)
+                .index[0]
+            )
+        waermeunits = kwk_units.query("Energietraeger == 'Wärme'").index
+        df.loc[waermeunits, "Energietraeger"] = energietraeger
 
     df_processed = (
         df.rename(columns=RENAME_COLUMNS)
@@ -2481,11 +2584,7 @@ def MASTR(
             config=config,
             parse_columns=PARSE_COLUMNS,
         )
-        .assign(
-            Set=lambda df: df["Set"].where(
-                df["KwkMastrNummer"].isna() & df["ThermischeNutzleistung"].isna(), "CHP"
-            ),
-        )
+        .pipe(_assign_PP_or_CHP)
     )
 
     psw = df_processed.query(
@@ -2514,9 +2613,9 @@ def MASTR(
         "Windkraft an Land": "Onshore",
     }
     wind = df_processed.query("Energietraeger == 'Wind'").index
-    df_processed.loc[wind, "Technology"] = df_processed.loc[wind, "Lage"].map(
-        WIND_MAPPING
-    )
+    df_processed.loc[wind, "Technology"] = df_processed.loc[
+        wind, "WindAnLandOderAufSee"
+    ].map(WIND_MAPPING)
 
     sel = df_processed.query(
         "Fueltype == 'Natural Gas' and Filesuffix == 'Bioenergy'"
@@ -2524,7 +2623,7 @@ def MASTR(
     df_processed.loc[sel, "Fueltype"] = "Biogas"
 
     # one biogas unit has 'Wind' in name
-    sel = df_processed.query("Fueltype == 'Wind' and Filesuffix == 'Biomass'").index
+    sel = df_processed.query("Fueltype == 'Wind' and Filesuffix == 'Bioenergy'").index
     df_processed.loc[sel, "Fueltype"] = "Biogas"
 
     # some combi-units are named wind-solar
@@ -2631,7 +2730,7 @@ def EESI(
     if raw:
         return df
 
-    status_list = config["EESI"].get("status", ["Operational"])  # noqa: F841
+    status_list = config["EESI"].get("status_name", ["Operational"])  # noqa: F841
 
     RENAME_COLUMNS = {
         "title": "Name",
@@ -2639,10 +2738,10 @@ def EESI(
         "capacity": "StorageCapacity_MWh",
         "facility_latitude": "lat",
         "facility_longitude": "lon",
-        "facility_country": "Country",
+        "facility_country_name": "Country",
         "id": "projectID",
         "technology_name": "Technology",
-        "status": "Status",
+        "status_name": "Status",
     }
 
     df_processed = (
@@ -2658,7 +2757,7 @@ def EESI(
         )
     )
 
-    sel = df_processed.query("technology_parentName == 'ElectroChemical'").index
+    sel = df_processed.query("technology_parentName == 'Electrochemical'").index
     df_processed.loc[sel, "Fueltype"] = "Battery"
 
     sel = df_processed.query("technology_parentName == 'Thermal'").index
@@ -2678,14 +2777,22 @@ def EESI(
         "Lithium-ion batteries": "Li",
         "Lead Acid batteries": "Pb",
         "Sodium Sulphur batteries": "NaS",
+        "Lithium iron phosphate battery (LFP)": "Li",
+        "Lithium nickel manganese cobalt oxide battery (NMC)": "Li",
+        "Lithium nickel cobalt aluminium oxide battery (NCA)": "Li",
+        "Lithium manganese oxide battery (LMO)": "Li",
+        "Lithium-titanate battery (LTO)": "Li",
+        "Lithium-Metal-Polymer batteries": "Li",
         "Redox flow batteries Vanadium": "V",
         "Sodium Nickel Chloride batteries": "NaNiCl",
-        "Lithium-titanate battery (LTO)": "Li",
         "Pumped Hydro Storage (PHS)": "Pumped Storage",
         "Unespecified Storage - mechanical": np.nan,
         "Compressed Air Energy Storage (CAES)": "CAES",
-        "Flywheel Energy Storage": "Flywheel",
+        "Liquid Air Energy Storage (LAES)": "LAES",
+        "Iron air battery": "Fe",
+        "Flywheel": "Flywheel",
         "Unspecific Thermal Storage": np.nan,
+        "Unspecific Sensible Thermal Energy Storage (STES)": np.nan,
         "Molten salts (Sensible Thermal Energy Storage (STES))": "Molten Salt",
     }
     df_processed.Technology = df_processed.Technology.map(TECHNOLOGY_MAPPING)
