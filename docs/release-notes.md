@@ -8,9 +8,12 @@ SPDX-License-Identifier: MIT
 
 ## Upcoming Version
 
+*
+
+## [v0.9.0](https:://github.com/PyPSA/powerplantmatching/releases/tag/v0.9.0) (23th September 2026)
+
 * OSM dataset upgraded from a Europe-only snapshot (`osm_europe.csv`) to a global snapshot (`osm_global.csv.gz` taken from [`osm-powerplants`](https://github.com/open-energy-transition/osm-powerplants).
 * Drop support for Python 3.10, add support for Python 3.14. Minimum required Python version is now 3.11.
-* Bugfix isinstance check in `powerplantmatching.utils.read_csv_if_string()` to correctly handle string input for data source.
 * Add support for pandas 3.
 * Bug fixes: avoid leaks in mutable arguments, fix MASTR for biogas unit with wind fueltype, drop outdated argument to OPSD.,
 
