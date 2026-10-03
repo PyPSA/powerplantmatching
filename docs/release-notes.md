@@ -8,17 +8,25 @@ SPDX-License-Identifier: MIT
 
 ## Upcoming Version
 
-* OSM dataset upgraded from a Europe-only snapshot (`osm_europe.csv`) to a global snapshot (`osm_global.csv.gz` taken from [`osm-powerplants`](https://github.com/open-energy-transition/osm-powerplants).
-* Drop support for Python 3.10, add support for Python 3.14. Minimum required Python version is now 3.11.
-* Bugfix isinstance check in `powerplantmatching.utils.read_csv_if_string()` to correctly handle string input for data source.
-* Add support for pandas 3.
-* Bug fixes: avoid leaks in mutable arguments, fix MASTR for biogas unit with wind fueltype, drop outdated argument to OPSD.,
+*
 
-## [v0.8.1](https:://github.com/PyPSA/powerplantmatching/releases/tag/v0.8.1) (11th February 2026)
+## [v0.9.0](https://github.com/PyPSA/powerplantmatching/releases/tag/v0.9.0) (3rd October 2026)
+
+* Updated BEYONDCOAL, IRENASTAT, ENTSOE, JRC, Marktstammdatenregister (August 2026), European Energy Storage Inventory and the Global Energy Monitor datasets (oil and gas, coal, geothermal, nuclear, hydropower) to the latest versions. ([PR #319](https://github.com/PyPSA/powerplantmatching/pull/319))
+* OSM dataset upgraded from a Europe-only snapshot (`osm_europe.csv`) to a global snapshot (`osm_global.csv.gz`) taken from [`osm-powerplants`](https://github.com/open-energy-transition/osm-powerplants). ([PR #292](https://github.com/PyPSA/powerplantmatching/pull/292))
+* Include OSM dataset in the matching. ([PR #311](https://github.com/PyPSA/powerplantmatching/pull/311))
+* Improved matching with EIC codes, which increases the number of matched entries from 26 to 1216. ([PR #312](https://github.com/PyPSA/powerplantmatching/pull/312))
+* In `pm.data.MASTR()`, improved assignment of CHP and PP: units that share a CHP number are only classified as CHP if their capacity matches the electrical CHP capacity. ([PR #313](https://github.com/PyPSA/powerplantmatching/pull/313))
+* Add support for pandas 3. ([PR #294](https://github.com/PyPSA/powerplantmatching/pull/294)) ([PR #317](https://github.com/PyPSA/powerplantmatching/pull/317))
+* Drop support for Python 3.10, add support for Python 3.14. Minimum required Python version is now 3.11. ([PR #310](https://github.com/PyPSA/powerplantmatching/pull/310))
+* Bugfix isinstance check in `powerplantmatching.utils.read_csv_if_string()` to correctly handle string input for data source. ([PR #318](https://github.com/PyPSA/powerplantmatching/pull/318))
+* Bug fixes: avoid leaks in mutable arguments, fix MASTR for biogas unit with wind fueltype, drop outdated argument to OPSD. ([PR #317](https://github.com/PyPSA/powerplantmatching/pull/317))
+
+## [v0.8.1](https://github.com/PyPSA/powerplantmatching/releases/tag/v0.8.1) (11th February 2026)
 
 * Updated Global Energy Monitor / Transition Zero datasets to the latest versions (February 2026) for wind and solar power plants.
 
-## [v0.8.0](https:://github.com/PyPSA/powerplantmatching/releases/tag/v0.8.0) (13th January 2026)
+## [v0.8.0](https://github.com/PyPSA/powerplantmatching/releases/tag/v0.8.0) (13th January 2026)
 
 * Fix 403 Forbidden responses for Zenodo downloads by sending `powerplantmatching/{base_version}` as user agent. ([PR #276](https://github.com/PyPSA/powerplantmatching/pull/276))
 * Added [OpenStreetMap (OSM)](https://github.com/open-energy-transition/osm-powerplants) power plant data as optional data source via `pm.data.OSM()`. Data is provided by the external `osm-powerplants` package. ([PR #272](https://github.com/PyPSA/powerplantmatching/pull/272))
