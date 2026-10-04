@@ -7,6 +7,7 @@ Functions for linking and combining different datasets
 """
 
 import logging
+from collections.abc import Hashable, Sequence
 from itertools import combinations
 
 import numpy as np
@@ -15,25 +16,24 @@ import pandas as pd
 from .cleaning import clean_technology
 from .core import get_config, get_obj_if_Acc
 from .duke import duke
-from .utils import get_name, parmap, read_csv_if_string
+from .utils import collect_eic_codes, get_name, parmap, read_csv_if_string
 
 logger = logging.getLogger(__name__)
 
 
-def _match_by_eic(df0, df1, labels):
+def _match_by_eic(
+    df0: pd.DataFrame, df1: pd.DataFrame, labels: Sequence[str]
+) -> tuple[pd.DataFrame, set[Hashable], set[Hashable]]:
     """
     Deterministic matching of two datasets by EIC (Energy Identification Code).
 
-    Performs an exact join on EIC codes before Duke fuzzy matching, so that
-    plants with known unique identifiers are matched with certainty. This
-    prevents co-located plants with similar names but different fuels from
-    being incorrectly merged by the fuzzy matcher (e.g. Eemshavencentrale
-    coal vs Eemscentrale gas in the Netherlands).
+    Accept only isolated one-to-one links in the shared-code graph. Scheme
+    identifiers shared by several stations remain available for fuzzy matching.
 
     Parameters
     ----------
     df0, df1 : pd.DataFrame
-        Source dataframes with an 'EIC' column containing sets of EIC codes
+        Source dataframes with an 'EIC' column containing scalar or collected codes
         (as produced by ``aggregate_units``).
     labels : list of str
         Two-element list of dataset names for the output columns.
@@ -49,46 +49,31 @@ def _match_by_eic(df0, df1, labels):
     """
     empty = pd.DataFrame(columns=labels), set(), set()
 
+    if len(labels) != 2 or labels[0] == labels[1] or "EIC" in labels:
+        raise ValueError(
+            "EIC matching requires two distinct source labels other than EIC"
+        )
+    if not df0.index.is_unique or not df1.index.is_unique:
+        raise ValueError("EIC matching requires a unique index in each source")
     if "EIC" not in df0.columns or "EIC" not in df1.columns:
         return empty
 
-    def _build_eic_index(df):
-        """Map each valid EIC code to its row index."""
-        code_to_idx = {}
-        for row_idx, eic_set in df["EIC"].items():
-            if not isinstance(eic_set, set):
-                continue
-            for code in eic_set:
-                if isinstance(code, str) and code:
-                    code_to_idx[code] = row_idx
-        return code_to_idx
+    def codes(df: pd.DataFrame, label: str) -> pd.DataFrame:
+        expanded = df["EIC"].explode().dropna()
+        expanded = expanded[expanded.map(lambda value: isinstance(value, str))]
+        return expanded[expanded.ne("")].rename_axis(label).reset_index(name="EIC")
 
-    eic_to_idx0 = _build_eic_index(df0)
-    eic_to_idx1 = _build_eic_index(df1)
-
-    shared_codes = eic_to_idx0.keys() & eic_to_idx1.keys()
-    if not shared_codes:
+    links = pd.merge(codes(df0, labels[0]), codes(df1, labels[1]), on="EIC")
+    links = links[list(labels)].drop_duplicates()
+    if links.empty:
         return empty
 
-    # Greedy 1-to-1: first shared code claims the pair, skip already-matched
-    matched_0_to_1 = {}
-    claimed_idx1 = set()
-    for code in shared_codes:
-        i0 = eic_to_idx0[code]
-        i1 = eic_to_idx1[code]
-        if i0 not in matched_0_to_1 and i1 not in claimed_idx1:
-            matched_0_to_1[i0] = i1
-            claimed_idx1.add(i1)
-
-    if not matched_0_to_1:
-        return empty
-
-    matches = pd.DataFrame(
-        {labels[0]: list(matched_0_to_1.keys()),
-         labels[1]: list(matched_0_to_1.values())}
-    )
-    matched_idx0 = set(matched_0_to_1)
-    matched_idx1 = claimed_idx1
+    isolated = links.groupby(labels[0])[labels[1]].transform("size").eq(
+        1
+    ) & links.groupby(labels[1])[labels[0]].transform("size").eq(1)
+    matches = links.loc[isolated].reset_index(drop=True)
+    matched_idx0 = set(matches[labels[0]])
+    matched_idx1 = set(matches[labels[1]])
 
     logger.info(
         "EIC matching: %d deterministic matches between `%s` and `%s`",
@@ -377,12 +362,7 @@ def reduce_matched_dataframe(df, show_orig_names=False, config=None):
             "DateRetrofit": "max",
             "DateOut": "max",
             "projectID": lambda x: dict(x.droplevel(0).dropna()),
-            "EIC": lambda x: {
-                v
-                for val in x.dropna()
-                for v in (val if isinstance(val, set) else [val])
-                if isinstance(v, str)
-            },
+            "EIC": collect_eic_codes,
         }
     )
     props_for_groups = pd.Series(props_for_groups)[cols].to_dict()

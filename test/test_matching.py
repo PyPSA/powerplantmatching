@@ -2,11 +2,16 @@
 #
 # SPDX-License-Identifier: MIT
 
+from io import StringIO
+
 import numpy as np
 import pandas as pd
 import pytest
 
-from powerplantmatching.matching import _match_by_eic
+from powerplantmatching.cleaning import aggregate_units
+from powerplantmatching.core import get_config
+from powerplantmatching.matching import _match_by_eic, reduce_matched_dataframe
+from powerplantmatching.utils import parse_string_to_dict
 
 
 @pytest.fixture
@@ -105,25 +110,101 @@ def test_eic_matching_nan_only():
 
 
 def test_eic_matching_one_to_one():
-    """Enforces 1-to-1: each row matches at most once."""
+    """A shared scheme identifier cannot select a station arbitrarily."""
     # Plant A has {C1, C2}; Plant X has {C1}, Plant Y has {C2}
     df0 = pd.DataFrame({"Name": ["Plant A"], "EIC": [{"C1", "C2"}]})
     df1 = pd.DataFrame({"Name": ["Plant X", "Plant Y"], "EIC": [{"C1"}, {"C2"}]})
 
     matches, idx0, idx1 = _match_by_eic(df0, df1, ["src0", "src1"])
 
-    # Plant A should match exactly one of X or Y (1-to-1 constraint)
-    assert len(matches) == 1
-    assert matches["src0"].iloc[0] == 0
-    assert matches["src1"].iloc[0] in {0, 1}
+    assert matches.empty
+    assert not idx0 and not idx1
 
 
 def test_eic_matching_non_set_values():
-    """Non-set EIC values (e.g. raw strings from CSV) are skipped."""
+    """Scalar identifiers participate in the same matching as collections."""
     df0 = pd.DataFrame({"Name": ["A", "B"], "EIC": ["CODE1", {"CODE2"}]})
     df1 = pd.DataFrame({"Name": ["X", "Y"], "EIC": [{"CODE1"}, {"CODE2"}]})
 
     matches, idx0, idx1 = _match_by_eic(df0, df1, ["L", "R"])
-    # Only CODE2 matches (CODE1 in df0 is a raw string, not a set)
-    assert len(matches) == 1
-    assert 1 in idx0
+    assert len(matches) == 2
+    assert idx0 == idx1 == {0, 1}
+
+
+@pytest.mark.parametrize("codes", [["C2", "C1", "C1"], {"C1", "C2"}, "C1"])
+def test_reduce_preserves_identifiers_across_sources(codes: object) -> None:
+    """A higher-priority source without EICs cannot erase known identifiers."""
+    columns = pd.MultiIndex.from_product(
+        [["Name", "Fueltype", "Technology", "Set", "EIC"], ["ENTSOE", "GEM"]]
+    )
+    frame = pd.DataFrame(
+        [
+            [
+                "Plant",
+                "Plant",
+                "Natural Gas",
+                "Natural Gas",
+                "CCGT",
+                "CCGT",
+                "PP",
+                "PP",
+                codes,
+                None,
+            ]
+        ],
+        columns=columns,
+    )
+    config = {
+        "target_columns": ["Name", "Fueltype", "Technology", "Set", "EIC"],
+        "ENTSOE": {"reliability_score": 5},
+        "GEM": {"reliability_score": 6},
+    }
+    result = reduce_matched_dataframe(frame, config=config)
+    assert result.EIC.iloc[0] == (["C1"] if isinstance(codes, str) else ["C1", "C2"])
+
+
+def test_eic_matching_lists_and_ambiguous_scheme() -> None:
+    left = pd.DataFrame({"EIC": [["C1", "C2"], ["SCHEME"]]}, index=[10, 20])
+    right = pd.DataFrame({"EIC": [["C1"], ["SCHEME"], ["SCHEME"]]}, index=[30, 40, 50])
+    matches, idx0, idx1 = _match_by_eic(left, right, ["A", "B"])
+    assert matches.to_dict("records") == [{"A": 10, "B": 30}]
+    assert idx0 == {10} and idx1 == {30}
+
+
+def test_eic_matching_rejects_duplicate_index() -> None:
+    left = pd.DataFrame({"EIC": [["C1"], ["C2"]]}, index=[0, 0])
+    right = pd.DataFrame({"EIC": [["C1"]]})
+    with pytest.raises(ValueError, match="unique index"):
+        _match_by_eic(left, right, ["A", "B"])
+
+
+@pytest.mark.parametrize(
+    "codes, expected",
+    [(["C2", "C1", "C1", None, np.nan, "", 42], ["C1", "C2"]), (None, [])],
+)
+def test_aggregate_identifiers_survive_cache_roundtrip(
+    codes: object, expected: list[str]
+) -> None:
+    """Unit aggregation and cached reload retain the same usable identifiers."""
+    config = get_config()
+    units = pd.DataFrame(
+        [
+            {
+                "Name": "Alpha Plant",
+                "Fueltype": "Natural Gas",
+                "Technology": "CCGT",
+                "Set": "PP",
+                "Country": "Netherlands",
+                "Capacity": 100.0,
+                "lat": 53.0,
+                "lon": 6.0,
+                "EIC": codes,
+                "projectID": "unit-1",
+            }
+        ]
+    ).reindex(columns=config["target_columns"])
+    aggregated = aggregate_units(units, dataset_name="test", config=config)
+    assert aggregated.EIC.iloc[0] == expected
+    cached = pd.read_csv(StringIO(aggregated.to_csv(index=False)))
+    restored = parse_string_to_dict(cached, ["EIC"])
+    assert restored.EIC.iloc[0] == expected
