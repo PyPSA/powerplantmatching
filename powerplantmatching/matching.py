@@ -15,7 +15,7 @@ import pandas as pd
 
 from .cleaning import clean_technology
 from .core import get_config, get_obj_if_Acc
-from .duke import duke
+from .linkage import match, select_one_to_one
 from .utils import collect_eic_codes, get_name, parmap, read_csv_if_string
 
 logger = logging.getLogger(__name__)
@@ -83,28 +83,14 @@ def _match_by_eic(
     return matches, matched_idx0, matched_idx1
 
 
-def best_matches(links):
-    """
-    Subsequent to duke() with singlematch=True. Returns reduced list of
-    matches on the base of the highest score for each duplicated entry.
-
-    Parameters
-    ----------
-    links : pd.DataFrame
-        Links as returned by duke
-    """
-    labels = links.columns.difference({"scores"})
-    if links.empty:
-        return pd.DataFrame(columns=labels)
-    else:
-        scores = links["scores"].astype(float)
-        best_idx = scores.groupby(links.iloc[:, 1], sort=False).idxmax()
-        return links.loc[best_idx, labels].reset_index(drop=True)
+def best_matches(links: pd.DataFrame) -> pd.DataFrame:
+    """Select a maximum-score one-to-one assignment of accepted links."""
+    return select_one_to_one(links).drop(columns="scores")
 
 
-def compare_two_datasets(dfs, labels, country_wise=True, config=None, **dukeargs):
+def compare_two_datasets(dfs, labels, country_wise=True, config=None, **matchargs):
     """
-    Duke-based horizontal match of two databases. Returns the matched
+    Fuzzy horizontal match of two databases. Returns the matched
     dataframe including only the matched entries in a multi-indexed
     pandas.Dataframe. Compares all properties of the given columns
     ['Name','Fueltype', 'Technology', 'Country',
@@ -112,9 +98,7 @@ def compare_two_datasets(dfs, labels, country_wise=True, config=None, **dukeargs
     powerplant in different two datasets. The match is in one-to-one
     mode, that is every entry of the initial databases has maximally
     one link in order to obtain unique entries in the resulting
-    dataframe.  Attention: When aborting this command, the duke
-    process will still continue in the background, wait until the
-    process is finished before restarting.
+    dataframe.
 
     Parameters
     ----------
@@ -129,34 +113,34 @@ def compare_two_datasets(dfs, labels, country_wise=True, config=None, **dukeargs
         config = get_config()
 
     deprecated_args = {"use_saved_matches", "use_saved_aggregation"}
-    used_deprecated_args = deprecated_args.intersection(dukeargs)
+    used_deprecated_args = deprecated_args.intersection(matchargs)
     if used_deprecated_args:
         for arg in used_deprecated_args:
-            dukeargs.pop(arg)
+            matchargs.pop(arg)
         msg = "The following arguments were deprecated and are being ignored: "
         logger.warning(msg + f"{used_deprecated_args}")
 
     dfs = list(map(read_csv_if_string, dfs))
-    if "singlematch" not in dukeargs:
-        dukeargs["singlematch"] = True
+    if "singlematch" not in matchargs:
+        matchargs["singlematch"] = True
 
-    # ── Deterministic EIC matching (before fuzzy) ────────────────────
+    # Resolve isolated exact-EIC pairs before fuzzy matching.
     eic_matches, matched_idx0, matched_idx1 = _match_by_eic(dfs[0], dfs[1], labels)
 
-    # Remove EIC-matched rows from the Duke input
+    # Remove EIC-matched rows from the fuzzy input
     remaining = [
         dfs[0].drop(index=matched_idx0, errors="ignore"),
         dfs[1].drop(index=matched_idx1, errors="ignore"),
     ]
 
-    # ── Duke fuzzy matching on residual ──────────────────────────────
+    # Compare only the residual records.
     def country_link(dfs, country):
         # country_selector for both dataframes
         sel_country_b = [df["Country"] == country for df in dfs]
-        # only append if country appears in both dataframse
+        # only append if country appears in both dataframes
         if all(sel.any() for sel in sel_country_b):
-            return duke(
-                [df[sel] for df, sel in zip(dfs, sel_country_b)], labels, **dukeargs
+            return match(
+                [df[sel] for df, sel in zip(dfs, sel_country_b)], labels, **matchargs
             )
         else:
             return pd.DataFrame(columns=[*labels, "scores"])
@@ -170,15 +154,15 @@ def compare_two_datasets(dfs, labels, country_wise=True, config=None, **dukeargs
         else:
             links = pd.DataFrame(columns=[*labels, "scores"])
     else:
-        links = duke(remaining, labels=labels, **dukeargs)
+        links = match(remaining, labels=labels, **matchargs)
 
     if links.empty:
-        duke_matches = pd.DataFrame(columns=labels)
+        fuzzy_matches = pd.DataFrame(columns=labels)
     else:
-        duke_matches = best_matches(links)
+        fuzzy_matches = best_matches(links)
 
-    # ── Combine EIC + Duke matches ───────────────────────────────────
-    matches = pd.concat([eic_matches, duke_matches], ignore_index=True)
+    # Combine disjoint exact and fuzzy pairs.
+    matches = pd.concat([eic_matches, fuzzy_matches], ignore_index=True)
     return matches
 
 
@@ -193,7 +177,7 @@ def cross_matches(sets_of_pairs, labels=None):
     ----------
     sets_of_pairs : list
         list of pd.Dataframe's containing only the matches (without
-        scores), obtained from the linkfile (duke() and
+        scores), obtained from the linkfile (match() and
         best_matches())
     labels : list of strings
         list of names of the databases, used for specifying the order
@@ -242,10 +226,10 @@ def cross_matches(sets_of_pairs, labels=None):
 
 
 def link_multiple_datasets(
-    datasets, labels, use_saved_matches=False, config=None, **dukeargs
+    datasets, labels, use_saved_matches=False, config=None, **matchargs
 ):
     """
-    Duke-based horizontal match of multiple databases. Returns the
+    Fuzzy horizontal match of multiple databases. Returns the
     matching indices of the datasets. Compares all properties of the
     given columns ['Name','Fueltype', 'Technology', 'Country',
     'Capacity','lat', 'lon'] in order to determine the same
@@ -272,7 +256,9 @@ def link_multiple_datasets(
 
     def comp_dfs(dfs_lbs):
         logger.info("Comparing data sources `{}` and `{}`".format(*dfs_lbs[2:]))
-        return compare_two_datasets(dfs_lbs[:2], dfs_lbs[2:], config=config, **dukeargs)
+        return compare_two_datasets(
+            dfs_lbs[:2], dfs_lbs[2:], config=config, **matchargs
+        )
 
     mapargs = [[dfs[c], dfs[d], labels[c], labels[d]] for c, d in combs]
     all_matches = parmap(comp_dfs, mapargs)
@@ -280,9 +266,9 @@ def link_multiple_datasets(
     return cross_matches(all_matches, labels=labels)
 
 
-def combine_multiple_datasets(datasets, labels=None, config=None, **dukeargs):
+def combine_multiple_datasets(datasets, labels=None, config=None, **matchargs):
     """
-    Duke-based horizontal match of multiple databases. Returns the
+    Fuzzy horizontal match of multiple databases. Returns the
     matched dataframe including only the matched entries in a
     multi-indexed pandas.Dataframe. Compares all properties of the
     given columns ['Name','Fueltype', 'Technology', 'Country',
@@ -327,7 +313,7 @@ def combine_multiple_datasets(datasets, labels=None, config=None, **dukeargs):
             .reset_index(drop=True)
         )
 
-    crossmatches = link_multiple_datasets(datasets, labels, config=config, **dukeargs)
+    crossmatches = link_multiple_datasets(datasets, labels, config=config, **matchargs)
     return combined_dataframe(crossmatches, datasets, config).reindex(
         columns=config["target_columns"], level=0
     )

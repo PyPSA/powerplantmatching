@@ -8,6 +8,6 @@ SPDX-License-Identifier: MIT
 
 ::: powerplantmatching.core
 
-::: powerplantmatching.duke
+::: powerplantmatching.linkage
 
 ::: powerplantmatching.accessor

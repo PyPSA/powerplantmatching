@@ -16,7 +16,7 @@ import unidecode
 from deprecation import deprecated
 
 from .core import PANDAS_V3, get_config, get_obj_if_Acc
-from .duke import duke
+from .linkage import match
 from .utils import collect_eic_codes, get_name, set_column_name
 
 logger = logging.getLogger(__name__)
@@ -505,11 +505,11 @@ def aggregate_units(
         country_query = "Country == @c"
         query = " and ".join(filter(None, [agg_query, block_query, country_query]))
         duplicates = pd.concat(
-            [duke(df.query(query), threads=threads) for c in countries]
+            [match(df.query(query), threads=threads) for c in countries]
         )
     else:
         query = " and ".join(filter(None, [agg_query, block_query]))
-        duplicates = duke(df.query(query) if query else df, threads=threads)
+        duplicates = match(df.query(query) if query else df, threads=threads)
 
     df = cliques(df, duplicates)
     df = df.groupby("grouped").agg(props_for_groups)

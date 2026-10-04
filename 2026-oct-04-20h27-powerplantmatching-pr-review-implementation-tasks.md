@@ -6,7 +6,7 @@ Sources: [#306](https://github.com/PyPSA/powerplantmatching/pull/306), [#301](ht
 
 - [x] Preserve EIC identifiers as sorted unique lists in unit aggregation and cross-source reduction. Accept scalar strings and existing collections at input boundaries. Verify missing values, repeated identifiers and cache serialization.
 - [x] Replace the checkout's greedy EIC matching with isolated one-to-one links. Leave shared scheme identifiers to fuzzy matching. Verify subsets, lists, empty inputs and duplicate index handling.
-- [ ] Integrate the Python matching engine while preserving the exact-EIC pass. Make name scoring symmetric and verify matching does not depend on source direction or input order.
+- [x] Integrate the Python matching engine while preserving the exact-EIC pass. Make name scoring symmetric and verify matching does not depend on source direction or input order.
 - [ ] Repair the JRC loader and source configuration. Preserve plant capacity once per production unit, normalize fuel types and retain plant/generation identifier provenance. Verify against the actual archive and offline fixtures.
 - [ ] Add explicit EIC coordinate enrichment with source provenance. Keep historical JRC capacity out of default unmatched-plant inclusion until status handling and coverage are validated.
 - [ ] Validate the combined pipeline and document capacity, identity and geographic changes. Run focused offline tests before a cached full build. Keep benchmark agreement separate from independently verified plant identity.
@@ -29,3 +29,13 @@ Sources: [#306](https://github.com/PyPSA/powerplantmatching/pull/306), [#301](ht
 - Baseline checks load the original functions in memory without reverting the checkout, proving that the identifier regressions fail before the repair.
 - Network-backed source aggregation checks could not complete: ten source cases failed because the sandbox could not resolve download hosts. No full dataset build has been claimed.
 - Concurrent GEM loader changes and their separate contribution task list are outside this batch and remain untouched.
+
+## Python matcher integration
+
+- Java matching, bundled jars, XML files and CI Java setup are removed. Pixi and package metadata declare rapidfuzz; Java is no longer a dependency.
+- Name scoring uses the lower directional token total. Deduplication and linkage scores are symmetric while separate unit designators still contribute disagreement.
+- SciPy sparse bipartite assignment maximizes the total accepted fuzzy score. Canonical source and identifier ordering makes tie resolution independent of source reversal and record order.
+- Exact-EIC matching remains before the fuzzy engine. Duplicate source indexes are rejected in both paths.
+- Four new regression cases failed against the incoming PR #301 engine. After the repairs, 53 offline linkage, matching and cleaning tests passed.
+- The 0.85 linkage threshold is inherited from #301. Its published benchmark metrics do not validate this changed scoring and assignment rule. Real dataset comparison remains required.
+- Rename custom `parallel_duke_processes` configuration to `parallel_processes`; obsolete keys raise an explicit error.

@@ -10,7 +10,12 @@ import pytest
 
 from powerplantmatching.cleaning import aggregate_units
 from powerplantmatching.core import get_config
-from powerplantmatching.matching import _match_by_eic, reduce_matched_dataframe
+from powerplantmatching.matching import (
+    _match_by_eic,
+    best_matches,
+    compare_two_datasets,
+    reduce_matched_dataframe,
+)
 from powerplantmatching.utils import parse_string_to_dict
 
 
@@ -208,3 +213,46 @@ def test_aggregate_identifiers_survive_cache_roundtrip(
     cached = pd.read_csv(StringIO(aggregated.to_csv(index=False)))
     restored = parse_string_to_dict(cached, ["EIC"])
     assert restored.EIC.iloc[0] == expected
+
+
+def test_fuzzy_selection_maximizes_total_score() -> None:
+    links = pd.DataFrame(
+        {
+            "A": [10, 10, 20, 20],
+            "B": [30, 40, 30, 40],
+            "scores": [0.99, 0.98, 0.97, 0.86],
+        }
+    )
+    expected = {(10, 40), (20, 30)}
+    assert set(map(tuple, best_matches(links).to_numpy())) == expected
+    reversed_links = links.iloc[::-1][["B", "A", "scores"]]
+    assert (
+        set(map(tuple, best_matches(reversed_links)[["A", "B"]].to_numpy())) == expected
+    )
+
+
+def test_eic_pairs_are_removed_before_python_fuzzy_matching() -> None:
+    base = {
+        "Fueltype": "Natural Gas",
+        "Technology": "CCGT",
+        "Country": "Netherlands",
+        "Capacity": 100.0,
+        "lat": 53.0,
+        "lon": 6.0,
+    }
+    left = pd.DataFrame(
+        [
+            {**base, "Name": "Alpha", "EIC": ["C1"]},
+            {**base, "Name": "Beta Plant", "EIC": []},
+        ],
+        index=[10, 20],
+    )
+    right = pd.DataFrame(
+        [
+            {**base, "Name": "Unrelated Registry Name", "lat": 51.0, "EIC": ["C1"]},
+            {**base, "Name": "Beta Plant", "EIC": []},
+        ],
+        index=[30, 40],
+    )
+    result = compare_two_datasets([left, right], ["A", "B"])
+    assert set(map(tuple, result[["A", "B"]].to_numpy())) == {(10, 30), (20, 40)}
