@@ -66,15 +66,15 @@ def _qgram_matrix(
 
 def _token_codes(values: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Pad the per-record token lists into a (records, width) vocabulary index."""
-    tokens = [list(dict.fromkeys(v.split())) for v in values]
-    vocabulary = pd.unique(np.array([t for ts in tokens for t in ts] or [""]))
-    position = {token: i for i, token in enumerate(vocabulary)}
-    width = max(max((len(ts) for ts in tokens), default=1), 1)
-    codes = np.full((len(tokens), width), len(vocabulary), dtype=np.intp)
-    counts = np.zeros(len(tokens), dtype=np.intp)
-    for i, ts in enumerate(tokens):
-        codes[i, : len(ts)] = [position[t] for t in ts]
-        counts[i] = len(ts)
+    tokens = pd.Series(values).str.split().explode().dropna()
+    records = tokens.rename_axis("record").reset_index(name="token").drop_duplicates()
+    flat_codes, vocabulary = pd.factorize(records.token)
+    row_indices = records.record.to_numpy(dtype=np.intp)
+    positions = records.groupby("record").cumcount().to_numpy(dtype=np.intp)
+    counts = np.bincount(row_indices, minlength=len(values))
+    width = max(int(counts.max(initial=0)), 1)
+    codes = np.full((len(values), width), len(vocabulary), dtype=np.intp)
+    codes[row_indices, positions] = flat_codes
     return codes, counts, np.append(vocabulary, "")
 
 
