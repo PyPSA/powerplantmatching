@@ -16,7 +16,7 @@ import pandas as pd
 from .cleaning import clean_technology
 from .core import get_config, get_obj_if_Acc
 from .linkage import match, select_one_to_one
-from .utils import collect_eic_codes, get_name, parmap, read_csv_if_string
+from .utils import collect_unique_strings, get_name, parmap, read_csv_if_string
 
 logger = logging.getLogger(__name__)
 
@@ -348,19 +348,35 @@ def reduce_matched_dataframe(df, show_orig_names=False, config=None):
             "DateRetrofit": "max",
             "DateOut": "max",
             "projectID": lambda x: dict(x.droplevel(0).dropna()),
-            "EIC": collect_eic_codes,
+            "EIC": collect_unique_strings,
         }
     )
     props_for_groups = pd.Series(props_for_groups)[cols].to_dict()
 
     # set low priority on Fueltype 'Other' and Set 'PP'
     # turn it since aggregating only possible for axis=0
-    sdf = (
+    stacked = (
         df.assign(Set=lambda df: df.Set.where(df.Set != "PP"))
         .assign(Fueltype=lambda df: df.Fueltype.where(df.Fueltype != "Other"))
         .stack(1, future_stack=True)
         .reindex(rel_scores.index, level=1)
-        .groupby(level=0)
+    )
+    if {"lat", "lon"}.issubset(cols):
+        complete_coordinates = stacked[["lat", "lon"]].notna().all(axis=1)
+        coordinate_cols = ["lat", "lon"]
+        if "GeopositionSource" in cols:
+            coordinate_cols.append("GeopositionSource")
+            provenance = stacked.GeopositionSource
+            missing = provenance.isna() | provenance.map(
+                lambda value: isinstance(value, (list, tuple, set)) and not value
+            )
+            native_sources = pd.Series(
+                stacked.index.get_level_values(1), index=stacked.index
+            ).map(lambda source: [source])
+            stacked["GeopositionSource"] = provenance.where(~missing, native_sources)
+        stacked.loc[~complete_coordinates, coordinate_cols] = np.nan
+    sdf = (
+        stacked.groupby(level=0)
         .agg(props_for_groups)
         .assign(Set=lambda df: df.Set.fillna("PP"))
         .assign(Fueltype=lambda df: df.Fueltype.fillna("Other"))

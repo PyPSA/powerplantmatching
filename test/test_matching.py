@@ -211,8 +211,9 @@ def test_aggregate_identifiers_survive_cache_roundtrip(
     aggregated = aggregate_units(units, dataset_name="test", config=config)
     assert aggregated.EIC.iloc[0] == expected
     cached = pd.read_csv(StringIO(aggregated.to_csv(index=False)))
-    restored = parse_string_to_dict(cached, ["EIC"])
+    restored = parse_string_to_dict(cached, ["EIC", "GeopositionSource"])
     assert restored.EIC.iloc[0] == expected
+    assert restored.GeopositionSource.iloc[0] == ["test"]
 
 
 def test_fuzzy_selection_maximizes_total_score() -> None:
@@ -256,3 +257,49 @@ def test_eic_pairs_are_removed_before_python_fuzzy_matching() -> None:
     )
     result = compare_two_datasets([left, right], ["A", "B"])
     assert set(map(tuple, result[["A", "B"]].to_numpy())) == {(10, 30), (20, 40)}
+
+
+def test_coordinate_pair_and_provenance_follow_the_same_source() -> None:
+    columns = pd.MultiIndex.from_product(
+        [
+            [
+                "Name",
+                "Fueltype",
+                "Technology",
+                "Set",
+                "lat",
+                "lon",
+                "GeopositionSource",
+            ],
+            ["ENTSOE", "GEM"],
+        ]
+    )
+    frame = pd.DataFrame(
+        [
+            [
+                "Plant",
+                "Plant",
+                "Natural Gas",
+                "Natural Gas",
+                "CCGT",
+                "CCGT",
+                "PP",
+                "PP",
+                53.0,
+                52.0,
+                6.0,
+                np.nan,
+                ["JRC@1.00:eic_p"],
+                ["GEM"],
+            ]
+        ],
+        columns=columns,
+    )
+    config = {
+        "target_columns": list(columns.levels[0]),
+        "ENTSOE": {"reliability_score": 5},
+        "GEM": {"reliability_score": 6},
+    }
+    reduced = reduce_matched_dataframe(frame, config=config)
+    assert reduced[["lat", "lon"]].iloc[0].tolist() == [53.0, 6.0]
+    assert reduced.GeopositionSource.iloc[0] == ["JRC@1.00:eic_p"]

@@ -1,0 +1,55 @@
+{
+  "rows": 180064,
+  "capacity_gw": 1554.696550613362,
+  "rows_with_unknown_capacity": 45,
+  "all_capacities_known": false,
+  "validation_status": "unknown_capacity",
+  "rows_with_eic": 1419,
+  "rows_with_complete_coordinates": 180064,
+  "rows_with_jrc_coordinate_provenance": 49,
+  "countries": 36,
+  "completed_at_utc": "2026-10-04T19:43:35.751587+00:00",
+  "elapsed_seconds": 2.48,
+  "matching_sources": [
+    "ENTSOE",
+    "GEO",
+    "GPD",
+    "JRC",
+    "OPSD",
+    "BEYONDCOAL",
+    "GEM",
+    "MASTR",
+    "EESI",
+    "GHR",
+    "OSM"
+  ],
+  "fully_included_sources": [
+    {
+      "GEM": "not (Country == 'Germany' and Fueltype in ['Solar', 'Wind'])"
+    },
+    {
+      "EESI": "Fueltype != 'Hydro' and not (Country == 'Germany' and Fueltype == 'Battery')"
+    },
+    {
+      "MASTR": "Fueltype != 'Nuclear'"
+    },
+    {
+      "OPSD": "Country != 'Germany' and Capacity < 1 and Capacity >= 0.1 and Fueltype == 'Hydro'"
+    },
+    "BEYONDCOAL",
+    {
+      "JRC": "Country in ['Italy', 'Croatia', 'Serbia', 'Slovakia']"
+    },
+    {
+      "OSM": "not (Country == 'Germany' and Fueltype in ['Solar', 'Wind'])"
+    }
+  ],
+  "coordinate_enrichment": "JRC_PPDB_OPEN",
+  "general_geocoding_enabled": false,
+  "reused_cached_inventory": true,
+  "inventory_scope": "Configured source statuses include planned and retired assets; no operational-year filter",
+  "baseline_rows": 185296,
+  "baseline_rows_with_unknown_capacity": 35,
+  "snapshot_comparison_is_controlled": false,
+  "snapshot_comparison_note": "The previous published snapshot may use different source vintages; differences cannot be attributed solely to matching changes"
+}
