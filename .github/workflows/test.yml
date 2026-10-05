@@ -65,5 +65,7 @@ jobs:
         uv pip install --system "$(ls dist/*.whl)[dev]"
 
     - name: Test with pytest
+      env:
+        MPLBACKEND: Agg
       run: |
         pytest

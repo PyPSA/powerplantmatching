@@ -78,9 +78,9 @@ def fill_geopositions_by_eic(
     codes = codes[codes.map(lambda value: isinstance(value, str) and bool(value))]
     if codes.empty:
         return result
-    codes = codes.rename_axis("_row").reset_index(name="EIC")
+    code_links = codes.rename_axis("_row").reset_index(name="EIC")
     points = eic_coordinate_reference(reference, eic_columns)
-    candidates = codes.merge(points, on="EIC", validate="many_to_one")
+    candidates = code_links.merge(points, on="EIC", validate="many_to_one")
     blocked_rows = candidates.loc[candidates[["lat", "lon"]].isna().any(axis=1), "_row"]
     candidates = candidates[~candidates._row.isin(blocked_rows)]
     unique_points = candidates.drop_duplicates(["_row", "lat", "lon"])
