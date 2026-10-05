@@ -77,7 +77,9 @@ def _match_by_eic(
 
     logger.info(
         "EIC matching: %d deterministic matches between `%s` and `%s`",
-        len(matches), labels[0], labels[1],
+        len(matches),
+        labels[0],
+        labels[1],
     )
 
     return matches, matched_idx0, matched_idx1
