@@ -47,7 +47,11 @@ def _match_by_eic(
     matched_idx1 : set
         Indices from df1 that were matched.
     """
-    empty = pd.DataFrame(columns=labels), set(), set()
+    empty: tuple[pd.DataFrame, set[Hashable], set[Hashable]] = (
+        pd.DataFrame(columns=list(labels)),
+        set(),
+        set(),
+    )
 
     if len(labels) != 2 or labels[0] == labels[1] or "EIC" in labels:
         raise ValueError(
