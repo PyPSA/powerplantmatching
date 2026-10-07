@@ -7,6 +7,7 @@ Functions for linking and combining different datasets
 """
 
 import logging
+from collections.abc import Hashable, Sequence
 from itertools import combinations
 
 import numpy as np
@@ -14,10 +15,141 @@ import pandas as pd
 
 from .cleaning import clean_technology
 from .core import get_config, get_obj_if_Acc
+from .data import JRC_OPEN_LINKAGES
 from .duke import duke
-from .utils import get_name, parmap, read_csv_if_string
+from .utils import collect_eic_codes, get_name, parmap, read_csv_if_string
 
 logger = logging.getLogger(__name__)
+
+# Linkage tables are external and can be wrong, so their links must agree on
+# fuel type and capacity.
+EIC_LINKAGE_CAPACITY_TOLERANCE = 0.2
+
+
+def _match_by_eic(
+    df0: pd.DataFrame,
+    df1: pd.DataFrame,
+    labels: Sequence[str],
+    linkages: pd.DataFrame | None = None,
+) -> tuple[pd.DataFrame, set[Hashable], set[Hashable]]:
+    """
+    Deterministic matching of two datasets by EIC (Energy Identification Code).
+
+    Accept only isolated one-to-one links in the shared-code graph. Scheme
+    identifiers shared by several stations remain available for fuzzy matching.
+
+    Parameters
+    ----------
+    df0, df1 : pd.DataFrame
+        Source dataframes with an 'EIC' column containing scalar or collected codes
+        (as produced by ``aggregate_units``).
+    labels : list of str
+        Two-element list of dataset names for the output columns.
+    linkages : pd.DataFrame, optional
+        Table with columns ``EIC``, ``Source`` and ``projectID`` as returned by
+        ``data.JRC_OPEN_LINKAGES``. Project IDs of a source listed there are
+        translated to EIC codes, but only when compared with a source that is
+        not listed, so the table never links two listed sources by itself.
+        Links that rest only on translated codes are kept only if both records
+        share the fuel type and their capacities differ by at most 20 percent.
+
+    Returns
+    -------
+    matches : pd.DataFrame
+        DataFrame with columns ``labels``, containing matched index pairs.
+    matched_idx0 : set
+        Indices from df0 that were matched.
+    matched_idx1 : set
+        Indices from df1 that were matched.
+    """
+    empty: tuple[pd.DataFrame, set[Hashable], set[Hashable]] = (
+        pd.DataFrame(columns=list(labels)),
+        set(),
+        set(),
+    )
+
+    if len(labels) != 2 or labels[0] == labels[1] or "EIC" in labels:
+        raise ValueError(
+            "EIC matching requires two distinct source labels other than EIC"
+        )
+    if not df0.index.is_unique or not df1.index.is_unique:
+        raise ValueError("EIC matching requires a unique index in each source")
+    tables = {} if linkages is None else dict(list(linkages.groupby("Source")))
+
+    def usable(expanded: pd.Series, label: str, translated: bool) -> pd.DataFrame:
+        expanded = expanded.dropna()
+        expanded = expanded[expanded.map(lambda value: isinstance(value, str))]
+        return (
+            expanded[expanded.ne("")]
+            .rename_axis(label)
+            .reset_index(name="EIC")
+            .assign(translated=translated)
+        )
+
+    def codes(df: pd.DataFrame, label: str, other: str) -> pd.DataFrame:
+        native = (
+            df["EIC"].explode()
+            if "EIC" in df.columns
+            else pd.Series(dtype=object, name="EIC")
+        )
+        parts = [usable(native, label, False)]
+        if label in tables and other not in tables and "projectID" in df.columns:
+            ids = (
+                df["projectID"]
+                .explode()
+                .rename("projectID")
+                .rename_axis(label)
+                .reset_index()
+            )
+            table = tables[label][["projectID", "EIC"]]
+            translated = ids.merge(table, on="projectID").set_index(label)["EIC"]
+            parts.append(usable(translated, label, True))
+        return pd.concat(parts, ignore_index=True)
+
+    links = pd.merge(
+        codes(df0, labels[0], labels[1]), codes(df1, labels[1], labels[0]), on="EIC"
+    )
+    links = (
+        links.assign(via_linkage=links["translated_x"] | links["translated_y"])
+        .groupby(list(labels), as_index=False)
+        .agg(via_linkage=("via_linkage", "all"))
+    )
+    if links.empty:
+        return empty
+
+    isolated = links.groupby(labels[0])[labels[1]].transform("size").eq(
+        1
+    ) & links.groupby(labels[1])[labels[0]].transform("size").eq(1)
+    matches = links.loc[isolated]
+
+    linkage_only = matches[matches["via_linkage"]]
+    if not linkage_only.empty:
+        columns = ["Fueltype", "Capacity"]
+        left = df0.reindex(index=linkage_only[labels[0]], columns=columns)
+        right = df1.reindex(index=linkage_only[labels[1]], columns=columns)
+        same_fuel = left["Fueltype"].to_numpy() == right["Fueltype"].to_numpy()
+        with np.errstate(divide="ignore", invalid="ignore"):
+            deviation = (
+                right["Capacity"].astype(float).to_numpy()
+                / left["Capacity"].astype(float).to_numpy()
+                - 1
+            )
+            plausible = same_fuel & (
+                np.abs(deviation) <= EIC_LINKAGE_CAPACITY_TOLERANCE
+            )
+        matches = matches.drop(linkage_only.index[~plausible])
+    matches = matches[list(labels)].reset_index(drop=True)
+    matched_idx0 = set(matches[labels[0]])
+    matched_idx1 = set(matches[labels[1]])
+
+    logger.info(
+        "EIC matching: %d deterministic matches between `%s` and `%s`",
+        len(matches),
+        labels[0],
+        labels[1],
+    )
+
+    return matches, matched_idx0, matched_idx1
 
 
 def best_matches(links):
@@ -39,7 +171,9 @@ def best_matches(links):
         return links.loc[best_idx, labels].reset_index(drop=True)
 
 
-def compare_two_datasets(dfs, labels, country_wise=True, config=None, **dukeargs):
+def compare_two_datasets(
+    dfs, labels, country_wise=True, config=None, eic_linkages=None, **dukeargs
+):
     """
     Duke-based horizontal match of two databases. Returns the matched
     dataframe including only the matched entries in a multi-indexed
@@ -59,8 +193,9 @@ def compare_two_datasets(dfs, labels, country_wise=True, config=None, **dukeargs
         dataframes or csv-files to use for the matching
     labels : list of strings
         Names of the databases for the resulting dataframe
-
-
+    eic_linkages : pd.DataFrame, optional
+        EIC to project ID table passed to the deterministic EIC matching,
+        see ``data.JRC_OPEN_LINKAGES``.
     """
     if config is None:
         config = get_config()
@@ -77,6 +212,18 @@ def compare_two_datasets(dfs, labels, country_wise=True, config=None, **dukeargs
     if "singlematch" not in dukeargs:
         dukeargs["singlematch"] = True
 
+    # ── Deterministic EIC matching (before fuzzy) ────────────────────
+    eic_matches, matched_idx0, matched_idx1 = _match_by_eic(
+        dfs[0], dfs[1], labels, eic_linkages
+    )
+
+    # Remove EIC-matched rows from the Duke input
+    remaining = [
+        dfs[0].drop(index=matched_idx0, errors="ignore"),
+        dfs[1].drop(index=matched_idx1, errors="ignore"),
+    ]
+
+    # ── Duke fuzzy matching on residual ──────────────────────────────
     def country_link(dfs, country):
         # country_selector for both dataframes
         sel_country_b = [df["Country"] == country for df in dfs]
@@ -90,20 +237,22 @@ def compare_two_datasets(dfs, labels, country_wise=True, config=None, **dukeargs
 
     if country_wise:
         countries = config["target_countries"]
-        links = [country_link(dfs, c) for c in countries]
+        links = [country_link(remaining, c) for c in countries]
         links = [link for link in links if not link.empty]
         if links:
             links = pd.concat(links, ignore_index=True)
         else:
             links = pd.DataFrame(columns=[*labels, "scores"])
     else:
-        links = duke(dfs, labels=labels, **dukeargs)
+        links = duke(remaining, labels=labels, **dukeargs)
 
     if links.empty:
-        matches = pd.DataFrame(columns=labels)
+        duke_matches = pd.DataFrame(columns=labels)
     else:
-        matches = best_matches(links)
+        duke_matches = best_matches(links)
 
+    # ── Combine EIC + Duke matches ───────────────────────────────────
+    matches = pd.concat([eic_matches, duke_matches], ignore_index=True)
     return matches
 
 
@@ -192,12 +341,19 @@ def link_multiple_datasets(
 
     dfs = list(map(read_csv_if_string, datasets))
     labels = [get_name(df) for df in dfs]
+    eic_linkages = JRC_OPEN_LINKAGES(config=config)
 
     combs = list(combinations(range(len(labels)), 2))
 
     def comp_dfs(dfs_lbs):
         logger.info("Comparing data sources `{}` and `{}`".format(*dfs_lbs[2:]))
-        return compare_two_datasets(dfs_lbs[:2], dfs_lbs[2:], config=config, **dukeargs)
+        return compare_two_datasets(
+            dfs_lbs[:2],
+            dfs_lbs[2:],
+            config=config,
+            eic_linkages=eic_linkages,
+            **dukeargs,
+        )
 
     mapargs = [[dfs[c], dfs[d], labels[c], labels[d]] for c, d in combs]
     all_matches = parmap(comp_dfs, mapargs)
@@ -287,12 +443,7 @@ def reduce_matched_dataframe(df, show_orig_names=False, config=None):
             "DateRetrofit": "max",
             "DateOut": "max",
             "projectID": lambda x: dict(x.droplevel(0).dropna()),
-            "EIC": lambda x: {
-                v
-                for val in x.dropna()
-                for v in (val if isinstance(val, set) else [val])
-                if isinstance(v, str)
-            },
+            "EIC": collect_eic_codes,
         }
     )
     props_for_groups = pd.Series(props_for_groups)[cols].to_dict()
