@@ -8,7 +8,7 @@ SPDX-License-Identifier: MIT
 
 ## Upcoming Version
 
-*
+* Match records deterministically by EIC before fuzzy matching, accepting only one-to-one links. ENTSO-E records are also linked to GPD and GEO through the EIC linkage table of JRC-PPDB-OPEN, where both records agree on fuel type and capacity within 20%. ([PR #289](https://github.com/PyPSA/powerplantmatching/pull/289))
 
 ## [v0.9.0](https://github.com/PyPSA/powerplantmatching/releases/tag/v0.9.0) (3rd October 2026)
 

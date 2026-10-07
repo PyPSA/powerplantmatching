@@ -178,6 +178,65 @@ def test_eic_matching_rejects_duplicate_index() -> None:
         _match_by_eic(left, right, ["A", "B"])
 
 
+def test_eic_matching_through_linkage_table() -> None:
+    """Linked project IDs match only when the translated EIC is one to one."""
+    plant = {"Fueltype": "Hard Coal", "Capacity": 100}
+    left = pd.DataFrame({"EIC": ["E1", "E2", "E3"], **plant}, index=[10, 20, 30])
+    right = pd.DataFrame(
+        {
+            "projectID": [{"WRI1"}, {"WRI2"}, {"WRI3"}],
+            "EIC": [None, None, None],
+            **plant,
+        },
+        index=[40, 50, 60],
+    )
+    linkages = pd.DataFrame(
+        [("E1", "GPD", "WRI1"), ("E2", "GPD", "WRI2"), ("E3", "GPD", "WRI2")],
+        columns=["EIC", "Source", "projectID"],
+    )
+    matches, idx0, idx1 = _match_by_eic(left, right, ["ENTSOE", "GPD"], linkages)
+    assert matches.to_dict("records") == [{"ENTSOE": 10, "GPD": 40}]
+    assert idx0 == {10} and idx1 == {40}
+
+
+def test_eic_linkage_requires_plausible_pair() -> None:
+    """Translated links need the same fuel type and a capacity within 20%."""
+    left = pd.DataFrame(
+        {
+            "EIC": ["E1", "E2"],
+            "Fueltype": ["Hard Coal", "Natural Gas"],
+            "Capacity": [100, 100],
+        }
+    )
+    right = pd.DataFrame(
+        {
+            "projectID": [{"WRI1"}, {"WRI2"}],
+            "EIC": [None, None],
+            "Fueltype": ["Hard Coal", "Natural Gas"],
+            "Capacity": [110, 300],
+        }
+    )
+    linkages = pd.DataFrame(
+        [("E1", "GPD", "WRI1"), ("E2", "GPD", "WRI2")],
+        columns=["EIC", "Source", "projectID"],
+    )
+    matches, idx0, idx1 = _match_by_eic(left, right, ["ENTSOE", "GPD"], linkages)
+    assert matches.to_dict("records") == [{"ENTSOE": 0, "GPD": 0}]
+    assert idx0 == {0} and idx1 == {0}
+
+
+def test_eic_linkage_never_links_two_listed_sources() -> None:
+    left = pd.DataFrame({"projectID": [{"WRI1"}]})
+    right = pd.DataFrame({"projectID": [{"GEO-1"}]})
+    linkages = pd.DataFrame(
+        [("E1", "GPD", "WRI1"), ("E1", "GEO", "GEO-1")],
+        columns=["EIC", "Source", "projectID"],
+    )
+    matches, idx0, idx1 = _match_by_eic(left, right, ["GPD", "GEO"], linkages)
+    assert matches.empty
+    assert not idx0 and not idx1
+
+
 @pytest.mark.parametrize(
     "codes, expected",
     [(["C2", "C1", "C1", None, np.nan, "", 42], ["C1", "C2"]), (None, [])],
