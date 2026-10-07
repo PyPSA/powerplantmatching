@@ -243,14 +243,12 @@ def powerplants(
         else:
             matched = matched[matched.lat.notnull()]
 
+    # keep units of one power plant at different life-cycle stages
+    subset = [c for c in ["Name", "Fueltype", "Country", "Status"] if c in matched]
     if isinstance(matched.columns, pd.MultiIndex):
-        matched = (
-            matched.stack(future_stack=True)
-            .drop_duplicates(["Name", "Fueltype", "Country"])
-            .unstack(-1)
-        )
+        matched = matched.stack(future_stack=True).drop_duplicates(subset).unstack(-1)
     else:
-        matched = matched.drop_duplicates(["Name", "Fueltype", "Country"])
+        matched = matched.drop_duplicates(subset)
 
     matched.reset_index(drop=True).to_csv(fn, index_label="id", encoding="utf-8")
 
