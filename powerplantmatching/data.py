@@ -486,14 +486,12 @@ def JRC(raw=False, update=False, config=None):
 
 def JRC_PPDB_OPEN(raw=False, update=False, config=None):
     """
-    Importer for the JRC Open Power Plants Database (JRC-PPDB-OPEN).
+    Importer for the JRC Open Power Plants Database (JRC-PPDB-OPEN,
+    Kanellopoulos et al., 2019, doi:10.5281/zenodo.3574566).
 
-    Published by the European Commission's Joint Research Centre
-    (DOI: 10.5281/zenodo.3574566), this database was created
-    specifically to link ENTSO-E EIC codes with geographic
-    coordinates.  It covers ~70% of large European power plants
-    and provides a deterministic bridge between EIC-based
-    operational data (ENTSO-E) and spatial data (OSM/GEM/GEO).
+    The database extends the ENTSO-E production units with coordinates.
+    Generation units are aggregated to production units, which have the
+    same EIC codes as the ENTSOE data.
 
     Parameters
     ----------
@@ -506,64 +504,35 @@ def JRC_PPDB_OPEN(raw=False, update=False, config=None):
     """
     config = get_config() if config is None else config
 
-    fn = get_raw_file("JRC-PPDB-OPEN", update, config)
+    fn = get_raw_file("JRC_PPDB_OPEN", update, config)
 
-    from zipfile import ZipFile
-
-    with ZipFile(fn, "r") as zf:
-        with zf.open("JRC_OPEN_UNITS.csv") as f:
-            jrc = pd.read_csv(f)
+    with ZipFile(fn) as zf, zf.open("JRC_OPEN_UNITS.csv") as f:
+        df = pd.read_csv(f)
 
     if raw:
-        return jrc
+        return df
 
-    jrc = jrc[jrc["eic_p"].notna() & jrc["lat"].notna() & jrc["lon"].notna()]
-
-    # Aggregate generation units to production units
-    jrc_map = (
-        jrc.groupby("eic_p")
-        .agg(
-            {
-                "lat": "mean",
-                "lon": "mean",
-                "name_p": "first",
-                "capacity_p": "sum",
-                "type_g": "first",
-                "country": "first",
-            }
-        )
-        .reset_index()
-    )
-
-    df = pd.DataFrame()
-    df["Name"] = jrc_map["name_p"]
-    df["Fueltype"] = jrc_map["type_g"]
-    df["Country"] = jrc_map["country"]
-    df["Capacity"] = jrc_map["capacity_p"]
-    df["lat"] = jrc_map["lat"]
-    df["lon"] = jrc_map["lon"]
-    df["EIC"] = jrc_map["eic_p"]
-    df["projectID"] = jrc_map["eic_p"]
-
-    for col in [
-        "Technology",
-        "Set",
-        "Efficiency",
-        "DateIn",
-        "DateRetrofit",
-        "DateOut",
-        "Duration",
-        "Volume_Mm3",
-        "DamHeight_m",
-        "StorageCapacity_MWh",
-    ]:
-        df[col] = None
-
-    df = df[df["Capacity"].notna() & (df["Capacity"] > 0)]
+    status_list = config["JRC_PPDB_OPEN"].get("status", ["COMMISSIONED"])  # noqa: F841
 
     return (
-        df.pipe(clean_name)
-        .pipe(set_column_name, "JRC-PPDB-OPEN")
+        df.assign(status_g=df.status_g.str.upper())
+        .query("status_g in @status_list")
+        .groupby("eic_p")
+        .agg(
+            Name=("name_p", "first"),
+            Fueltype=("type_g", "first"),
+            Country=("country", "first"),
+            Capacity=("capacity_g", "sum"),
+            DateIn=("year_commissioned", "min"),
+            lat=("lat", "mean"),
+            lon=("lon", "mean"),
+        )
+        .rename_axis("projectID")
+        .reset_index()
+        .assign(EIC=lambda df: df.projectID, Technology=np.nan, Set=np.nan)
+        .pipe(gather_specifications, config=config)
+        .pipe(clean_name)
+        .pipe(set_column_name, "JRC_PPDB_OPEN")
         .pipe(config_filter, config)
     )
 

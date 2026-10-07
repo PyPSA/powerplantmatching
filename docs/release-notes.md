@@ -8,7 +8,7 @@ SPDX-License-Identifier: MIT
 
 ## Upcoming Version
 
-*
+* Add the [JRC Open Power Plants Database](https://doi.org/10.5281/zenodo.3574566) (`JRC_PPDB_OPEN`) as a matching source. It provides coordinates for ENTSO-E production units, which helps to match ENTSOE with other datasets. ([PR #306](https://github.com/PyPSA/powerplantmatching/pull/306))
 
 ## [v0.9.0](https://github.com/PyPSA/powerplantmatching/releases/tag/v0.9.0) (3rd October 2026)
 
