@@ -14,6 +14,7 @@ To directly load the already built data into a pandas dataframe, just call:
 
 ```python
 import powerplantmatching as pm
+
 pm.powerplants(from_url=True)
 ```
 
