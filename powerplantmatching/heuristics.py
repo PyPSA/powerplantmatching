@@ -189,6 +189,11 @@ def fill_missing_duration(df):
     return df
 
 
+@deprecated(
+    deprecated_in="0.10.0",
+    removed_in="0.11.0",
+    details="Wind and solar power plants are already included from GEM and MASTR.",
+)
 def extend_by_VRE(df, config=None, base_year=2017, prune_beyond=True):
     """
     Extends a given reduced dataframe by externally given VREs.

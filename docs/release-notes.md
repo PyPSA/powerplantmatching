@@ -8,7 +8,8 @@ SPDX-License-Identifier: MIT
 
 ## Upcoming Version
 
-*
+* Deprecate the argument `extend_by_vres` of `pm.powerplants()` and the function `extend_by_VRE()`. Both will be removed in v0.11.0. Wind and solar power plants are already included from GEM and MASTR, and the option added them again from outdated OPSD data (2020). ([#232](https://github.com/PyPSA/powerplantmatching/issues/232))
+    * Bugfix: `pm.powerplants(from_url=True)` now applies `extend_by_vres` like the other code paths, and the deprecated argument `extendby_kwargs` now raises a `FutureWarning` instead of a logging error.
 
 ## [v0.9.0](https://github.com/PyPSA/powerplantmatching/releases/tag/v0.9.0) (3rd October 2026)
 
