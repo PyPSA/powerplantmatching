@@ -9,6 +9,7 @@ Utility functions for checking data completeness and supporting other functions
 import multiprocessing
 import os
 import re
+import shutil
 from ast import literal_eval as liteval
 from importlib.metadata import version
 
@@ -80,13 +81,17 @@ def get_raw_file(name, update=False, config=None, skip_retrieve=False):
 
     if (not os.path.exists(path) or update) and not skip_retrieve:
         url = df_config["url"]
-        logger.info(f"Retrieving data from {url}")
-        base_version = parse(version(__package__)).base_version
-        user_agent = f"{__package__}/{base_version}"
-        r = requests.get(url, headers={"User-Agent": user_agent}, timeout=60)
-        r.raise_for_status()
-        with open(path, "wb") as outfile:
-            outfile.write(r.content)
+        if os.path.exists(url):
+            logger.info(f"Copying data from local file {url}")
+            shutil.copyfile(url, path)
+        else:
+            logger.info(f"Retrieving data from {url}")
+            base_version = parse(version(__package__)).base_version
+            user_agent = f"{__package__}/{base_version}"
+            r = requests.get(url, headers={"User-Agent": user_agent}, timeout=60)
+            r.raise_for_status()
+            with open(path, "wb") as outfile:
+                outfile.write(r.content)
 
     return path
 
@@ -195,7 +200,7 @@ def read_csv_if_string(df):
     """
     from . import data
 
-    if isinstance(data, six.string_types):
+    if isinstance(df, six.string_types):
         df = getattr(data, df)()
     return df
 
@@ -471,7 +476,6 @@ def breakdown_matches(df):
             .set_index("projectID", append=True)
             .droplevel(-2)
             .index,
-            inplace=False,
         )
         .rename_axis(index=["id", "source", "projectID"])
     )
@@ -531,9 +535,7 @@ def restore_blocks(df, mode=2, config=None):
     res = res.sort_index(level="id").reset_index(level=[0, 1])
 
     # Now append Block information from OPSD German list:
-    df_blocks = (OPSD(rawDE_withBlocks=True).rename(columns={"name_bnetza": "Name"}))[
-        "Name"
-    ]
+    df_blocks = (OPSD().rename(columns={"name_bnetza": "Name"}))["Name"]
     res.update(df_blocks)
     return res
 

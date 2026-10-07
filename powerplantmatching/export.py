@@ -59,7 +59,7 @@ def map_bus(df, buses):
     DataFrame with an extra column 'bus' indicating the nearest bus.
     """
     df = get_obj_if_Acc(df)
-    non_empty_buses = buses.dropna()
+    non_empty_buses = buses.dropna(subset=["x", "y"])
     kdtree = KDTree(non_empty_buses[["x", "y"]])
     if non_empty_buses.empty:
         buses_i = pd.Index([np.nan])
@@ -108,12 +108,12 @@ def to_pypsa_network(df, network, buslist=None):
     if "Duration" in df:
         df["weighted_duration"] = df["Duration"] * df["Capacity"]
         df = df.groupby(["bus", "Fueltype", "Set"]).aggregate(
-            {"Capacity": sum, "weighted_duration": sum}
+            {"Capacity": "sum", "weighted_duration": "sum"}
         )
         df = df.assign(Duration=df["weighted_duration"] / df["Capacity"])
         df = df.drop(columns="weighted_duration")
     else:
-        df = df.groupby(["bus", "Fueltype", "Set"]).aggregate({"Capacity": sum})
+        df = df.groupby(["bus", "Fueltype", "Set"]).aggregate({"Capacity": "sum"})
     df = df.reset_index()
     df = to_pypsa_names(df)
     df.index = df.bus + " " + df.carrier
@@ -158,7 +158,7 @@ def to_TIMES(df=None, use_scaled_capacity=False, baseyear=2015):
 
     # add column with TIMES-specific type. The pattern is as follows:
     # 'ConELC-' + Set + '_' + Fueltype + '-' Technology
-    df["Technology"].fillna("", inplace=True)
+    df["Technology"] = df["Technology"].fillna("")
     if "TimesType" not in df:
         pos = [i for i, x in enumerate(df.columns) if x == "Technology"][0]
         df.insert(pos + 1, "TimesType", np.nan)
@@ -311,7 +311,7 @@ def store_open_dataset():
 
     m = matched_data(reduced=False).reindex(
         columns=["CARMA", "ENTSOE", "GEO", "GPD", "OPSD"], level=1
-    )[lambda df: df.Name.notnull().any(1)]
+    )[lambda df: df.Name.notnull().any(axis=1)]
     m.to_csv(_data_out("powerplants_large.csv"))
     m = m.pipe(reduce_matched_dataframe)
     m.to_csv(_data_out("powerplants.csv"))

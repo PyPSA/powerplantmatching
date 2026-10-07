@@ -80,7 +80,7 @@ def compare_two_datasets(dfs, labels, country_wise=True, config=None, **dukeargs
     def country_link(dfs, country):
         # country_selector for both dataframes
         sel_country_b = [df["Country"] == country for df in dfs]
-        # only append if country appears in both dataframes
+        # only append if country appears in both dataframse
         if all(sel.any() for sel in sel_country_b):
             return duke(
                 [df[sel] for df, sel in zip(dfs, sel_country_b)], labels, **dukeargs
@@ -287,12 +287,12 @@ def reduce_matched_dataframe(df, show_orig_names=False, config=None):
             "DateRetrofit": "max",
             "DateOut": "max",
             "projectID": lambda x: dict(x.droplevel(0).dropna()),
-            "EIC": lambda x: set(
+            "EIC": lambda x: {
                 v
                 for val in x.dropna()
                 for v in (val if isinstance(val, set) else [val])
                 if isinstance(v, str)
-            ),
+            },
         }
     )
     props_for_groups = pd.Series(props_for_groups)[cols].to_dict()
@@ -301,7 +301,7 @@ def reduce_matched_dataframe(df, show_orig_names=False, config=None):
     # turn it since aggregating only possible for axis=0
     sdf = (
         df.assign(Set=lambda df: df.Set.where(df.Set != "PP"))
-        .assign(Fueltype=lambda df: df.Fueltype.where(df.Set != "Other"))
+        .assign(Fueltype=lambda df: df.Fueltype.where(df.Fueltype != "Other"))
         .stack(1, future_stack=True)
         .reindex(rel_scores.index, level=1)
         .groupby(level=0)
