@@ -297,6 +297,12 @@ def reduce_matched_dataframe(df, show_orig_names=False, config=None):
     )
     props_for_groups = pd.Series(props_for_groups)[cols].to_dict()
 
+    # ENTSOE coordinates are filled from JRC-PPDB-OPEN, use them only as fallback
+    if "ENTSOE" in sources:
+        df = df.copy()
+        others = df.lat.drop(columns="ENTSOE").notna().any(axis=1)
+        df.loc[others, [("lat", "ENTSOE"), ("lon", "ENTSOE")]] = np.nan
+
     # set low priority on Fueltype 'Other' and Set 'PP'
     # turn it since aggregating only possible for axis=0
     sdf = (

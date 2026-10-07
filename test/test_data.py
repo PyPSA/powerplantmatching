@@ -36,6 +36,10 @@ def test_data_request_processed(source):
     assert df.columns.to_list() == config["target_columns"]
 
 
+def test_ENTSOE_coordinates():
+    assert data.ENTSOE().lat.notna().mean() > 0.5
+
+
 def test_OPSD_VRE():
     df = pm.data.OPSD_VRE()
     assert not df.empty

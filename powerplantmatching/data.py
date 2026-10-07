@@ -489,9 +489,10 @@ def JRC_PPDB_OPEN(raw=False, update=False, config=None):
     Importer for the JRC Open Power Plants Database (JRC-PPDB-OPEN,
     Kanellopoulos et al., 2019, doi:10.5281/zenodo.3574566).
 
-    The database extends the ENTSO-E production units with coordinates.
-    Generation units are aggregated to production units, which have the
-    same EIC codes as the ENTSOE data.
+    The database extends the ENTSO-E production units with coordinates,
+    which are used to fill the coordinates of the ENTSOE data. Generation
+    units are aggregated to production units, which have the same EIC codes
+    as the ENTSOE data.
 
     Parameters
     ----------
@@ -741,7 +742,7 @@ def ENTSOE(
 ):
     """
     Importer for the list of installed generators provided by the ENTSO-E
-    Transparency Project. Geographical information is not given.
+    Transparency Project. Coordinates are taken from JRC-PPDB-OPEN via EIC codes.
     If update=True, the dataset is parsed through a request to
     'https://transparency.entsoe.eu/generation/r2/\
     installedCapacityPerProductionUnit/show',
@@ -831,6 +832,7 @@ def ENTSOE(
 
     fn = _package_data("entsoe_country_codes.csv")
     COUNTRY_MAP = pd.read_csv(fn, index_col=0).rename(index=str).Country
+    coords = JRC_PPDB_OPEN(config=config).set_index("projectID")
 
     return (
         df.rename_axis(index="projectID")
@@ -844,8 +846,8 @@ def ENTSOE(
             Capacity=lambda df: pd.to_numeric(df.Capacity),
             Technology=np.nan,
             Set=np.nan,
-            lat=np.nan,
-            lon=np.nan,
+            lat=lambda df: df.projectID.map(coords.lat),
+            lon=lambda df: df.projectID.map(coords.lon),
         )
         .powerplant.convert_alpha2_to_country()
         # .pipe(fill_geoposition, **fill_geoposition_kwargs)
