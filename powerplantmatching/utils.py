@@ -120,6 +120,11 @@ def config_filter(df, config):
     cols = config["target_columns"]
 
     target_query = "Country in @countries and Fueltype in @fueltypes"
+    if "Status" in cols:
+        status = config.get(name, {}).get("status", config["status"])
+        if unknown := set(status) - set(config["target_status"]):
+            raise ValueError(f"Unknown status {unknown} for {name}.")
+        target_query += " and (Status in @status or Status != Status)"
 
     main_query = config.get("main_query", "")
 

@@ -8,7 +8,16 @@ SPDX-License-Identifier: MIT
 
 ## Upcoming Version
 
-*
+* New column `Status` with the life-cycle stage of the power plant: `announced`, `construction`, `operating`, `mothballed` or `retired`. ([#322](https://github.com/PyPSA/powerplantmatching/issues/322))
+    * **Important:** the output now also includes announced, mothballed and retired power plants. Announced projects add several hundred GW, and most of them have no `DateIn`. Filter with the `Status` column, e.g. `df.query("Status in ['operating', 'construction']")`; a filter on `DateIn` and `DateOut` alone is not sufficient.
+    * The status labels of the data sources are mapped to the stages in the new config section `target_status`. The new key `status` selects the stages to keep for all data sources; by default, all stages are kept. The key `status` of a data source overrides it and now selects stages and not the status labels of the data source.
+    * Data sources without status data list existing power plants and get the status `operating` (ENTSOE, GPD, JRC, OSM, GHR and OPSD outside Germany). GEO gets the status `retired` if `DateOut` is before the current year. The status of OPSD for Germany is not used, as it is outdated.
+    * If matched data sources do not agree, the latest stage is used. Units with different stages are not aggregated into one power plant.
+    * Announced projects and projects under construction are not matched with other data sources, because they often have the name and site of existing power plants. They are added without matching from the fully included data sources.
+    * BEYONDCOAL is no longer a fully included data source, as GEM includes the same coal units with a higher reliability. This prevents double counting of units with a different status in the two data sources. Known limitation: if two matched data sources group the units of a power plant differently by status, a unit can still be counted twice (e.g. the retired unit 9 of Walsum in Germany, from MASTR and GEM).
+    * The `DateIn` and `DateOut` values that were estimated from the status are removed (mothballed plants in the GEM coal and oil and gas trackers, temporarily shut down units in MASTR, nuclear plants under construction in WIKIPEDIA).
+* Bugfix in `aggregate_units()`: nuclear units are not aggregated within a data source, as set by `fueltypes_with_blocks` in the config section `clean_name`. Before, a wrong config key disabled this setting.
+* Bugfix in `pm.data.GHR()`: read capacity, coordinates and technology from the correct columns, and read the commissioning year without conversion to a date (all values were 1970 before).
 
 ## [v0.9.0](https://github.com/PyPSA/powerplantmatching/releases/tag/v0.9.0) (3rd October 2026)
 

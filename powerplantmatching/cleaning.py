@@ -34,6 +34,7 @@ AGGREGATION_FUNCTIONS = {
     "Fueltype": mode,
     "Technology": mode,
     "Set": mode,
+    "Status": mode,
     "Country": mode,
     "Capacity": "sum",
     "lat": "mean",
@@ -345,6 +346,29 @@ def gather_set_info(df, search_col=["Name", "Fueltype", "Technology"], config=No
     return df.assign(Set=Set)
 
 
+def map_status(df, config=None):
+    """
+    Map the raw labels in column "Status" to the life-cycle stages given by
+    the `config` under the section `target_status`. Entries with other labels
+    (e.g. cancelled) are removed.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        DataFrame with raw labels in column "Status".
+    config : dict, default None
+        Custom configuration, defaults to
+        `powerplantmatching.config.get_config()`.
+    """
+    if config is None:
+        config = get_config()
+
+    stages = config["target_status"]
+    labels = {label: stage for stage, labels in stages.items() for label in labels}
+    status = df.Status.str.lower().map(labels)
+    return df.assign(Status=status)[status.notna()]
+
+
 # @deprecated(
 #     deprecated_in="0.5",
 # )
@@ -476,7 +500,9 @@ def aggregate_units(
 
     cols = config["target_columns"]
     weighted_cols = list({"Efficiency", "Duration"} & set(cols))
-    str_cols = list({"Name", "Country", "Fueltype", "Technology", "Set"} & set(cols))
+    str_cols = list(
+        {"Name", "Country", "Fueltype", "Technology", "Set", "Status"} & set(cols)
+    )
     props_for_groups = {k: v for k, v in AGGREGATION_FUNCTIONS.items() if k in cols}
 
     df = df.assign(
@@ -497,8 +523,8 @@ def aggregate_units(
                 break
 
     block_query = None
-    if with_blocks := config["clean_name"].get("fuel_type_with_blocks", []):  # noqa
-        block_query = "Fueltype in @with_blocks"
+    if with_blocks := config["clean_name"].get("fueltypes_with_blocks", []):  # noqa
+        block_query = "Fueltype not in @with_blocks"
 
     if country_wise:
         countries = df.Country.unique()
@@ -512,7 +538,9 @@ def aggregate_units(
         duplicates = duke(df.query(query) if query else df, threads=threads)
 
     df = cliques(df, duplicates)
-    df = df.groupby("grouped").agg(props_for_groups)
+    # do not merge units at different life-cycle stages
+    by = ["grouped", "Status"] if "Status" in cols else ["grouped"]
+    df = df.groupby([df[c] for c in by]).agg(props_for_groups)
 
     no_downcast_ctx = (
         contextlib.nullcontext()
