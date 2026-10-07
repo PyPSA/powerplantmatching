@@ -28,6 +28,13 @@ from .core import _data_in, _package_data, get_config, get_obj_if_Acc, logger
 cc = coco.CountryConverter()
 
 
+def collect_unique_strings(values: pd.Series) -> list[str]:
+    """Collect nonempty strings from scalar or collection values."""
+    codes = values.explode().dropna()
+    strings = codes[codes.map(lambda value: isinstance(value, str))]
+    return sorted(strings[strings.ne("")].unique().tolist())
+
+
 def lookup(df, keys=None, by="Country, Fueltype", exclude=None, unit="MW"):
     """
     Returns a lookup table of the dataframe df with rounded numbers.
@@ -277,12 +284,15 @@ def parse_string_to_dict(df, cols):
     if isinstance(cols, str):
         cols = [cols]
 
-    def _replace_and_evaluate(value):
+    def _replace_and_evaluate(value: object) -> object:
+        if not isinstance(value, str):
+            return value
         # Needed to read in older files with {nan} as string
         value = re.sub(r"\bnan\b(, )?|, \bnan\b", "", value)
         return liteval(value)
 
     if isinstance(df.columns, pd.MultiIndex):
+        cols = [col for col in cols if col in df.columns.get_level_values(0)]
         return df.assign(
             **{
                 col: df[col].stack().dropna().apply(_replace_and_evaluate).unstack()
@@ -290,6 +300,7 @@ def parse_string_to_dict(df, cols):
             }
         )
     else:
+        cols = [col for col in cols if col in df.columns]
         return df.assign(**{col: df[col].apply(_replace_and_evaluate) for col in cols})
 
 
@@ -346,7 +357,7 @@ def parmap(f, arg_list, config=None, threads=None):
     """
     Parallel mapping function. Use this function to parallelly map function
     f onto arguments in arg_list. The maximum number of parallel threads is
-    taken from config.yaml:parallel_duke_processes.
+    taken from config.yaml:parallel_processes.
 
     Parameters
     ---------
@@ -364,7 +375,7 @@ def parmap(f, arg_list, config=None, threads=None):
         config = get_config()
 
     if threads is None:
-        threads = config["parallel_duke_processes"]
+        threads = config["parallel_processes"]
     if isinstance(threads, bool):
         threads = config.get("process_limit", 1)
 

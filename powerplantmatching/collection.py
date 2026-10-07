@@ -31,7 +31,7 @@ def collect(
     update=False,
     reduced=True,
     config=None,
-    **dukeargs,
+    **matchargs,
 ):
     """
     Return the collection for a given list of datasets in matched or
@@ -47,7 +47,7 @@ def collect(
         Switch as to return the reduced (True) or matched (False) dataset.
     config : dict
         Configuration file of powerplantmatching
-    **dukeargs : keyword-args for duke
+    **matchargs : keyword arguments for matching
     """
 
     from . import data
@@ -88,14 +88,16 @@ def collect(
 
     if update:
         dfs = parmap(df_by_name, datasets)
-        matched = combine_multiple_datasets(dfs, datasets, config=config, **dukeargs)
+        matched = combine_multiple_datasets(
+            dfs, datasets, config=config, **matchargs
+        ).rename_axis("id")
         (
             matched.assign(projectID=lambda df: df.projectID.astype(str)).to_csv(
                 outfn_matched, index_label="id"
             )
         )
 
-        reduced_df = reduce_matched_dataframe(matched, config=config)
+        reduced_df = reduce_matched_dataframe(matched, config=config).rename_axis("id")
         reduced_df.to_csv(outfn_reduced, index_label="id")
 
         return reduced_df if reduced else matched
@@ -106,7 +108,7 @@ def collect(
             df = pd.read_csv(
                 outfn_matched, index_col=0, header=[0, 1], low_memory=False
             )
-        return df.pipe(parse_string_to_dict, ["projectID", "EIC"])
+        return df.pipe(parse_string_to_dict, ["projectID", "EIC", "GeopositionSource"])
 
 
 def powerplants(
@@ -201,7 +203,7 @@ def powerplants(
         logger.info(f"Retrieving data from {url}")
         df = (
             pd.read_csv(url, index_col=0)
-            .pipe(parse_string_to_dict, ["projectID", "EIC"])
+            .pipe(parse_string_to_dict, ["projectID", "EIC", "GeopositionSource"])
             .pipe(set_column_name, "Matched Data")
         )
         logger.info(f"Store data at {fn}")
@@ -211,7 +213,7 @@ def powerplants(
     if not update and os.path.exists(fn):
         df = (
             pd.read_csv(fn, index_col=0, header=header)
-            .pipe(parse_string_to_dict, ["projectID", "EIC"])
+            .pipe(parse_string_to_dict, ["projectID", "EIC", "GeopositionSource"])
             .pipe(set_column_name, "Matched Data")
         )
         if extend_by_vres:
@@ -252,7 +254,8 @@ def powerplants(
     else:
         matched = matched.drop_duplicates(["Name", "Fueltype", "Country"])
 
-    matched.reset_index(drop=True).to_csv(fn, index_label="id", encoding="utf-8")
+    matched = matched.reset_index(drop=True).rename_axis("id")
+    matched.to_csv(fn, index_label="id", encoding="utf-8")
 
     if extend_by_vres:
         matched = extend_by_VRE(

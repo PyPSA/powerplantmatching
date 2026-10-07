@@ -7,6 +7,7 @@ Functions for linking and combining different datasets
 """
 
 import logging
+from collections.abc import Hashable, Sequence
 from itertools import combinations
 
 import numpy as np
@@ -14,34 +15,88 @@ import pandas as pd
 
 from .cleaning import clean_technology
 from .core import get_config, get_obj_if_Acc
-from .duke import duke
-from .utils import get_name, parmap, read_csv_if_string
+from .linkage import match, select_one_to_one
+from .utils import collect_unique_strings, get_name, parmap, read_csv_if_string
 
 logger = logging.getLogger(__name__)
 
 
-def best_matches(links):
+def _match_by_eic(
+    df0: pd.DataFrame, df1: pd.DataFrame, labels: Sequence[str]
+) -> tuple[pd.DataFrame, set[Hashable], set[Hashable]]:
     """
-    Subsequent to duke() with singlematch=True. Returns reduced list of
-    matches on the base of the highest score for each duplicated entry.
+    Deterministic matching of two datasets by EIC (Energy Identification Code).
+
+    Accept only isolated one-to-one links in the shared-code graph. Scheme
+    identifiers shared by several stations remain available for fuzzy matching.
 
     Parameters
     ----------
-    links : pd.DataFrame
-        Links as returned by duke
+    df0, df1 : pd.DataFrame
+        Source dataframes with an 'EIC' column containing scalar or collected codes
+        (as produced by ``aggregate_units``).
+    labels : list of str
+        Two-element list of dataset names for the output columns.
+
+    Returns
+    -------
+    matches : pd.DataFrame
+        DataFrame with columns ``labels``, containing matched index pairs.
+    matched_idx0 : set
+        Indices from df0 that were matched.
+    matched_idx1 : set
+        Indices from df1 that were matched.
     """
-    labels = links.columns.difference({"scores"})
+    empty: tuple[pd.DataFrame, set[Hashable], set[Hashable]] = (
+        pd.DataFrame(columns=list(labels)),
+        set(),
+        set(),
+    )
+
+    if len(labels) != 2 or labels[0] == labels[1] or "EIC" in labels:
+        raise ValueError(
+            "EIC matching requires two distinct source labels other than EIC"
+        )
+    if not df0.index.is_unique or not df1.index.is_unique:
+        raise ValueError("EIC matching requires a unique index in each source")
+    if "EIC" not in df0.columns or "EIC" not in df1.columns:
+        return empty
+
+    def codes(df: pd.DataFrame, label: str) -> pd.DataFrame:
+        expanded = df["EIC"].explode().dropna()
+        expanded = expanded[expanded.map(lambda value: isinstance(value, str))]
+        return expanded[expanded.ne("")].rename_axis(label).reset_index(name="EIC")
+
+    links = pd.merge(codes(df0, labels[0]), codes(df1, labels[1]), on="EIC")
+    links = links[list(labels)].drop_duplicates()
     if links.empty:
-        return pd.DataFrame(columns=labels)
-    else:
-        scores = links["scores"].astype(float)
-        best_idx = scores.groupby(links.iloc[:, 1], sort=False).idxmax()
-        return links.loc[best_idx, labels].reset_index(drop=True)
+        return empty
+
+    isolated = links.groupby(labels[0])[labels[1]].transform("size").eq(
+        1
+    ) & links.groupby(labels[1])[labels[0]].transform("size").eq(1)
+    matches = links.loc[isolated].reset_index(drop=True)
+    matched_idx0 = set(matches[labels[0]])
+    matched_idx1 = set(matches[labels[1]])
+
+    logger.info(
+        "EIC matching: %d deterministic matches between `%s` and `%s`",
+        len(matches),
+        labels[0],
+        labels[1],
+    )
+
+    return matches, matched_idx0, matched_idx1
 
 
-def compare_two_datasets(dfs, labels, country_wise=True, config=None, **dukeargs):
+def best_matches(links: pd.DataFrame) -> pd.DataFrame:
+    """Select a maximum-score one-to-one assignment of accepted links."""
+    return select_one_to_one(links).drop(columns="scores")
+
+
+def compare_two_datasets(dfs, labels, country_wise=True, config=None, **matchargs):
     """
-    Duke-based horizontal match of two databases. Returns the matched
+    Fuzzy horizontal match of two databases. Returns the matched
     dataframe including only the matched entries in a multi-indexed
     pandas.Dataframe. Compares all properties of the given columns
     ['Name','Fueltype', 'Technology', 'Country',
@@ -49,9 +104,7 @@ def compare_two_datasets(dfs, labels, country_wise=True, config=None, **dukeargs
     powerplant in different two datasets. The match is in one-to-one
     mode, that is every entry of the initial databases has maximally
     one link in order to obtain unique entries in the resulting
-    dataframe.  Attention: When aborting this command, the duke
-    process will still continue in the background, wait until the
-    process is finished before restarting.
+    dataframe.
 
     Parameters
     ----------
@@ -66,44 +119,56 @@ def compare_two_datasets(dfs, labels, country_wise=True, config=None, **dukeargs
         config = get_config()
 
     deprecated_args = {"use_saved_matches", "use_saved_aggregation"}
-    used_deprecated_args = deprecated_args.intersection(dukeargs)
+    used_deprecated_args = deprecated_args.intersection(matchargs)
     if used_deprecated_args:
         for arg in used_deprecated_args:
-            dukeargs.pop(arg)
+            matchargs.pop(arg)
         msg = "The following arguments were deprecated and are being ignored: "
         logger.warning(msg + f"{used_deprecated_args}")
 
     dfs = list(map(read_csv_if_string, dfs))
-    if "singlematch" not in dukeargs:
-        dukeargs["singlematch"] = True
+    if "singlematch" not in matchargs:
+        matchargs["singlematch"] = True
 
+    # Resolve isolated exact-EIC pairs before fuzzy matching.
+    eic_matches, matched_idx0, matched_idx1 = _match_by_eic(dfs[0], dfs[1], labels)
+
+    # Remove EIC-matched rows from the fuzzy input
+    remaining = [
+        dfs[0].drop(index=matched_idx0, errors="ignore"),
+        dfs[1].drop(index=matched_idx1, errors="ignore"),
+    ]
+
+    # Compare only the residual records.
     def country_link(dfs, country):
         # country_selector for both dataframes
         sel_country_b = [df["Country"] == country for df in dfs]
-        # only append if country appears in both dataframse
+        # only append if country appears in both dataframes
         if all(sel.any() for sel in sel_country_b):
-            return duke(
-                [df[sel] for df, sel in zip(dfs, sel_country_b)], labels, **dukeargs
+            return match(
+                [df[sel] for df, sel in zip(dfs, sel_country_b)], labels, **matchargs
             )
         else:
             return pd.DataFrame(columns=[*labels, "scores"])
 
     if country_wise:
         countries = config["target_countries"]
-        links = [country_link(dfs, c) for c in countries]
+        links = [country_link(remaining, c) for c in countries]
         links = [link for link in links if not link.empty]
         if links:
             links = pd.concat(links, ignore_index=True)
         else:
             links = pd.DataFrame(columns=[*labels, "scores"])
     else:
-        links = duke(dfs, labels=labels, **dukeargs)
+        links = match(remaining, labels=labels, **matchargs)
 
     if links.empty:
-        matches = pd.DataFrame(columns=labels)
+        fuzzy_matches = pd.DataFrame(columns=labels)
     else:
-        matches = best_matches(links)
+        fuzzy_matches = best_matches(links)
 
+    # Combine disjoint exact and fuzzy pairs.
+    matches = pd.concat([eic_matches, fuzzy_matches], ignore_index=True)
     return matches
 
 
@@ -118,7 +183,7 @@ def cross_matches(sets_of_pairs, labels=None):
     ----------
     sets_of_pairs : list
         list of pd.Dataframe's containing only the matches (without
-        scores), obtained from the linkfile (duke() and
+        scores), obtained from the linkfile (match() and
         best_matches())
     labels : list of strings
         list of names of the databases, used for specifying the order
@@ -167,10 +232,10 @@ def cross_matches(sets_of_pairs, labels=None):
 
 
 def link_multiple_datasets(
-    datasets, labels, use_saved_matches=False, config=None, **dukeargs
+    datasets, labels, use_saved_matches=False, config=None, **matchargs
 ):
     """
-    Duke-based horizontal match of multiple databases. Returns the
+    Fuzzy horizontal match of multiple databases. Returns the
     matching indices of the datasets. Compares all properties of the
     given columns ['Name','Fueltype', 'Technology', 'Country',
     'Capacity','lat', 'lon'] in order to determine the same
@@ -197,7 +262,9 @@ def link_multiple_datasets(
 
     def comp_dfs(dfs_lbs):
         logger.info("Comparing data sources `{}` and `{}`".format(*dfs_lbs[2:]))
-        return compare_two_datasets(dfs_lbs[:2], dfs_lbs[2:], config=config, **dukeargs)
+        return compare_two_datasets(
+            dfs_lbs[:2], dfs_lbs[2:], config=config, **matchargs
+        )
 
     mapargs = [[dfs[c], dfs[d], labels[c], labels[d]] for c, d in combs]
     all_matches = parmap(comp_dfs, mapargs)
@@ -205,9 +272,9 @@ def link_multiple_datasets(
     return cross_matches(all_matches, labels=labels)
 
 
-def combine_multiple_datasets(datasets, labels=None, config=None, **dukeargs):
+def combine_multiple_datasets(datasets, labels=None, config=None, **matchargs):
     """
-    Duke-based horizontal match of multiple databases. Returns the
+    Fuzzy horizontal match of multiple databases. Returns the
     matched dataframe including only the matched entries in a
     multi-indexed pandas.Dataframe. Compares all properties of the
     given columns ['Name','Fueltype', 'Technology', 'Country',
@@ -252,7 +319,7 @@ def combine_multiple_datasets(datasets, labels=None, config=None, **dukeargs):
             .reset_index(drop=True)
         )
 
-    crossmatches = link_multiple_datasets(datasets, labels, config=config, **dukeargs)
+    crossmatches = link_multiple_datasets(datasets, labels, config=config, **matchargs)
     return combined_dataframe(crossmatches, datasets, config).reindex(
         columns=config["target_columns"], level=0
     )
@@ -287,24 +354,35 @@ def reduce_matched_dataframe(df, show_orig_names=False, config=None):
             "DateRetrofit": "max",
             "DateOut": "max",
             "projectID": lambda x: dict(x.droplevel(0).dropna()),
-            "EIC": lambda x: {
-                v
-                for val in x.dropna()
-                for v in (val if isinstance(val, set) else [val])
-                if isinstance(v, str)
-            },
+            "EIC": collect_unique_strings,
         }
     )
     props_for_groups = pd.Series(props_for_groups)[cols].to_dict()
 
     # set low priority on Fueltype 'Other' and Set 'PP'
     # turn it since aggregating only possible for axis=0
-    sdf = (
+    stacked = (
         df.assign(Set=lambda df: df.Set.where(df.Set != "PP"))
         .assign(Fueltype=lambda df: df.Fueltype.where(df.Fueltype != "Other"))
         .stack(1, future_stack=True)
         .reindex(rel_scores.index, level=1)
-        .groupby(level=0)
+    )
+    if {"lat", "lon"}.issubset(cols):
+        complete_coordinates = stacked[["lat", "lon"]].notna().all(axis=1)
+        coordinate_cols = ["lat", "lon"]
+        if "GeopositionSource" in cols:
+            coordinate_cols.append("GeopositionSource")
+            provenance = stacked.GeopositionSource
+            missing = provenance.isna() | provenance.map(
+                lambda value: isinstance(value, (list, tuple, set)) and not value
+            )
+            native_sources = pd.Series(
+                stacked.index.get_level_values(1), index=stacked.index
+            ).map(lambda source: [source])
+            stacked["GeopositionSource"] = provenance.where(~missing, native_sources)
+        stacked.loc[~complete_coordinates, coordinate_cols] = np.nan
+    sdf = (
+        stacked.groupby(level=0)
         .agg(props_for_groups)
         .assign(Set=lambda df: df.Set.fillna("PP"))
         .assign(Fueltype=lambda df: df.Fueltype.fillna("Other"))

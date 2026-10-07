@@ -10,6 +10,7 @@ import contextlib
 import json
 import logging
 import os
+from typing import Any
 from zipfile import ZipFile
 
 import entsoe
@@ -27,8 +28,14 @@ from .cleaning import (
     gather_specifications,
 )
 from .core import PANDAS_V3, _package_data, get_config
-from .heuristics import PLZ_to_LatLon_map, scale_to_net_capacities
+from .heuristics import (
+    PLZ_to_LatLon_map,
+    eic_coordinate_reference,
+    fill_geopositions_by_eic,
+    scale_to_net_capacities,
+)
 from .utils import (
+    collect_unique_strings,
     config_filter,
     convert_to_short_name,
     correct_manually,
@@ -678,6 +685,92 @@ def WIKIPEDIA(raw=False, update=False, config=None):
     return df
 
 
+def JRC_PPDB_OPEN(
+    raw: bool = False, update: bool = False, config: dict[str, Any] | None = None
+) -> pd.DataFrame:
+    """Read the historical JRC production-unit reference without double counting.
+
+    Production capacity repeats on generation-unit rows. Preserve it once,
+    using summed generation capacities only when plant capacity is unavailable.
+    Retain both identifier levels. Ambiguous published locations remain missing.
+    This source is optional and is not included in the default plant inventory.
+    """
+    config = get_config() if config is None else config
+    filename = get_raw_file("JRC_PPDB_OPEN", update=update, config=config)
+    with ZipFile(filename) as archive:
+        with archive.open("JRC_OPEN_UNITS.csv") as handle:
+            units = pd.read_csv(handle)
+    if raw:
+        return units
+
+    units = units.dropna(subset=["eic_p"]).copy()
+    units = units.assign(
+        Name=units.name_p,
+        Fueltype=units.type_g,
+        Technology=units.type_g,
+        Set=units.type_g,
+        Country=units.country,
+        Capacity=pd.to_numeric(units.capacity_g, errors="coerce"),
+        plant_capacity=pd.to_numeric(units.capacity_p, errors="coerce"),
+        DateIn=pd.to_numeric(
+            units.get("year_commissioned", pd.Series(np.nan, index=units.index)),
+            errors="coerce",
+        ),
+        DateOut=pd.to_numeric(
+            units.get("year_decommissioned", pd.Series(np.nan, index=units.index)),
+            errors="coerce",
+        ),
+    ).pipe(gather_specifications, config=config)
+    grouped = units.groupby("eic_p", sort=True)
+    conflicting = grouped.plant_capacity.nunique().gt(1)
+    if conflicting.any():
+        logger.warning(
+            "JRC has conflicting production capacities for %d EICs; retaining the maximum reported plant capacity",
+            int(conflicting.sum()),
+        )
+    plant_capacity = grouped.plant_capacity.max()
+    unit_capacity = grouped.Capacity.sum(min_count=1)
+    capacity = plant_capacity.where(plant_capacity.gt(0), unit_capacity)
+    representatives = (
+        units.sort_values(["eic_p", "Capacity", "eic_g"], ascending=[True, False, True])
+        .drop_duplicates("eic_p")
+        .set_index("eic_p")
+    )
+    identifiers = (
+        pd.concat(
+            [
+                units[["eic_p"]].assign(EIC=units.eic_p),
+                units[["eic_p", "eic_g"]].rename(columns={"eic_g": "EIC"}),
+            ]
+        )
+        .groupby("eic_p")
+        .EIC.agg(collect_unique_strings)
+    )
+    locations = eic_coordinate_reference(units).set_index("EIC")
+    points = locations.reindex(representatives.index)
+    version = config["JRC_PPDB_OPEN"]["version"]
+    provenance = points.EICType.dropna().map(
+        lambda kinds: [f"JRC_PPDB_OPEN@{version}:{kind}" for kind in kinds]
+    )
+    plants = representatives.assign(
+        Capacity=capacity,
+        EIC=identifiers,
+        projectID=representatives.index,
+        DateIn=grouped.DateIn.min(),
+        DateOut=grouped.DateOut.max().where(grouped.DateOut.count().eq(grouped.size())),
+        lat=points.lat,
+        lon=points.lon,
+        GeopositionSource=provenance,
+    )
+    return (
+        plants.query("Capacity > 0")
+        .reset_index(drop=True)
+        .pipe(clean_name)
+        .pipe(set_column_name, "JRC_PPDB_OPEN")
+        .pipe(config_filter, config)
+    )
+
+
 def ENTSOE(
     raw=False,
     update=False,
@@ -779,7 +872,7 @@ def ENTSOE(
     fn = _package_data("entsoe_country_codes.csv")
     COUNTRY_MAP = pd.read_csv(fn, index_col=0).rename(index=str).Country
 
-    return (
+    plants = (
         df.rename_axis(index="projectID")
         .reset_index()
         .rename(columns=RENAME_COLUMNS)
@@ -802,6 +895,16 @@ def ENTSOE(
         .pipe(set_column_name, "ENTSOE")
         .pipe(config_filter, config)
     )
+    coordinate_source = config["ENTSOE"].get("coordinate_source")
+    if coordinate_source == "JRC_PPDB_OPEN":
+        reference = JRC_PPDB_OPEN(raw=True, config=config)
+        version = config["JRC_PPDB_OPEN"]["version"]
+        plants = fill_geopositions_by_eic(
+            plants, reference, source=f"JRC_PPDB_OPEN@{version}"
+        )
+    elif coordinate_source is not None:
+        raise ValueError(f"Unknown ENTSOE coordinate source: {coordinate_source}")
+    return plants
 
 
 def ENTSOE_EIC(raw=False, update=False, config=None, entsoe_token=None):

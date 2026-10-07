@@ -110,6 +110,11 @@ def get_config(filename=None, **overrides):
             config.update(yaml.load(f, Loader=yaml.FullLoader))
     config.update(overrides)
 
+    if "parallel_duke_processes" in config:
+        raise ValueError(
+            "Rename parallel_duke_processes to parallel_processes in your configuration"
+        )
+
     sha1digest = sha1(cPickle.dumps(overrides)).digest()
     if len(dict(**overrides)) == 0:
         config["hash"] = "default"

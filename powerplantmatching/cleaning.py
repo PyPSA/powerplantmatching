@@ -16,8 +16,8 @@ import unidecode
 from deprecation import deprecated
 
 from .core import PANDAS_V3, get_config, get_obj_if_Acc
-from .duke import duke
-from .utils import get_name, set_column_name
+from .linkage import match
+from .utils import collect_unique_strings, get_name, set_column_name
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +44,8 @@ AGGREGATION_FUNCTIONS = {
     "DateOut": "max",
     "File": mode,
     "projectID": set,
-    "EIC": set,
+    "EIC": collect_unique_strings,
+    "GeopositionSource": collect_unique_strings,
     "Duration": "sum",  # note this is weighted sum
     "Volume_Mm3": "sum",
     "DamHeight_m": "sum",
@@ -475,6 +476,19 @@ def aggregate_units(
         return df.pipe(set_column_name, ds_name)
 
     cols = config["target_columns"]
+    complete_coordinates = df[["lat", "lon"]].notna().all(axis=1)
+    if "GeopositionSource" in cols:
+        provenance = df.get(
+            "GeopositionSource", pd.Series(None, index=df.index, dtype=object)
+        )
+        df = df.assign(
+            GeopositionSource=provenance.where(provenance.notna(), ds_name).where(
+                complete_coordinates
+            )
+        )
+    df = df.assign(
+        lat=df.lat.where(complete_coordinates), lon=df.lon.where(complete_coordinates)
+    )
     weighted_cols = list({"Efficiency", "Duration"} & set(cols))
     str_cols = list({"Name", "Country", "Fueltype", "Technology", "Set"} & set(cols))
     props_for_groups = {k: v for k, v in AGGREGATION_FUNCTIONS.items() if k in cols}
@@ -505,11 +519,11 @@ def aggregate_units(
         country_query = "Country == @c"
         query = " and ".join(filter(None, [agg_query, block_query, country_query]))
         duplicates = pd.concat(
-            [duke(df.query(query), threads=threads) for c in countries]
+            [match(df.query(query), threads=threads) for c in countries]
         )
     else:
         query = " and ".join(filter(None, [agg_query, block_query]))
-        duplicates = duke(df.query(query) if query else df, threads=threads)
+        duplicates = match(df.query(query) if query else df, threads=threads)
 
     df = cliques(df, duplicates)
     df = df.groupby("grouped").agg(props_for_groups)

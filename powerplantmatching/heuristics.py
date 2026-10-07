@@ -7,6 +7,7 @@ Functions to modify and adjust power plant datasets
 """
 
 import logging
+from collections.abc import Sequence
 
 import numpy as np
 import pandas as pd
@@ -16,9 +17,87 @@ from six import iteritems
 from powerplantmatching.cleaning import gather_specifications
 
 from .core import _package_data, get_config, get_obj_if_Acc
-from .utils import lookup
+from .utils import collect_unique_strings, lookup
 
 logger = logging.getLogger(__name__)
+LATITUDE_RANGE = (-90.0, 90.0)
+LONGITUDE_RANGE = (-180.0, 180.0)
+
+
+def eic_coordinate_reference(
+    reference: pd.DataFrame,
+    eic_columns: Sequence[str] = ("eic_p", "eic_g"),
+) -> pd.DataFrame:
+    """Map known EICs, leaving conflicting published coordinate pairs missing."""
+    locations = reference.melt(
+        id_vars=["lat", "lon"],
+        value_vars=list(eic_columns),
+        var_name="EICType",
+        value_name="EIC",
+    ).dropna(subset=["EIC", "lat", "lon"])
+    locations = locations.assign(
+        lat=pd.to_numeric(locations.lat, errors="coerce"),
+        lon=pd.to_numeric(locations.lon, errors="coerce"),
+    )
+    locations = locations[
+        locations.EIC.map(lambda value: isinstance(value, str) and bool(value))
+        & locations.lat.between(*LATITUDE_RANGE)
+        & locations.lon.between(*LONGITUDE_RANGE)
+    ]
+    points = locations.drop_duplicates(["EIC", "lat", "lon"])
+    unique = points.groupby("EIC").EIC.transform("size").eq(1)
+    points = points.assign(lat=points.lat.where(unique), lon=points.lon.where(unique))
+    points = points.drop_duplicates("EIC")
+    types = locations.groupby("EIC").EICType.agg(collect_unique_strings)
+    return points[["EIC", "lat", "lon"]].merge(types, on="EIC", validate="one_to_one")
+
+
+def fill_geopositions_by_eic(
+    plants: pd.DataFrame,
+    reference: pd.DataFrame,
+    source: str,
+    eic_columns: Sequence[str] = ("eic_p", "eic_g"),
+) -> pd.DataFrame:
+    """Fill incomplete points only when all usable EIC links agree on a location.
+
+    Preserve complete existing coordinates and all plant attributes. Store the
+    reference source, version supplied by the caller and matched identifier
+    level in GeopositionSource. Conflicting plant or target locations stay missing.
+    """
+    if not plants.index.is_unique:
+        raise ValueError("Coordinate enrichment requires a unique index")
+    result = plants.copy()
+    if "GeopositionSource" not in result:
+        result["GeopositionSource"] = pd.Series(None, index=result.index, dtype=object)
+    else:
+        result["GeopositionSource"] = result.GeopositionSource.astype(object)
+    if "EIC" not in result or result.empty:
+        return result
+    incomplete = ~result[["lat", "lon"]].notna().all(axis=1)
+    codes = result.loc[incomplete, "EIC"].explode().dropna()
+    codes = codes[codes.map(lambda value: isinstance(value, str) and bool(value))]
+    if codes.empty:
+        return result
+    code_links = codes.rename_axis("_row").reset_index(name="EIC")
+    points = eic_coordinate_reference(reference, eic_columns)
+    candidates = code_links.merge(points, on="EIC", validate="many_to_one")
+    blocked_rows = candidates.loc[candidates[["lat", "lon"]].isna().any(axis=1), "_row"]
+    candidates = candidates[~candidates._row.isin(blocked_rows)]
+    unique_points = candidates.drop_duplicates(["_row", "lat", "lon"])
+    unique_points = unique_points[
+        unique_points.groupby("_row").EIC.transform("size").eq(1)
+    ]
+    candidates = candidates[candidates._row.isin(unique_points._row)].copy()
+    candidates["GeopositionSource"] = candidates.EICType.map(
+        lambda kinds: [f"{source}:{kind}" for kind in kinds]
+    )
+    provenance = candidates.groupby("_row").GeopositionSource.agg(
+        collect_unique_strings
+    )
+    positions = unique_points.set_index("_row")[["lat", "lon"]]
+    result.loc[positions.index, ["lat", "lon"]] = positions
+    result.loc[provenance.index, "GeopositionSource"] = provenance
+    return result
 
 
 def extend_by_non_matched(
