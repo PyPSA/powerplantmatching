@@ -12,7 +12,7 @@ SPDX-License-Identifier: MIT
 
 ## [v0.9.1](https://github.com/PyPSA/powerplantmatching/releases/tag/v0.9.1) (7th October 2026)
 
-* Bugfix: `pm.powerplants()` no longer drops entries that share name, fuel type and country. In v0.9.0, this removed all but one unit of each wind park in the Marktstammdatenregister. The operating wind capacity in Germany fell from 77 GW to 18 GW, and biogas from 7 GW to 3 GW. ([PR #PRNUM](https://github.com/PyPSA/powerplantmatching/pull/PRNUM))
+* Bugfix: `pm.powerplants()` no longer drops entries that share name, fuel type and country. In v0.9.0, this removed all but one unit of each wind park in the Marktstammdatenregister. The operating wind capacity in Germany fell from 77 GW to 18 GW, and biogas from 7 GW to 3 GW. ([PR #328](https://github.com/PyPSA/powerplantmatching/pull/328))
 * For OPSD EU, use the most specific fuel classification (`energy_source_level_3`) for `Fueltype` when available. Correct the capacity of Borssele 1 nuclear power plant to the net value of 485 MW. ([PR #288](https://github.com/PyPSA/powerplantmatching/pull/288))
 
 ## [v0.9.0](https://github.com/PyPSA/powerplantmatching/releases/tag/v0.9.0) (3rd October 2026)
