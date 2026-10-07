@@ -74,7 +74,7 @@ def _match_by_eic(
         )
     if not df0.index.is_unique or not df1.index.is_unique:
         raise ValueError("EIC matching requires a unique index in each source")
-    linked = set() if linkages is None else set(linkages["Source"])
+    tables = {} if linkages is None else dict(list(linkages.groupby("Source")))
 
     def usable(expanded: pd.Series, label: str, translated: bool) -> pd.DataFrame:
         expanded = expanded.dropna()
@@ -93,7 +93,7 @@ def _match_by_eic(
             else pd.Series(dtype=object, name="EIC")
         )
         parts = [usable(native, label, False)]
-        if label in linked and other not in linked and "projectID" in df.columns:
+        if label in tables and other not in tables and "projectID" in df.columns:
             ids = (
                 df["projectID"]
                 .explode()
@@ -101,7 +101,7 @@ def _match_by_eic(
                 .rename_axis(label)
                 .reset_index()
             )
-            table = linkages.loc[linkages["Source"].eq(label), ["projectID", "EIC"]]
+            table = tables[label][["projectID", "EIC"]]
             translated = ids.merge(table, on="projectID").set_index(label)["EIC"]
             parts.append(usable(translated, label, True))
         return pd.concat(parts, ignore_index=True)
@@ -111,8 +111,8 @@ def _match_by_eic(
     )
     links = (
         links.assign(via_linkage=links["translated_x"] | links["translated_y"])
-        .groupby(list(labels), as_index=False)["via_linkage"]
-        .all()
+        .groupby(list(labels), as_index=False)
+        .agg(via_linkage=("via_linkage", "all"))
     )
     if links.empty:
         return empty
