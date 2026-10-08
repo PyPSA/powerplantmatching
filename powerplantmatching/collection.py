@@ -8,6 +8,7 @@ Processed datasets of merged and/or adjusted data
 
 import logging
 import os
+import warnings
 
 import pandas as pd
 from deprecation import deprecated
@@ -143,8 +144,10 @@ def powerplants(
             Configuration input dictionary to be merged into the default
             configuration data
     extend_by_vres : Boolean, default False
-            Whether extend the dataset by variable renewable energy sources
-            given by powerplantmatching.data.OPSD_VRE()
+            Deprecated since v0.10.0 and will be removed in v0.11.0. Wind and
+            solar power plants are already included from GEM and MASTR. This
+            option adds them again from the outdated
+            powerplantmatching.data.OPSD_VRE() and counts them twice.
     extendby_kwargs : Dict,
             Dict of keyword arguments passed to powerplantmatchting.
             heuristics.extend_by_non_matched
@@ -164,6 +167,15 @@ def powerplants(
     """
     from . import latest_release
 
+    if extend_by_vres:
+        warnings.warn(
+            "`extend_by_vres` is deprecated and will be removed in v0.11.0. Wind "
+            "and solar power plants are already included from GEM and MASTR. "
+            "This option adds them again from outdated OPSD data (2020).",
+            FutureWarning,
+            stacklevel=2,
+        )
+
     if config is None:
         if config_update is None:
             config = get_config()
@@ -180,9 +192,10 @@ def powerplants(
         msg = "The following arguments were deprecated and are being ignored: "
         logger.warning(msg + f"{used_deprecated_args}")
     if extendby_kwargs:
-        logger.warning(
-            DeprecationWarning,
-            "`extendby_kwargs` is deprecated in the favor of extend_by_kwargs",
+        warnings.warn(
+            "`extendby_kwargs` is deprecated in favor of `extend_by_kwargs`",
+            FutureWarning,
+            stacklevel=2,
         )
         extend_by_kwargs.update(extendby_kwargs)
 
@@ -206,6 +219,10 @@ def powerplants(
         )
         logger.info(f"Store data at {fn}")
         df.to_csv(fn)
+        if extend_by_vres:
+            return df.pipe(
+                extend_by_VRE, config=config, base_year=config["opsd_vres_base_year"]
+            )
         return df
 
     if not update and os.path.exists(fn):
