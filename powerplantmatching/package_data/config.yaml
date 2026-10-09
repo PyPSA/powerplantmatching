@@ -54,6 +54,10 @@ fully_included_sources:
 aggregate_only_matching_sources:
   - MASTR # the matching process of very small units is not efficient
 
+# Inclusive retirement cohort ends: through 2020, 2021-2025, and after 2025. Missing DateOuts always stay separate.
+# Use [] to combine all known retirement dates into one cohort.
+grouping_years_dateout: [2020, 2025]
+
 parallel_duke_processes: false
 threads_extend_by_non_matched: 16
 matched_data_url: https://raw.githubusercontent.com/PyPSA/powerplantmatching/{tag}/powerplants.csv
