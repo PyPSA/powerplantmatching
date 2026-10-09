@@ -437,7 +437,8 @@ def aggregate_units(
     """
     Vertical cleaning of the database. Cleans the "Name"-column, sums
     up the capacity of powerplant units which are determined to belong
-    to the same plant.
+    to the same plant, split by inclusive grouping_years_dateout boundaries.
+    Missing DateOut values form a separate group.
 
     Parameters
     ----------
@@ -465,6 +466,19 @@ def aggregate_units(
 
     if config is None:
         config = get_config()
+
+    grouping_years = config.get("grouping_years_dateout", [])
+    if (
+        not isinstance(grouping_years, list)
+        or any(
+            isinstance(year, bool) or not isinstance(year, int)
+            for year in grouping_years
+        )
+        or any(left >= right for left, right in zip(grouping_years, grouping_years[1:]))
+    ):
+        raise ValueError(
+            "grouping_years_dateout must be a strictly increasing list of integers"
+        )
 
     if dataset_name is None:
         ds_name = get_name(df)
@@ -512,7 +526,17 @@ def aggregate_units(
         duplicates = duke(df.query(query) if query else df, threads=threads)
 
     df = cliques(df, duplicates)
-    df = df.groupby("grouped").agg(props_for_groups)
+    group_keys = ["grouped"]
+    if "DateOut" in df:
+        df = df.assign(
+            retirement_cohort=pd.cut(
+                df.DateOut,
+                bins=[-np.inf, *grouping_years, np.inf],
+                labels=False,
+            )
+        )
+        group_keys.append("retirement_cohort")
+    df = df.groupby(group_keys, dropna=False).agg(props_for_groups)
 
     no_downcast_ctx = (
         contextlib.nullcontext()
