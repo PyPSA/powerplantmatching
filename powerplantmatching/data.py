@@ -486,6 +486,63 @@ def JRC(raw=False, update=False, config=None):
     return df
 
 
+def JRC_OPEN_LINKAGES(raw=False, update=False, config=None):
+    """
+    Importer for the identifier linkages of the JRC Open Power Plants Database
+    (JRC-PPDB-OPEN, https://zenodo.org/records/3574566).
+
+    The table maps ENTSO-E EIC codes of production units (``eic_p``) and
+    generation units (``eic_g``) to identifiers of the Global Power Plant
+    Database (GPD) and the Global Energy Observatory (GEO). It is used for
+    deterministic matching only, JRC-PPDB-OPEN is not a matching source.
+    Links to British GPD identifiers (``GBR...``) are dropped because they
+    point to other plants.
+
+    Parameters
+    ----------
+    raw : Boolean, default False
+        Whether to return the original dataset
+    update: bool, default False
+        Whether to update the data from the url.
+    config : dict, default None
+        Add custom specific configuration,
+        e.g. powerplantmatching.config.get_config(target_countries='Italy'),
+        defaults to powerplantmatching.config.get_config()
+
+    Returns
+    -------
+    pd.DataFrame
+        Long table with columns ``EIC``, ``Source`` (``GPD`` or ``GEO``) and
+        ``projectID`` in the format used by the respective importer.
+    """
+    config = get_config() if config is None else config
+
+    fn = get_raw_file("JRC_OPEN_LINKAGES", update, config)
+    with ZipFile(fn, "r") as file:
+        df = pd.read_csv(file.open("JRC_OPEN_LINKAGES.csv"), dtype=str)
+
+    if raw:
+        return df
+
+    return (
+        df.assign(GEO_id="GEO-" + df.GEO_id)
+        .rename(columns={"WRI_id": "GPD", "GEO_id": "GEO"})
+        .melt(id_vars=["GPD", "GEO"], value_vars=["eic_p", "eic_g"], value_name="EIC")
+        .melt(
+            id_vars="EIC",
+            value_vars=["GPD", "GEO"],
+            var_name="Source",
+            value_name="projectID",
+        )
+        # The GPD links of British plants point to other plants (e.g. Pembroke to
+        # Aberthaw, Cottam to West Burton), so they are dropped.
+        .loc[lambda df: ~df["projectID"].str.startswith("GBR", na=False)]
+        .dropna()
+        .drop_duplicates()
+        .reset_index(drop=True)
+    )
+
+
 @deprecated(
     deprecated_in="0.5.0",
     details="Use the JRC data instead",

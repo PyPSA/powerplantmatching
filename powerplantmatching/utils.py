@@ -28,6 +28,13 @@ from .core import _data_in, _package_data, get_config, get_obj_if_Acc, logger
 cc = coco.CountryConverter()
 
 
+def collect_eic_codes(values: pd.Series) -> list[str]:
+    """Collect nonempty string identifiers from scalar or collection values."""
+    codes = values.explode().dropna()
+    strings = codes[codes.map(lambda value: isinstance(value, str))]
+    return sorted(strings[strings.ne("")].unique().tolist())
+
+
 def lookup(df, keys=None, by="Country, Fueltype", exclude=None, unit="MW"):
     """
     Returns a lookup table of the dataframe df with rounded numbers.

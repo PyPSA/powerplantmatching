@@ -17,7 +17,7 @@ from deprecation import deprecated
 
 from .core import PANDAS_V3, get_config, get_obj_if_Acc
 from .duke import duke
-from .utils import get_name, set_column_name
+from .utils import collect_eic_codes, get_name, set_column_name
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +44,7 @@ AGGREGATION_FUNCTIONS = {
     "DateOut": "max",
     "File": mode,
     "projectID": set,
-    "EIC": set,
+    "EIC": collect_eic_codes,
     "Duration": "sum",  # note this is weighted sum
     "Volume_Mm3": "sum",
     "DamHeight_m": "sum",

@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: MIT
 
+from zipfile import ZipFile
+
 import pytest
 
 import powerplantmatching as pm
@@ -64,3 +66,26 @@ def test_reduced_retrieval():
     config["matching_sources"] = ["GEO", "GPD"]
     config["fully_included_sources"] = []
     pm.powerplants(reduced=False, config=config)
+
+
+def test_jrc_open_linkages_drops_british_gpd_ids(tmp_path, monkeypatch):
+    fn = tmp_path / "JRC-PPDB-OPEN.ver1.0.zip"
+    with ZipFile(fn, "w") as file:
+        file.writestr(
+            "JRC_OPEN_LINKAGES.csv",
+            "eic_p,eic_g,eprtr_facilityID,WRI_id,GEO_id,fresna_id\n"
+            "P1,G1,,WRI1,45146,\n"
+            "P2,G2,,GBR1000374,,\n",
+        )
+    monkeypatch.setattr(data, "get_raw_file", lambda *args, **kwargs: fn)
+
+    df = data.JRC_OPEN_LINKAGES()
+
+    assert df.columns.to_list() == ["EIC", "Source", "projectID"]
+    rows = set(df.itertuples(index=False, name=None))
+    assert {
+        ("P1", "GPD", "WRI1"),
+        ("G1", "GPD", "WRI1"),
+        ("P1", "GEO", "GEO-45146"),
+    } <= rows
+    assert not df["projectID"].str.startswith("GBR").any()
