@@ -2664,7 +2664,8 @@ def MASTR(
     df_processed["Name"] = df_processed.apply(
         lambda x: (
             f"{x.Name} {x.NameKraftwerksblock.replace(x.Name, '').strip()}"
-            if x.NameKraftwerksblock
+            if pd.notna(x.NameKraftwerksblock)
+            and pd.notna(x.Name)
             and x.NameKraftwerksblock != x.Name
             and x.Fueltype in config["clean_name"]["fueltypes_with_blocks"]
             else x.Name
