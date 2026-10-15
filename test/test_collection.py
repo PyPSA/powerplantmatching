@@ -23,6 +23,11 @@ def test_powerplants_keeps_units_with_same_name(monkeypatch):
     monkeypatch.setattr(collection, "collect", lambda *args, **kwargs: turbines)
     config = pm.get_config(fully_included_sources=[], variant="test-same-name")
 
-    df = pm.powerplants(config=config, update=True, fill_geopositions=False)
+    df = pm.powerplants(
+        config=config,
+        update=True,
+        fill_geopositions=False,
+        reconcile_retirements=False,
+    )
 
     assert df.Capacity.sum() == turbines.Capacity.sum()
