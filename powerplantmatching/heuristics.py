@@ -7,6 +7,8 @@ Functions to modify and adjust power plant datasets
 """
 
 import logging
+from datetime import date
+from numbers import Integral
 
 import numpy as np
 import pandas as pd
@@ -19,6 +21,186 @@ from .core import _package_data, get_config, get_obj_if_Acc
 from .utils import lookup
 
 logger = logging.getLogger(__name__)
+
+
+def reconcile_retirement_capacity(df, config=None, as_of=None):
+    """
+    Reconcile retirement status in a reduced dataset after matching.
+
+    For each plant, use the original units of its highest-priority capacity
+    source to separate retired and operational capacity. Units are retired
+    only when DateOut is strictly before as_of; unknown retirement dates count
+    as operational. Mixed plants produce two rows, otherwise one row is kept.
+    No units are dropped and no new cross-source matches are made.
+
+    Allocate the final plant's capacity, stored energy and reservoir volume
+    proportionally to each portion, preserving their totals. Recompute
+    commissioning and retirement dates from the selected units,
+    retaining compatible matched-date fallbacks. Operational retirement dates
+    may be extended by the matched plant's date. Matched retrofit dates are
+    retained, except when later than a retired portion's retirement.
+    Efficiency is capacity-weighted
+    over units with known efficiency; otherwise the matched value is retained.
+
+    Selected-source IDs are partitioned between the portions. Other-source IDs
+    remain on the operational row, or the sole row if there is no split.
+    Incomplete or invalid capacity evidence leaves the plant unchanged and
+    emits a warning. Output columns are unchanged.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Reduced matched plants with source unit IDs in projectID dictionaries.
+    config : dict, optional
+        Source configuration and reliability scores; defaults to get_config().
+    as_of : int, optional
+        Snapshot year, default current year. Units retiring in this year remain
+        operational. Future commissioning dates are not filtered here.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Reconciled plants, with at most two rows per input plant.
+    """
+    from . import data
+
+    config = get_config() if config is None else config
+    year = date.today().year if as_of is None else as_of
+    if not isinstance(year, Integral):
+        raise ValueError("as_of must be an integer year")
+    if df.empty:
+        return df.copy()
+    # Load original units once per source; conflicting IDs cannot be reconciled.
+    sources = sorted(
+        {source for ids in df.projectID if isinstance(ids, dict) for source in ids}
+    )
+    lookups = {}
+    for source in sources:
+        units = getattr(data, source)(config=config)
+        units = units.reindex(
+            columns=[
+                "projectID",
+                "Capacity",
+                "DateIn",
+                "DateOut",
+                "Efficiency",
+            ]
+        ).drop_duplicates()
+        lookups[source] = units.loc[~units.projectID.duplicated(keep=False)].set_index(
+            "projectID"
+        )
+
+    rows = []
+    for _, plant in df.iterrows():
+        if not isinstance(plant.projectID, dict) or not plant.projectID:
+            logger.warning(
+                "No unit provenance for %s; retaining original row.", plant.Name
+            )
+            rows.append(plant)
+            continue
+        capacity_source = None
+        # Select the capacity provider without changing the original matches.
+        # Stable sorting preserves the reducer's provenance order for tied scores.
+        source_order = sorted(
+            plant.projectID,
+            key=lambda source: config[source]["reliability_score"],
+            reverse=True,
+        )
+        for source in source_order:
+            ids = plant.projectID[source]
+            if not ids:
+                continue
+            lookup = lookups[source]
+            ids = list(ids)
+            if not all(unit_id in lookup.index for unit_id in ids):
+                break
+            units = lookup.loc[ids]
+            # aggregate_units converts zero sums (including all-missing) to NaN.
+            if units.Capacity.notna().any() and (
+                config[source].get("aggregated_units", False)
+                or units.Capacity.sum() != 0
+            ):
+                capacity_source = source
+                break
+        if capacity_source is None:
+            logger.warning(
+                "Incomplete unit evidence for %s; retaining original row.",
+                plant.Name,
+            )
+            rows.append(plant)
+            continue
+        total = units.Capacity.sum()
+        if (
+            units.Capacity.isna().any()
+            or (units.Capacity < 0).any()
+            or not np.isfinite(total)
+            or total <= 0
+            or not np.isfinite(plant.Capacity)
+            or plant.Capacity < 0
+        ):
+            logger.warning(
+                "Invalid capacity evidence for %s; retaining original row.", plant.Name
+            )
+            rows.append(plant)
+            continue
+        if plant.Capacity == 0:
+            rows.append(plant)
+            continue
+        # Unknown retirement dates and the snapshot year remain operational.
+        retired = units.DateOut.lt(year)
+        portions = [
+            (True, units.loc[retired]),
+            (False, units.loc[~retired]),
+        ]
+        portions = [
+            (status, part) for status, part in portions if part.Capacity.sum() > 0
+        ]
+        for is_retired, portion in portions:
+            row = plant.copy()
+            share = portion.Capacity.sum() / total
+            # Split extensive quantities; duration and dam height stay unchanged.
+            for column in ("Capacity", "StorageCapacity_MWh", "Volume_Mm3"):
+                if column in df:
+                    row[column] = plant[column] * share
+            # Recompute dates, keeping only compatible matched-date fallbacks.
+            row.DateIn = portion.DateIn.min()
+            row.DateOut = portion.DateOut.max()
+            if not is_retired and pd.notna(plant.DateOut) and plant.DateOut >= year:
+                row.DateOut = (
+                    max(row.DateOut, plant.DateOut)
+                    if pd.notna(row.DateOut)
+                    else plant.DateOut
+                )
+            if pd.isna(row.DateIn) and (
+                pd.isna(row.DateOut) or plant.DateIn <= row.DateOut
+            ):
+                row.DateIn = plant.DateIn
+            if is_retired and "DateRetrofit" in df and row.DateRetrofit > row.DateOut:
+                row.DateRetrofit = np.nan
+            if "Efficiency" in df:
+                # Missing efficiencies must not contribute to the denominator.
+                known = portion.dropna(subset=["Efficiency"])
+                weight = known.Capacity.sum()
+                if weight > 0:
+                    row.Efficiency = (known.Efficiency * known.Capacity).sum() / weight
+            row.projectID = {
+                capacity_source: set(
+                    units.index if len(portions) == 1 else portion.index
+                )
+            }
+            # Unmapped sources describe the plant, not verified retirement portions.
+            if not is_retired or len(portions) == 1:
+                row.projectID.update(
+                    {
+                        key: value
+                        for key, value in plant.projectID.items()
+                        if key != capacity_source
+                    }
+                )
+            rows.append(row)
+    result = pd.DataFrame(rows).reset_index(drop=True).reindex(columns=df.columns)
+    result.columns.name = df.columns.name
+    return result
 
 
 def extend_by_non_matched(

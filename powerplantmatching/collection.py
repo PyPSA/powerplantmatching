@@ -14,7 +14,11 @@ from deprecation import deprecated
 
 from .cleaning import aggregate_units
 from .core import _data_out, get_config
-from .heuristics import extend_by_non_matched, extend_by_VRE
+from .heuristics import (
+    extend_by_non_matched,
+    extend_by_VRE,
+    reconcile_retirement_capacity,
+)
 from .matching import combine_multiple_datasets, reduce_matched_dataframe
 from .utils import (
     parmap,
@@ -119,6 +123,8 @@ def powerplants(
     extend_by_kwargs=None,
     fill_geopositions=True,
     filter_missing_geopositions=True,
+    reconcile_retirements=True,
+    as_of=None,
     **collection_kwargs,
 ):
     """
@@ -160,6 +166,13 @@ def powerplants(
             if `update` is true.
     **collection_kwargs : kwargs
             Arguments passed to powerplantmatching.collection.Collection.
+    reconcile_retirements : bool, default True
+            Split reduced plants into retired and operational portions after matching.
+            Also applies to local cached results, but not from_url downloads.
+            Requires loading the original source units.
+    as_of : int, optional
+            Retirement snapshot year, default current year. Only retirement
+            years strictly before the snapshot year count as retired.
 
     """
     from . import latest_release
@@ -169,6 +182,12 @@ def powerplants(
             config = get_config()
         else:
             config = get_config(**config_update)
+
+    def reconcile(df):
+        if reconcile_retirements and collection_kwargs.get("reduced", True):
+            df = reconcile_retirement_capacity(df, config=config, as_of=as_of)
+        return df
+
     if extendby_kwargs is None:
         extendby_kwargs = {}
     if extend_by_kwargs is None:
@@ -214,6 +233,7 @@ def powerplants(
             .pipe(parse_string_to_dict, ["projectID", "EIC"])
             .pipe(set_column_name, "Matched Data")
         )
+        df = reconcile(df)
         if extend_by_vres:
             return df.pipe(
                 extend_by_VRE, config=config, base_year=config["opsd_vres_base_year"]
@@ -245,6 +265,7 @@ def powerplants(
 
     matched.reset_index(drop=True).to_csv(fn, index_label="id", encoding="utf-8")
 
+    matched = reconcile(matched.pipe(set_column_name, "Matched Data"))
     if extend_by_vres:
         matched = extend_by_VRE(
             matched, config=config, base_year=config["opsd_vres_base_year"]
