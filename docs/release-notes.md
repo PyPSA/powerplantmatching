@@ -8,7 +8,7 @@ SPDX-License-Identifier: MIT
 
 ## Upcoming Version
 
-*
+* Fix typo in `clean_name.fueltypes_with_blocks`: listed fuels are now excluded from aggregation, rather than the setting being partially ignored due to the misspelled key. Nuclear units therefore remain separate by default. Empty lists allow all fuels to be aggregated and no longer cause an error during name cleaning. 
 
 ## [v0.9.1](https://github.com/PyPSA/powerplantmatching/releases/tag/v0.9.1) (7th October 2026)
 
