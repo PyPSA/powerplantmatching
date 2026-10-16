@@ -124,7 +124,7 @@ def clean_name(df, config=None):
         # do not remove block letters for fuel types with blocks; the regular
         # regex \w would remove standalone letters, this one is skipped for
         # fueltypes in mask
-        elif key == "" and r"\w" in pattern:
+        elif len(keep_blocks) > 0 and key == "" and r"\w" in pattern:
             pattern_keep = r"(?i)" + "|".join(
                 [rf"\b{p}\b" for p in pattern if p != r"\w"]
             )
@@ -439,6 +439,9 @@ def aggregate_units(
     up the capacity of powerplant units which are determined to belong
     to the same plant.
 
+    Fuel types listed in ``clean_name.fueltypes_with_blocks`` are excluded
+    from aggregation and remain singleton groups, regardless of their names.
+
     Parameters
     ----------
     df : pandas.Dataframe or string
@@ -497,8 +500,8 @@ def aggregate_units(
                 break
 
     block_query = None
-    if with_blocks := config["clean_name"].get("fuel_type_with_blocks", []):  # noqa
-        block_query = "Fueltype in @with_blocks"
+    if with_blocks := config["clean_name"].get("fueltypes_with_blocks", []):  # noqa: F841
+        block_query = "Fueltype not in @with_blocks"
 
     if country_wise:
         countries = df.Country.unique()

@@ -588,6 +588,8 @@ target_technologies:
    - op zee
    - zeewind
 clean_name:
+  # Preserve block labels in names and exclude these fuels from unit aggregation.
+  # An empty list removes block labels and allows all fuels to be aggregated.
   fueltypes_with_blocks:
     - Nuclear
   remove_common_words: false # remove words which appear more that 20 times in all entries
