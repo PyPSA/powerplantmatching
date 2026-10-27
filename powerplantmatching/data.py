@@ -2322,7 +2322,8 @@ def GEM(raw=False, update=False, config=None):
     """
     GEM_FUNCTIONS = [GBPT, GGPT, GCPT, GGTPT, GNPT, GSPT, GWPT, GHPT]
     data = [f(raw=raw, update=update, config=config) for f in GEM_FUNCTIONS]
-    return pd.concat(data, ignore_index=True)
+    combined = pd.concat(data, ignore_index=True)
+    return combined if raw else set_column_name(combined, "GEM")
 
 
 def MASTR(
