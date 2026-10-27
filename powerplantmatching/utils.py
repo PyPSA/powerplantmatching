@@ -30,9 +30,9 @@ cc = coco.CountryConverter()
 
 def collect_eic_codes(values: pd.Series) -> list[str]:
     """Collect nonempty string identifiers from scalar or collection values."""
-    codes = values.explode().dropna()
-    strings = codes[codes.map(lambda value: isinstance(value, str))]
-    return sorted(strings[strings.ne("")].unique().tolist())
+    codes = values.explode()
+    usable = codes.map(lambda code: isinstance(code, str) and code != "")
+    return sorted(codes[usable.astype(bool)].unique().tolist())
 
 
 def lookup(df, keys=None, by="Country, Fueltype", exclude=None, unit="MW"):

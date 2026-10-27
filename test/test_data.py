@@ -82,10 +82,9 @@ def test_jrc_open_linkages_drops_british_gpd_ids(tmp_path, monkeypatch):
     df = data.JRC_OPEN_LINKAGES()
 
     assert df.columns.to_list() == ["EIC", "Source", "projectID"]
-    rows = set(df.itertuples(index=False, name=None))
-    assert {
+    assert set(df.itertuples(index=False, name=None)) == {
         ("P1", "GPD", "WRI1"),
         ("G1", "GPD", "WRI1"),
         ("P1", "GEO", "GEO-45146"),
-    } <= rows
-    assert not df["projectID"].str.startswith("GBR").any()
+        ("G1", "GEO", "GEO-45146"),
+    }

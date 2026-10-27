@@ -41,33 +41,23 @@ def _match_by_eic(
     Parameters
     ----------
     df0, df1 : pd.DataFrame
-        Source dataframes with an 'EIC' column containing scalar or collected codes
-        (as produced by ``aggregate_units``).
+        Source dataframes with an 'EIC' column of scalar or collected codes.
     labels : list of str
-        Two-element list of dataset names for the output columns.
+        Names of the two datasets.
     linkages : pd.DataFrame, optional
-        Table with columns ``EIC``, ``Source`` and ``projectID`` as returned by
-        ``data.JRC_OPEN_LINKAGES``. Project IDs of a source listed there are
-        translated to EIC codes, but only when compared with a source that is
-        not listed, so the table never links two listed sources by itself.
-        Links that rest only on translated codes are kept only if both records
-        share the fuel type and their capacities differ by at most 20 percent.
+        Table with columns ``EIC``, ``Source`` and ``projectID``, see
+        ``data.JRC_OPEN_LINKAGES``. Project IDs of a listed source are
+        translated to EIC codes only when compared with an unlisted source.
+        Links that rest only on translated codes need the same fuel type and
+        capacities within ``EIC_LINKAGE_CAPACITY_TOLERANCE``.
 
     Returns
     -------
     matches : pd.DataFrame
-        DataFrame with columns ``labels``, containing matched index pairs.
-    matched_idx0 : set
-        Indices from df0 that were matched.
-    matched_idx1 : set
-        Indices from df1 that were matched.
+        Matched index pairs with columns ``labels``.
+    matched_idx0, matched_idx1 : set
+        Matched indices of df0 and df1.
     """
-    empty: tuple[pd.DataFrame, set[Hashable], set[Hashable]] = (
-        pd.DataFrame(columns=list(labels)),
-        set(),
-        set(),
-    )
-
     if len(labels) != 2 or labels[0] == labels[1] or "EIC" in labels:
         raise ValueError(
             "EIC matching requires two distinct source labels other than EIC"
@@ -76,51 +66,30 @@ def _match_by_eic(
         raise ValueError("EIC matching requires a unique index in each source")
     tables = {} if linkages is None else dict(list(linkages.groupby("Source")))
 
-    def usable(expanded: pd.Series, label: str, translated: bool) -> pd.DataFrame:
-        expanded = expanded.dropna()
-        expanded = expanded[expanded.map(lambda value: isinstance(value, str))]
-        return (
-            expanded[expanded.ne("")]
-            .rename_axis(label)
-            .reset_index(name="EIC")
-            .assign(translated=translated)
-        )
-
     def codes(df: pd.DataFrame, label: str, other: str) -> pd.DataFrame:
-        native = (
-            df["EIC"].explode()
-            if "EIC" in df.columns
-            else pd.Series(dtype=object, name="EIC")
-        )
-        parts = [usable(native, label, False)]
+        native = df.get("EIC", pd.Series(dtype=object)).explode()
+        parts = [native.to_frame("EIC").assign(translated=False)]
         if label in tables and other not in tables and "projectID" in df.columns:
-            ids = (
-                df["projectID"]
-                .explode()
-                .rename("projectID")
-                .rename_axis(label)
-                .reset_index()
-            )
-            table = tables[label][["projectID", "EIC"]]
-            translated = ids.merge(table, on="projectID").set_index(label)["EIC"]
-            parts.append(usable(translated, label, True))
-        return pd.concat(parts, ignore_index=True)
+            table = tables[label].set_index("projectID")["EIC"]
+            ids = df["projectID"].explode().to_frame("projectID")
+            translated = ids.join(table, on="projectID", how="inner")
+            parts.append(translated[["EIC"]].assign(translated=True))
+        found = pd.concat(parts)
+        usable = found["EIC"].map(lambda code: isinstance(code, str) and code != "")
+        return found[usable.astype(bool)].rename_axis(label).reset_index()
 
-    links = pd.merge(
-        codes(df0, labels[0], labels[1]), codes(df1, labels[1], labels[0]), on="EIC"
-    )
     links = (
-        links.assign(via_linkage=links["translated_x"] | links["translated_y"])
+        codes(df0, labels[0], labels[1])
+        .merge(codes(df1, labels[1], labels[0]), on="EIC")
+        .assign(via_linkage=lambda df: df["translated_x"] | df["translated_y"])
         .groupby(list(labels), as_index=False)
         .agg(via_linkage=("via_linkage", "all"))
     )
     if links.empty:
-        return empty
+        return pd.DataFrame(columns=list(labels)), set(), set()
 
-    isolated = links.groupby(labels[0])[labels[1]].transform("size").eq(
-        1
-    ) & links.groupby(labels[1])[labels[0]].transform("size").eq(1)
-    matches = links.loc[isolated]
+    unique = [~links[label].duplicated(keep=False) for label in labels]
+    matches = links[unique[0] & unique[1]]
 
     linkage_only = matches[matches["via_linkage"]]
     if not linkage_only.empty:
@@ -128,19 +97,11 @@ def _match_by_eic(
         left = df0.reindex(index=linkage_only[labels[0]], columns=columns)
         right = df1.reindex(index=linkage_only[labels[1]], columns=columns)
         same_fuel = left["Fueltype"].to_numpy() == right["Fueltype"].to_numpy()
-        with np.errstate(divide="ignore", invalid="ignore"):
-            deviation = (
-                right["Capacity"].astype(float).to_numpy()
-                / left["Capacity"].astype(float).to_numpy()
-                - 1
-            )
-            plausible = same_fuel & (
-                np.abs(deviation) <= EIC_LINKAGE_CAPACITY_TOLERANCE
-            )
+        cap0, cap1 = (side["Capacity"].astype(float) for side in (left, right))
+        deviation = (cap1 / cap0.to_numpy() - 1).abs()
+        plausible = same_fuel & deviation.le(EIC_LINKAGE_CAPACITY_TOLERANCE).to_numpy()
         matches = matches.drop(linkage_only.index[~plausible])
     matches = matches[list(labels)].reset_index(drop=True)
-    matched_idx0 = set(matches[labels[0]])
-    matched_idx1 = set(matches[labels[1]])
 
     logger.info(
         "EIC matching: %d deterministic matches between `%s` and `%s`",
@@ -148,8 +109,7 @@ def _match_by_eic(
         labels[0],
         labels[1],
     )
-
-    return matches, matched_idx0, matched_idx1
+    return matches, set(matches[labels[0]]), set(matches[labels[1]])
 
 
 def best_matches(links):
@@ -212,18 +172,15 @@ def compare_two_datasets(
     if "singlematch" not in dukeargs:
         dukeargs["singlematch"] = True
 
-    # ── Deterministic EIC matching (before fuzzy) ────────────────────
+    # Match by EIC first and leave only the unmatched records to Duke
     eic_matches, matched_idx0, matched_idx1 = _match_by_eic(
         dfs[0], dfs[1], labels, eic_linkages
     )
-
-    # Remove EIC-matched rows from the Duke input
     remaining = [
         dfs[0].drop(index=matched_idx0, errors="ignore"),
         dfs[1].drop(index=matched_idx1, errors="ignore"),
     ]
 
-    # ── Duke fuzzy matching on residual ──────────────────────────────
     def country_link(dfs, country):
         # country_selector for both dataframes
         sel_country_b = [df["Country"] == country for df in dfs]
@@ -251,9 +208,7 @@ def compare_two_datasets(
     else:
         duke_matches = best_matches(links)
 
-    # ── Combine EIC + Duke matches ───────────────────────────────────
-    matches = pd.concat([eic_matches, duke_matches], ignore_index=True)
-    return matches
+    return pd.concat([eic_matches, duke_matches], ignore_index=True)
 
 
 def cross_matches(sets_of_pairs, labels=None):

@@ -495,8 +495,6 @@ def JRC_OPEN_LINKAGES(raw=False, update=False, config=None):
     generation units (``eic_g``) to identifiers of the Global Power Plant
     Database (GPD) and the Global Energy Observatory (GEO). It is used for
     deterministic matching only, JRC-PPDB-OPEN is not a matching source.
-    Links to British GPD identifiers (``GBR...``) are dropped because they
-    point to other plants.
 
     Parameters
     ----------
