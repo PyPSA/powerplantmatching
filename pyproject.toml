@@ -82,7 +82,6 @@ dev= [
     "types-PyYAML",
     "pandas-stubs",
     "types-tqdm",
-    "types-six",
     "reuse>=5.0.2",
 ]
 
@@ -150,6 +149,5 @@ module = [
     "tqdm.*",
     "deprecation.*",
     "cartopy.*",
-    "six.*",
 ]
 ignore_missing_imports = true

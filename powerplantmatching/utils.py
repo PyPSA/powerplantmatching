@@ -18,7 +18,6 @@ import numpy as np
 import pandas as pd
 import pycountry as pyc
 import requests
-import six
 from numpy import atleast_1d
 from packaging.version import parse
 from tqdm import tqdm
@@ -200,7 +199,7 @@ def read_csv_if_string(df):
     """
     from . import data
 
-    if isinstance(df, six.string_types):
+    if isinstance(df, str):
         df = getattr(data, df)()
     return df
 
