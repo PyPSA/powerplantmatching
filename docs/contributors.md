@@ -43,6 +43,7 @@ As of 2025-08-06, the following people have contributed to `powerplantmatching`:
 - Martha Frysztacki (:octicons-mark-github-16: [@martacki](https://github.com/martacki))
 - Martin Hjelmeland (:octicons-mark-github-16: [@martinhjel](https://github.com/martinhjel))
 - Max Parzen (:octicons-mark-github-16: [@pz-max](https://github.com/pz-max))
+- Mayk Thewessen (:octicons-mark-github-16: [@MaykThewessen](https://github.com/MaykThewessen))
 - rbaard1 (:octicons-mark-github-16: [@rbaard1](https://github.com/rbaard1))
 - Thomas Kouroughli (:octicons-mark-github-16: [@Tomkourou](https://github.com/Tomkourou))
 
