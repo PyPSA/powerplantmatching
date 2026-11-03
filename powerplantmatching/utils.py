@@ -28,11 +28,17 @@ from .core import _data_in, _package_data, get_config, get_obj_if_Acc, logger
 cc = coco.CountryConverter()
 
 
-def collect_eic_codes(values: pd.Series) -> list[str]:
-    """Collect nonempty string identifiers from scalar or collection values."""
+def usable_codes(values: pd.Series) -> pd.Series:
+    """Explode scalar or collection values and keep the nonempty strings."""
     codes = values.explode()
     usable = codes.map(lambda code: isinstance(code, str) and code != "")
-    return sorted(codes[usable.astype(bool)].unique().tolist())
+    # Cast so that an all-NaN float column still merges with string codes
+    return codes[usable.astype(bool)].astype(str)
+
+
+def collect_eic_codes(values: pd.Series) -> list[str]:
+    """Collect the sorted unique EIC codes of scalar or collection values."""
+    return sorted(usable_codes(values).unique().tolist())
 
 
 def lookup(df, keys=None, by="Country, Fueltype", exclude=None, unit="MW"):

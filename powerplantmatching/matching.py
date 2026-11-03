@@ -17,7 +17,13 @@ from .cleaning import clean_technology
 from .core import get_config, get_obj_if_Acc
 from .data import JRC_OPEN_LINKAGES
 from .duke import duke
-from .utils import collect_eic_codes, get_name, parmap, read_csv_if_string
+from .utils import (
+    collect_eic_codes,
+    get_name,
+    parmap,
+    read_csv_if_string,
+    usable_codes,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -35,8 +41,8 @@ def _match_by_eic(
     """
     Deterministic matching of two datasets by EIC (Energy Identification Code).
 
-    Accept only isolated one-to-one links in the shared-code graph. Scheme
-    identifiers shared by several stations remain available for fuzzy matching.
+    A pair is accepted only when neither record shares a code with any other
+    record, so codes shared by several stations are left to fuzzy matching.
 
     Parameters
     ----------
@@ -58,25 +64,19 @@ def _match_by_eic(
     matched_idx0, matched_idx1 : set
         Matched indices of df0 and df1.
     """
-    if len(labels) != 2 or labels[0] == labels[1] or "EIC" in labels:
-        raise ValueError(
-            "EIC matching requires two distinct source labels other than EIC"
-        )
     if not df0.index.is_unique or not df1.index.is_unique:
         raise ValueError("EIC matching requires a unique index in each source")
     tables = {} if linkages is None else dict(list(linkages.groupby("Source")))
 
     def codes(df: pd.DataFrame, label: str, other: str) -> pd.DataFrame:
-        native = df.get("EIC", pd.Series(dtype=object)).explode()
+        native = usable_codes(df.get("EIC", pd.Series(dtype=object)))
         parts = [native.to_frame("EIC").assign(translated=False)]
         if label in tables and other not in tables and "projectID" in df.columns:
             table = tables[label].set_index("projectID")["EIC"]
             ids = df["projectID"].explode().to_frame("projectID")
-            translated = ids.join(table, on="projectID", how="inner")
-            parts.append(translated[["EIC"]].assign(translated=True))
-        found = pd.concat(parts)
-        usable = found["EIC"].map(lambda code: isinstance(code, str) and code != "")
-        return found[usable.astype(bool)].rename_axis(label).reset_index()
+            translated = usable_codes(ids.join(table, on="projectID")["EIC"])
+            parts.append(translated.to_frame("EIC").assign(translated=True))
+        return pd.concat(parts).rename_axis(label).reset_index()
 
     links = (
         codes(df0, labels[0], labels[1])
@@ -91,16 +91,15 @@ def _match_by_eic(
     unique = [~links[label].duplicated(keep=False) for label in labels]
     matches = links[unique[0] & unique[1]]
 
-    linkage_only = matches[matches["via_linkage"]]
-    if not linkage_only.empty:
-        columns = ["Fueltype", "Capacity"]
-        left = df0.reindex(index=linkage_only[labels[0]], columns=columns)
-        right = df1.reindex(index=linkage_only[labels[1]], columns=columns)
-        same_fuel = left["Fueltype"].to_numpy() == right["Fueltype"].to_numpy()
-        cap0, cap1 = (side["Capacity"].astype(float) for side in (left, right))
-        deviation = (cap1 / cap0.to_numpy() - 1).abs()
-        plausible = same_fuel & deviation.le(EIC_LINKAGE_CAPACITY_TOLERANCE).to_numpy()
-        matches = matches.drop(linkage_only.index[~plausible])
+    # Links that rest only on the linkage table must agree on fuel and capacity
+    linked = matches[matches["via_linkage"]]
+    columns = ["Fueltype", "Capacity"]
+    left = df0.reindex(index=linked[labels[0]], columns=columns).set_axis(linked.index)
+    right = df1.reindex(index=linked[labels[1]], columns=columns).set_axis(linked.index)
+    same_fuel = left["Fueltype"] == right["Fueltype"]
+    deviation = (right["Capacity"] / left["Capacity"] - 1).abs()
+    plausible = same_fuel & deviation.le(EIC_LINKAGE_CAPACITY_TOLERANCE)
+    matches = matches.drop(plausible.index[~plausible])
     matches = matches[list(labels)].reset_index(drop=True)
 
     logger.info(
@@ -177,8 +176,8 @@ def compare_two_datasets(
         dfs[0], dfs[1], labels, eic_linkages
     )
     remaining = [
-        dfs[0].drop(index=matched_idx0, errors="ignore"),
-        dfs[1].drop(index=matched_idx1, errors="ignore"),
+        dfs[0].drop(index=matched_idx0),
+        dfs[1].drop(index=matched_idx1),
     ]
 
     def country_link(dfs, country):

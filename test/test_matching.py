@@ -22,6 +22,8 @@ from powerplantmatching.utils import parse_string_to_dict
         (["C1", {"C2"}], [["C1"], {"C2"}], [0, 1]),
         ([{np.nan}, {"C1"}], [{np.nan}, {"C1"}], [1]),
         ([None], [None], []),
+        # an all-NaN float column has no codes
+        ([np.nan], [None], []),
         # a code shared by several stations must not pick one arbitrarily
         ([{"C1", "C2"}], [{"C1"}, {"C2"}], []),
         ([["C1", "C2"], ["SCHEME"]], [["C1"], ["SCHEME"], ["SCHEME"]], [0]),
@@ -51,7 +53,7 @@ def test_eic_matching_rejects_duplicate_index():
 
 
 def test_eic_matching_through_linkage_table():
-    """Translated links must be one to one, share the fuel and be within 20%."""
+    # Only E1 passes: E2 and E3 share WRI2, E4 is 3x larger, E5 burns gas
     left = pd.DataFrame(
         {
             "EIC": ["E1", "E2", "E3", "E4", "E5"],
@@ -97,7 +99,6 @@ def test_eic_linkage_never_links_two_listed_sources():
 
 @pytest.mark.parametrize("codes", [["C2", "C1", "C1"], {"C1", "C2"}, "C1"])
 def test_reduce_preserves_identifiers_across_sources(codes):
-    """A higher-priority source without EICs cannot erase known identifiers."""
     columns = ["Name", "Fueltype", "Technology", "Set", "EIC"]
     values = ["Plant", "Natural Gas", "CCGT", "PP"]
     frame = pd.DataFrame(
@@ -118,7 +119,6 @@ def test_reduce_preserves_identifiers_across_sources(codes):
     [(["C2", "C1", "C1", None, np.nan, "", 42], ["C1", "C2"]), (None, [])],
 )
 def test_aggregate_identifiers_survive_cache_roundtrip(codes, expected):
-    """Unit aggregation and cached reload retain the same usable identifiers."""
     config = get_config()
     unit = {
         "Name": "Alpha Plant",

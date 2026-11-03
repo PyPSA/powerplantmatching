@@ -493,8 +493,8 @@ def JRC_OPEN_LINKAGES(raw=False, update=False, config=None):
 
     The table maps ENTSO-E EIC codes of production units (``eic_p``) and
     generation units (``eic_g``) to identifiers of the Global Power Plant
-    Database (GPD) and the Global Energy Observatory (GEO). It is used for
-    deterministic matching only, JRC-PPDB-OPEN is not a matching source.
+    Database (GPD) and the Global Energy Observatory (GEO). It is only used
+    for EIC matching, not as a matching source.
 
     Parameters
     ----------
