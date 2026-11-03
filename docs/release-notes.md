@@ -8,7 +8,7 @@ SPDX-License-Identifier: MIT
 
 ## Upcoming Version
 
-*
+* Match records by EIC before fuzzy matching, and link ENTSO-E to GPD and GEO through the JRC-PPDB-OPEN EIC linkages. ([PR #289](https://github.com/PyPSA/powerplantmatching/pull/289))
 
 ## [v0.9.1](https://github.com/PyPSA/powerplantmatching/releases/tag/v0.9.1) (7th October 2026)
 
