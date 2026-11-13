@@ -1631,8 +1631,12 @@ def IRENASTAT(raw=False, update=False, config=None):
     }
     df["Country"] = df["Country"].replace(country_renames)
 
-    # Consistent country names for dataset
-    df = convert_to_short_name(df)
+    # Consistent country names for dataset, preserving regional aggregates.
+    regional_aggregates = {"Eurasia", "Oceania"}
+    is_aggregate = df["Country"].isin(regional_aggregates)
+
+    countries = convert_to_short_name(df.loc[~is_aggregate].copy())
+    df = pd.concat([countries, df.loc[is_aggregate]]).sort_index()
 
     df.dropna(subset="Capacity", inplace=True)
 
