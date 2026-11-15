@@ -10,6 +10,12 @@ SPDX-License-Identifier: MIT
 
 * Deprecate the argument `extend_by_vres` of `pm.powerplants()` and the function `extend_by_VRE()`. Both will be removed in v0.11.0. Wind and solar power plants are already included from GEM and MASTR, and the option added them again from outdated OPSD data (2020). ([#232](https://github.com/PyPSA/powerplantmatching/issues/232))
     * Bugfix: `pm.powerplants(from_url=True)` now applies `extend_by_vres` like the other code paths, and the deprecated argument `extendby_kwargs` now raises a `FutureWarning` instead of a logging error.
+* Replace `six` with the standard library, since `python-dateutil` 4.0 no longer installs it, and exclude pandas 3.1 until `country_converter` supports it. ([PR #335](https://github.com/PyPSA/powerplantmatching/pull/335))
+
+## [v0.9.1](https://github.com/PyPSA/powerplantmatching/releases/tag/v0.9.1) (7th October 2026)
+
+* Bugfix: `pm.powerplants()` no longer drops entries that share name, fuel type and country. In v0.9.0, this removed all but one unit of each wind park in the Marktstammdatenregister. The operating wind capacity in Germany fell from 77 GW to 18 GW, and biogas from 7 GW to 3 GW. ([PR #328](https://github.com/PyPSA/powerplantmatching/pull/328))
+* For OPSD EU, use the most specific fuel classification (`energy_source_level_3`) for `Fueltype` when available. Correct the capacity of Borssele 1 nuclear power plant to the net value of 485 MW. ([PR #288](https://github.com/PyPSA/powerplantmatching/pull/288))
 
 ## [v0.9.0](https://github.com/PyPSA/powerplantmatching/releases/tag/v0.9.0) (3rd October 2026)
 
