@@ -12,6 +12,7 @@ The dataset combines the data of all the data sources listed in [Data-Sources](#
 - **Fueltype** - {Solid Biomass, Biogas, Geothermal, Hard Coal, Hydro, Lignite, Nuclear, Natural Gas, Oil, Solar, Wind, Other}
 - **Technology** - {CCGT, OCGT, Steam Turbine, Combustion Engine, Run-Of-River, Pumped Storage, Reservoir}
 - **Set** - {Power Plant (PP), Combined Heat and Power (CHP), Storages (Stores)}
+- **Status** - life-cycle stage {announced, construction, operating, mothballed, retired}. If the data sources do not agree, the latest stage is used.
 - **Capacity** - [MW]
 - **Duration** - Maximum state of charge capacity in terms of hours at full output capacity
 - **Dam Information** - Dam volume [Mm^3] and Dam Height [m]

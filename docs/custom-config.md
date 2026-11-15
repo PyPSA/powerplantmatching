@@ -16,6 +16,7 @@ and change the `.powerplantmaching_config.yaml` file according to your wishes. T
 
 - determine the global set of **countries** and **fueltypes**
 - determine which data sources to combine and which data sources should completely be contained in the final dataset
+- select the life-cycle stages of the power plants with the key `status`, for all data sources and optionally per data source (see `target_status` for the stages and the mapping of the status labels of each data source)
 - individually filter data sources via [`pandas.DataFrame.query`](http://pandas.pydata.org/pandas-docs/stable/indexing.html#the-query-method) statements set as an argument of data source name. See the default [config.yaml file](https://github.com/PyPSA/powerplantmatching/blob/master/powerplantmatching/package_data/config.yaml) as an example
 
 Optionally you can:

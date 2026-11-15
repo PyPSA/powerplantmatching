@@ -262,6 +262,7 @@ def reduce_matched_dataframe(df, show_orig_names=False, config=None):
     """
     Reduce a matched dataframe to a unique set of columns. For each entry
     take the value of the most reliable data source included in that match.
+    For the status, take the latest life-cycle stage given by any data source.
 
     Parameters
     ----------
@@ -280,9 +281,11 @@ def reduce_matched_dataframe(df, show_orig_names=False, config=None):
         {s: config[s]["reliability_score"] for s in sources}, dtype=float
     ).sort_values(ascending=False)
     cols = config["target_columns"]
+    stages = list(config["target_status"])
     props_for_groups = {col: "first" for col in cols}
     props_for_groups.update(
         {
+            "Status": lambda x: max(x.dropna(), key=stages.index, default=np.nan),
             "DateIn": "min",
             "DateRetrofit": "max",
             "DateOut": "max",

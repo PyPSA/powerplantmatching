@@ -25,6 +25,7 @@ from .cleaning import (
     gather_fueltype_info,
     gather_set_info,
     gather_specifications,
+    map_status,
 )
 from .core import PANDAS_V3, _package_data, get_config
 from .heuristics import PLZ_to_LatLon_map, scale_to_net_capacities
@@ -78,13 +79,11 @@ def BEYONDCOAL(raw=False, update=False, config=None):
     if raw:
         return df
 
-    status_list = config["BEYONDCOAL"].get("status", ["operational"])  # noqa
-
     RENAME_COLUMNS = {
         "Unit name": "Name",
         "Fuel type": "Fueltype",
         "Commissioning year": "DateIn",
-        "Unit status\n(detailed)": "status",
+        "Unit status\n(detailed)": "Status",
         "BFF unit ID": "projectID",
     }
 
@@ -111,7 +110,7 @@ def BEYONDCOAL(raw=False, update=False, config=None):
 
     df_final = (
         df.rename(columns=RENAME_COLUMNS)
-        .query("status in @status_list")
+        .pipe(map_status, config=config)
         .assign(
             DateOut=date_out,
             projectID=lambda df: "BEYOND-" + df.projectID,
@@ -194,6 +193,7 @@ def OPSD(
         opsd_EU.rename(columns=str.title)
         .rename(columns=EU_RENAME_COLUMNS)
         .eval("DateRetrofit = DateIn")
+        .assign(Status="operating")
         .query("Country != 'DE'")
         .query(
             "not Name.str.startswith('BNA')"
@@ -224,7 +224,8 @@ def OPSD(
     if statusDE is not None:
         opsd_DE = opsd_DE.loc[opsd_DE.Status.isin(statusDE)]
 
-    opsd_DE = opsd_DE.reindex(columns=config["target_columns"])
+    # the status is outdated
+    opsd_DE = opsd_DE.drop(columns="Status").reindex(columns=config["target_columns"])
 
     return (
         pd.concat([opsd_EU, opsd_DE], ignore_index=True)
@@ -329,6 +330,10 @@ def GEO(raw=False, update=False, config=None):
     res = scale_to_net_capacities(res)
     res = convert_to_short_name(res)
     res = set_column_name(res, "GEO")
+    # GEO keeps decommissioned power plants
+    res["Status"] = np.where(
+        res.DateOut < pd.Timestamp.now().year, "retired", "operating"
+    )
     res = config_filter(res, config)
     res["projectID"] = "GEO-" + res.projectID.astype(str)
 
@@ -480,6 +485,7 @@ def JRC(raw=False, update=False, config=None):
         .powerplant.convert_alpha2_to_country()
         .pipe(clean_name)
         .pipe(set_large_spanish_stores_to_reservoirs)
+        .assign(Status="operating")
         .pipe(set_column_name, "JRC")
         .pipe(config_filter, config)
     )
@@ -622,6 +628,7 @@ def GPD(raw=False, update=False, config=None, filter_other_dbs=True):
             config=config,
         )
         .pipe(clean_name)
+        .assign(Status="operating")
         .pipe(set_column_name, "GPD")
         .pipe(config_filter, config)
         .pipe(gather_specifications, config=config)
@@ -670,9 +677,10 @@ def WIKIPEDIA(raw=False, update=False, config=None):
             Fueltype="Nuclear",
             Set="PP",
             projectID=lambda df: "WIKIPEDIA-" + df.index.astype(str),
-            # plants which are not yet built are set to 2027
-            DateIn=lambda df: df.DateIn.where(~df.Status.str.contains("In Bau"), 2027),
+            # remove notes like "seit 2005" or "[12]"
+            Status=lambda df: df.Status.str.split(r"\s{2}|\s[(\[]").str[0],
         )
+        .pipe(map_status, config=config)
         .pipe(clean_name)
         .pipe(set_column_name, "WIKIPEDIA")
         .pipe(config_filter, config)
@@ -801,6 +809,7 @@ def ENTSOE(
         .query("Capacity > 0")
         .pipe(gather_specifications, config=config)
         .pipe(clean_name)
+        .assign(Status="operating")
         .pipe(set_column_name, "ENTSOE")
         .pipe(config_filter, config)
     )
@@ -898,6 +907,7 @@ def OSM(raw=False, update=False, config=None):
             config=config,
         )
         .pipe(clean_name)
+        .assign(Status="operating")
         .pipe(set_column_name, "OSM")
         .pipe(config_filter, config)
     )
@@ -1758,8 +1768,6 @@ def GBPT(raw=False, update=False, config=None):
         "bioenergy: refuse (syngas)": "Solid Biomass",
     }
 
-    status_list = config["GBPT"].get("status", ["operating"])  # noqa: F841
-
     df = df.rename(columns=RENAME_COLUMNS)
     df_final = (
         df.pipe(set_column_name, "GBPT")
@@ -1774,7 +1782,7 @@ def GBPT(raw=False, update=False, config=None):
                 lambda v: fueltype_dict[v.split(",")[0].strip()]
             ),
         )
-        .query("Status in @status_list")
+        .pipe(map_status, config=config)
         .pipe(lambda x: x[df.columns.intersection(config.get("target_columns"))])
         .assign(Technology=np.nan)
         .assign(Set=np.nan)
@@ -1817,8 +1825,6 @@ def GNPT(raw=False, update=False, config=None):
         "GEM unit ID": "projectID",
     }
 
-    status_list = config["GNPT"].get("status", ["operating"])  # noqa: F841
-
     df = df.rename(columns=RENAME_COLUMNS)
     df_final = (
         df.pipe(set_column_name, "GNPT")
@@ -1834,7 +1840,7 @@ def GNPT(raw=False, update=False, config=None):
             lat=df["lat"].apply(pd.to_numeric, errors="coerce"),
             lon=df["lon"].apply(pd.to_numeric, errors="coerce"),
         )
-        .query("Status in @status_list")
+        .pipe(map_status, config=config)
         .pipe(lambda x: x[df.columns.intersection(config.get("target_columns"))])
         .assign(Fueltype="Nuclear")
         .assign(Technology="Steam Turbine")
@@ -1902,14 +1908,6 @@ def GCPT(raw=False, update=False, config=None):
 
     planned_retirement = df["Planned retirement"].apply(pd.to_numeric, errors="coerce")
 
-    # conservative assumption that mothballed plants (without fixed retirement
-    # date) went out of operation in 2024
-    mothballed_retirement = df["Status"].apply(
-        lambda x: 2024 if x == "mothballed" else np.nan
-    )
-
-    status_list = config["GCPT"].get("status", ["operating"])  # noqa: F841
-
     BTU_PER_KWH = 3412.14
 
     df = df.rename(columns=RENAME_COLUMNS)
@@ -1925,14 +1923,13 @@ def GCPT(raw=False, update=False, config=None):
             DateIn=df["DateIn"].apply(pd.to_numeric, errors="coerce"),
             DateOut=df["DateOut"]
             .apply(pd.to_numeric, errors="coerce")
-            .combine_first(planned_retirement)
-            .combine_first(mothballed_retirement),
+            .combine_first(planned_retirement),
             lat=df["lat"].apply(pd.to_numeric, errors="coerce"),
             lon=df["lon"].apply(pd.to_numeric, errors="coerce"),
             Set=df["CHP"].replace({"yes": "CHP", "no": "PP"}),
             Efficiency=BTU_PER_KWH / df["Heat rate (Btu per kWh)"],
         )
-        .query("Status in @status_list")
+        .pipe(map_status, config=config)
         .pipe(lambda x: x[df.columns.intersection(config.get("target_columns"))])
         .pipe(
             lambda x: x.replace(
@@ -1979,8 +1976,6 @@ def GGTPT(raw=False, update=False, config=None):
         "GEM unit ID": "projectID",
     }
 
-    status_list = config["GGTPT"].get("status", ["operating"])  # noqa: F841
-
     df = df.rename(columns=RENAME_COLUMNS)
     df_final = (
         df.pipe(set_column_name, "GGTPT")
@@ -1992,7 +1987,7 @@ def GGTPT(raw=False, update=False, config=None):
             lat=df["lat"].apply(pd.to_numeric, errors="coerce"),
             lon=df["lon"].apply(pd.to_numeric, errors="coerce"),
         )
-        .query("Status in @status_list")
+        .pipe(map_status, config=config)
         .pipe(lambda x: x[df.columns.intersection(config.get("target_columns"))])
         .assign(Fueltype="Geothermal")
         .assign(Technology="Steam Turbine")
@@ -2046,8 +2041,6 @@ def GWPT(raw=False, update=False, config=None):
         "Offshore mount unknown": "Offshore",
     }
 
-    status_list = config["GWPT"].get("status", ["operating"])  # noqa: F841
-
     df = df.rename(columns=RENAME_COLUMNS)
     df_final = (
         df.pipe(set_column_name, "GWPT")
@@ -2059,7 +2052,7 @@ def GWPT(raw=False, update=False, config=None):
             lat=df["lat"].apply(pd.to_numeric, errors="coerce"),
             lon=df["lon"].apply(pd.to_numeric, errors="coerce"),
         )
-        .query("Status in @status_list")
+        .pipe(map_status, config=config)
         .pipe(lambda x: x[df.columns.intersection(config.get("target_columns"))])
         .pipe(lambda x: x.replace({"Technology": technology_dict}))
         .assign(Fueltype="Wind")
@@ -2111,8 +2104,6 @@ def GSPT(raw=False, update=False, config=None):
         "Assumed PV": "PV",
     }
 
-    status_list = config["GSPT"].get("status", ["operating"])  # noqa: F841
-
     df = df.rename(columns=RENAME_COLUMNS)
     df_final = (
         df.pipe(set_column_name, "GSPT")
@@ -2124,7 +2115,7 @@ def GSPT(raw=False, update=False, config=None):
             lat=df["lat"].apply(pd.to_numeric, errors="coerce"),
             lon=df["lon"].apply(pd.to_numeric, errors="coerce"),
         )
-        .query("Status in @status_list")
+        .pipe(map_status, config=config)
         .pipe(lambda x: x[df.columns.intersection(config.get("target_columns"))])
         .pipe(lambda x: x.replace({"Technology": technology_dict}))
         .assign(Fueltype="Solar")
@@ -2201,15 +2192,7 @@ def GGPT(raw=False, update=False, config=None):
         "no": "PP",
     }
 
-    status_list = config["GGPT"].get("status", ["operating"])  # noqa: F841
-
     df = df.rename(columns=RENAME_COLUMNS)
-
-    # conservative assumption that mothballed plants (without fixed retirement
-    # date) went out of operation in 2024
-    mothballed_retirement = df["Status"].apply(
-        lambda x: 2024 if x == "mothballed" else np.nan
-    )
 
     df_final = (
         df.pipe(set_column_name, "GGPT")
@@ -2219,14 +2202,13 @@ def GGPT(raw=False, update=False, config=None):
             DateIn=df["DateIn"].apply(pd.to_numeric, errors="coerce"),
             DateOut=df["DateOut"]
             .apply(pd.to_numeric, errors="coerce")
-            .combine_first(df["Planned retire"])
-            .combine_first(mothballed_retirement),
+            .combine_first(df["Planned retire"]),
             lat=df["lat"].apply(pd.to_numeric, errors="coerce"),
             lon=df["lon"].apply(pd.to_numeric, errors="coerce"),
             Capacity=df["Capacity"].apply(pd.to_numeric, errors="coerce"),
             Fueltype=df.apply(classify_fuel, axis=1),
         )
-        .query("Status in @status_list")
+        .pipe(map_status, config=config)
         .pipe(lambda x: x[df.columns.intersection(config.get("target_columns"))])
         .pipe(lambda x: x.replace({"Technology": technology_dict}))
         .pipe(lambda x: x.replace({"Set": set_dict}))
@@ -2279,7 +2261,6 @@ def GHPT(raw=False, update=False, config=None):
         "conventional and run-of-river": "Reservoir",
         "unknown": "Run-Of-River",
     }
-    status_list = config["GHPT"].get("status", ["operating"])  # noqa: F841
     df = df.rename(columns=RENAME_COLUMNS)
     df_final = (
         df.pipe(set_column_name, "GHPT")
@@ -2291,7 +2272,7 @@ def GHPT(raw=False, update=False, config=None):
             lat=df["lat"].apply(pd.to_numeric, errors="coerce"),
             lon=df["lon"].apply(pd.to_numeric, errors="coerce"),
         )
-        .query("Status in @status_list")
+        .pipe(map_status, config=config)
         .pipe(lambda x: x[df.columns.intersection(config.get("target_columns"))])
         .pipe(lambda x: x.replace({"Technology": technology_dict}))
         .assign(Fueltype="Hydro")
@@ -2436,9 +2417,7 @@ def MASTR(
         PARSE_COLUMNS
         + [
             "Batterietechnologie",
-            "DatumBeginnVoruebergehendeStilllegung",
             "DatumEndgueltigeStilllegung",
-            "DatumWiederaufnahmeBetrieb",
             "EinheitBetriebsstatus",
             "EinheitMastrNummer",
             "Gemeinde",
@@ -2477,8 +2456,6 @@ def MASTR(
                         "ThermischeNutzleistung",
                         "KwkMastrNummer",
                         "Batterietechnologie",
-                        "DatumBeginnVoruebergehendeStilllegung",
-                        "DatumWiederaufnahmeBetrieb",
                         "Postleitzahl",
                         "Ort",
                         "Gemeinde",
@@ -2526,8 +2503,6 @@ def MASTR(
     if raw:
         return df
 
-    status_list = config["MASTR"].get("status", ["In Betrieb"])  # noqa: F841
-
     PLZ_map = PLZ_to_LatLon_map()
     df.Postleitzahl = (
         df.Postleitzahl.astype(str)
@@ -2555,7 +2530,7 @@ def MASTR(
 
     df_processed = (
         df.rename(columns=RENAME_COLUMNS)
-        .query("Status in @status_list")
+        .pipe(map_status, config=config)
         .assign(
             projectID=lambda df: "MASTR-" + df.projectID,
             Name=lambda df: df.Name.combine_first(df.NameWindpark).combine_first(
@@ -2566,15 +2541,7 @@ def MASTR(
             DateIn=lambda df: pd.to_datetime(df.DateIn).dt.year.combine_first(
                 pd.to_datetime(df["GeplantesInbetriebnahmedatum"]).dt.year
             ),
-            DateOut=lambda df: pd.to_datetime(df.DateOut).dt.year.where(
-                df.Status != "Vorübergehend stillgelegt",
-                pd.to_datetime(
-                    df["DatumBeginnVoruebergehendeStilllegung"]
-                ).dt.year.where(
-                    df["DatumWiederaufnahmeBetrieb"].isna(),
-                    pd.to_datetime(df.DateOut).dt.year,
-                ),
-            ),
+            DateOut=lambda df: pd.to_datetime(df.DateOut).dt.year,
             lat=lambda df: df.lat.combine_first(df.PLZ_lat),
             lon=lambda df: df.lon.combine_first(df.PLZ_lon),
             Duration=lambda df: df.StorageCapacity_MWh.div(
@@ -2732,8 +2699,6 @@ def EESI(
     if raw:
         return df
 
-    status_list = config["EESI"].get("status_name", ["Operational"])  # noqa: F841
-
     RENAME_COLUMNS = {
         "title": "Name",
         "power": "Capacity",
@@ -2748,7 +2713,7 @@ def EESI(
 
     df_processed = (
         df.rename(columns=RENAME_COLUMNS)
-        .query("Status in @status_list")
+        .pipe(map_status, config=config)
         .assign(
             projectID=lambda df: "EESI-" + df.projectID.astype(str),
             StorageCapacity_MWh=lambda df: df.StorageCapacity_MWh.where(
@@ -2839,8 +2804,6 @@ def GND(
     if raw:
         return df
 
-    status_list = config["GND"].get("status", ["Operational"])  # noqa: F841
-
     RENAME_COLUMNS = {
         "Id": "projectID",
         "Latitude": "lat",
@@ -2851,7 +2814,7 @@ def GND(
 
     df_final = (
         df.rename(columns=RENAME_COLUMNS)
-        .query("Status in @status_list")
+        .pipe(map_status, config=config)
         .assign(
             projectID=lambda df: "GND-" + df.projectID.astype(str),
             Capacity=lambda df: df.Capacity.where(df.Capacity > 0),
@@ -2905,17 +2868,18 @@ def GHR(
         "ID": "projectID",
         "name": "Name",
         "country": "Country",
-        "Latitude": "plant_lat",
-        "Longitude": "plant_lon",
+        "plant_lat": "lat",
+        "plant_lon": "lon",
         "plant_type": "Technology",
         "dam_height_m": "DamHeight_m",
         "year": "DateIn",
+        "capacity_mw": "Capacity",
     }
     TECHNOLOGY_MAP = {
         "STO": "Reservoir",
-        "RTO": "Run-Of-River",
-        "PHS": "Pumped Hydro",
-        "canal": np.nan,
+        "ROR": "Run-Of-River",
+        "PS": "Pumped Storage",
+        "Canal": np.nan,
     }
 
     df_final = (
@@ -2923,7 +2887,6 @@ def GHR(
         .assign(
             projectID=lambda df: "GHR-" + df.projectID.astype(str),
             Name=lambda df: df.Name.str.split(" - ").str[0].combine_first(df.dam_name),
-            DateIn=lambda df: pd.to_datetime(df.DateIn).dt.year,
             Technology=lambda df: df.Technology.map(TECHNOLOGY_MAP),
             Volume_Mm3=lambda df: df.res_vol_km3 * 1e3,
             # StorageCapacity_MWh=lambda df: 9.81 * df.dam_height_m * df.Volume_Mm3 * 0.9 / 3.6,
@@ -2932,6 +2895,7 @@ def GHR(
             Fueltype="Hydro",
         )
         .pipe(clean_name)
+        .assign(Status="operating")
         .pipe(set_column_name, "GHR")
         .pipe(config_filter, config)
     )
