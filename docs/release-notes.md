@@ -8,6 +8,7 @@ SPDX-License-Identifier: MIT
 
 ## Upcoming Version
 
+* Replace `six` with the standard library, since `python-dateutil` 4.0 no longer installs it, and exclude pandas 3.1 until `country_converter` supports it. ([PR #335](https://github.com/PyPSA/powerplantmatching/pull/335))
 * New column `Status` with the life-cycle stage of the power plant: `announced`, `construction`, `operating`, `mothballed` or `retired`. ([#322](https://github.com/PyPSA/powerplantmatching/issues/322))
     * **Important:** the output now also includes announced, mothballed and retired power plants. Announced projects add several hundred GW, and most of them have no `DateIn`. Filter with the `Status` column, e.g. `df.query("Status in ['operating', 'construction']")`; a filter on `DateIn` and `DateOut` alone is not sufficient.
     * The status labels of the data sources are mapped to the stages in the new config section `target_status`. The new key `status` selects the stages to keep for all data sources; by default, all stages are kept. The key `status` of a data source overrides it and now selects stages and not the status labels of the data source.
@@ -18,6 +19,11 @@ SPDX-License-Identifier: MIT
     * The `DateIn` and `DateOut` values that were estimated from the status are removed (mothballed plants in the GEM coal and oil and gas trackers, temporarily shut down units in MASTR, nuclear plants under construction in WIKIPEDIA).
 * Bugfix in `aggregate_units()`: nuclear units are not aggregated within a data source, as set by `fueltypes_with_blocks` in the config section `clean_name`. Before, a wrong config key disabled this setting.
 * Bugfix in `pm.data.GHR()`: read capacity, coordinates and technology from the correct columns, and read the commissioning year without conversion to a date (all values were 1970 before).
+
+## [v0.9.1](https://github.com/PyPSA/powerplantmatching/releases/tag/v0.9.1) (7th October 2026)
+
+* Bugfix: `pm.powerplants()` no longer drops entries that share name, fuel type and country. In v0.9.0, this removed all but one unit of each wind park in the Marktstammdatenregister. The operating wind capacity in Germany fell from 77 GW to 18 GW, and biogas from 7 GW to 3 GW. ([PR #328](https://github.com/PyPSA/powerplantmatching/pull/328))
+* For OPSD EU, use the most specific fuel classification (`energy_source_level_3`) for `Fueltype` when available. Correct the capacity of Borssele 1 nuclear power plant to the net value of 485 MW. ([PR #288](https://github.com/PyPSA/powerplantmatching/pull/288))
 
 ## [v0.9.0](https://github.com/PyPSA/powerplantmatching/releases/tag/v0.9.0) (3rd October 2026)
 

@@ -89,12 +89,12 @@ def get_config(filename=None, **overrides):
     config : dict
         The configuration dictionary
     """
+    import pickle
     from base64 import encodebytes
     from hashlib import sha1
     from logging import info
 
     import yaml
-    from six.moves import cPickle
 
     base_config = _package_data("config.yaml")
     if filename is not None:
@@ -110,7 +110,7 @@ def get_config(filename=None, **overrides):
             config.update(yaml.load(f, Loader=yaml.FullLoader))
     config.update(overrides)
 
-    sha1digest = sha1(cPickle.dumps(overrides)).digest()
+    sha1digest = sha1(pickle.dumps(overrides)).digest()
     if len(dict(**overrides)) == 0:
         config["hash"] = "default"
     else:
