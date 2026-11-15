@@ -500,8 +500,8 @@ def aggregate_units(
                 break
 
     block_query = None
-    if with_blocks := config["clean_name"].get("fueltypes_with_blocks", []):  # noqa: F841
-        block_query = "Fueltype not in @with_blocks"
+    if with_blocks := config["clean_name"].get("fueltypes_with_blocks", []):
+        block_query = f"Fueltype not in {list(with_blocks)}"
 
     if country_wise:
         countries = df.Country.unique()

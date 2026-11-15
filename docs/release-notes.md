@@ -9,7 +9,7 @@ SPDX-License-Identifier: MIT
 ## Upcoming Version
 
 * Replace `six` with the standard library, since `python-dateutil` 4.0 no longer installs it, and exclude pandas 3.1 until `country_converter` supports it. ([PR #335](https://github.com/PyPSA/powerplantmatching/pull/335))
-* Fix typo in `clean_name.fueltypes_with_blocks`: listed fuels are now excluded from aggregation, rather than the setting being partially ignored due to the misspelled key. Nuclear units therefore remain separate by default. Empty lists allow all fuels to be aggregated and no longer cause an error during name cleaning.
+* Bugfix: `aggregate_units()` no longer merges units of the fuel types listed in `fueltypes_with_blocks` in the config section `clean_name` (default: nuclear). Before, a misspelled config key disabled this setting. An empty list no longer raises an error in `clean_name()`. ([PR #332](https://github.com/PyPSA/powerplantmatching/pull/332))
 
 ## [v0.9.1](https://github.com/PyPSA/powerplantmatching/releases/tag/v0.9.1) (7th October 2026)
 
