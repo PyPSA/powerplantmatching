@@ -10,6 +10,8 @@ SPDX-License-Identifier: MIT
   * Avoid country conversion warnings for IRENASTAT regional aggregates (`Eurasia` and `Oceania`) while preserving the original dataset. ([PR #336](https://github.com/PyPSA/powerplantmatching/pull/336))
 
 
+* Deprecate the argument `extend_by_vres` of `pm.powerplants()` and the function `extend_by_VRE()`. Both will be removed in v0.11.0. Wind and solar power plants are already included from GEM and MASTR, and the option added them again from outdated OPSD data (2020). ([#232](https://github.com/PyPSA/powerplantmatching/issues/232))
+    * Bugfix: `pm.powerplants(from_url=True)` now applies `extend_by_vres` like the other code paths, and the deprecated argument `extendby_kwargs` now raises a `FutureWarning` instead of a logging error.
 * Replace `six` with the standard library, since `python-dateutil` 4.0 no longer installs it, and exclude pandas 3.1 until `country_converter` supports it. ([PR #335](https://github.com/PyPSA/powerplantmatching/pull/335))
 
 ## [v0.9.1](https://github.com/PyPSA/powerplantmatching/releases/tag/v0.9.1) (7th October 2026)
