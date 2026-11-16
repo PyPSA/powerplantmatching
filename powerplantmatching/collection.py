@@ -9,12 +9,14 @@ Processed datasets of merged and/or adjusted data
 import logging
 import os
 import warnings
+from pathlib import Path
 
 import pandas as pd
+import pooch
 from deprecation import deprecated
 
 from .cleaning import aggregate_units
-from .core import _data_out, get_config
+from .core import _data_in, _data_out, get_config
 from .heuristics import extend_by_non_matched, extend_by_VRE
 from .matching import combine_multiple_datasets, reduce_matched_dataframe
 from .utils import (
@@ -114,7 +116,7 @@ def powerplants(
     config=None,
     config_update=None,
     update=False,
-    from_url=False,
+    from_url: bool | str = False,
     extend_by_vres=False,
     extendby_kwargs=None,
     extend_by_kwargs=None,
@@ -134,9 +136,15 @@ def powerplants(
     update : Boolean, default False
             Whether to rerun the matching process. Overrides stored to False
             if True.
-    from_url: Boolean, default False
-            Whether to parse and store the already build data from the repo
-            website.
+    from_url: bool or str, default False
+            Load a released dataset. `True` (the default) loads the latest
+            version matching the currently installed version of powerplantmatching.
+            Other versions of the released data can be loaded by specifying
+            a string starting with "v" as release tag, e.g. "v0.9.0".
+            Other URLs can also be read and must start with "http://" or
+            "https://". Local files are not accepted.
+            Downloads are cached under `data/in/releases`. Use `update=True`
+            to refresh the cache and download the file again.
     config : Dict, default None
             Define a configuration varying from the setting in config.yaml.
             Relevant keywords are 'matching_sources', 'fully_included_sources'.
@@ -209,16 +217,30 @@ def powerplants(
         header = [0, 1]
 
     if from_url:
-        fn = _data_out("matched_data_red.csv", config)
-        url = config["matched_data_url"].format(tag="v" + latest_release)
-        logger.info(f"Retrieving data from {url}")
+        if from_url is True:
+            # Get latest release
+            from_url = "v" + latest_release
+        if from_url.startswith("v"):
+            # Strings starting with "v" - get specific release
+            fn = config["matched_data_url"].format(tag=from_url)
+        else:
+            fn = from_url
+        if not fn.startswith(("http://", "https://")):
+            raise ValueError(
+                f"`from_url` source '{fn}' is neither a release tag starting "
+                "with 'v' nor an http(s) URL."
+            )
+        # local cache for releases
+        cache = _data_in("releases")
+        if update:
+            # delete file to force re-retrieve
+            Path(cache, pooch.utils.unique_file_name(fn)).unlink(missing_ok=True)
+        fn = pooch.retrieve(fn, known_hash=None, path=cache)
         df = (
-            pd.read_csv(url, index_col=0)
+            pd.read_csv(fn, index_col=0)
             .pipe(parse_string_to_dict, ["projectID", "EIC"])
             .pipe(set_column_name, "Matched Data")
         )
-        logger.info(f"Store data at {fn}")
-        df.to_csv(fn)
         if extend_by_vres:
             return df.pipe(
                 extend_by_VRE, config=config, base_year=config["opsd_vres_base_year"]

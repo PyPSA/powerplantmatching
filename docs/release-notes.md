@@ -7,6 +7,7 @@ SPDX-License-Identifier: MIT
 # Release Notes
 
 ## Upcoming Version
+  * `pm.powerplants(from_url=...)` now also accepts a release tag starting with `v` (e.g. `"v0.9.0"`) or an http(s) URL of a CSV file. Local files are not accepted. Downloads are cached per URL under `data/in/releases` using the new dependency `pooch`, and `update=True` downloads again. Behaviour change: `from_url=True` no longer stores the release data as local build output, so a later plain `pm.powerplants()` call builds the dataset instead of returning the downloaded release.
   * Avoid country conversion warnings for IRENASTAT regional aggregates (`Eurasia` and `Oceania`) while preserving the original dataset. ([PR #336](https://github.com/PyPSA/powerplantmatching/pull/336))
 
 
