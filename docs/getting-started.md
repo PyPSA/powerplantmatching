@@ -18,10 +18,8 @@ import powerplantmatching as pm
 pm.powerplants(from_url=True)
 ```
 
-This will parse and store the [actual dataset of powerplants of this repository](https://github.com/PyPSA/powerplantmatching/blob/master/powerplants.csv).
-Instead of `True`, you can pass a release tag (e.g. `from_url="v0.9.0"`) or an http(s) URL of a CSV file. Only strings starting with `v` are release tags.
-Downloads are cached per URL under `data/in/releases` (via [pooch](https://www.fatiando.org/pooch)) and do not replace the locally built dataset; pass `update=True` to download again.
-Setting `from_url=False` (default) will load all the necessary data files and combine them. Note that this might take some minutes.
+This will download the [released dataset of powerplants of this repository](https://github.com/PyPSA/powerplantmatching/blob/master/powerplants.csv).
+Setting `from_url=False` (default) will instead download all the necessary data files and process to combine them. Note that this might take some minutes.
 
 The resulting dataset compared with the capacity statistics provided by the [ENTSOE SO&AF](https://data.open-power-system-data.org/national_generation_capacity/2019-02-22):
 

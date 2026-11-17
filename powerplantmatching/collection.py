@@ -137,14 +137,14 @@ def powerplants(
             Whether to rerun the matching process. Overrides stored to False
             if True.
     from_url: bool or str, default False
-            Load a released dataset. `True` (the default) loads the latest
-            version matching the currently installed version of powerplantmatching.
+            Load a released dataset. `True` loads the release matching the
+            currently installed version of powerplantmatching.
             Other versions of the released data can be loaded by specifying
             a string starting with "v" as release tag, e.g. "v0.9.0".
             Other URLs can also be read and must start with "http://" or
             "https://". Local files are not accepted.
-            Downloads are cached under `data/in/releases`. Use `update=True`
-            to refresh the cache and download the file again.
+            Downloads are cached under `<data_dir>/data/in/releases`.
+            Use `update=True` to refresh the cache and download the file again.
     config : Dict, default None
             Define a configuration varying from the setting in config.yaml.
             Relevant keywords are 'matching_sources', 'fully_included_sources'.
@@ -211,7 +211,7 @@ def powerplants(
 
     if collection_kwargs.get("reduced", True):
         fn = _data_out("matched_data_red.csv", config)
-        header = 0
+        header: int | list[int] = 0
     else:
         fn = _data_out("matched_data.csv", config)
         header = [0, 1]
@@ -220,22 +220,25 @@ def powerplants(
         if from_url is True:
             # Get latest release
             from_url = "v" + latest_release
+        if not isinstance(from_url, str):
+            raise TypeError(f"`from_url` must be bool or str, got {type(from_url)}.")
         if from_url.startswith("v"):
             # Strings starting with "v" - get specific release
-            fn = config["matched_data_url"].format(tag=from_url)
+            url = config["matched_data_url"].format(tag=from_url)
         else:
-            fn = from_url
-        if not fn.startswith(("http://", "https://")):
+            url = from_url
+        if not url.startswith(("http://", "https://")):
             raise ValueError(
-                f"`from_url` source '{fn}' is neither a release tag starting "
-                "with 'v' nor an http(s) URL."
+                f"'{url}' is not an http(s) URL. `from_url` takes a release tag "
+                "starting with 'v' or an http(s) URL, and `matched_data_url` in "
+                "the config must be an http(s) URL."
             )
         # local cache for releases
         cache = _data_in("releases")
         if update:
             # delete file to force re-retrieve
-            Path(cache, pooch.utils.unique_file_name(fn)).unlink(missing_ok=True)
-        fn = pooch.retrieve(fn, known_hash=None, path=cache)
+            Path(cache, pooch.utils.unique_file_name(url)).unlink(missing_ok=True)
+        fn = pooch.retrieve(url, known_hash=None, path=cache)
         df = (
             pd.read_csv(fn, index_col=0)
             .pipe(parse_string_to_dict, ["projectID", "EIC"])

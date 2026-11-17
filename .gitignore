@@ -102,3 +102,6 @@ uv.lock
 
 # jupyter
 *.ipynb
+
+# local planning and scratch files
+dev-scripts/

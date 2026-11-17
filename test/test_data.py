@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: MIT
 
 import os
+from pathlib import Path
 
 import pandas as pd
 import pooch
@@ -66,23 +67,16 @@ TAG_URL = (
 
 
 @pytest.mark.github_actions
-@pytest.mark.parametrize(
-    "from_url, url",
-    [
-        (True, config["matched_data_url"].format(tag=f"v{pm.latest_release}")),
-        ("v0.9.0", TAG_URL),
-        (TAG_URL, TAG_URL),
-    ],
-)
-def test_url_retrieval(tmp_path, monkeypatch, from_url, url):
+def test_url_retrieval(tmp_path, monkeypatch):
     monkeypatch.setitem(package_config, "data_dir", tmp_path)
-    assert len(pm.powerplants(from_url=from_url))
+    url = config["matched_data_url"].format(tag=f"v{pm.latest_release}")
+    assert len(pm.powerplants(from_url=True))
     cache = os.path.join(_data_in("releases"), pooch.utils.unique_file_name(url))
     assert os.listdir(_data_in("releases")) == [os.path.basename(cache)]
 
     # update=True replaces a stale cache
     pd.read_csv(cache, index_col=0).head(1).to_csv(cache)
-    assert len(pm.powerplants(from_url=from_url, update=True)) > 1
+    assert len(pm.powerplants(from_url=True, update=True)) > 1
 
 
 def test_reduced_retrieval():
@@ -143,12 +137,20 @@ def test_url_retrieval_cached(tmp_path, monkeypatch, from_url):
     assert not os.path.exists(_data_out("matched_data_red.csv", config))
 
 
-@pytest.mark.parametrize("from_url", ["master", "powerplants.csv", "ftp://a.b/c.csv"])
-def test_url_retrieval_invalid(tmp_path, monkeypatch, from_url):
+@pytest.mark.parametrize(
+    "from_url, error",
+    [
+        ("master", ValueError),
+        ("powerplants.csv", ValueError),
+        ("ftp://a.b/c.csv", ValueError),
+        (Path("powerplants.csv"), TypeError),
+    ],
+)
+def test_url_retrieval_invalid(tmp_path, monkeypatch, from_url, error):
     # only release tags starting with "v" and http(s) URLs are accepted
     monkeypatch.setitem(package_config, "data_dir", tmp_path)
     monkeypatch.chdir(tmp_path)
     pd.DataFrame(PLANT).to_csv("powerplants.csv")
-    with pytest.raises(ValueError, match="from_url"):
+    with pytest.raises(error, match="from_url"):
         pm.powerplants(from_url=from_url)
     assert not os.path.exists(_data_in("releases"))
