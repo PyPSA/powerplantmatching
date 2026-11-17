@@ -151,14 +151,15 @@ def powerplants(
             Whether to rerun the matching process. Overrides stored to False
             if True.
     from_url: bool or str, default False
-            Load a released dataset. `True` loads the release matching the
-            currently installed version of powerplantmatching and additionally
-            stores it as local build output in `<data_dir>/data/out`, so that a
+            Load a released dataset from an online resource.
+            `True` loads the release matching the currently installed version of 
+            powerplantmatching and stores it as 'build' version, so that a
             later call with `from_url=False` returns it.
-            Other versions of the released data can be loaded by specifying
+            Other released versions can be loaded by specifying
             a string starting with "v" as release tag, e.g. "v0.9.0".
-            Other URLs can also be read and must start with "http://" or
-            "https://". Local files are not accepted.
+            An arbitrary URL starting with "http(s)://" can also be specified but
+            needs to match the expected format, else unforseen behaviour is to be
+            expected.
             All downloads are cached under `<data_dir>/data/in/releases`.
             Use `update=True` to refresh the cache and download the file again.
     config : Dict, default None
