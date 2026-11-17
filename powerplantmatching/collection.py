@@ -228,12 +228,15 @@ def powerplants(
     if from_url:
         latest = from_url is True
         if latest:
+            # Take latest release known to the package
             from_url = "v" + latest_release
         if not isinstance(from_url, str):
             raise TypeError(f"`from_url` must be bool or str, got {type(from_url)}.")
         if from_url.startswith("v"):
+            # Take a specific released dataset
             url = config["matched_data_url"].format(tag=from_url)
         else:
+            # Try to read from arbitrary URL (unsafe?)
             url = from_url
         if not url.startswith(("http://", "https://")):
             raise ValueError(
@@ -250,9 +253,11 @@ def powerplants(
             pd.read_csv(url, index_col=0).to_csv(fn)
             logger.info(f"Store data at {fn}")
         if latest:
-            # the installed version's release doubles as local build output, so a
-            # later plain `powerplants()` returns it; other releases stay in the
-            # cache and never replace the local build
+            # if the installed version's data is retrieved, it doubles as local build output;
+            # subsequent calls to `powerplants()` returns it even without the `from_url` argument.
+            # I think this is a bug because a different local configuration != default config
+            # is overwritten through this without warning.
+            # But it has been standard behaviour for so long I'd take it as a feature at this point
             shutil.copyfile(fn, _data_out("matched_data_red.csv", config))
         return _read_matched(fn, 0, config, extend_by_vres)
 
