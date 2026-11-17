@@ -19,8 +19,7 @@ pm.powerplants(from_url=True)
 ```
 
 This will download the [released dataset](https://github.com/PyPSA/powerplantmatching/releases) matching the installed version of powerplantmatching.
-Pass a release tag (e.g. `from_url="v0.9.0"`) or an http(s) URL of a CSV file to load another version. Downloads are cached under `data/in/releases`, and `update=True` downloads again.
-Setting `from_url=False` (default) returns the local build in `data/out` if present (unless `update=True`). Otherwise, it downloads all the necessary data files and combines them by running the matching. Note that this might take some minutes.
+This may take some time to download, but the downloads get cached locally, so the next call we be faster to finish.
 
 The resulting dataset compared with the capacity statistics provided by the [ENTSOE SO&AF](https://data.open-power-system-data.org/national_generation_capacity/2019-02-22):
 

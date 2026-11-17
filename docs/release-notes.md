@@ -10,7 +10,7 @@ SPDX-License-Identifier: MIT
 
 * **Breaking change:** The option `matched_data_url` in the config must now be an http(s) URL; local paths no longer work.
 
-* `pm.powerplants(from_url=...)` now also accepts a release tag starting with `v` (e.g. `"v0.9.0"`) or an http(s) URL of a CSV file.
+* **Feature:** `pm.powerplants(from_url=...)` now also accepts a release tag starting with `v` (e.g. `"v0.9.0"`) or an http(s) URL of a CSV file.
 
 * Avoid country conversion warnings for IRENASTAT regional aggregates (`Eurasia` and `Oceania`) while preserving the original dataset. ([PR #336](https://github.com/PyPSA/powerplantmatching/pull/336))
 
