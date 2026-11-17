@@ -152,7 +152,7 @@ def powerplants(
             if True.
     from_url: bool or str, default False
             Load a released dataset from an online resource.
-            `True` loads the release matching the currently installed version of 
+            `True` loads the release matching the currently installed version of
             powerplantmatching and stores it as 'build' version, so that a
             later call with `from_url=False` returns it.
             Other released versions can be loaded by specifying
