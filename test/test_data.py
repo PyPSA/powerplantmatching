@@ -2,11 +2,11 @@
 #
 # SPDX-License-Identifier: MIT
 
+import hashlib
 import os
 from pathlib import Path
 
 import pandas as pd
-import pooch
 import pytest
 from deprecation import DeprecatedWarning
 
@@ -71,7 +71,8 @@ def test_url_retrieval(tmp_path, monkeypatch):
     monkeypatch.setitem(package_config, "data_dir", tmp_path)
     url = config["matched_data_url"].format(tag=f"v{pm.latest_release}")
     assert len(pm.powerplants(from_url=True))
-    cache = os.path.join(_data_in("releases"), pooch.utils.unique_file_name(url))
+    md5 = hashlib.md5(url.encode(), usedforsecurity=False).hexdigest()
+    cache = _data_in(os.path.join("releases", md5 + ".csv"))
     assert os.listdir(_data_in("releases")) == [os.path.basename(cache)]
 
     # update=True replaces a stale cache
@@ -90,11 +91,12 @@ PLANT = {"Name": ["A"], "Fueltype": ["Hydro"], "EIC": ["{}"], "projectID": ["{}"
 
 
 def seed_release_cache(url: str, columns: list[str]) -> None:
-    # pooch returns an existing cache file without a download
-    cache = _data_in("releases")
-    os.makedirs(cache)
-    fn = os.path.join(cache, pooch.utils.unique_file_name(url))
-    pd.DataFrame(PLANT, columns=columns).to_csv(fn)
+    # an existing cache file is read without a download
+    md5 = hashlib.md5(url.encode(), usedforsecurity=False).hexdigest()
+    os.makedirs(_data_in("releases"))
+    pd.DataFrame(PLANT, columns=columns).to_csv(
+        _data_in(os.path.join("releases", md5 + ".csv"))
+    )
 
 
 @pytest.fixture
@@ -137,20 +139,33 @@ def test_url_retrieval_cached(tmp_path, monkeypatch, from_url):
     assert not os.path.exists(_data_out("matched_data_red.csv", config))
 
 
+def test_url_retrieval_latest_stored(tmp_path, monkeypatch):
+    # `from_url=True` also stores the release as build output
+    monkeypatch.setitem(package_config, "data_dir", tmp_path)
+    config = pm.get_config()
+    url = config["matched_data_url"].format(tag=f"v{pm.latest_release}")
+    seed_release_cache(url, config["target_columns"])
+
+    pm.powerplants(config=config, from_url=True)
+    assert os.path.exists(_data_out("matched_data_red.csv", config))
+    assert pm.powerplants(config=config).Name.tolist() == ["A"]
+
+
 @pytest.mark.parametrize(
-    "from_url, error",
+    "from_url, config_update, error",
     [
-        ("master", ValueError),
-        ("powerplants.csv", ValueError),
-        ("ftp://a.b/c.csv", ValueError),
-        (Path("powerplants.csv"), TypeError),
+        ("master", None, ValueError),
+        ("powerplants.csv", None, ValueError),
+        ("ftp://a.b/c.csv", None, ValueError),
+        (Path("powerplants.csv"), None, TypeError),
+        (True, {"matched_data_url": "{tag}/powerplants.csv"}, ValueError),
     ],
 )
-def test_url_retrieval_invalid(tmp_path, monkeypatch, from_url, error):
+def test_url_retrieval_invalid(tmp_path, monkeypatch, from_url, config_update, error):
     # only release tags starting with "v" and http(s) URLs are accepted
     monkeypatch.setitem(package_config, "data_dir", tmp_path)
     monkeypatch.chdir(tmp_path)
     pd.DataFrame(PLANT).to_csv("powerplants.csv")
     with pytest.raises(error, match="from_url"):
-        pm.powerplants(from_url=from_url)
+        pm.powerplants(from_url=from_url, config_update=config_update)
     assert not os.path.exists(_data_in("releases"))

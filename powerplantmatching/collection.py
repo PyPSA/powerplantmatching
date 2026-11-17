@@ -6,13 +6,13 @@
 Processed datasets of merged and/or adjusted data
 """
 
+import hashlib
 import logging
 import os
+import shutil
 import warnings
-from pathlib import Path
 
 import pandas as pd
-import pooch
 from deprecation import deprecated
 
 from .cleaning import aggregate_units
@@ -112,6 +112,20 @@ def collect(
         return df.pipe(parse_string_to_dict, ["projectID", "EIC"])
 
 
+def _read_matched(
+    fn: str, header: int | list[int], config: dict, extend_by_vres: bool
+) -> pd.DataFrame:
+    """Read a stored matched dataset, optionally extended by VRE."""
+    df = (
+        pd.read_csv(fn, index_col=0, header=header)
+        .pipe(parse_string_to_dict, ["projectID", "EIC"])
+        .pipe(set_column_name, "Matched Data")
+    )
+    if extend_by_vres:
+        df = extend_by_VRE(df, config=config, base_year=config["opsd_vres_base_year"])
+    return df
+
+
 def powerplants(
     config=None,
     config_update=None,
@@ -138,12 +152,14 @@ def powerplants(
             if True.
     from_url: bool or str, default False
             Load a released dataset. `True` loads the release matching the
-            currently installed version of powerplantmatching.
+            currently installed version of powerplantmatching and additionally
+            stores it as local build output in `<data_dir>/data/out`, so that a
+            later call with `from_url=False` returns it.
             Other versions of the released data can be loaded by specifying
             a string starting with "v" as release tag, e.g. "v0.9.0".
             Other URLs can also be read and must start with "http://" or
             "https://". Local files are not accepted.
-            Downloads are cached under `<data_dir>/data/in/releases`.
+            All downloads are cached under `<data_dir>/data/in/releases`.
             Use `update=True` to refresh the cache and download the file again.
     config : Dict, default None
             Define a configuration varying from the setting in config.yaml.
@@ -209,21 +225,13 @@ def powerplants(
 
     collection_kwargs.setdefault("update", update)
 
-    if collection_kwargs.get("reduced", True):
-        fn = _data_out("matched_data_red.csv", config)
-        header: int | list[int] = 0
-    else:
-        fn = _data_out("matched_data.csv", config)
-        header = [0, 1]
-
     if from_url:
-        if from_url is True:
-            # Get latest release
+        latest = from_url is True
+        if latest:
             from_url = "v" + latest_release
         if not isinstance(from_url, str):
             raise TypeError(f"`from_url` must be bool or str, got {type(from_url)}.")
         if from_url.startswith("v"):
-            # Strings starting with "v" - get specific release
             url = config["matched_data_url"].format(tag=from_url)
         else:
             url = from_url
@@ -233,34 +241,30 @@ def powerplants(
                 "starting with 'v' or an http(s) URL, and `matched_data_url` in "
                 "the config must be an http(s) URL."
             )
-        # local cache for releases
-        cache = _data_in("releases")
-        if update:
-            # delete file to force re-retrieve
-            Path(cache, pooch.utils.unique_file_name(url)).unlink(missing_ok=True)
-        fn = pooch.retrieve(url, known_hash=None, path=cache)
-        df = (
-            pd.read_csv(fn, index_col=0)
-            .pipe(parse_string_to_dict, ["projectID", "EIC"])
-            .pipe(set_column_name, "Matched Data")
-        )
-        if extend_by_vres:
-            return df.pipe(
-                extend_by_VRE, config=config, base_year=config["opsd_vres_base_year"]
-            )
-        return df
+        md5 = hashlib.md5(url.encode(), usedforsecurity=False).hexdigest()
+        fn = _data_in(os.path.join("releases", md5 + ".csv"))
+        if update or not os.path.exists(fn):
+            logger.info(f"Retrieving data from {url}")
+            os.makedirs(os.path.dirname(fn), exist_ok=True)
+            # read fully before writing, so a failed download leaves no cache file
+            pd.read_csv(url, index_col=0).to_csv(fn)
+            logger.info(f"Store data at {fn}")
+        if latest:
+            # the installed version's release doubles as local build output, so a
+            # later plain `powerplants()` returns it; other releases stay in the
+            # cache and never replace the local build
+            shutil.copyfile(fn, _data_out("matched_data_red.csv", config))
+        return _read_matched(fn, 0, config, extend_by_vres)
+
+    if collection_kwargs.get("reduced", True):
+        fn = _data_out("matched_data_red.csv", config)
+        header: int | list[int] = 0
+    else:
+        fn = _data_out("matched_data.csv", config)
+        header = [0, 1]
 
     if not update and os.path.exists(fn):
-        df = (
-            pd.read_csv(fn, index_col=0, header=header)
-            .pipe(parse_string_to_dict, ["projectID", "EIC"])
-            .pipe(set_column_name, "Matched Data")
-        )
-        if extend_by_vres:
-            return df.pipe(
-                extend_by_VRE, config=config, base_year=config["opsd_vres_base_year"]
-            )
-        return df
+        return _read_matched(fn, header, config, extend_by_vres)
 
     matching_sources = [
         list(to_dict_if_string(a))[0] for a in config["matching_sources"]

@@ -40,7 +40,6 @@ dependencies = [
     "xlrd",
     "seaborn",
     "pyyaml >=5.1.0",
-    "pooch >=1.1.0",
     "requests",
     "matplotlib",
     "geopy",
@@ -150,6 +149,5 @@ module = [
     "tqdm.*",
     "deprecation.*",
     "cartopy.*",
-    "pooch.*",
 ]
 ignore_missing_imports = true
