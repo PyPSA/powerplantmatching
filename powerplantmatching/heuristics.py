@@ -11,7 +11,6 @@ import logging
 import numpy as np
 import pandas as pd
 from deprecation import deprecated
-from six import iteritems
 
 from powerplantmatching.cleaning import gather_specifications
 
@@ -189,6 +188,11 @@ def fill_missing_duration(df):
     return df
 
 
+@deprecated(
+    deprecated_in="0.10.0",
+    removed_in="0.11.0",
+    details="Wind and solar power plants are already included from GEM and MASTR.",
+)
 def extend_by_VRE(df, config=None, base_year=2017, prune_beyond=True):
     """
     Extends a given reduced dataframe by externally given VREs.
@@ -604,7 +608,7 @@ def set_known_retire_years(df):
             ["Name", "YearRetire"],
         ]
     )
-    for name, year in iteritems(YearRetire):
+    for name, year in YearRetire.items():
         name_match_b = ppl_de_nuc.Name.str.contains(name, case=False, na=False)
         if name_match_b.any():
             ppl_de_nuc.loc[name_match_b, "YearRetire"] = year

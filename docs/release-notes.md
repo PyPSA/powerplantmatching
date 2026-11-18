@@ -7,8 +7,18 @@ SPDX-License-Identifier: MIT
 # Release Notes
 
 ## Upcoming Version
+  * Avoid country conversion warnings for IRENASTAT regional aggregates (`Eurasia` and `Oceania`) while preserving the original dataset. ([PR #336](https://github.com/PyPSA/powerplantmatching/pull/336))
 
 * Match records by EIC before fuzzy matching, and link ENTSO-E to GPD and GEO through the JRC-PPDB-OPEN EIC linkages. ([PR #289](https://github.com/PyPSA/powerplantmatching/pull/289))
+* Deprecate the argument `extend_by_vres` of `pm.powerplants()` and the function `extend_by_VRE()`. Both will be removed in v0.11.0. Wind and solar power plants are already included from GEM and MASTR, and the option added them again from outdated OPSD data (2020). ([#232](https://github.com/PyPSA/powerplantmatching/issues/232))
+    * Bugfix: `pm.powerplants(from_url=True)` now applies `extend_by_vres` like the other code paths, and the deprecated argument `extendby_kwargs` now raises a `FutureWarning` instead of a logging error.
+* Replace `six` with the standard library, since `python-dateutil` 4.0 no longer installs it, and exclude pandas 3.1 until `country_converter` supports it. ([PR #335](https://github.com/PyPSA/powerplantmatching/pull/335))
+* Bugfix: `aggregate_units()` no longer merges units of the fuel types listed in `fueltypes_with_blocks` in the config section `clean_name` (default: nuclear). Before, a misspelled config key disabled this setting. An empty list no longer raises an error in `clean_name()`. ([PR #332](https://github.com/PyPSA/powerplantmatching/pull/332))
+
+## [v0.9.1](https://github.com/PyPSA/powerplantmatching/releases/tag/v0.9.1) (7th October 2026)
+
+* Bugfix: `pm.powerplants()` no longer drops entries that share name, fuel type and country. In v0.9.0, this removed all but one unit of each wind park in the Marktstammdatenregister. The operating wind capacity in Germany fell from 77 GW to 18 GW, and biogas from 7 GW to 3 GW. ([PR #328](https://github.com/PyPSA/powerplantmatching/pull/328))
+* For OPSD EU, use the most specific fuel classification (`energy_source_level_3`) for `Fueltype` when available. Correct the capacity of Borssele 1 nuclear power plant to the net value of 485 MW. ([PR #288](https://github.com/PyPSA/powerplantmatching/pull/288))
 
 ## [v0.9.0](https://github.com/PyPSA/powerplantmatching/releases/tag/v0.9.0) (3rd October 2026)
 
@@ -34,7 +44,7 @@ SPDX-License-Identifier: MIT
 * Update Marktstammdatenregister data for Germany from [open-MaStR (February 25, 2025)](https://zenodo.org/records/14783581).
 * Drop support for Python 3.9, add support for Python 3.13. Minimum required Python version is now 3.10.
 * Restructure documentation and move to use `mkdocs` for a nicer user experience.
-* Added [GeoNuclearData](github.com/cristianst85/GeoNuclearData) dataset as `pm.data.GND()`.
+* Added [GeoNuclearData](https://github.com/cristianst85/GeoNuclearData) dataset as `pm.data.GND()`.
 * Added [European Energy Storage Inventory](https://ses.jrc.ec.europa.eu/storage-inventory-maps) dataset as `pm.data.EESI()`.
 * Added [GloHydroRES](https://zenodo.org/records/14526360) dataset as `pm.data.GHR()`.
 * Updated ENTSOE, BEYONDCOAL, JRC, IRENASTAT and the Global Energy Monitor datasets to the latest versions.
