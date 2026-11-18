@@ -44,7 +44,7 @@ SPDX-License-Identifier: MIT
 * Update Marktstammdatenregister data for Germany from [open-MaStR (February 25, 2025)](https://zenodo.org/records/14783581).
 * Drop support for Python 3.9, add support for Python 3.13. Minimum required Python version is now 3.10.
 * Restructure documentation and move to use `mkdocs` for a nicer user experience.
-* Added [GeoNuclearData](github.com/cristianst85/GeoNuclearData) dataset as `pm.data.GND()`.
+* Added [GeoNuclearData](https://github.com/cristianst85/GeoNuclearData) dataset as `pm.data.GND()`.
 * Added [European Energy Storage Inventory](https://ses.jrc.ec.europa.eu/storage-inventory-maps) dataset as `pm.data.EESI()`.
 * Added [GloHydroRES](https://zenodo.org/records/14526360) dataset as `pm.data.GHR()`.
 * Updated ENTSOE, BEYONDCOAL, JRC, IRENASTAT and the Global Energy Monitor datasets to the latest versions.
