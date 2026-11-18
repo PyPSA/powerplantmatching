@@ -7,8 +7,8 @@ SPDX-License-Identifier: MIT
 # Release Notes
 
 ## Upcoming Version
-  * Avoid country conversion warnings for IRENASTAT regional aggregates (`Eurasia` and `Oceania`) while preserving the original dataset. ([PR #336](https://github.com/PyPSA/powerplantmatching/pull/336))
 
+* Avoid country conversion warnings for IRENASTAT regional aggregates (`Eurasia` and `Oceania`) while preserving the original dataset. ([PR #336](https://github.com/PyPSA/powerplantmatching/pull/336))
 * Match records by EIC in a new `DirectMatcher` step before fuzzy matching, and link ENTSO-E to GPD and GEO through the JRC-PPDB-OPEN EIC linkages. ([PR #289](https://github.com/PyPSA/powerplantmatching/pull/289))
 * Deprecate the argument `extend_by_vres` of `pm.powerplants()` and the function `extend_by_VRE()`. Both will be removed in v0.11.0. Wind and solar power plants are already included from GEM and MASTR, and the option added them again from outdated OPSD data (2020). ([#232](https://github.com/PyPSA/powerplantmatching/issues/232))
     * Bugfix: `pm.powerplants(from_url=True)` now applies `extend_by_vres` like the other code paths, and the deprecated argument `extendby_kwargs` now raises a `FutureWarning` instead of a logging error.
