@@ -10,7 +10,11 @@ import pytest
 
 from powerplantmatching.cleaning import aggregate_units
 from powerplantmatching.core import get_config
-from powerplantmatching.matching import _match_by_eic, reduce_matched_dataframe
+from powerplantmatching.matching import (
+    DirectMatcher,
+    _match_by_eic,
+    reduce_matched_dataframe,
+)
 from powerplantmatching.utils import parse_string_to_dict
 
 
@@ -32,24 +36,22 @@ from powerplantmatching.utils import parse_string_to_dict
 def test_eic_matching(left, right, expected):
     left = pd.DataFrame({"EIC": left}, index=np.arange(len(left)) + 10)
     right = pd.DataFrame({"EIC": right}, index=np.arange(len(right)) + 20)
-    matches, idx0, idx1 = _match_by_eic(left, right, ["A", "B"])
+    matches = _match_by_eic(left, right, "A", "B")
     pairs = [(i + 10, i + 20) for i in expected]
     assert list(matches.itertuples(index=False, name=None)) == pairs
-    assert idx0 == {a for a, _ in pairs} and idx1 == {b for _, b in pairs}
 
 
 def test_eic_matching_without_eic_column():
     left = pd.DataFrame({"Name": ["Plant A"]})
     right = pd.DataFrame({"EIC": [{"C1"}]})
-    matches, idx0, idx1 = _match_by_eic(left, right, ["A", "B"])
-    assert matches.empty and not idx0 and not idx1
+    assert _match_by_eic(left, right, "A", "B").empty
 
 
 def test_eic_matching_rejects_duplicate_index():
     left = pd.DataFrame({"EIC": [["C1"], ["C2"]]}, index=[0, 0])
     right = pd.DataFrame({"EIC": [["C1"]]})
     with pytest.raises(ValueError, match="unique index"):
-        _match_by_eic(left, right, ["A", "B"])
+        _match_by_eic(left, right, "A", "B")
 
 
 def test_eic_matching_through_linkage_table():
@@ -81,9 +83,8 @@ def test_eic_matching_through_linkage_table():
         ],
         columns=["EIC", "Source", "projectID"],
     )
-    matches, idx0, idx1 = _match_by_eic(left, right, ["ENTSOE", "GPD"], linkages)
+    matches = _match_by_eic(left, right, "ENTSOE", "GPD", linkages)
     assert matches.to_dict("records") == [{"ENTSOE": 10, "GPD": 60}]
-    assert idx0 == {10} and idx1 == {60}
 
 
 def test_eic_linkage_never_links_two_listed_sources():
@@ -93,8 +94,29 @@ def test_eic_linkage_never_links_two_listed_sources():
         [("E1", "GPD", "WRI1"), ("E1", "GEO", "GEO-1")],
         columns=["EIC", "Source", "projectID"],
     )
-    matches, _, _ = _match_by_eic(left, right, ["GPD", "GEO"], linkages)
-    assert matches.empty
+    assert _match_by_eic(left, right, "GPD", "GEO", linkages).empty
+
+
+def test_direct_matcher_runs_matchers_in_order_on_residual():
+    left = pd.DataFrame({"EIC": [["C1"], ["C2"], None]}, index=[10, 11, 12])
+    right = pd.DataFrame({"EIC": [["C1"], None, ["C2"]]}, index=[20, 21, 22])
+    seen = []
+
+    def first_rows(df0, df1, label0, label1):
+        seen.append((list(df0.index), list(df1.index)))
+        return pd.DataFrame({label0: [df0.index[0]], label1: [df1.index[0]]})
+
+    matches, (rest0, rest1) = DirectMatcher([_match_by_eic, first_rows]).run(
+        left, right, "A", "B"
+    )
+    # EIC pairs 10-20 and 11-22, the second matcher only sees 12 and 21
+    assert seen == [([12], [21])]
+    assert matches.to_dict("records") == [
+        {"A": 10, "B": 20},
+        {"A": 11, "B": 22},
+        {"A": 12, "B": 21},
+    ]
+    assert rest0.empty and rest1.empty
 
 
 @pytest.mark.parametrize("codes", [["C2", "C1", "C1"], {"C1", "C2"}, "C1"])
