@@ -24,6 +24,7 @@ The development of `powerplantmatching` was **helped considerably** by in-depth 
 As of 2025-08-06, the following people have contributed to `powerplantmatching`:
 
 - Carlos Gaete (:octicons-mark-github-16: [@cdgaete](https://github.com/cdgaete))
+- Sanjana Kumari (:octicons-mark-github-16: [@SANJANAKUMARI83](https://github.com/SANJANAKUMARI83))
 - Daniel Rüdt (:octicons-mark-github-16: [@daniel-rdt](https://github.com/daniel-rdt))
 - Davide Fioriti (:octicons-mark-github-16: [@davide-f](https://github.com/davide-f))
 - enioarz (:octicons-mark-github-16: [@enioarz](https://github.com/enioarz))
