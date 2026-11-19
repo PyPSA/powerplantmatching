@@ -9,6 +9,7 @@ from deprecation import DeprecatedWarning
 import powerplantmatching as pm
 from powerplantmatching import data
 from powerplantmatching.core import _data_out, package_config
+from powerplantmatching.utils import get_name
 
 config = pm.get_config()
 sources = [s if isinstance(s, str) else list(s)[0] for s in config["matching_sources"]]
@@ -96,3 +97,11 @@ def test_extend_by_vres_deprecated(cached_config, from_url):
 def test_extendby_kwargs_deprecated(cached_config):
     with pytest.warns(FutureWarning, match="extendby_kwargs"):
         pm.powerplants(config=cached_config, extendby_kwargs={"query": None})
+
+
+def test_gem_keeps_source_name(monkeypatch):
+    for tracker in ("GBPT", "GGPT", "GCPT", "GGTPT", "GNPT", "GSPT", "GWPT", "GHPT"):
+        frame = pd.DataFrame({"Capacity": [1.0]})
+        frame.columns.name = tracker
+        monkeypatch.setattr(data, tracker, lambda frame=frame, **kwargs: frame)
+    assert get_name(data.GEM()) == "GEM"
