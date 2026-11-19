@@ -13,6 +13,7 @@ from deprecation import DeprecatedWarning
 import powerplantmatching as pm
 from powerplantmatching import data
 from powerplantmatching.core import _data_in, _data_out, package_config
+from powerplantmatching.utils import get_name
 
 config = pm.get_config()
 sources = [s if isinstance(s, str) else list(s)[0] for s in config["matching_sources"]]
@@ -169,3 +170,11 @@ def test_url_retrieval_invalid(tmp_path, monkeypatch, from_url, config_update, e
     with pytest.raises(error, match="from_url"):
         pm.powerplants(from_url=from_url, config_update=config_update)
     assert not os.path.exists(_data_in("releases"))
+
+
+def test_gem_keeps_source_name(monkeypatch):
+    for tracker in ("GBPT", "GGPT", "GCPT", "GGTPT", "GNPT", "GSPT", "GWPT", "GHPT"):
+        frame = pd.DataFrame({"Capacity": [1.0]})
+        frame.columns.name = tracker
+        monkeypatch.setattr(data, tracker, lambda frame=frame, **kwargs: frame)
+    assert get_name(data.GEM()) == "GEM"
