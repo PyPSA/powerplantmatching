@@ -17,6 +17,7 @@ SPDX-License-Identifier: MIT
 * Deprecate the argument `extend_by_vres` of `pm.powerplants()` and the function `extend_by_VRE()`. Both will be removed in v0.11.0. Wind and solar power plants are already included from GEM and MASTR, and the option added them again from outdated OPSD data (2020). ([#232](https://github.com/PyPSA/powerplantmatching/issues/232))
     * Bugfix: `pm.powerplants(from_url=True)` now applies `extend_by_vres` like the other code paths, and the deprecated argument `extendby_kwargs` now raises a `FutureWarning` instead of a logging error.
 * Replace `six` with the standard library, since `python-dateutil` 4.0 no longer installs it, and exclude pandas 3.1 until `country_converter` supports it. ([PR #335](https://github.com/PyPSA/powerplantmatching/pull/335))
+* Bugfix: `utils.to_categorical_columns()` no longer overwrites the `Fueltype` and `Country` columns with the values of `Set`. ([PR #339](https://github.com/PyPSA/powerplantmatching/pull/339))
 * Bugfix: `aggregate_units()` no longer merges units of the fuel types listed in `fueltypes_with_blocks` in the config section `clean_name` (default: nuclear). Before, a misspelled config key disabled this setting. An empty list no longer raises an error in `clean_name()`. ([PR #332](https://github.com/PyPSA/powerplantmatching/pull/332))
 * Bugfix: `pm.data.GEM()` keeps the source name `GEM` after combining the trackers, so `combine_multiple_datasets` no longer fails on it. ([PR #341](https://github.com/PyPSA/powerplantmatching/pull/341))
 
