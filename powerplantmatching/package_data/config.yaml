@@ -46,8 +46,9 @@ fully_included_sources:
   - GEM: not (Country == 'Germany' and Fueltype in ['Solar', 'Wind'])
   # battery in Germany is covered by MASTR
   - EESI: Fueltype != 'Hydro' and not (Country == 'Germany' and Fueltype == 'Battery')
-  # take nuclear from other datasets (good matching), retired plants from GEM (avoids duplicates)
-  - MASTR: Fueltype != 'Nuclear' and Status != 'retired'
+  # take nuclear from other datasets (good matching)
+  # take retired plants and announced gas projects from GEM (projects are not matched, both would be duplicates)
+  - MASTR: Fueltype != 'Nuclear' and Status != 'retired' and not (Fueltype == 'Natural Gas' and Status == 'announced')
   # take small hydro outside Germany from OPSD (highest coverage)
   - OPSD: Country != 'Germany' and Capacity < 1 and Capacity >= 0.1 and Fueltype == 'Hydro'
   # include this selection of countries as they have poorer coverage in all other datasets

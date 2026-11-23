@@ -23,7 +23,7 @@ SPDX-License-Identifier: MIT
 * New column `Status` with the life-cycle stage of the power plant: `announced`, `construction`, `operating`, `mothballed` or `retired`. ([#322](https://github.com/PyPSA/powerplantmatching/issues/322))
     * **Breaking:** the output now includes announced, mothballed and retired power plants. Filter on `Status`, e.g. `df.query("Status == 'operating'")`; a filter on `DateIn` and `DateOut` is not sufficient, as many projects have no `DateIn`.
     * The new config section `target_status` maps the status labels of the data sources to the stages. The key `status` selects the stages to keep, for all data sources or per data source.
-    * Matching: the status of the most reliable data source is used. Units at different stages are not aggregated. Projects (`announced`, `construction`) are not matched. BEYONDCOAL and retired MASTR power plants are only included if matched, to avoid double counting.
+    * Matching: the status of the most reliable data source is used. Units at different stages are not aggregated. Projects (`announced`, `construction`) are not matched. To avoid double counting with GEM, BEYONDCOAL and retired MASTR power plants are only included if matched, and announced gas projects of MASTR are excluded.
     * `DateIn` and `DateOut` values that were estimated from the status are removed. Data sources without status data get the status `operating`.
 * Bugfix in `pm.data.GHR()`: read capacity, coordinates, technology and commissioning year correctly.
 
