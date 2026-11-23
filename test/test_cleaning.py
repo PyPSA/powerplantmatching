@@ -143,15 +143,17 @@ def test_config_filter_unknown_status(status_data):
 
 
 @pytest.mark.parametrize(
-    "fueltype, status, n_plants",
+    "fueltype, status, with_blocks, n_plants",
     [
-        ("Hard Coal", ["operating", "operating"], 1),
-        ("Hard Coal", ["operating", "retired"], 2),
-        ("Nuclear", ["operating", "operating"], 2),
+        ("Hard Coal", ["operating", "operating"], ["Nuclear"], 1),
+        ("Hard Coal", ["operating", "retired"], ["Nuclear"], 2),
+        ("Nuclear", ["operating", "operating"], ["Nuclear"], 2),
+        ("Nuclear", ["operating", "operating"], [], 1),
     ],
 )
-def test_aggregate_units(fueltype, status, n_plants):
+def test_aggregate_units(fueltype, status, with_blocks, n_plants):
     config = get_config()
+    config["clean_name"]["fueltypes_with_blocks"] = with_blocks
     df = pd.DataFrame(
         {
             "Name": "Kraftwerk Musterstadt",

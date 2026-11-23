@@ -1641,8 +1641,12 @@ def IRENASTAT(raw=False, update=False, config=None):
     }
     df["Country"] = df["Country"].replace(country_renames)
 
-    # Consistent country names for dataset
-    df = convert_to_short_name(df)
+    # Consistent country names for dataset, preserving regional aggregates.
+    regional_aggregates = {"Eurasia", "Oceania"}
+    is_aggregate = df["Country"].isin(regional_aggregates)
+
+    countries = convert_to_short_name(df.loc[~is_aggregate].copy())
+    df = pd.concat([countries, df.loc[is_aggregate]]).sort_index()
 
     df.dropna(subset="Capacity", inplace=True)
 
@@ -2299,7 +2303,8 @@ def GEM(raw=False, update=False, config=None):
     """
     GEM_FUNCTIONS = [GBPT, GGPT, GCPT, GGTPT, GNPT, GSPT, GWPT, GHPT]
     data = [f(raw=raw, update=update, config=config) for f in GEM_FUNCTIONS]
-    return pd.concat(data, ignore_index=True)
+    combined = pd.concat(data, ignore_index=True)
+    return combined if raw else set_column_name(combined, "GEM")
 
 
 def MASTR(

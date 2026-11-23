@@ -8,7 +8,18 @@ SPDX-License-Identifier: MIT
 
 ## Upcoming Version
 
+* **Breaking change:** The option `matched_data_url` in the config must now be an http(s) URL; local paths no longer work.
+
+* **Feature:** `pm.powerplants(from_url=...)` now also accepts a release tag starting with `v` (e.g. `"v0.9.0"`) or an http(s) URL of a CSV file.
+
+* Avoid country conversion warnings for IRENASTAT regional aggregates (`Eurasia` and `Oceania`) while preserving the original dataset. ([PR #336](https://github.com/PyPSA/powerplantmatching/pull/336))
+
+* Deprecate the argument `extend_by_vres` of `pm.powerplants()` and the function `extend_by_VRE()`. Both will be removed in v0.11.0. Wind and solar power plants are already included from GEM and MASTR, and the option added them again from outdated OPSD data (2020). ([#232](https://github.com/PyPSA/powerplantmatching/issues/232))
+    * Bugfix: `pm.powerplants(from_url=True)` now applies `extend_by_vres` like the other code paths, and the deprecated argument `extendby_kwargs` now raises a `FutureWarning` instead of a logging error.
 * Replace `six` with the standard library, since `python-dateutil` 4.0 no longer installs it, and exclude pandas 3.1 until `country_converter` supports it. ([PR #335](https://github.com/PyPSA/powerplantmatching/pull/335))
+* Bugfix: `utils.to_categorical_columns()` no longer overwrites the `Fueltype` and `Country` columns with the values of `Set`. ([PR #339](https://github.com/PyPSA/powerplantmatching/pull/339))
+* Bugfix: `aggregate_units()` no longer merges units of the fuel types listed in `fueltypes_with_blocks` in the config section `clean_name` (default: nuclear). Before, a misspelled config key disabled this setting. An empty list no longer raises an error in `clean_name()`. ([PR #332](https://github.com/PyPSA/powerplantmatching/pull/332))
+* Bugfix: `pm.data.GEM()` keeps the source name `GEM` after combining the trackers, so `combine_multiple_datasets` no longer fails on it. ([PR #341](https://github.com/PyPSA/powerplantmatching/pull/341))
 * New column `Status` with the life-cycle stage of the power plant: `announced`, `construction`, `operating`, `mothballed` or `retired`. ([#322](https://github.com/PyPSA/powerplantmatching/issues/322))
     * **Important:** the output now also includes announced, mothballed and retired power plants. Announced projects add several hundred GW, and most of them have no `DateIn`. Filter with the `Status` column, e.g. `df.query("Status in ['operating', 'construction']")`; a filter on `DateIn` and `DateOut` alone is not sufficient.
     * The status labels of the data sources are mapped to the stages in the new config section `target_status`. The new key `status` selects the stages to keep for all data sources; by default, all stages are kept. The key `status` of a data source overrides it and now selects stages and not the status labels of the data source.
@@ -17,7 +28,6 @@ SPDX-License-Identifier: MIT
     * Announced projects and projects under construction are not matched with other data sources, because they often have the name and site of existing power plants. They are added without matching from the fully included data sources.
     * BEYONDCOAL is no longer a fully included data source, as GEM includes the same coal units with a higher reliability. This prevents double counting of units with a different status in the two data sources. Known limitation: if two matched data sources group the units of a power plant differently by status, a unit can still be counted twice (e.g. the retired unit 9 of Walsum in Germany, from MASTR and GEM).
     * The `DateIn` and `DateOut` values that were estimated from the status are removed (mothballed plants in the GEM coal and oil and gas trackers, temporarily shut down units in MASTR, nuclear plants under construction in WIKIPEDIA).
-* Bugfix in `aggregate_units()`: nuclear units are not aggregated within a data source, as set by `fueltypes_with_blocks` in the config section `clean_name`. Before, a wrong config key disabled this setting.
 * Bugfix in `pm.data.GHR()`: read capacity, coordinates and technology from the correct columns, and read the commissioning year without conversion to a date (all values were 1970 before).
 
 ## [v0.9.1](https://github.com/PyPSA/powerplantmatching/releases/tag/v0.9.1) (7th October 2026)
@@ -49,7 +59,7 @@ SPDX-License-Identifier: MIT
 * Update Marktstammdatenregister data for Germany from [open-MaStR (February 25, 2025)](https://zenodo.org/records/14783581).
 * Drop support for Python 3.9, add support for Python 3.13. Minimum required Python version is now 3.10.
 * Restructure documentation and move to use `mkdocs` for a nicer user experience.
-* Added [GeoNuclearData](github.com/cristianst85/GeoNuclearData) dataset as `pm.data.GND()`.
+* Added [GeoNuclearData](https://github.com/cristianst85/GeoNuclearData) dataset as `pm.data.GND()`.
 * Added [European Energy Storage Inventory](https://ses.jrc.ec.europa.eu/storage-inventory-maps) dataset as `pm.data.EESI()`.
 * Added [GloHydroRES](https://zenodo.org/records/14526360) dataset as `pm.data.GHR()`.
 * Updated ENTSOE, BEYONDCOAL, JRC, IRENASTAT and the Global Energy Monitor datasets to the latest versions.
