@@ -158,7 +158,7 @@ def powerplants(
             Other released versions can be loaded by specifying
             a string starting with "v" as release tag, e.g. "v0.9.0".
             An arbitrary URL starting with "http(s)://" can also be specified but
-            needs to match the expected format, else unforseen behaviour is to be
+            needs to match the expected format, else unforeseen behaviour is to be
             expected.
             All downloads are cached under `<data_dir>/data/in/releases`.
             Use `update=True` to refresh the cache and download the file again.
