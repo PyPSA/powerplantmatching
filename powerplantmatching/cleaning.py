@@ -363,9 +363,9 @@ def map_status(df, config=None):
     if config is None:
         config = get_config()
 
-    stages = config["target_status"]
-    labels = {label: stage for stage, labels in stages.items() for label in labels}
-    status = df.Status.str.lower().map(labels)
+    stages = config["target_status"].items()
+    stage_of = {label: stage for stage, labels in stages for label in labels}
+    status = df.Status.str.lower().map(stage_of)
     return df.assign(Status=status)[status.notna()]
 
 
@@ -543,7 +543,7 @@ def aggregate_units(
     df = cliques(df, duplicates)
     # do not merge units at different life-cycle stages
     by = ["grouped", "Status"] if "Status" in cols else ["grouped"]
-    df = df.groupby([df[c] for c in by]).agg(props_for_groups)
+    df = df.groupby(by).agg(props_for_groups)
 
     no_downcast_ctx = (
         contextlib.nullcontext()

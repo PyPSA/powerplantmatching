@@ -13,14 +13,13 @@ from powerplantmatching.matching import reduce_matched_dataframe
 @pytest.mark.parametrize(
     "status, expected",
     [
-        (["operating", "retired"], "retired"),
+        (["operating", "retired"], "operating"),
         (["retired", "operating"], "retired"),
-        (["announced", "operating"], "operating"),
         (["mothballed", np.nan], "mothballed"),
-        ([np.nan, np.nan], np.nan),
+        ([np.nan, "retired"], "retired"),
     ],
 )
-def test_reduce_status_by_life_cycle(status, expected):
+def test_reduce_status_by_reliability(status, expected):
     config = get_config()
     sources = ["GCPT", "OPSD"]
     columns = pd.MultiIndex.from_product([config["target_columns"], sources])

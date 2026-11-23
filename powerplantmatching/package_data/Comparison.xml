@@ -51,6 +51,12 @@
       <low>0.1</low>
       <high>0.8</high>
     </property>
+    <property>
+      <name>STATUS</name>
+      <comparator>no.priv.garshol.duke.comparators.ExactComparator</comparator>
+      <low>0.45</low>
+      <high>0.55</high>
+    </property>
   </schema>
 
   <database class="no.priv.garshol.duke.databases.InMemoryDatabase">
@@ -73,6 +79,8 @@
               property="CAPACITY"/>
       <column name="Geoposition"
               property="GEOPOSITION"/>
+      <column name="Status"
+              property="STATUS"/>
     </csv>
   </group>
 
@@ -93,6 +101,8 @@
               property="CAPACITY"/>
       <column name="Geoposition"
               property="GEOPOSITION"/>
+      <column name="Status"
+              property="STATUS"/>
     </csv>
   </group>
 

@@ -46,8 +46,8 @@ fully_included_sources:
   - GEM: not (Country == 'Germany' and Fueltype in ['Solar', 'Wind'])
   # battery in Germany is covered by MASTR
   - EESI: Fueltype != 'Hydro' and not (Country == 'Germany' and Fueltype == 'Battery')
-  # take nuclear from other datasets (good matching)
-  - MASTR: Fueltype != 'Nuclear'
+  # take nuclear from other datasets (good matching), retired plants from GEM (avoids duplicates)
+  - MASTR: Fueltype != 'Nuclear' and Status != 'retired'
   # take small hydro outside Germany from OPSD (highest coverage)
   - OPSD: Country != 'Germany' and Capacity < 1 and Capacity >= 0.1 and Fueltype == 'Hydro'
   # include this selection of countries as they have poorer coverage in all other datasets
@@ -582,7 +582,6 @@ target_technologies:
    - zeewind
 target_status:
   # Map the status labels of the data sources to life-cycle stages (exact match, case-insensitive).
-  # Keep the stages in life-cycle order: if matched sources disagree, the later stage is used.
   # Entries with labels which are not given (e.g. cancelled or shelved) are removed.
   announced:
     - announced
@@ -594,6 +593,7 @@ target_status:
   construction:
     - construction
     - under construction
+    - suspended construction
     - in bau
   operating:
     - operating

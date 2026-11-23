@@ -306,6 +306,9 @@ def GEO(raw=False, update=False, config=None):
     units[date_cols] = units[date_cols].apply(to_year)
     units = units.rename(columns=UNITS_RENAME_COLS)
     units.Efficiency = units.Efficiency.str.replace("%", "").astype(float) / 100
+    # GEO keeps decommissioned power plants
+    retired = units.DateOut < pd.Timestamp.now().year
+    units["Status"] = np.where(retired, "retired", "operating")
 
     date_cols = ["Year_Project_Commissioned", "Year_rng1_yr1"]
     ppl[date_cols] = ppl[date_cols].apply(to_year)
@@ -327,13 +330,10 @@ def GEO(raw=False, update=False, config=None):
     )
     not_included_ppl = ppl.query("projectID not in @res.projectID")
     res = pd.concat([res, not_included_ppl]).pipe(set_column_name, "GEO")
+    res["Status"] = res.Status.fillna("operating")
     res = scale_to_net_capacities(res)
     res = convert_to_short_name(res)
     res = set_column_name(res, "GEO")
-    # GEO keeps decommissioned power plants
-    res["Status"] = np.where(
-        res.DateOut < pd.Timestamp.now().year, "retired", "operating"
-    )
     res = config_filter(res, config)
     res["projectID"] = "GEO-" + res.projectID.astype(str)
 
@@ -485,7 +485,6 @@ def JRC(raw=False, update=False, config=None):
         .powerplant.convert_alpha2_to_country()
         .pipe(clean_name)
         .pipe(set_large_spanish_stores_to_reservoirs)
-        .assign(Status="operating")
         .pipe(set_column_name, "JRC")
         .pipe(config_filter, config)
     )
@@ -628,7 +627,6 @@ def GPD(raw=False, update=False, config=None, filter_other_dbs=True):
             config=config,
         )
         .pipe(clean_name)
-        .assign(Status="operating")
         .pipe(set_column_name, "GPD")
         .pipe(config_filter, config)
         .pipe(gather_specifications, config=config)
@@ -809,7 +807,6 @@ def ENTSOE(
         .query("Capacity > 0")
         .pipe(gather_specifications, config=config)
         .pipe(clean_name)
-        .assign(Status="operating")
         .pipe(set_column_name, "ENTSOE")
         .pipe(config_filter, config)
     )
@@ -907,7 +904,6 @@ def OSM(raw=False, update=False, config=None):
             config=config,
         )
         .pipe(clean_name)
-        .assign(Status="operating")
         .pipe(set_column_name, "OSM")
         .pipe(config_filter, config)
     )
@@ -2900,7 +2896,6 @@ def GHR(
             Fueltype="Hydro",
         )
         .pipe(clean_name)
-        .assign(Status="operating")
         .pipe(set_column_name, "GHR")
         .pipe(config_filter, config)
     )
