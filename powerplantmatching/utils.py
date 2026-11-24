@@ -97,17 +97,17 @@ def get_raw_file(name, update=False, config=None, skip_retrieve=False):
 
 def config_filter(df, config):
     """
-    Convenience function to filter data source according to the config.yaml
-    file. Individual query filters are applied if argument 'name' is given.
+    Filter a data source to the target scope outlined by the `config`.
+
+    Applies the manual corrections and keeps only the `target_columns`,
+    and filtered columns matched by the query and countries.
 
     Parameters
     ----------
     df : pd.DataFrame
-        Data to be filtered
-    name : str, default None
-        Name of the data source to identify query in the config.yaml file
-    config : dict, default None
-        Configuration overrides varying from the config.yaml file
+        Data to be filtered of a single data source. Its `name` attribute must be set.
+    config : dict
+        Configuration, as returned by `get_config()`.
     """
     df = get_obj_if_Acc(df)
 
@@ -161,7 +161,12 @@ def correct_manually(df, name, config=None):
     return df.reset_index()
 
 
-def set_uncommon_fueltypes_to_other(df, fillna_other=True, config=None, **kwargs):
+def set_uncommon_fueltypes_to_other(
+    df: pd.DataFrame,
+    fillna_other: bool = True,
+    config: dict | None = None,
+    fueltypes: list[str] | None = None,
+) -> pd.DataFrame:
     """
     Replace uncommon fueltype specifications as by 'Other'. This helps to
     compare datasources with Capacity statistics given by
@@ -174,19 +179,17 @@ def set_uncommon_fueltypes_to_other(df, fillna_other=True, config=None, **kwargs
         DataFrame to replace 'Fueltype' argument
     fillna_other : Boolean, default True
         Whether to replace NaN values in 'Fueltype' with 'Other'
-    fueltypes : list
-        list of replaced fueltypes, defaults to
-        ['Mixed fuel types', 'Electro-mechanical',
-        'Hydrogen Storage']
+    config : dict, default None
+        Configuration overrides
+    fueltypes : list of str, default None
+        Fueltypes to replace, defaults to
+        ['Mixed fuel types', 'Electro-mechanical']
     """
     config = get_config() if config is None else config
     df = get_obj_if_Acc(df)
 
-    default = [
-        "Mixed fuel types",
-        "Electro-mechanical",
-    ]
-    fueltypes = kwargs.get("fueltypes", default)
+    if fueltypes is None:
+        fueltypes = ["Mixed fuel types", "Electro-mechanical"]
     df.loc[df.Fueltype.isin(fueltypes), "Fueltype"] = "Other"
     if fillna_other:
         df = df.fillna({"Fueltype": "Other"})
@@ -560,7 +563,7 @@ def parse_Geoposition(
         description of the location, can be city, area etc.
     country : string
         name of the country which will be used as a bounding area
-    use_saved_postion : Boolean, default False
+    use_saved_locations : Boolean, default False
         Whether to firstly compare with cached results in
         powerplantmatching/data/parsed_locations.csv
     """
@@ -608,7 +611,7 @@ def fill_geoposition(
     ----------
     df : pandas.DataFrame
         DataFrame of power plants
-    use_saved_position : Boolean, default True
+    use_saved_locations : Boolean, default True
         Whether to firstly compare with cached results in
         powerplantmatching/data/parsed_locations.csv
     saved_only: Boolean, default True

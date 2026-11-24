@@ -717,11 +717,12 @@ def ENTSOE(
     fill_geoposition_kwargs:
         Keyword arguments passed to `fill_geoposition`.
 
-    Note: For obtaining a security token refer to section 2 of the
-    RESTful API documentation of the ENTSOE-E Transparency platform
-    https://transparency.entsoe.eu/content/static_content/Static%20content/
-    web%20api/Guide.html#_authentication_and_authorisation. Please save the
-    token in your config.yaml file (key 'entsoe_token').
+    Notes
+    -----
+    For a security token, see section 2 of the RESTful API documentation of
+    the ENTSO-E Transparency Platform:
+    https://transparency.entsoe.eu/content/static_content/Static%20content/web%20api/Guide.html#_authentication_and_authorisation
+    Save the token in your config.yaml (key 'entsoe_token').
     """
     config = get_config() if config is None else config
 
@@ -826,11 +827,12 @@ def ENTSOE_EIC(raw=False, update=False, config=None, entsoe_token=None):
     entsoe_token: String
         Security token of the ENTSO-E Transparency platform
 
-    Note: For obtaining a security token refer to section 2 of the
-    RESTful API documentation of the ENTSOE-E Transparency platform
-    https://transparency.entsoe.eu/content/static_content/Static%20content/
-    web%20api/Guide.html#_authentication_and_authorisation. Please save the
-    token in your config.yaml file (key 'entsoe_token').
+    Notes
+    -----
+    For a security token, see section 2 of the RESTful API documentation of
+    the ENTSO-E Transparency Platform:
+    https://transparency.entsoe.eu/content/static_content/Static%20content/web%20api/Guide.html#_authentication_and_authorisation
+    Save the token in your config.yaml (key 'entsoe_token').
     """
     config = get_config() if config is None else config
 
