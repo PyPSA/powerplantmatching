@@ -8,12 +8,19 @@ SPDX-License-Identifier: MIT
 
 ## Upcoming Version
 
+* **Breaking change:** The option `matched_data_url` in the config must now be an http(s) URL; local paths no longer work.
+
+* **Feature:** `pm.powerplants(from_url=...)` now also accepts a release tag starting with `v` (e.g. `"v0.9.0"`) or an http(s) URL of a CSV file.
+
 * Avoid country conversion warnings for IRENASTAT regional aggregates (`Eurasia` and `Oceania`) while preserving the original dataset. ([PR #336](https://github.com/PyPSA/powerplantmatching/pull/336))
+
 * Match records by EIC in a new `DirectMatcher` step before fuzzy matching, and link ENTSO-E to GPD and GEO through the JRC-PPDB-OPEN EIC linkages. ([PR #289](https://github.com/PyPSA/powerplantmatching/pull/289))
 * Deprecate the argument `extend_by_vres` of `pm.powerplants()` and the function `extend_by_VRE()`. Both will be removed in v0.11.0. Wind and solar power plants are already included from GEM and MASTR, and the option added them again from outdated OPSD data (2020). ([#232](https://github.com/PyPSA/powerplantmatching/issues/232))
     * Bugfix: `pm.powerplants(from_url=True)` now applies `extend_by_vres` like the other code paths, and the deprecated argument `extendby_kwargs` now raises a `FutureWarning` instead of a logging error.
 * Replace `six` with the standard library, since `python-dateutil` 4.0 no longer installs it, and exclude pandas 3.1 until `country_converter` supports it. ([PR #335](https://github.com/PyPSA/powerplantmatching/pull/335))
+* Bugfix: `utils.to_categorical_columns()` no longer overwrites the `Fueltype` and `Country` columns with the values of `Set`. ([PR #339](https://github.com/PyPSA/powerplantmatching/pull/339))
 * Bugfix: `aggregate_units()` no longer merges units of the fuel types listed in `fueltypes_with_blocks` in the config section `clean_name` (default: nuclear). Before, a misspelled config key disabled this setting. An empty list no longer raises an error in `clean_name()`. ([PR #332](https://github.com/PyPSA/powerplantmatching/pull/332))
+* Bugfix: `pm.data.GEM()` keeps the source name `GEM` after combining the trackers, so `combine_multiple_datasets` no longer fails on it. ([PR #341](https://github.com/PyPSA/powerplantmatching/pull/341))
 
 ## [v0.9.1](https://github.com/PyPSA/powerplantmatching/releases/tag/v0.9.1) (7th October 2026)
 

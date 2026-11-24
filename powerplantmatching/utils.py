@@ -228,9 +228,10 @@ def to_categorical_columns(df):
         "Country": get_config()["target_countries"],
         "Set": get_config()["target_sets"],
     }
-    return df.assign(**{c: df[c].astype("category") for c in cols}).assign(
-        **{c: lambda df: df[c].cat.set_categories(v) for c, v in cats.items()}
-    )
+    df = df.assign(**{c: df[c].astype("category") for c in cols})
+    for c, v in cats.items():
+        df[c] = df[c].cat.set_categories(v)
+    return df
 
 
 def set_column_name(df, name):

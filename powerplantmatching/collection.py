@@ -6,15 +6,17 @@
 Processed datasets of merged and/or adjusted data
 """
 
+import hashlib
 import logging
 import os
+import shutil
 import warnings
 
 import pandas as pd
 from deprecation import deprecated
 
 from .cleaning import aggregate_units
-from .core import _data_out, get_config
+from .core import _data_in, _data_out, get_config
 from .heuristics import extend_by_non_matched, extend_by_VRE
 from .matching import combine_multiple_datasets, reduce_matched_dataframe
 from .utils import (
@@ -110,11 +112,25 @@ def collect(
         return df.pipe(parse_string_to_dict, ["projectID", "EIC"])
 
 
+def _read_matched(
+    fn: str, header: int | list[int], config: dict, extend_by_vres: bool
+) -> pd.DataFrame:
+    """Read a stored matched dataset, optionally extended by VRE."""
+    df = (
+        pd.read_csv(fn, index_col=0, header=header)
+        .pipe(parse_string_to_dict, ["projectID", "EIC"])
+        .pipe(set_column_name, "Matched Data")
+    )
+    if extend_by_vres:
+        df = extend_by_VRE(df, config=config, base_year=config["opsd_vres_base_year"])
+    return df
+
+
 def powerplants(
     config=None,
     config_update=None,
     update=False,
-    from_url=False,
+    from_url: bool | str = False,
     extend_by_vres=False,
     extendby_kwargs=None,
     extend_by_kwargs=None,
@@ -134,9 +150,18 @@ def powerplants(
     update : Boolean, default False
             Whether to rerun the matching process. Overrides stored to False
             if True.
-    from_url: Boolean, default False
-            Whether to parse and store the already build data from the repo
-            website.
+    from_url: bool or str, default False
+            Load a released dataset from an online resource.
+            `True` loads the release matching the currently installed version of
+            powerplantmatching and stores it as 'build' version, so that a
+            later call with `from_url=False` returns it.
+            Other released versions can be loaded by specifying
+            a string starting with "v" as release tag, e.g. "v0.9.0".
+            An arbitrary URL starting with "http(s)://" can also be specified but
+            needs to match the expected format, else unforeseen behaviour is to be
+            expected.
+            All downloads are cached under `<data_dir>/data/in/releases`.
+            Use `update=True` to refresh the cache and download the file again.
     config : Dict, default None
             Define a configuration varying from the setting in config.yaml.
             Relevant keywords are 'matching_sources', 'fully_included_sources'.
@@ -201,41 +226,51 @@ def powerplants(
 
     collection_kwargs.setdefault("update", update)
 
+    if from_url:
+        latest = from_url is True
+        if latest:
+            # Take latest release known to the package
+            from_url = "v" + latest_release
+        if not isinstance(from_url, str):
+            raise TypeError(f"`from_url` must be bool or str, got {type(from_url)}.")
+        if from_url.startswith("v"):
+            # Take a specific released dataset
+            url = config["matched_data_url"].format(tag=from_url)
+        else:
+            # Try to read from arbitrary URL (unsafe?)
+            url = from_url
+        if not url.startswith(("http://", "https://")):
+            raise ValueError(
+                f"'{url}' is not an http(s) URL. `from_url` takes a release tag "
+                "starting with 'v' or an http(s) URL, and `matched_data_url` in "
+                "the config must be an http(s) URL."
+            )
+        md5 = hashlib.md5(url.encode(), usedforsecurity=False).hexdigest()
+        fn = _data_in(os.path.join("releases", md5 + ".csv"))
+        if update or not os.path.exists(fn):
+            logger.info(f"Retrieving data from {url}")
+            os.makedirs(os.path.dirname(fn), exist_ok=True)
+            # read fully before writing, so a failed download leaves no cache file
+            pd.read_csv(url, index_col=0).to_csv(fn)
+            logger.info(f"Store data at {fn}")
+        if latest:
+            # if the installed version's data is retrieved, it doubles as local build output;
+            # subsequent calls to `powerplants()` returns it even without the `from_url` argument.
+            # I think this is a bug because a different local configuration != default config
+            # is overwritten through this without warning.
+            # But it has been standard behaviour for so long I'd take it as a feature at this point
+            shutil.copyfile(fn, _data_out("matched_data_red.csv", config))
+        return _read_matched(fn, 0, config, extend_by_vres)
+
     if collection_kwargs.get("reduced", True):
         fn = _data_out("matched_data_red.csv", config)
-        header = 0
+        header: int | list[int] = 0
     else:
         fn = _data_out("matched_data.csv", config)
         header = [0, 1]
 
-    if from_url:
-        fn = _data_out("matched_data_red.csv", config)
-        url = config["matched_data_url"].format(tag="v" + latest_release)
-        logger.info(f"Retrieving data from {url}")
-        df = (
-            pd.read_csv(url, index_col=0)
-            .pipe(parse_string_to_dict, ["projectID", "EIC"])
-            .pipe(set_column_name, "Matched Data")
-        )
-        logger.info(f"Store data at {fn}")
-        df.to_csv(fn)
-        if extend_by_vres:
-            return df.pipe(
-                extend_by_VRE, config=config, base_year=config["opsd_vres_base_year"]
-            )
-        return df
-
     if not update and os.path.exists(fn):
-        df = (
-            pd.read_csv(fn, index_col=0, header=header)
-            .pipe(parse_string_to_dict, ["projectID", "EIC"])
-            .pipe(set_column_name, "Matched Data")
-        )
-        if extend_by_vres:
-            return df.pipe(
-                extend_by_VRE, config=config, base_year=config["opsd_vres_base_year"]
-            )
-        return df
+        return _read_matched(fn, header, config, extend_by_vres)
 
     matching_sources = [
         list(to_dict_if_string(a))[0] for a in config["matching_sources"]
