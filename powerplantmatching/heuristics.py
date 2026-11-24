@@ -146,7 +146,7 @@ def rescale_capacities_to_country_totals(df, fueltypes=None):
     ----------
     df : Pandas.DataFrame
         Data set that should be modified
-    fueltype : str or list of strings
+    fueltypes : str or list of strings
         fueltype that should be scaled
     """
     from .data import Capacity_stats
@@ -280,7 +280,7 @@ def aggregate_VRE_by_commissioning_year(df, target_fueltypes=None, agg_geo_by=No
         DataFrame containing the data to aggregate
     target_fueltypes : list
         list of fueltypes to be aggregated (Others are cut!)
-    agg_by_geo : str
+    agg_geo_by : str
         How to deal with lat/lon positions. Allowed:
             NoneType : Do not show geoposition at all
             'mean'   : Average geoposition
