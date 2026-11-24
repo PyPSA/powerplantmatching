@@ -16,4 +16,4 @@ For details on the licenses that apply, see the header information of the respec
 Copyright 2018-2024 Fabian Gotzens (FZ Jülich), Jonas Hörsch (KIT), Fabian Hofmann (FIAS)
 Copyright 2025- Contributors to powerplantmatching <https://github.com/pypsa/powerplantmatching>
 
-You can find a list of contributors in the [contributors page](https://github.com/PyPSA/powerplantmatching/graphs/contributors) and in the [contributors file](../contributors).
+You can find a list of contributors in the [contributors page](https://github.com/PyPSA/powerplantmatching/graphs/contributors) and in the [contributors file](contributors.md).
