@@ -1,0 +1,18 @@
+Fueltype,Entries old,Entries new,Entries delta,Entries delta [%]
+Battery,1629,4838,3209,197.0
+Biogas,18050,7587,-10463,-58.0
+Geothermal,36,43,7,19.4
+Hard Coal,328,323,-5,-1.5
+Heat Storage,40,41,1,2.5
+Hydro,5471,5871,400,7.3
+Hydrogen Storage,56,68,12,21.4
+Lignite,150,145,-5,-3.3
+Mechanical Storage,6,5,-1,-16.7
+Natural Gas,7580,9117,1537,20.3
+Nuclear,238,238,0,0.0
+Oil,4180,2679,-1501,-35.9
+Other,165,118,-47,-28.5
+Solar,84216,124849,40633,48.2
+Solid Biomass,949,746,-203,-21.4
+Waste,400,415,15,3.8
+Wind,41570,15878,-25692,-61.8

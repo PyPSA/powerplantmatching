@@ -1,0 +1,18 @@
+Fueltype,Complete old [%],Complete new [%],Complete delta [pp]
+Battery,68.1,85.4,17.3
+Biogas,99.1,98.3,-0.9
+Geothermal,94.4,93.0,-1.4
+Hard Coal,76.8,76.2,-0.7
+Heat Storage,0.0,0.0,0.0
+Hydro,91.2,93.6,2.4
+Hydrogen Storage,0.0,1.5,1.5
+Lignite,80.7,82.8,2.1
+Mechanical Storage,0.0,0.0,0.0
+Natural Gas,97.1,97.2,0.1
+Nuclear,100.0,100.0,0.0
+Oil,97.9,97.4,-0.5
+Other,70.9,66.9,-4.0
+Solar,35.5,32.2,-3.3
+Solid Biomass,65.8,65.0,-0.7
+Waste,61.3,69.4,8.1
+Wind,98.9,97.5,-1.4

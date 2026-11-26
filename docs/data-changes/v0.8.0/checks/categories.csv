@@ -1,0 +1,57 @@
+Category,Value,Only in,Entries,Capacity [GW]
+Fueltype,Battery,new,1630,15.592
+Fueltype,Heat Storage,new,40,1.727
+Fueltype,Hydrogen Storage,new,56,0.041
+Fueltype,Mechanical Storage,new,6,0.012
+Fueltype / Technology,Battery / Li,new,1507,15.27
+Fueltype / Technology,Battery / NaNiCl,new,3,0.009
+Fueltype / Technology,Battery / NaS,new,5,0.048
+Fueltype / Technology,Battery / NiCd,new,7,0.006
+Fueltype / Technology,Battery / Pb,new,43,0.135
+Fueltype / Technology,Battery / V,new,5,0.004
+Fueltype / Technology,Biogas / OCGT,new,79,0.026
+Fueltype / Technology,Heat Storage / Molten Salt,new,16,1.068
+Fueltype / Technology,Hydro / Unknown,old,15,2.149
+Fueltype / Technology,Hydro / unknown,old,4,0.525
+Fueltype / Technology,Lignite / OCGT,new,1,0.029
+Fueltype / Technology,Lignite / Onshore,old,1,0.02
+Fueltype / Technology,Mechanical Storage / CAES,new,1,0.001
+Fueltype / Technology,Natural Gas / Not Found,old,2,0.086
+Fueltype / Technology,Natural Gas / OCGT,new,130,1.788
+Fueltype / Technology,Natural Gas / Onshore,old,1,0.023
+Fueltype / Technology,Natural Gas / Pv,old,2,0.02
+Fueltype / Technology,Natural Gas / not found,old,4,0.211
+Fueltype / Technology,Oil / Combustion Engine,new,3988,4.001
+Fueltype / Technology,Oil / OCGT,new,15,1.869
+Fueltype / Technology,Oil / Pv,old,1,0.001
+Fueltype / Technology,Other / CCGT,old,2,0.149
+Fueltype / Technology,Other / Combustion Engine,new,4,0.001
+Fueltype / Technology,Other / Marine,old,1,0.24
+Fueltype / Technology,Solar / Csp,new,30,2.064
+Fueltype / Technology,Solar / Li,new,1,0.014
+Fueltype / Technology,Solar / Pv,old,1479,9.143
+Fueltype / Technology,Solar / Reservoir,new,2,0.0
+Fueltype / Technology,Solar / Steam Turbine,new,1,0.004
+Fueltype / Technology,Solid Biomass / Combustion Engine,new,513,0.187
+Fueltype / Technology,Solid Biomass / Li,new,2,0.078
+Fueltype / Technology,Solid Biomass / Pv,old,3,0.112
+Fueltype / Technology,Waste / Combustion Engine,new,65,0.026
+Fueltype / Technology,Waste / Li,new,1,0.01
+Fueltype / Technology,Wind / PV,old,2,0.008
+Set,Storage,new,45,8.529
+Technology,CAES,new,1,0.001
+Technology,Csp,new,30,2.064
+Technology,Li,new,1511,15.371
+Technology,Marine,old,1,0.24
+Technology,Molten Salt,new,16,1.068
+Technology,NaNiCl,new,3,0.009
+Technology,NaS,new,5,0.048
+Technology,NiCd,new,7,0.006
+Technology,Not Found,old,2,0.086
+Technology,OCGT,new,225,3.712
+Technology,Pb,new,43,0.135
+Technology,Pv,old,1485,9.276
+Technology,Unknown,old,15,2.149
+Technology,V,new,5,0.004
+Technology,not found,old,4,0.211
+Technology,unknown,old,4,0.525

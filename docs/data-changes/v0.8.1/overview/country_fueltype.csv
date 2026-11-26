@@ -1,0 +1,328 @@
+Country,Fueltype,Capacity old [GW],Capacity new [GW],Capacity delta [GW],Capacity delta [%],Entries old,Entries new,Entries delta,Entries delta [%]
+Albania,Hydro,2.079,2.079,0.0,0.0,30,30,0,0.0
+Albania,Solar,0.394,0.454,0.06,15.1,12,17,5,41.7
+Albania,Wind,0.234,0.15,-0.084,-35.9,1,1,0,0.0
+Austria,Battery,0.04,0.04,0.0,0.0,5,5,0,0.0
+Austria,Hard Coal,1.471,1.471,0.0,0.0,5,5,0,0.0
+Austria,Hydro,15.572,15.572,0.0,0.0,168,168,0,0.0
+Austria,Hydrogen Storage,0.005,0.005,0.0,0.0,3,3,0,0.0
+Austria,Lignite,0.522,0.522,0.0,0.0,2,2,0,0.0
+Austria,Natural Gas,4.639,4.639,0.0,0.0,16,16,0,0.0
+Austria,Oil,0.23,0.23,0.0,0.0,2,2,0,0.0
+Austria,Solar,0.386,0.926,0.541,140.3,60,168,108,180.0
+Austria,Solid Biomass,0.132,0.132,0.0,0.0,7,7,0,0.0
+Austria,Waste,0.123,0.123,0.0,0.0,5,5,0,0.0
+Austria,Wind,3.235,3.397,0.162,5.0,93,95,2,2.2
+Belgium,Battery,0.191,0.191,0.0,0.0,12,12,0,0.0
+Belgium,Hard Coal,2.865,2.865,0.0,0.0,9,9,0,0.0
+Belgium,Heat Storage,0.005,0.005,0.0,0.0,1,1,0,0.0
+Belgium,Hydro,1.38,1.38,0.0,0.0,13,13,0,0.0
+Belgium,Natural Gas,7.245,7.245,0.0,0.0,27,27,0,0.0
+Belgium,Nuclear,6.219,6.219,0.0,0.0,8,8,0,0.0
+Belgium,Oil,0.163,0.163,0.0,0.0,8,8,0,0.0
+Belgium,Solar,0.504,0.975,0.471,93.5,77,145,68,88.3
+Belgium,Solid Biomass,0.398,0.398,0.0,0.0,5,5,0,0.0
+Belgium,Waste,0.294,0.294,0.0,0.0,10,10,0,0.0
+Belgium,Wind,4.335,4.509,0.174,4.0,87,94,7,8.0
+Bosnia and Herzegovina,Hydro,2.264,2.264,0.0,0.0,15,15,0,0.0
+Bosnia and Herzegovina,Lignite,2.09,2.09,0.0,0.0,5,5,0,0.0
+Bosnia and Herzegovina,Solar,0.267,0.69,0.422,158.1,19,58,39,205.3
+Bosnia and Herzegovina,Wind,0.435,0.435,0.0,0.0,7,7,0,0.0
+Bulgaria,Battery,0.22,0.22,0.0,0.0,4,4,0,0.0
+Bulgaria,Hard Coal,2.704,2.704,0.0,0.0,6,6,0,0.0
+Bulgaria,Hydro,2.905,2.905,0.0,0.0,30,30,0,0.0
+Bulgaria,Lignite,6.057,6.057,0.0,0.0,9,9,0,0.0
+Bulgaria,Natural Gas,0.761,0.761,0.0,0.0,6,6,0,0.0
+Bulgaria,Nuclear,3.84,3.84,0.0,0.0,6,6,0,0.0
+Bulgaria,Solar,2.762,3.921,1.159,42.0,218,336,118,54.1
+Bulgaria,Wind,0.608,0.608,0.0,0.0,17,17,0,0.0
+Croatia,Battery,0.001,0.001,0.0,0.0,1,1,0,0.0
+Croatia,Geothermal,0.036,0.036,0.0,0.0,2,2,0,0.0
+Croatia,Hard Coal,0.342,0.342,0.0,0.0,1,1,0,0.0
+Croatia,Hydro,2.119,2.119,0.0,0.0,21,21,0,0.0
+Croatia,Natural Gas,0.351,0.351,0.0,0.0,3,3,0,0.0
+Croatia,Oil,1.07,1.07,0.0,0.0,4,4,0,0.0
+Croatia,Solar,0.096,0.392,0.295,306.6,26,57,31,119.2
+Croatia,Wind,1.14,1.14,0.0,0.0,28,28,0,0.0
+Czechia,Hard Coal,1.548,1.548,0.0,0.0,11,11,0,0.0
+Czechia,Hydro,1.817,1.817,0.0,0.0,9,9,0,0.0
+Czechia,Lignite,9.38,9.38,0.0,0.0,25,25,0,0.0
+Czechia,Natural Gas,2.159,2.159,0.0,0.0,11,11,0,0.0
+Czechia,Nuclear,4.164,4.164,0.0,0.0,6,6,0,0.0
+Czechia,Solar,1.302,2.934,1.632,125.4,349,598,249,71.3
+Czechia,Solid Biomass,0.11,0.11,0.0,0.0,2,2,0,0.0
+Czechia,Waste,0.03,0.03,0.0,0.0,2,2,0,0.0
+Czechia,Wind,0.14,0.151,0.011,7.9,6,7,1,16.7
+Denmark,Battery,0.052,0.052,0.0,0.0,8,8,0,0.0
+Denmark,Hard Coal,5.055,5.055,0.0,0.0,10,10,0,0.0
+Denmark,Heat Storage,0.005,0.005,0.0,0.0,2,2,0,0.0
+Denmark,Hydrogen Storage,0.0,0.0,0.0,0.0,3,3,0,0.0
+Denmark,Natural Gas,1.513,1.513,0.0,0.0,12,12,0,0.0
+Denmark,Oil,0.126,0.126,0.0,0.0,1,1,0,0.0
+Denmark,Solar,2.203,3.384,1.181,53.6,74,206,132,178.4
+Denmark,Solid Biomass,1.781,1.781,0.0,0.0,10,10,0,0.0
+Denmark,Waste,0.153,0.153,0.0,0.0,4,4,0,0.0
+Denmark,Wind,5.136,5.136,0.0,0.0,112,112,0,0.0
+Estonia,Battery,0.036,0.036,0.0,0.0,2,2,0,0.0
+Estonia,Natural Gas,0.207,0.207,0.0,0.0,1,1,0,0.0
+Estonia,Oil,0.251,0.251,0.0,0.0,1,1,0,0.0
+Estonia,Solar,0.541,1.415,0.873,161.4,72,152,80,111.1
+Estonia,Solid Biomass,0.08,0.08,0.0,0.0,3,3,0,0.0
+Estonia,Wind,0.688,0.688,0.0,0.0,13,13,0,0.0
+Finland,Battery,0.214,0.214,0.0,0.0,16,16,0,0.0
+Finland,Hard Coal,3.787,3.787,0.0,0.0,16,16,0,0.0
+Finland,Heat Storage,0.625,0.625,0.0,0.0,19,19,0,0.0
+Finland,Hydro,3.143,3.143,0.0,0.0,103,103,0,0.0
+Finland,Hydrogen Storage,0.001,0.001,0.0,0.0,2,2,0,0.0
+Finland,Lignite,0.15,0.15,0.0,0.0,1,1,0,0.0
+Finland,Natural Gas,1.718,1.718,0.0,0.0,14,14,0,0.0
+Finland,Nuclear,4.622,4.622,0.0,0.0,5,5,0,0.0
+Finland,Oil,1.383,1.383,0.0,0.0,16,16,0,0.0
+Finland,Other,0.08,0.08,0.0,0.0,2,2,0,0.0
+Finland,Solar,0.368,0.632,0.264,71.6,14,32,18,128.6
+Finland,Solid Biomass,4.282,4.282,0.0,0.0,49,49,0,0.0
+Finland,Waste,0.088,0.088,0.0,0.0,2,2,0,0.0
+Finland,Wind,9.608,9.274,-0.334,-3.5,144,139,-5,-3.5
+France,Battery,0.337,0.337,0.0,0.0,29,29,0,0.0
+France,Biogas,0.031,0.031,0.0,0.0,1,1,0,0.0
+France,Geothermal,0.002,0.002,0.0,0.0,1,1,0,0.0
+France,Hard Coal,7.283,7.283,0.0,0.0,13,13,0,0.0
+France,Heat Storage,0.009,0.009,0.0,0.0,1,1,0,0.0
+France,Hydro,21.897,21.897,0.0,0.0,166,166,0,0.0
+France,Hydrogen Storage,0.002,0.002,0.0,0.0,4,4,0,0.0
+France,Lignite,1.243,1.243,0.0,0.0,2,2,0,0.0
+France,Natural Gas,9.458,9.458,0.0,0.0,45,45,0,0.0
+France,Nuclear,71.777,71.777,0.0,0.0,70,70,0,0.0
+France,Oil,2.2,2.2,0.0,0.0,18,18,0,0.0
+France,Solar,12.501,13.352,0.851,6.8,1425,1578,153,10.7
+France,Solid Biomass,0.45,0.45,0.0,0.0,10,10,0,0.0
+France,Waste,0.208,0.208,0.0,0.0,6,6,0,0.0
+France,Wind,26.813,27.42,0.607,2.3,1067,1107,40,3.7
+Germany,Battery,4.397,4.397,0.0,0.0,1167,1167,0,0.0
+Germany,Biogas,7.365,7.365,0.0,0.0,18039,18039,0,0.0
+Germany,Geothermal,0.027,0.027,0.0,0.0,5,5,0,0.0
+Germany,Hard Coal,40.112,40.112,0.0,0.0,102,102,0,0.0
+Germany,Heat Storage,0.001,0.001,0.0,0.0,2,2,0,0.0
+Germany,Hydro,12.49,12.49,0.0,0.0,2286,2286,0,0.0
+Germany,Hydrogen Storage,0.019,0.019,0.0,0.0,15,15,0,0.0
+Germany,Lignite,21.094,21.094,0.0,0.0,52,52,0,0.0
+Germany,Natural Gas,45.486,45.486,0.0,0.0,6984,6984,0,0.0
+Germany,Nuclear,27.431,27.431,0.0,0.0,36,36,0,0.0
+Germany,Oil,9.132,9.132,0.0,0.0,4058,4058,0,0.0
+Germany,Other,2.212,2.212,0.0,0.0,162,162,0,0.0
+Germany,Solar,49.738,49.882,0.144,0.3,70892,70901,9,0.0
+Germany,Solid Biomass,1.168,1.168,0.0,0.0,730,730,0,0.0
+Germany,Waste,3.519,3.519,0.0,0.0,260,260,0,0.0
+Germany,Wind,102.769,102.769,0.0,0.0,36621,36621,0,0.0
+Greece,Battery,0.001,0.001,0.0,0.0,1,1,0,0.0
+Greece,Hydro,3.32,3.32,0.0,0.0,18,18,0,0.0
+Greece,Hydrogen Storage,0.0,0.0,0.0,0.0,4,4,0,0.0
+Greece,Lignite,5.938,5.938,0.0,0.0,8,8,0,0.0
+Greece,Natural Gas,8.239,8.239,0.0,0.0,12,12,0,0.0
+Greece,Oil,1.436,1.436,0.0,0.0,7,7,0,0.0
+Greece,Solar,4.25,12.097,7.847,184.7,319,1669,1350,423.2
+Greece,Waste,0.024,0.024,0.0,0.0,1,1,0,0.0
+Greece,Wind,5.913,6.62,0.707,12.0,308,353,45,14.6
+Hungary,Battery,0.081,0.081,0.0,0.0,6,6,0,0.0
+Hungary,Geothermal,0.003,0.003,0.0,0.0,1,1,0,0.0
+Hungary,Hard Coal,0.485,0.485,0.0,0.0,4,4,0,0.0
+Hungary,Hydro,0.046,0.046,0.0,0.0,3,3,0,0.0
+Hungary,Hydrogen Storage,0.002,0.002,0.0,0.0,1,1,0,0.0
+Hungary,Lignite,1.224,1.224,0.0,0.0,3,3,0,0.0
+Hungary,Natural Gas,2.574,2.574,0.0,0.0,16,16,0,0.0
+Hungary,Nuclear,2.027,2.027,0.0,0.0,4,4,0,0.0
+Hungary,Oil,0.451,0.451,0.0,0.0,3,3,0,0.0
+Hungary,Solar,2.802,4.062,1.26,45.0,322,563,241,74.8
+Hungary,Solid Biomass,0.291,0.304,0.013,4.3,4,4,0,0.0
+Hungary,Waste,0.024,0.024,0.0,0.0,1,1,0,0.0
+Hungary,Wind,0.319,0.319,0.0,0.0,10,10,0,0.0
+Ireland,Battery,0.837,0.837,0.0,0.0,20,20,0,0.0
+Ireland,Hard Coal,0.915,0.915,0.0,0.0,1,1,0,0.0
+Ireland,Hydro,0.552,0.552,0.0,0.0,6,6,0,0.0
+Ireland,Lignite,0.253,0.253,0.0,0.0,2,2,0,0.0
+Ireland,Mechanical Storage,0.002,0.002,0.0,0.0,1,1,0,0.0
+Ireland,Natural Gas,5.612,5.612,0.0,0.0,19,19,0,0.0
+Ireland,Oil,1.147,1.147,0.0,0.0,5,5,0,0.0
+Ireland,Solar,1.334,1.541,0.206,15.5,34,41,7,20.6
+Ireland,Solid Biomass,0.038,0.038,0.0,0.0,1,1,0,0.0
+Ireland,Waste,0.085,0.085,0.0,0.0,2,2,0,0.0
+Ireland,Wind,4.804,4.698,-0.106,-2.2,124,126,2,1.6
+Italy,Battery,1.321,1.276,-0.045,-3.4,49,48,-1,-2.0
+Italy,Biogas,0.046,0.046,0.0,0.0,1,1,0,0.0
+Italy,Geothermal,0.834,0.834,0.0,0.0,23,23,0,0.0
+Italy,Hard Coal,11.0,11.0,0.0,0.0,15,15,0,0.0
+Italy,Heat Storage,0.01,0.01,0.0,0.0,2,2,0,0.0
+Italy,Hydro,22.533,22.533,0.0,0.0,351,351,0,0.0
+Italy,Hydrogen Storage,0.001,0.001,0.0,0.0,4,4,0,0.0
+Italy,Natural Gas,48.552,48.552,0.0,0.0,112,112,0,0.0
+Italy,Nuclear,1.472,1.472,0.0,0.0,4,4,0,0.0
+Italy,Oil,2.285,2.285,0.0,0.0,12,12,0,0.0
+Italy,Solar,5.823,6.506,0.683,11.7,259,264,5,1.9
+Italy,Solid Biomass,0.233,0.233,0.0,0.0,8,8,0,0.0
+Italy,Waste,0.376,0.376,0.0,0.0,7,7,0,0.0
+Italy,Wind,10.285,10.474,0.188,1.8,283,288,5,1.8
+Kosovo,Hydro,0.065,0.065,0.0,0.0,2,2,0,0.0
+Kosovo,Lignite,1.48,1.48,0.0,0.0,1,1,0,0.0
+Kosovo,Solar,0.166,0.167,0.001,0.8,5,4,-1,-20.0
+Kosovo,Wind,0.135,0.135,0.0,0.0,2,2,0,0.0
+Latvia,Battery,0.01,0.01,0.0,0.0,1,1,0,0.0
+Latvia,Hydro,1.536,1.536,0.0,0.0,3,3,0,0.0
+Latvia,Natural Gas,1.087,1.087,0.0,0.0,3,3,0,0.0
+Latvia,Solar,0.417,0.81,0.393,94.3,16,74,58,362.5
+Latvia,Solid Biomass,0.023,0.023,0.0,0.0,1,1,0,0.0
+Latvia,Wind,0.1,0.1,0.0,0.0,3,3,0,0.0
+Lithuania,Battery,0.201,0.201,0.0,0.0,2,2,0,0.0
+Lithuania,Hydro,1.001,1.001,0.0,0.0,2,2,0,0.0
+Lithuania,Natural Gas,1.508,1.508,0.0,0.0,4,4,0,0.0
+Lithuania,Nuclear,2.6,2.6,0.0,0.0,2,2,0,0.0
+Lithuania,Solar,0.3,0.872,0.572,190.9,32,104,72,225.0
+Lithuania,Solid Biomass,0.08,0.08,0.0,0.0,1,1,0,0.0
+Lithuania,Waste,0.064,0.064,0.0,0.0,3,3,0,0.0
+Lithuania,Wind,1.162,1.493,0.331,28.5,22,23,1,4.5
+Luxembourg,Hydro,1.294,1.294,0.0,0.0,1,1,0,0.0
+Luxembourg,Solar,0.054,0.101,0.047,86.9,16,21,5,31.2
+Luxembourg,Solid Biomass,0.003,0.003,0.0,0.0,1,1,0,0.0
+Luxembourg,Waste,0.015,0.015,0.0,0.0,1,1,0,0.0
+Luxembourg,Wind,0.148,0.132,-0.016,-11.1,9,8,-1,-11.1
+Moldova,Hard Coal,1.4,1.4,0.0,0.0,1,1,0,0.0
+Moldova,Hydro,0.064,0.064,0.0,0.0,2,2,0,0.0
+Moldova,Natural Gas,3.688,3.688,0.0,0.0,3,3,0,0.0
+Moldova,Solar,0.025,0.166,0.141,568.1,8,42,34,425.0
+Montenegro,Hydro,0.654,0.654,0.0,0.0,3,3,0,0.0
+Montenegro,Lignite,0.225,0.225,0.0,0.0,1,1,0,0.0
+Montenegro,Solar,0.003,0.026,0.023,715.6,1,5,4,400.0
+Montenegro,Wind,0.118,0.173,0.055,46.6,2,3,1,50.0
+Netherlands,Battery,0.269,0.269,0.0,0.0,19,19,0,0.0
+Netherlands,Biogas,0.16,0.16,0.0,0.0,3,3,0,0.0
+Netherlands,Hard Coal,7.765,7.765,0.0,0.0,7,7,0,0.0
+Netherlands,Heat Storage,0.022,0.022,0.0,0.0,1,1,0,0.0
+Netherlands,Hydrogen Storage,0.001,0.001,0.0,0.0,1,1,0,0.0
+Netherlands,Mechanical Storage,0.003,0.003,0.0,0.0,1,1,0,0.0
+Netherlands,Natural Gas,15.082,15.082,0.0,0.0,42,42,0,0.0
+Netherlands,Nuclear,0.575,0.575,0.0,0.0,2,2,0,0.0
+Netherlands,Oil,0.107,0.107,0.0,0.0,1,1,0,0.0
+Netherlands,Solar,4.799,7.312,2.513,52.4,222,535,313,141.0
+Netherlands,Solid Biomass,0.776,0.717,-0.059,-7.6,9,8,-1,-11.1
+Netherlands,Waste,0.696,0.696,0.0,0.0,10,10,0,0.0
+Netherlands,Wind,12.149,12.61,0.461,3.8,147,150,3,2.0
+North Macedonia,Hydro,0.579,0.579,0.0,0.0,10,10,0,0.0
+North Macedonia,Lignite,0.824,0.824,0.0,0.0,2,2,0,0.0
+North Macedonia,Natural Gas,0.22,0.22,0.0,0.0,1,1,0,0.0
+North Macedonia,Oil,0.198,0.198,0.0,0.0,1,1,0,0.0
+North Macedonia,Solar,0.297,0.559,0.262,88.2,34,74,40,117.6
+North Macedonia,Wind,0.073,0.546,0.473,647.9,2,5,3,150.0
+Norway,Battery,0.006,0.006,0.0,0.0,6,6,0,0.0
+Norway,Hydro,33.38,33.38,0.0,0.0,947,947,0,0.0
+Norway,Hydrogen Storage,0.003,0.003,0.0,0.0,4,4,0,0.0
+Norway,Natural Gas,0.933,0.933,0.0,0.0,4,4,0,0.0
+Norway,Solar,0.001,0.036,0.034,2457.1,1,9,8,800.0
+Norway,Wind,6.301,6.197,-0.103,-1.6,60,57,-3,-5.0
+Poland,Battery,0.016,0.016,0.0,0.0,4,4,0,0.0
+Poland,Hard Coal,25.255,25.255,0.0,0.0,49,49,0,0.0
+Poland,Hydro,2.258,2.258,0.0,0.0,34,34,0,0.0
+Poland,Lignite,11.729,11.729,0.0,0.0,7,7,0,0.0
+Poland,Natural Gas,7.952,7.952,0.0,0.0,26,26,0,0.0
+Poland,Solar,2.64,9.318,6.679,253.0,293,2386,2093,714.3
+Poland,Solid Biomass,0.771,0.771,0.0,0.0,9,9,0,0.0
+Poland,Waste,0.016,0.016,0.0,0.0,1,1,0,0.0
+Poland,Wind,10.211,10.476,0.264,2.6,222,229,7,3.2
+Portugal,Battery,0.058,0.058,0.0,0.0,8,8,0,0.0
+Portugal,Geothermal,0.024,0.024,0.0,0.0,2,2,0,0.0
+Portugal,Hard Coal,2.028,2.028,0.0,0.0,3,3,0,0.0
+Portugal,Hydro,9.164,9.164,0.0,0.0,88,88,0,0.0
+Portugal,Hydrogen Storage,0.001,0.001,0.0,0.0,1,1,0,0.0
+Portugal,Mechanical Storage,0.001,0.001,0.0,0.0,2,2,0,0.0
+Portugal,Natural Gas,4.268,4.268,0.0,0.0,12,12,0,0.0
+Portugal,Oil,0.466,0.466,0.0,0.0,5,5,0,0.0
+Portugal,Solar,3.566,3.94,0.374,10.5,91,157,66,72.5
+Portugal,Solid Biomass,0.384,0.384,0.0,0.0,8,8,0,0.0
+Portugal,Waste,0.076,0.076,0.0,0.0,2,2,0,0.0
+Portugal,Wind,6.014,6.439,0.425,7.1,193,217,24,12.4
+Romania,Battery,0.262,0.262,0.0,0.0,13,13,0,0.0
+Romania,Hard Coal,1.705,1.705,0.0,0.0,5,5,0,0.0
+Romania,Hydro,7.562,7.562,0.0,0.0,116,116,0,0.0
+Romania,Lignite,6.104,6.104,0.0,0.0,13,13,0,0.0
+Romania,Natural Gas,5.32,5.32,0.0,0.0,16,16,0,0.0
+Romania,Nuclear,1.411,1.411,0.0,0.0,2,2,0,0.0
+Romania,Oil,0.21,0.21,0.0,0.0,2,2,0,0.0
+Romania,Solar,2.176,4.804,2.628,120.8,237,389,152,64.1
+Romania,Solid Biomass,0.03,0.03,0.0,0.0,1,1,0,0.0
+Romania,Wind,5.511,6.211,0.7,12.7,46,51,5,10.9
+Serbia,Hydro,3.498,3.498,0.0,0.0,13,13,0,0.0
+Serbia,Lignite,4.817,4.817,0.0,0.0,5,5,0,0.0
+Serbia,Natural Gas,0.594,0.594,0.0,0.0,3,3,0,0.0
+Serbia,Solar,0.036,0.199,0.164,459.6,8,33,25,312.5
+Serbia,Solid Biomass,0.007,0.007,0.0,0.0,2,2,0,0.0
+Serbia,Waste,0.03,0.03,0.0,0.0,1,1,0,0.0
+Serbia,Wind,0.677,0.67,-0.007,-1.0,9,9,0,0.0
+Slovakia,Battery,0.005,0.005,0.0,0.0,1,1,0,0.0
+Slovakia,Geothermal,0.006,0.006,0.0,0.0,1,1,0,0.0
+Slovakia,Hard Coal,0.989,0.989,0.0,0.0,3,3,0,0.0
+Slovakia,Hydro,2.47,2.47,0.0,0.0,31,31,0,0.0
+Slovakia,Lignite,0.548,0.548,0.0,0.0,3,3,0,0.0
+Slovakia,Natural Gas,1.076,1.076,0.0,0.0,8,8,0,0.0
+Slovakia,Nuclear,3.965,3.965,0.0,0.0,9,9,0,0.0
+Slovakia,Solar,0.449,0.9,0.451,100.4,105,176,71,67.6
+Slovenia,Battery,0.063,0.063,0.0,0.0,6,6,0,0.0
+Slovenia,Hard Coal,0.124,0.124,0.0,0.0,1,1,0,0.0
+Slovenia,Hydro,1.246,1.246,0.0,0.0,23,23,0,0.0
+Slovenia,Lignite,1.48,1.48,0.0,0.0,2,2,0,0.0
+Slovenia,Natural Gas,0.604,0.604,0.0,0.0,3,3,0,0.0
+Slovenia,Nuclear,0.727,0.727,0.0,0.0,1,1,0,0.0
+Slovenia,Solar,0.03,0.094,0.064,212.0,7,35,28,400.0
+Spain,Battery,0.119,0.119,0.0,0.0,17,17,0,0.0
+Spain,Hard Coal,11.205,11.205,0.0,0.0,19,19,0,0.0
+Spain,Heat Storage,1.05,1.05,0.0,0.0,12,12,0,0.0
+Spain,Hydro,17.794,17.794,0.0,0.0,150,150,0,0.0
+Spain,Hydrogen Storage,0.003,0.003,0.0,0.0,5,5,0,0.0
+Spain,Lignite,2.729,2.729,0.0,0.0,7,7,0,0.0
+Spain,Natural Gas,27.83,27.83,0.0,0.0,61,61,0,0.0
+Spain,Nuclear,8.524,8.524,0.0,0.0,10,10,0,0.0
+Spain,Oil,1.084,1.084,0.0,0.0,11,11,0,0.0
+Spain,Solar,37.063,43.738,6.675,18.0,1298,1896,598,46.1
+Spain,Solid Biomass,0.641,0.611,-0.03,-4.7,14,13,-1,-7.1
+Spain,Waste,0.23,0.23,0.0,0.0,6,6,0,0.0
+Spain,Wind,31.339,32.493,1.154,3.7,761,780,19,2.5
+Sweden,Battery,0.543,0.543,0.0,0.0,35,35,0,0.0
+Sweden,Hard Coal,0.291,0.291,0.0,0.0,2,2,0,0.0
+Sweden,Hydro,14.951,14.951,0.0,0.0,182,182,0,0.0
+Sweden,Natural Gas,0.79,0.79,0.0,0.0,3,3,0,0.0
+Sweden,Nuclear,11.452,11.452,0.0,0.0,13,13,0,0.0
+Sweden,Oil,3.109,3.109,0.0,0.0,13,13,0,0.0
+Sweden,Solar,0.472,0.682,0.21,44.6,40,99,59,147.5
+Sweden,Solid Biomass,3.066,3.186,0.119,3.9,39,40,1,2.6
+Sweden,Waste,0.452,0.452,0.0,0.0,11,11,0,0.0
+Sweden,Wind,16.869,17.742,0.873,5.2,255,264,9,3.5
+Switzerland,Battery,0.068,0.068,0.0,0.0,5,5,0,0.0
+Switzerland,Biogas,0.011,0.011,0.0,0.0,1,1,0,0.0
+Switzerland,Hydro,18.083,18.083,0.0,0.0,531,531,0,0.0
+Switzerland,Hydrogen Storage,0.0,0.0,0.0,,1,1,0,0.0
+Switzerland,Mechanical Storage,0.001,0.001,0.0,0.0,1,1,0,0.0
+Switzerland,Natural Gas,0.099,0.099,0.0,0.0,2,2,0,0.0
+Switzerland,Nuclear,3.492,3.492,0.0,0.0,6,6,0,0.0
+Switzerland,Solar,0.097,0.097,0.0,-0.1,49,49,0,0.0
+Switzerland,Solid Biomass,0.076,0.076,0.0,0.0,4,4,0,0.0
+Switzerland,Waste,0.212,0.212,0.0,0.0,10,10,0,0.0
+Switzerland,Wind,0.055,0.055,0.0,0.0,3,3,0,0.0
+Ukraine,Battery,0.001,0.001,0.0,0.0,1,1,0,0.0
+Ukraine,Hard Coal,23.628,23.628,0.0,0.0,20,20,0,0.0
+Ukraine,Hydro,6.59,6.59,0.0,0.0,9,9,0,0.0
+Ukraine,Natural Gas,3.539,3.539,0.0,0.0,10,10,0,0.0
+Ukraine,Nuclear,17.635,17.635,0.0,0.0,19,19,0,0.0
+Ukraine,Solar,5.629,5.688,0.059,1.0,100,103,3,3.0
+Ukraine,Wind,0.527,0.567,0.04,7.6,13,14,1,7.7
+United Kingdom,Battery,6.242,6.242,0.0,0.0,192,192,0,0.0
+United Kingdom,Biogas,0.066,0.066,0.0,0.0,5,5,0,0.0
+United Kingdom,Geothermal,0.002,0.002,0.0,0.0,1,1,0,0.0
+United Kingdom,Hard Coal,35.857,35.857,0.0,0.0,25,25,0,0.0
+United Kingdom,Hydro,4.77,4.77,0.0,0.0,105,105,0,0.0
+United Kingdom,Hydrogen Storage,0.002,0.002,0.0,0.0,8,8,0,0.0
+United Kingdom,Mechanical Storage,0.005,0.005,0.0,0.0,1,1,0,0.0
+United Kingdom,Natural Gas,38.354,38.354,0.0,0.0,101,101,0,0.0
+United Kingdom,Nuclear,19.137,19.137,0.0,0.0,35,35,0,0.0
+United Kingdom,Oil,0.668,0.668,0.0,0.0,12,12,0,0.0
+United Kingdom,Other,0.035,0.035,0.0,0.0,1,1,0,0.0
+United Kingdom,Solar,12.09,13.68,1.59,13.2,1194,1240,46,3.9
+United Kingdom,Solid Biomass,4.154,4.154,0.0,0.0,32,32,0,0.0
+United Kingdom,Waste,1.948,1.948,0.0,0.0,55,55,0,0.0
+United Kingdom,Wind,37.802,39.284,1.482,3.9,669,734,65,9.7

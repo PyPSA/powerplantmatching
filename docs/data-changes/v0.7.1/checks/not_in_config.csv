@@ -1,0 +1,7 @@
+Category,Value,Entries old,Entries new,Entries delta,Capacity old [GW],Capacity new [GW],Capacity delta [GW]
+Set,Store,1836,1835,-1,173.757,172.369,-1.388
+Technology,Not Found,2,2,0,0.086,0.086,0.0
+Technology,Pv,1485,1485,0,9.276,9.276,0.0
+Technology,Unknown,15,15,0,2.149,2.149,0.0
+Technology,not found,4,4,0,0.211,0.211,0.0
+Technology,unknown,4,4,0,0.525,0.525,0.0

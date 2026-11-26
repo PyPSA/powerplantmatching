@@ -1,0 +1,14 @@
+Category,Value,Entries old,Entries new,Entries delta,Capacity old [GW],Capacity new [GW],Capacity delta [GW]
+Set,Store,3599,6863,3264,174.653,198.669,24.015
+Technology,CAES,1,1,0,0.001,0.001,0.0
+Technology,Csp,30,31,1,2.064,2.074,0.01
+Technology,Fe,0,1,1,0.0,0.01,0.01
+Technology,Flywheel,0,3,3,0.0,0.004,0.004
+Technology,Laes,0,1,1,0.0,0.005,0.005
+Technology,Li,1510,4353,2843,15.327,21.846,6.52
+Technology,Molten Salt,16,17,1,1.068,1.069,0.001
+Technology,NaNiCl,3,2,-1,0.009,0.001,-0.008
+Technology,NaS,5,12,7,0.048,0.049,0.001
+Technology,NiCd,7,20,13,0.006,0.009,0.003
+Technology,Pb,43,41,-2,0.135,0.125,-0.01
+Technology,V,5,5,0,0.004,0.004,0.0

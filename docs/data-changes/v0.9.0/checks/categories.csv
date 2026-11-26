@@ -1,0 +1,16 @@
+Category,Value,Only in,Entries,Capacity [GW]
+Fueltype / Technology,Battery / Fe,new,1,0.01
+Fueltype / Technology,Battery / PV,new,2,0.054
+Fueltype / Technology,Hydro / Combustion Engine,new,1,0.0
+Fueltype / Technology,Hydrogen Storage / Reservoir,new,1,0.0
+Fueltype / Technology,Mechanical Storage / Flywheel,new,3,0.004
+Fueltype / Technology,Mechanical Storage / Laes,new,1,0.005
+Fueltype / Technology,Solar / Li,old,1,0.014
+Fueltype / Technology,Solar / Onshore,new,3,0.034
+Fueltype / Technology,Solid Biomass / Li,old,2,0.078
+Fueltype / Technology,Solid Biomass / PV,new,5,0.577
+Fueltype / Technology,Waste / OCGT,new,1,0.0
+Fueltype / Technology,Wind / Steam Turbine,new,2,0.006
+Technology,Fe,new,1,0.01
+Technology,Flywheel,new,3,0.004
+Technology,Laes,new,1,0.005

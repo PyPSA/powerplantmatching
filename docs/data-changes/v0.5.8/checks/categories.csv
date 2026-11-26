@@ -1,0 +1,17 @@
+Category,Value,Only in,Entries,Capacity [GW]
+Fueltype / Technology,Bioenergy / Onshore,new,1,0.012
+Fueltype / Technology,Geothermal / Steam Turbine,new,6,0.375
+Fueltype / Technology,Hydro / Unknown,new,13,1.947
+Fueltype / Technology,Lignite / CCGT,old,4,2.449
+Fueltype / Technology,Natural Gas / not found,old,8,0.373
+Fueltype / Technology,Other / Onshore,new,1,0.079
+Fueltype / Technology,Solar / Pv,new,186,7.945
+Fueltype / Technology,Wind / Offshore Floating,new,1,1.2
+Fueltype / Technology,Wind / Offshore Hard Mount,new,26,6.739
+Fueltype / Technology,Wind / Offshore Mount Unknown,new,5,0.259
+Technology,Offshore Floating,new,1,1.2
+Technology,Offshore Hard Mount,new,26,6.739
+Technology,Offshore Mount Unknown,new,5,0.259
+Technology,Pv,new,186,7.945
+Technology,Unknown,new,13,1.947
+Technology,not found,old,8,0.373
