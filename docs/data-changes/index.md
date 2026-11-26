@@ -33,8 +33,8 @@ path = pm.changes.write_report(
 print(path)  # changes/report.html, open it in a browser
 ```
 
-This writes the folder `changes` with the layout above.
-`report.html` is the same page as in the docs and can be directly opened in a browser (The page needs internet for it to work).
+This writes the folder `changes` with the CSV tables, the figures as HTML files, `map.html` and `report.html`.
+`report.html` is the same page as in the docs and can be directly opened in a browser (the page needs internet for it to work).
 
 In a Jupyter notebook, `pm.changes.figures()` returns the figures as plotly figures, keyed by section and table:
 
@@ -59,9 +59,9 @@ write_map(
 
 ## Run for a release (maintainers only)
 
-When a release is triggered in the repository, it only commits the necessary data to the repository ( the CSV tables and `release.json` with the old and the new release and the reference year of the status table).
-When the docs are built, the MkDocs generates the necessary plots and markdown files via a hook in `docs/hooks.py` and also adds a button to the release notes.
-The release pipeline only writes the files if the `powerplants.csv` differ between the new and the previous release; non-data-changing releases have no page with data changes.
+When a release is triggered in the repository, it only commits the necessary data to the repository (the CSV tables and `release.json` with the old and the new release and the reference year of the status table).
+When the docs are built, MkDocs generates the necessary plots and markdown files via a hook in `docs/hooks.py` and also adds a button to the release notes.
+The release pipeline only writes the files if `powerplants.csv` differs between the new and the previous release; non-data-changing releases have no page with data changes.
 
 To write a page by hand, e.g. for a missed release or to regenerate one, run from the repository root and commit the folder (CSV tables and `release.json`).
 v0.5.0 is the first release with a dataset, so the oldest release to compare with:
