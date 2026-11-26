@@ -7,7 +7,10 @@ site_url: https://github.com/PyPSA/powerplantmatching
 repo_url: https://github.com/PyPSA/powerplantmatching
 repo_name: PyPSA/powerplantmatching
 edit_uri: edit/master/docs/
-exclude_docs: hooks.py
+exclude_docs: |
+  hooks.py
+  # Release metadata, read by docs/hooks.py from disk
+  data-changes/*/release.json
 
 nav:
   - Home:

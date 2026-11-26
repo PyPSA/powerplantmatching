@@ -20,9 +20,14 @@ from powerplantmatching.changes import (
     _number,
     compare,
     figures,
+    read_release,
+    read_tables,
+    render,
+    render_release,
     write_map,
     write_release_report,
     write_report,
+    write_tables,
 )
 from powerplantmatching.collection import matched_data_url
 from powerplantmatching.core import _package_data, get_config
@@ -653,13 +658,18 @@ def test_matrix_figure_data(comparison: Comparison) -> None:
     hover = pd.DataFrame(entries.text, index=entries.y, columns=entries.x)
     assert hover.loc["Spain", "Solar"].endswith("Entries delta: +1")
     assert capacity.colorbar.ticktext == (
-        "-0.1", "-0.01", "-0.001", "+0", "+0.001", "+0.01", "+0.1"
+        "-0.1",
+        "-0.01",
+        "-0.001",
+        "+0",
+        "+0.001",
+        "+0.01",
+        "+0.1",
     )
 
 
-def read_map_data(path: Path, block: str) -> object:
-    """Parse a JSON block of a written map."""
-    html = path.read_text()
+def read_map_data(html: str, block: str) -> object:
+    """Parse a JSON block of a map page."""
     match = re.search(
         f'<script type="application/json" id="{block}">(.*?)</script>', html
     )
@@ -957,8 +967,9 @@ def test_write_report_without_html(comparison: Comparison, tmp_path: Path) -> No
 
 
 @pytest.mark.parametrize("given", [True, False], ids=["new-given", "new-fetched"])
+@pytest.mark.parametrize("year", [2020, None])
 def test_write_release_report(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, given: bool
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, given: bool, year: int | None
 ) -> None:
     # Released datasets by tag, the new one only if not given
     releases = {"v0.9.0": OLD} | ({} if given else {"v0.9.1": NEW})
@@ -967,17 +978,79 @@ def test_write_release_report(
         lambda from_url: releases[from_url],
     )
     path = write_release_report(
-        "v0.9.0", "v0.9.1", new=NEW if given else None, folder=tmp_path, year=2020
+        "v0.9.0", "v0.9.1", new=NEW if given else None, folder=tmp_path, year=year
     )
-    assert path == tmp_path / "v0.9.1" / "index.md"
-    index = path.read_text()
-    assert index.startswith("# Data changes from v0.9.0 to v0.9.1\n")
-    assert "### Status in 2020\n" in index
-    assert not (path.parent / "report.html").exists()
-    assert read_map_data(path.parent / "map.html", "ppm-data") == {
+    assert path == tmp_path / "v0.9.1"
+    # Data only, the page is rendered by the docs
+    written = {p.relative_to(path).as_posix() for p in path.rglob("*") if p.is_file()}
+    tables = {
+        f"{section}/{stem}.csv"
+        for group in (FIGURE_TABLES, CSV_ONLY_TABLES)
+        for section, stems in group.items()
+        for stem in stems
+    }
+    assert written == tables | {"release.json"}
+    assert read_release(path) == {
+        "old": "v0.9.0",
+        "new": "v0.9.1",
+        "year": year or pd.Timestamp.now().year,
+    }
+
+
+def test_render_release(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        "powerplantmatching.collection.powerplants", lambda from_url: OLD
+    )
+    path = write_release_report("v0.9.0", "v0.9.1", new=NEW, folder=tmp_path, year=2020)
+    files = render_release(path)
+    assert set(files) == {"index.md", "map.html"} | {
+        f"{key}.html" for key in figures(compare(OLD, NEW))
+    }
+    assert files["index.md"].startswith("# Data changes from v0.9.0 to v0.9.1\n")
+    assert "### Status in 2020\n" in files["index.md"]
+    assert read_map_data(files["map.html"], "ppm-data") == {
         "new": {"label": "v0.9.1", "url": URL_NEW},
         "old": {"label": "v0.9.0", "url": URL_OLD},
     }
+
+
+# Without the technology ST, which is not in the config, a version compared
+# with itself has empty tables of category values (checks)
+WITHOUT_ST = OLD[OLD.Technology != "ST"]
+
+
+@pytest.mark.parametrize(
+    "old, new, empty",
+    [
+        (OLD, NEW, []),
+        (WITHOUT_ST, WITHOUT_ST, ["categories", "not_in_config"]),
+        # A name "NA" is text, not a missing value
+        (OLD, NEW.replace({"Name": {"I": "NA"}}), []),
+    ],
+    ids=["fixture", "empty-tables", "text-NA"],
+)
+def test_read_tables(
+    tmp_path: Path, old: pd.DataFrame, new: pd.DataFrame, empty: list[str]
+) -> None:
+    comparison = compare(old, new, year=2020)
+    assert [stem for stem, t in comparison.checks.items() if t.empty] == empty
+    write_tables(comparison, tmp_path)
+    read = read_tables(tmp_path, 2020)
+    assert read.year == 2020
+    assert {s: list(t) for s, t in read.sections().items()} == {
+        s: list(t) for s, t in comparison.sections().items()
+    }
+    for section, tables in comparison.sections().items():
+        for stem, table in tables.items():
+            pd.testing.assert_frame_equal(read.sections()[section][stem], table)
+    # The entries of the total stay integers next to the capacity
+    total = read.overview["total"][["old", "new", "delta"]]
+    assert total.map(type).to_numpy().tolist() == [[float] * 3, [int] * 3]
+    pages = {
+        version: render(c, "Test", MapSource(URL_NEW, "new"), MapSource(URL_OLD, "old"))
+        for version, c in [("written", comparison), ("read", read)]
+    }
+    assert pages["read"] == pages["written"]
 
 
 def test_write_report_map_old_requires_map_new(
@@ -1055,8 +1128,10 @@ def test_write_map(
 ) -> None:
     path = write_map(tmp_path / "map", new, old)
     assert path == tmp_path / "map" / "map.html"
-    assert read_map_data(path, "ppm-colors") == get_config()["fuel_to_color"]
-    data = read_map_data(path, "ppm-data")
+    assert (
+        read_map_data(path.read_text(), "ppm-colors") == get_config()["fuel_to_color"]
+    )
+    data = read_map_data(path.read_text(), "ppm-data")
     counted = {
         key: {**version, "rows": len(version["rows"])}
         if version is not None and "rows" in version
@@ -1068,7 +1143,7 @@ def test_write_map(
 
 def test_write_map_rows(tmp_path: Path) -> None:
     path = write_map(tmp_path, MapSource(MAP_NEW, "new"))
-    last = read_map_data(path, "ppm-data")["new"]["rows"][-1]
+    last = read_map_data(path.read_text(), "ppm-data")["new"]["rows"][-1]
     # NaN is null, and the name with "</script>" stays inside the JSON block
     name = "</script><script>alert(1)</script>"
     assert last == [name, None, "Solar", None, None, None, None, 51.0, 11.0]

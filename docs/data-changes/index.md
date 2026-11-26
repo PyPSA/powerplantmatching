@@ -20,13 +20,15 @@ Each table is also a CSV file next to the page, each figure a standalone HTML fi
 
 ```text
 <report>/
-  index.md, map.html, report.html (not written for the release pages)
+  index.md, map.html, report.html (local reports only), release.json (release pages only)
   overview/      total, country_fueltype, sources, status
   by_country/    capacity, entries, completeness, oldest_newest (CSV only),
                  capacity_share, entry_share
   by_fueltype/   capacity, entries, completeness, oldest_newest (CSV only)
   checks/        counts, categories, not_in_config (CSV only)
 ```
+
+A release page commits only its data: the CSV tables and `release.json` with the old and the new release and the reference year of the status table. When the docs are built, the MkDocs hook `docs/hooks.py` generates `index.md`, the figure HTML files and `map.html` from them, so a change of the page layout applies to all release pages. A local report of `write_report` (see below) holds all files.
 
 ## Run locally
 
@@ -72,15 +74,17 @@ write_map(
 
 ## Add a release
 
-The release workflow writes the page of a new release to `docs/data-changes/<tag>/` and commits it with the dataset. The docs add the page to the navigation, to the list below and as a button to the [release notes](../release-notes.md). Nothing to edit.
+The release workflow writes the data of the page of a new release to `docs/data-changes/<tag>/` and commits it with the dataset, but only if `powerplants.csv` differs from the previous release: a release with an unchanged dataset has no page. The docs render the page and add it to the navigation, to the list below and as a button to the [release notes](../release-notes.md). Nothing to edit.
 
-To write a page by hand, e.g. for a missed release or to regenerate one, run from the repository root and commit the folder:
+To write a page by hand, e.g. for a missed release or to regenerate one, run from the repository root and commit the folder (CSV tables and `release.json`). v0.5.0 is the first release with a dataset, so the oldest release to compare with:
 
 ```python
 import powerplantmatching as pm
 
 pm.changes.write_release_report("v0.9.1", "v0.9.2")
 ```
+
+For a past release pass its year as `year=` (the workflow uses the current year), and skip a release whose `powerplants.csv` is unchanged, as the workflow does.
 
 ## Releases
 

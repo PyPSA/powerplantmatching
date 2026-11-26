@@ -14,30 +14,42 @@ entries and completeness.
 Plot: `figures` draws one interactive plotly figure per table that has a
 builder in `FIGURES`, keyed "<section>/<stem>" (`_key`).
 
-Write: `write_report` writes a self-contained folder that works anywhere
-under `docs/`: an `index.md` for MkDocs, a standalone `report.html` of the
-same text, and per table its CSV file with plain numbers and its figure as
-standalone HTML file, embedded as iframe above the table, which starts
-collapsed in the tabs by country and fuel type. Each section of
-`SECTIONS` writes its tables and returns its markdown. Tables are rendered
-by `_markdown`, with SI number format and the change in % in brackets behind
-the delta. The table script `package_data/tables.js` adds sorting and
-shading to the tables, in the docs and in `report.html`. The optional map of
-all entries is a standalone `map.html` written by `write_map`, embedded as
-second section. `write_release_report` writes the report of a release.
+Tables: `write_tables` writes each table as CSV file with plain numbers,
+`read_tables` reads such a folder back into an equal `Comparison`, using the
+schema of `TABLES` (index levels) and `_dtype` (column types).
+
+Render: `render` turns a comparison into the text of the report files,
+without any I/O: an `index.md` for MkDocs and per figure a standalone HTML
+file, embedded as iframe above its table, which starts collapsed in the
+tabs by country and fuel type. Each section of `SECTIONS` returns its
+markdown. Tables are rendered by `_markdown`, with SI number format and the
+change in % in brackets behind the delta. The table script
+`package_data/tables.js` adds sorting and shading to the tables, in the docs
+and in `report.html`. The optional map of all entries is a standalone
+`map.html` (`_map_page`), embedded as second section.
+
+Write: `write_report` writes the tables and the rendered files to a
+self-contained folder that works anywhere under `docs/`, plus a standalone
+`report.html` of the same text. `write_map` writes the map alone. A release
+page is data only: `write_release_report` writes the tables and the release
+metadata `release.json` (`read_release`), and the MkDocs hook
+(docs/hooks.py) renders the page from them at docs build time with
+`render_release`, so a change of the layout applies to all release pages.
 
 Folder layout, the files of a table at `<section>/<stem>.{csv,html}`:
 
-    index.md, report.html, map.html (with a map)
+    index.md, report.html, map.html (with a map), release.json (release)
     overview/      total, country_fueltype, sources, status
     by_country/    capacity, entries, completeness, oldest_newest (CSV only),
                    capacity_share, entry_share
     by_fueltype/   capacity, entries, completeness, oldest_newest (CSV only)
     checks/        counts, categories, not_in_config (CSV only)
 
+A release folder holds only the CSV files and `release.json`.
+
 A new report section adds one field to `Comparison`, fills it in `compare`,
-registers its figure builders in `FIGURES` and adds one section function to
-`SECTIONS`.
+adds its tables to `TABLES`, registers its figure builders in `FIGURES` and
+adds one section function to `SECTIONS`.
 """
 
 import json
@@ -47,7 +59,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from html import escape
 from pathlib import Path
-from typing import TypeVar
+from typing import TypedDict, TypeVar
 
 import markdown
 import numpy as np
@@ -76,6 +88,38 @@ TABS = {
 
 # CSV stem -> tab label
 LABELS = {stem: label for label, stem in TABS.items()}
+
+# Tables of `compare` per section (field of `Comparison`) in report order, with
+# the number of their index levels, which their CSV files do not keep
+TABLES = {
+    "overview": {"total": 1, "country_fueltype": 2, "sources": 1, "status": 1},
+    "by_country": {stem: 1 for stem in TABS.values()},
+    "by_fueltype": {"capacity": 1, "entries": 1, "completeness": 1, "oldest_newest": 1},
+    "checks": {"counts": 1, "categories": 2, "not_in_config": 2},
+}
+
+# Metadata of a release folder: old and new tag and the year of the comparison
+RELEASE = "release.json"
+
+
+class Release(TypedDict):
+    """
+    Metadata of a release folder of `write_release_report`.
+
+    Attributes
+    ----------
+    old : str
+        Tag of the old release.
+    new : str
+        Tag of the new release.
+    year : int
+        Reference year of the status table.
+    """
+
+    old: str
+    new: str
+    year: int
+
 
 # Share tables: the markdown shows them long, one row per group and fuel type
 # (see `_long_shares`), so they fit the page. The CSV file keeps the wide table.
@@ -450,14 +494,16 @@ def _shares(old: pd.Series, new: pd.Series) -> pd.DataFrame:
         .sort_values(ascending=False, kind="stable")
         .index
     )
-    old_share, new_share, delta = _percent(
-        *(
-            pivot.reindex(columns=fuels, fill_value=0).pipe(
-                lambda p: p.div(p.sum(axis=1), axis=0)
-            )
-            for pivot in (old_pivot, new_pivot)
+
+    def fractions(pivot: pd.DataFrame) -> pd.DataFrame:
+        total = pivot.sum(axis=1)
+        # NaN for a zero total. 0 / 0 may give a NaN with the sign bit set,
+        # which a figure keeps, but a CSV file does not (`read_tables`).
+        return pivot.reindex(columns=fuels, fill_value=0).div(
+            total.where(total != 0), axis=0
         )
-    )
+
+    old_share, new_share, delta = _percent(fractions(old_pivot), fractions(new_pivot))
     table = pd.concat(
         [
             share.add_suffix(suffix)
@@ -1116,8 +1162,10 @@ def _long_shares(table: pd.DataFrame, pairs: pd.MultiIndex) -> pd.DataFrame:
         names=["Fueltype", None],
     )
     long = wide.stack("Fueltype", future_stack=True)
-    present = long.index.isin(pairs) & long[SHARE_COLUMNS[:2]].notna().any(axis=1)
-    return long[present]
+    # Matched by the labels with MISSING for NaN, as a NaN label may not match
+    # itself, depending on how the index holds it (e.g. read from a CSV file)
+    paired = _group_labels(long).index.isin(_group_labels(pairs.to_frame()).index)
+    return long[paired & long[SHARE_COLUMNS[:2]].notna().any(axis=1)]
 
 
 def _listed(words: list[str]) -> str:
@@ -1145,15 +1193,27 @@ def _largest(capacity: pd.Series, entries: pd.Series) -> str:
 
 @dataclass(frozen=True)
 class _Report:
-    """A comparison, its figures and the folder its report is written to."""
+    """A comparison and its figures."""
 
     comparison: Comparison
     figures: dict[str, go.Figure]
-    folder: Path
 
     def tables(self, section: str) -> dict[str, pd.DataFrame]:
         """Tables of a section (field of `Comparison`) by stem."""
         return self.comparison.sections()[section]
+
+
+def _figure_page(key: str, fig: go.Figure) -> str:
+    """Standalone page of the figure of table `key` (`FIGURE_PAGE`)."""
+    # No mode bar: it would overlap the legend on top. A fixed div id keeps
+    # the page the same across runs.
+    div = fig.to_html(
+        full_html=False,
+        include_plotlyjs="cdn",
+        config={"displayModeBar": False},
+        div_id=key.replace("/", "-"),
+    )
+    return FIGURE_PAGE.format(div=div)
 
 
 def _entry(
@@ -1165,34 +1225,17 @@ def _entry(
     collapse: bool = False,
 ) -> str:
     """
-    Write a table to <key>.csv, with plain numbers, and its figure, if any, to
-    <key>.html in the report folder. Return its markdown: the figure as
-    iframe with `title` and the height of the figure, then the table (unless
+    Markdown of a table: its figure, if any, as iframe of <key>.html with
+    `title` and the height of the figure, then the table (unless
     `show_table` is False). With `collapse`, a table below a figure starts
     collapsed (`COLLAPSED`). Share tables are shown long, see `_long_shares`.
     """
     key = _key(section, stem)
     table = report.tables(section)[stem]
-    path = report.folder / key
-    path.parent.mkdir(exist_ok=True)
-    table.to_csv(path.with_suffix(".csv"))
     parts = []
     if key in report.figures:
-        fig = report.figures[key]
-        # No mode bar: it would overlap the legend on top. A fixed div id keeps
-        # the file the same across runs.
-        div = fig.to_html(
-            full_html=False,
-            include_plotlyjs="cdn",
-            config={"displayModeBar": False},
-            div_id=key.replace("/", "-"),
-        )
-        path.with_suffix(".html").write_text(
-            FIGURE_PAGE.format(div=div), encoding="utf-8"
-        )
-        parts.append(
-            IFRAME.format(src=f"{key}.html", title=title, height=fig.layout.height)
-        )
+        height = report.figures[key].layout.height
+        parts.append(IFRAME.format(src=f"{key}.html", title=title, height=height))
     if show_table:
         if stem in SHARES:
             pairs = report.comparison.overview["country_fueltype"].index
@@ -1237,7 +1280,8 @@ def _overview_section(report: _Report) -> str:
     matrix = _key("overview", "country_fueltype")
     pairs = overview["country_fueltype"]
     return (
-        _heading("Overview") + f"The total capacity changes from {_number(capacity['old'], ',.1f')} GW to "
+        _heading("Overview")
+        + f"The total capacity changes from {_number(capacity['old'], ',.1f')} GW to "
         f"{_number(capacity['new'], ',.1f')} GW "
         f"({_number(capacity['delta'], '+z,.1f')} GW). "
         f"The number of entries changes from {_number(entries['old'], ',d')} to "
@@ -1304,7 +1348,9 @@ def _country_section(report: _Report) -> str:
 
 
 def _fueltype_section(report: _Report) -> str:
-    return _group_section(report, "by_fueltype", "By fuel type", "fuel type", "fuel types")
+    return _group_section(
+        report, "by_fueltype", "By fuel type", "fuel type", "fuel types"
+    )
 
 
 def _checks_section(report: _Report) -> str:
@@ -1346,7 +1392,7 @@ def _checks_section(report: _Report) -> str:
 
 
 # Sections of the report page in order, the map goes after the first. Each
-# writes its tables to the folder and returns its markdown.
+# returns its markdown.
 SECTIONS: list[Callable[[_Report], str]] = [
     _overview_section,
     _country_section,
@@ -1384,6 +1430,19 @@ def _fill(template: str, values: dict[str, str]) -> str:
     return page
 
 
+def _map_page(new: MapSource, old: MapSource | None = None) -> str:
+    """Page of the map of `write_map`."""
+    old_version = None if old is None else _map_version(old)
+    data = {"new": _map_version(new), "old": old_version}
+    return _fill(
+        "map.html",
+        {
+            "__PPM_COLORS__": _json_script(get_config()["fuel_to_color"]),
+            "__PPM_DATA__": _json_script(data),
+        },
+    )
+
+
 def write_map(folder: Path | str, new: MapSource, old: MapSource | None = None) -> Path:
     """
     Write a standalone interactive map of one or two versions to folder/map.html.
@@ -1415,19 +1474,146 @@ def write_map(folder: Path | str, new: MapSource, old: MapSource | None = None) 
     Path
         Path of the written map.
     """
-    old_version = None if old is None else _map_version(old)
-    data = {"new": _map_version(new), "old": old_version}
-    page = _fill(
-        "map.html",
-        {
-            "__PPM_COLORS__": _json_script(get_config()["fuel_to_color"]),
-            "__PPM_DATA__": _json_script(data),
-        },
-    )
     path = Path(folder) / "map.html"
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(page, encoding="utf-8")
+    path.write_text(_map_page(new, old), encoding="utf-8")
     return path
+
+
+def write_tables(comparison: Comparison, folder: Path | str) -> None:
+    """
+    Write each table of the comparison as CSV file with plain numbers.
+
+    The table of section (field of `Comparison`) and stem is written to
+    `folder/<section>/<stem>.csv`, e.g. `by_country/capacity.csv`, with its
+    index as first columns. `read_tables` reads the folder back.
+
+    Parameters
+    ----------
+    comparison : Comparison
+        Result of `compare`.
+    folder : Path or str
+        Output folder, created if missing. Existing files are overwritten.
+    """
+    for section, tables in comparison.sections().items():
+        for stem, table in tables.items():
+            path = Path(folder) / f"{_key(section, stem)}.csv"
+            path.parent.mkdir(parents=True, exist_ok=True)
+            table.to_csv(path)
+
+
+def _dtype(column: str) -> str:
+    """
+    Dtype of a table column of `compare` by its name, as its CSV file does not
+    keep it for an empty table or a nullable integer: Int64 for years
+    (DateIn), float64 for capacities, % and pp, int64 for counts (Entries and
+    the old, new and delta of the checks), str for text and index columns.
+    """
+    if column.endswith("DateIn"):
+        return "Int64"
+    if re.search(r"\[(GW|%|pp)\]$", column):
+        return "float64"
+    if re.fullmatch(r"Entries( old| new| delta)?|old|new|delta", column):
+        return "int64"
+    return "str"
+
+
+def _read_table(folder: Path, section: str, stem: str) -> pd.DataFrame:
+    """Table `stem` of `section` from its CSV file of `write_tables`."""
+    path = folder / f"{_key(section, stem)}.csv"
+    total = (section, stem) == ("overview", "total")
+    names = pd.read_csv(path, nrows=0).columns
+    table = pd.read_csv(
+        path,
+        index_col=list(range(TABLES[section][stem])),
+        # The columns of the total hold numbers of different dtype, set below
+        dtype=None if total else {name: _dtype(name) for name in names},
+        # Blank is NaN, e.g. no country, but text like "NA" stays
+        keep_default_na=False,
+        na_values=[""],
+        float_precision="round_trip",
+    )
+    if not total:
+        return table
+    # Each row of the total is a quantity of its own dtype (capacity float,
+    # entries int), in object columns as `_total` returns them
+    numbers = table.drop(columns="delta [%]").T
+    numbers = numbers.astype({q: _dtype(q) for q in numbers}).astype(object).T
+    return numbers.join(table["delta [%]"])
+
+
+def read_tables(folder: Path | str, year: int) -> Comparison:
+    """
+    Read the CSV files of `write_tables` back into the comparison.
+
+    The tables equal those of `compare`, with the same index, dtypes and
+    order of rows and columns, so they render the same report.
+
+    Parameters
+    ----------
+    folder : Path or str
+        Folder written by `write_tables`.
+    year : int
+        Reference year of the status table, see `compare`.
+
+    Returns
+    -------
+    Comparison
+        All tables of the report.
+    """
+    return Comparison(
+        **{
+            section: {stem: _read_table(Path(folder), section, stem) for stem in stems}
+            for section, stems in TABLES.items()
+        },
+        year=year,
+    )
+
+
+def render(
+    comparison: Comparison,
+    title: str,
+    map_new: MapSource | None = None,
+    map_old: MapSource | None = None,
+) -> dict[str, str]:
+    """
+    Render the report of the comparison, without writing files.
+
+    The report is `index.md` for MkDocs and, per figure (see `figures`), its
+    standalone page `<section>/<stem>.html`, e.g. `by_country/capacity.html`.
+    With `map_new`, it also has `map.html` (see `write_map`), embedded as
+    second section. `index.md` links the CSV files of `write_tables` next
+    to it. Figures, map and the table script load their libraries from the
+    internet.
+
+    Parameters
+    ----------
+    comparison : Comparison
+        Result of `compare`.
+    title : str
+        Title of the page.
+    map_new : MapSource, optional
+        New version of the map. Without it, the report has no map.
+    map_old : MapSource, optional
+        Old version of the map, requires `map_new`.
+
+    Returns
+    -------
+    dict[str, str]
+        Text of each file by its path relative to the report folder.
+    """
+    if map_new is None and map_old is not None:
+        raise ValueError("`map_old` requires `map_new`.")
+    report = _Report(comparison, figures(comparison))
+    sections = [section(report) for section in SECTIONS]
+    pages = {
+        f"{key}.html": _figure_page(key, fig) for key, fig in report.figures.items()
+    }
+    if map_new is not None:
+        pages["map.html"] = _map_page(map_new, map_old)
+        # After the overview
+        sections.insert(1, MAP_SECTION)
+    return {"index.md": "\n".join([f"# {title}\n", *sections]), **pages}
 
 
 def write_report(
@@ -1441,12 +1627,13 @@ def write_report(
     """
     Write the comparison as a report folder for the docs and for local use.
 
-    The folder holds `index.md` for MkDocs and, per table, its CSV file and
-    its figure (see `figures`) at `<section>/<stem>.{csv,html}`, e.g.
-    `by_country/capacity.csv`. With `map_new`, it also holds `map.html` (see
-    `write_map`), embedded as second section. With `html`, `report.html` is
-    the same page for any browser without MkDocs. Figures, map and the table
-    script load their libraries from the internet.
+    The folder holds the CSV files of `write_tables` and the files of
+    `render`: `index.md` for MkDocs, the figure of each table at
+    `<section>/<stem>.html` next to its CSV file, e.g.
+    `by_country/capacity.{csv,html}`, and with `map_new` the map `map.html`.
+    With `html`, `report.html` is the same page for any browser without
+    MkDocs. Figures, map and the table script load their libraries from the
+    internet.
 
     Parameters
     ----------
@@ -1468,24 +1655,21 @@ def write_report(
     Path
         Path of `report.html`, or of `index.md` without `html`.
     """
-    if map_new is None and map_old is not None:
-        raise ValueError("`map_old` requires `map_new`.")
+    # Before any file is written, as it checks the arguments
+    files = render(comparison, title, map_new, map_old)
     folder = Path(folder)
-    folder.mkdir(parents=True, exist_ok=True)
-    report = _Report(comparison, figures(comparison), folder)
-    sections = [section(report) for section in SECTIONS]
-    if map_new is not None:
-        write_map(folder, new=map_new, old=map_old)
-        # After the overview
-        sections.insert(1, MAP_SECTION)
-    text = "\n".join([f"# {title}\n", *sections])
-    index = folder / "index.md"
-    index.write_text(text, encoding="utf-8")
+    write_tables(comparison, folder)
+    for name, text in files.items():
+        path = folder / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding="utf-8")
     if not html:
-        return index
+        return folder / "index.md"
     # The same text as rendered by MkDocs, with the extensions of the docs
     body = markdown.markdown(
-        text, extensions=MARKDOWN_EXTENSIONS, extension_configs=MARKDOWN_CONFIG
+        files["index.md"],
+        extensions=MARKDOWN_EXTENSIONS,
+        extension_configs=MARKDOWN_CONFIG,
     )
     page = _fill(
         "report.html",
@@ -1511,11 +1695,13 @@ def write_release_report(
     year: int | None = None,
 ) -> Path:
     """
-    Write the report of release `new_tag` against `old_tag` to
-    folder/new_tag. `old` is read with pm.powerplants(from_url=old_tag),
-    `new` too unless given (the CI passes the dataset it just built).
-    Maps fetch both releases by URL (matched_data_url), html=False.
-    `year` defaults to the current year, i.e. the release year in the CI.
+    Write the data of the page of release `new_tag` against `old_tag` to
+    folder/new_tag: the CSV files of `write_tables` and `release.json` with
+    the tags and the year (see `read_release`). The MkDocs hook renders the
+    page from them with `render_release`. `old` is read with
+    pm.powerplants(from_url=old_tag), `new` too unless given (the CI passes
+    the dataset it just built). `year` defaults to the current year, i.e.
+    the release year in the CI.
 
     Parameters
     ----------
@@ -1526,23 +1712,66 @@ def write_release_report(
     new : pd.DataFrame, optional
         Dataset of the new release. Fetched by `new_tag` if not given.
     folder : Path or str, default "docs/data-changes"
-        Parent folder of the report folder `new_tag`.
+        Parent folder of the release folder `new_tag`.
     year : int, optional
         Reference year of the status table, see `compare`.
 
     Returns
     -------
     Path
-        Path of `index.md` in the report folder.
+        The release folder.
     """
     old = collection.powerplants(from_url=old_tag)
     if new is None:
         new = collection.powerplants(from_url=new_tag)
-    return write_report(
-        compare(old, new, year),
-        Path(folder) / new_tag,
-        title=f"Data changes from {old_tag} to {new_tag}",
-        map_new=MapSource(collection.matched_data_url(new_tag), new_tag),
-        map_old=MapSource(collection.matched_data_url(old_tag), old_tag),
-        html=False,
+    comparison = compare(old, new, year)
+    path = Path(folder) / new_tag
+    write_tables(comparison, path)
+    release = Release(old=old_tag, new=new_tag, year=comparison.year)
+    (path / RELEASE).write_text(json.dumps(release, indent=2) + "\n", encoding="utf-8")
+    return path
+
+
+def read_release(folder: Path | str) -> Release:
+    """
+    Metadata of a release folder of `write_release_report`.
+
+    Parameters
+    ----------
+    folder : Path or str
+        Release folder.
+
+    Returns
+    -------
+    Release
+        Tags of the old and the new release and the reference year.
+    """
+    return json.loads((Path(folder) / RELEASE).read_text(encoding="utf-8"))
+
+
+def render_release(folder: Path | str) -> dict[str, str]:
+    """
+    Render the page of a release folder of `write_release_report`.
+
+    The page is titled "Data changes from <old> to <new>", its map fetches
+    both releases by URL (`matched_data_url`).
+
+    Parameters
+    ----------
+    folder : Path or str
+        Release folder.
+
+    Returns
+    -------
+    dict[str, str]
+        Text of each file by its path relative to the release folder, see
+        `render`.
+    """
+    release = read_release(folder)
+    old, new = release["old"], release["new"]
+    return render(
+        read_tables(folder, release["year"]),
+        title=f"Data changes from {old} to {new}",
+        map_new=MapSource(collection.matched_data_url(new), new),
+        map_old=MapSource(collection.matched_data_url(old), old),
     )
