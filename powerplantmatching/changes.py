@@ -55,11 +55,11 @@ adds one section function to `SECTIONS`.
 import json
 import re
 import textwrap
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from html import escape
 from pathlib import Path
-from typing import TypedDict, TypeVar
+from typing import TypedDict, TypeVar, cast
 
 import markdown
 import numpy as np
@@ -518,7 +518,7 @@ def _shares(old: pd.Series, new: pd.Series) -> pd.DataFrame:
 def _share_columns(table: pd.DataFrame) -> dict[str, list[str]]:
     """Old, new and delta column of each fuel type of a share table, in table order."""
     delta = SHARE_SUFFIXES[-1]
-    fuels = [c.removesuffix(delta) for c in table if c.endswith(delta)]
+    fuels = [c.removesuffix(delta) for c in map(str, table) if c.endswith(delta)]
     return {fuel: [f"{fuel}{suffix}" for suffix in SHARE_SUFFIXES] for fuel in fuels}
 
 
@@ -556,7 +556,10 @@ def _sources(old: pd.DataFrame, new: pd.DataFrame) -> pd.DataFrame:
     """Capacity and entries per data source, an entry counts for each of its sources."""
     exploded = []
     for df in (old, new):
-        if "projectID" not in df or not df.projectID.map(type).eq(dict).all():
+        if (
+            "projectID" not in df
+            or not df.projectID.map(lambda v: isinstance(v, dict)).all()
+        ):
             raise ValueError("`projectID` must hold a dict of sources in every entry.")
         exploded.append(
             df[["Capacity"]].assign(Source=df.projectID.map(list)).explode("Source")
@@ -758,7 +761,8 @@ def _columns(table: pd.DataFrame, name: str) -> tuple[str, str, str, str | None]
     def find(suffix: str) -> str:
         pattern = rf"{re.escape(name)} {suffix}( \[[^]]+\])?"
         # Unpacking fails on a missing or ambiguous column
-        (column,) = [c for c in table if c != percent and re.fullmatch(pattern, c)]
+        columns = map(str, table)
+        (column,) = [c for c in columns if c != percent and re.fullmatch(pattern, c)]
         return column
 
     return (
@@ -771,11 +775,12 @@ def _columns(table: pd.DataFrame, name: str) -> tuple[str, str, str, str | None]
 
 def _quantities(table: pd.DataFrame) -> list[tuple[str, str, str, str | None]]:
     """`_columns` of each quantity of the table in column order, e.g. Capacity."""
-    names = [m[1] for c in table if (m := re.fullmatch(r"(.+) old( \[[^]]+\])?", c))]
+    pattern = r"(.+) old( \[[^]]+\])?"
+    names = [m[1] for c in map(str, table) if (m := re.fullmatch(pattern, c))]
     return [_columns(table, name) for name in names]
 
 
-def _hover(table: pd.DataFrame, columns: list[str | None]) -> pd.Series:
+def _hover(table: pd.DataFrame, columns: Sequence[str | None]) -> pd.Series:
     """
     Hover text per row: one line per column with its value as in the tables
     (deltas with sign, also +0), MISSING for NaN. A change in % goes in
@@ -868,7 +873,7 @@ def _total_figure(table: pd.DataFrame) -> go.Figure:
     One panel per quantity (row of the total table) with the bars old, new and
     delta, each labelled with its value, the delta also with its change in %.
     """
-    cells = {column: _cells(values, column)[0] for column, values in table.items()}
+    cells = {c: _cells(values, str(c))[0] for c, values in table.items()}
     fig = make_subplots(
         rows=1,
         cols=len(table),
@@ -878,18 +883,18 @@ def _total_figure(table: pd.DataFrame) -> go.Figure:
     for i, quantity in enumerate(table.index):
         row = table.loc[quantity]
         percent = cells["delta [%]"][i]
+        delta = cells["delta"][i] + (f" ({percent}%)" if percent else "")
+        # Outside its bar, the label of a negative delta would run over the
+        # y labels, so it goes right of zero, where the delta row is empty
+        negative = row["delta"] < 0
         fig.add_trace(
             go.Bar(
                 x=row[["old", "new", "delta"]].astype(float),
                 y=["old", "new", "delta"],
                 orientation="h",
                 marker_color=[OLD_COLOR, NEW_COLOR, *_signs(row[["delta"]])],
-                text=[
-                    cells["old"][i],
-                    cells["new"][i],
-                    cells["delta"][i] + (f" ({percent}%)" if percent else ""),
-                ],
-                textposition="auto",
+                text=[cells["old"][i], cells["new"][i], delta],
+                textposition=["auto", "auto", "none" if negative else "auto"],
                 cliponaxis=False,
                 hovertemplate="%{y}: %{text}<extra></extra>",
                 showlegend=False,
@@ -897,6 +902,17 @@ def _total_figure(table: pd.DataFrame) -> go.Figure:
             row=1,
             col=i + 1,
         )
+        if negative:
+            label = go.Scatter(
+                x=[0],
+                y=["delta"],
+                mode="text",
+                text=[delta],
+                textposition="middle right",
+                hoverinfo="skip",
+                showlegend=False,
+            )
+            fig.add_trace(label, row=1, col=i + 1)
     # Inside labels keep a readable size on the thin bars
     fig.update_layout(uniformtext={"minsize": 11, "mode": "show"})
     return _layout(fig, 3)
@@ -1091,7 +1107,7 @@ def figures(comparison: Comparison) -> dict[str, go.Figure]:
     }
 
 
-def _number(value: object, spec: str) -> str:
+def _number(value: float, spec: str) -> str:
     """
     Format a number by `spec`, with `.` as decimal and THOUSANDS as thousands
     separator. NA is blank.
@@ -1130,8 +1146,10 @@ def _markdown(table: pd.DataFrame) -> str:
     """
     if table.index.nlevels > 1:
         table = table.reset_index(level=list(range(1, table.index.nlevels)))
-    columns = [(table.index.name, *_cells(table.index, table.index.name))]
-    for name, values in table.items():
+    index = str(table.index.name)
+    columns = [(index, *_cells(table.index, index))]
+    for column, values in table.items():
+        name = str(column)
         if name.endswith("delta [%]"):
             previous, cells, align = columns.pop()
             percents = [_number(v, "+,.15g") for v in values]
@@ -1139,12 +1157,12 @@ def _markdown(table: pd.DataFrame) -> str:
             columns.append((previous, cells, align))
         else:
             columns.append((name, *_cells(values, name)))
-    names, cells, aligns = zip(*columns)
-    lines = [names, aligns, *zip(*cells)]
+    names, rows, aligns = zip(*columns)
+    lines = [names, aligns, *zip(*rows)]
     return "".join(f"| {' | '.join(line)} |\n" for line in lines)
 
 
-def _long_shares(table: pd.DataFrame, pairs: pd.MultiIndex) -> pd.DataFrame:
+def _long_shares(table: pd.DataFrame, pairs: pd.Index) -> pd.DataFrame:
     """
     Share table (see `_shares`) with one row per group and fuel type and the
     columns SHARE_COLUMNS. Groups keep their order, fuel types the order of
@@ -1161,7 +1179,8 @@ def _long_shares(table: pd.DataFrame, pairs: pd.MultiIndex) -> pd.DataFrame:
         axis=1,
         names=["Fueltype", None],
     )
-    long = wide.stack("Fueltype", future_stack=True)
+    # Stacking one of two column levels gives a DataFrame
+    long = cast(pd.DataFrame, wide.stack("Fueltype", future_stack=True))
     # Matched by the labels with MISSING for NaN, as a NaN label may not match
     # itself, depending on how the index holds it (e.g. read from a CSV file)
     paired = _group_labels(long).index.isin(_group_labels(pairs.to_frame()).index)
@@ -1275,7 +1294,10 @@ def _notes(text: str) -> str:
 def _overview_section(report: _Report) -> str:
     """Total, change per country and fuel type, sources and status."""
     overview = report.comparison.overview
-    capacity, entries = (overview["total"].loc[q] for q in ("Capacity [GW]", "Entries"))
+    # As dicts, since pandas-stubs type `.loc[label]` as Series or DataFrame
+    capacity, entries = (
+        overview["total"].loc[q].to_dict() for q in ("Capacity [GW]", "Entries")
+    )
     year = report.comparison.year
     matrix = _key("overview", "country_fueltype")
     pairs = overview["country_fueltype"]
@@ -1438,6 +1460,7 @@ def _map_page(new: MapSource, old: MapSource | None = None) -> str:
         "map.html",
         {
             "__PPM_COLORS__": _json_script(get_config()["fuel_to_color"]),
+            "__PPM_CHANGE_COLORS__": _json_script({"gain": GAIN, "loss": LOSS}),
             "__PPM_DATA__": _json_script(data),
         },
     )
@@ -1538,7 +1561,7 @@ def _read_table(folder: Path, section: str, stem: str) -> pd.DataFrame:
     # Each row of the total is a quantity of its own dtype (capacity float,
     # entries int), in object columns as `_total` returns them
     numbers = table.drop(columns="delta [%]").T
-    numbers = numbers.astype({q: _dtype(q) for q in numbers}).astype(object).T
+    numbers = numbers.astype({q: _dtype(str(q)) for q in numbers}).astype(object).T
     return numbers.join(table["delta [%]"])
 
 

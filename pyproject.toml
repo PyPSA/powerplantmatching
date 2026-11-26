@@ -152,5 +152,7 @@ module = [
     "tqdm.*",
     "deprecation.*",
     "cartopy.*",
+    "markdown.*",
+    "plotly.*",
 ]
 ignore_missing_imports = true

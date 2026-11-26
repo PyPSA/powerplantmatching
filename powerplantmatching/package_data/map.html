@@ -51,14 +51,19 @@ each move). The view switch shows one group of sources at a time.
     <div id="map"></div>
     <div id="panel"><div id="versions"></div><div id="views"></div><div id="legend"></div></div>
     <script type="application/json" id="ppm-colors">__PPM_COLORS__</script>
+    <script type="application/json" id="ppm-change-colors">__PPM_CHANGE_COLORS__</script>
     <script type="application/json" id="ppm-data">__PPM_DATA__</script>
     <script>
       const COLORS = JSON.parse(document.getElementById("ppm-colors").textContent);
       const DATA = JSON.parse(document.getElementById("ppm-data").textContent);
       const FALLBACK_COLOR = "#999999";
-      // Gain and loss, as in package_data/tables.js
-      const POSITIVE = "33, 102, 172"; // blue
-      const NEGATIVE = "179, 88, 6"; // orange
+      // Gain and loss as hex colours, GAIN and LOSS in changes.py as in the tables
+      const { gain: POSITIVE, loss: NEGATIVE } = JSON.parse(
+        document.getElementById("ppm-change-colors").textContent
+      );
+      // Hex colour with opacity, e.g. rgba("#2e669c", 0.6)
+      const rgba = (hex, alpha) =>
+        `rgba(${[1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16))}, ${alpha})`;
       // Same columns as MAP_COLUMNS in changes.py
       const TEXT_COLUMNS = ["Name", "Country", "Fueltype", "Technology"];
       const COLUMNS = [...TEXT_COLUMNS, "Capacity", "DateIn", "DateOut", "lat", "lon"];
@@ -93,12 +98,12 @@ each move). The view switch shows one group of sources at a time.
           },
         },
         added: {
-          cluster: `rgb(${POSITIVE})`,
+          cluster: POSITIVE,
           clusterText: "#ffffff",
           point: { type: "symbol", layout: { "icon-image": "added", "icon-allow-overlap": true } },
         },
         dropped: {
-          cluster: `rgb(${NEGATIVE})`,
+          cluster: NEGATIVE,
           clusterText: "#ffffff",
           point: { type: "symbol", layout: { "icon-image": "dropped", "icon-allow-overlap": true } },
         },
@@ -187,7 +192,7 @@ each move). The view switch shows one group of sources at a time.
           ctx.lineWidth = 2 * s;
           ctx.strokeStyle = "#ffffff";
           ctx.stroke();
-          ctx.fillStyle = `rgb(${POSITIVE})`;
+          ctx.fillStyle = POSITIVE;
           ctx.fill();
         } else {
           ctx.beginPath();
@@ -196,7 +201,7 @@ each move). The view switch shows one group of sources at a time.
           ctx.moveTo(12.5 * s, 3.5 * s);
           ctx.lineTo(3.5 * s, 12.5 * s);
           ctx.lineCap = "round";
-          for (const [width, color] of [[5 * s, "#ffffff"], [2.5 * s, `rgb(${NEGATIVE})`]]) {
+          for (const [width, color] of [[5 * s, "#ffffff"], [2.5 * s, NEGATIVE]]) {
             ctx.lineWidth = width;
             ctx.strokeStyle = color;
             ctx.stroke();
@@ -307,12 +312,12 @@ each move). The view switch shows one group of sources at a time.
           const [x0, y0] = id.split(",").map((i) => Number(i) * size);
           const [x1, y1] = [x0 + size, y0 + size];
           const delta = n - o;
-          // Shading as in tables.js: alpha by sqrt(|delta| / max)
+          // Opacity by sqrt(|delta| / max), relative to the largest change in view
           const alpha = gridMax === 0 ? 0 : 0.6 * Math.sqrt(Math.abs(delta) / gridMax);
           return {
             type: "Feature",
             geometry: { type: "Polygon", coordinates: [[[x0, y0], [x1, y0], [x1, y1], [x0, y1], [x0, y0]]] },
-            properties: { old: o, new: n, delta, color: `rgba(${delta >= 0 ? POSITIVE : NEGATIVE}, ${alpha})` },
+            properties: { old: o, new: n, delta, color: rgba(delta >= 0 ? POSITIVE : NEGATIVE, alpha) },
           };
         });
         return { type: "FeatureCollection", features };
@@ -409,8 +414,8 @@ each move). The view switch shows one group of sources at a time.
           return;
         }
         if (view === "capacity") {
-          legendRow(legend, swatch(`rgba(${POSITIVE}, 0.6)`, "cell"), "Gain (new > old)");
-          legendRow(legend, swatch(`rgba(${NEGATIVE}, 0.6)`, "cell"), "Loss (new < old)");
+          legendRow(legend, swatch(rgba(POSITIVE, 0.6), "cell"), "Gain (new > old)");
+          legendRow(legend, swatch(rgba(NEGATIVE, 0.6), "cell"), "Loss (new < old)");
           note(
             legend,
             `Capacity of ${DATA.new.label} minus ${DATA.old.label} per cell of ${Number(cellSize().toPrecision(4))}°. ` +

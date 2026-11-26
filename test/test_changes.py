@@ -12,6 +12,7 @@ import pandas as pd
 import pytest
 
 from powerplantmatching.changes import (
+    CLASS_COLORS,
     INTROS,
     TABS,
     Comparison,
@@ -638,9 +639,17 @@ def test_share_figure_data(comparison: Comparison, stem: str) -> None:
 
 
 def test_total_figure_data(comparison: Comparison) -> None:
-    capacity, entries = figures(comparison)["overview/total"].data
+    capacity, label, entries = figures(comparison)["overview/total"].data
     assert [list(capacity.x), list(entries.x)] == [[3.9, 2.8, -1.1], [5, 7, 2]]
     assert [capacity.text[-1], entries.text[-1]] == ["-1.1 (-28.2%)", "+2 (+40%)"]
+    # The label of a negative delta stands right of zero, not left of its bar
+    assert capacity.textposition[-1] == "none"
+    assert (label.x, label.text, label.textposition) == (
+        (0,),
+        ("-1.1 (-28.2%)",),
+        "middle right",
+    )
+    assert entries.textposition[-1] == "auto"
 
 
 def test_matrix_figure_data(comparison: Comparison) -> None:
@@ -1082,6 +1091,16 @@ def test_map_columns_match_template() -> None:
     text = re.search(r"const TEXT_COLUMNS = (\[.*\]);", page)[1]
     rest = re.search(r"const COLUMNS = \[\.\.\.TEXT_COLUMNS, (.*)\];", page)[1]
     assert json.loads(text) + json.loads(f"[{rest}]") == MAP_COLUMNS
+
+
+def test_change_colors_match_tables(tmp_path: Path) -> None:
+    """Figures, table shading (tables.js) and map share the colours of a change."""
+    script = Path(_package_data("tables.js")).read_text(encoding="utf-8")
+    block = re.search(r"const CLASS_COLORS = \[(.*?)\];", script, re.DOTALL)[1]
+    assert re.findall(r'"(#[0-9a-f]{6})"', block) == CLASS_COLORS
+    page = write_map(tmp_path, MapSource(NEW, "new")).read_text()
+    gain, loss = CLASS_COLORS[-1], CLASS_COLORS[0]
+    assert read_map_data(page, "ppm-change-colors") == {"gain": gain, "loss": loss}
 
 
 def embedded(label: str, rows: int) -> dict:
