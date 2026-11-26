@@ -11,8 +11,10 @@ from powerplantmatching.cleaning import (
     clean_name,
     gather_and_replace,
     gather_specifications,
+    map_status,
 )
 from powerplantmatching.core import get_config
+from powerplantmatching.utils import config_filter, set_column_name
 
 TEST_DATA = {
     "Name": [
@@ -91,23 +93,74 @@ def test_clean_name(data):
     assert res.Name[4] == "Besonders Chp"
 
 
+def test_map_status():
+    status = ["Operating", "pre-permit", "Vorübergehend stillgelegt", "cancelled", None]
+    res = map_status(pd.DataFrame({"Status": status}), config=get_config())
+    assert res.Status.to_list() == ["operating", "announced", "mothballed"]
+
+
+@pytest.fixture
+def status_data():
+    return pd.DataFrame(
+        {
+            "Name": "Kraftwerk Musterstadt",
+            "Fueltype": "Hard Coal",
+            "Country": "Germany",
+            "Capacity": 400.0,
+            "Status": ["operating", "retired", np.nan],
+            "lat": 51.0,
+            "lon": 10.0,
+            "projectID": ["A", "B", "C"],
+        }
+    ).pipe(set_column_name, "GCPT")
+
+
 @pytest.mark.parametrize(
-    "fueltype, with_blocks, n_plants",
+    "overall, source, expected",
     [
-        ("Hard Coal", ["Nuclear"], 1),
-        ("Nuclear", ["Nuclear"], 2),
-        ("Nuclear", [], 1),
+        (None, None, ["operating", "retired", np.nan]),
+        (["operating"], None, ["operating", np.nan]),
+        (["operating"], ["retired"], ["retired", np.nan]),
     ],
 )
-def test_aggregate_units(fueltype, with_blocks, n_plants):
+def test_config_filter_status(status_data, overall, source, expected):
+    config = get_config()
+    if overall is not None:
+        config["status"] = overall
+    if source is not None:
+        config["GCPT"]["status"] = source
+    res = config_filter(status_data, config)
+    pd.testing.assert_series_equal(
+        res.Status, pd.Series(expected, name="Status"), check_dtype=False
+    )
+
+
+def test_config_filter_unknown_status(status_data):
+    config = get_config()
+    config["status"] = ["Operational"]
+    with pytest.raises(ValueError, match="Unknown status"):
+        config_filter(status_data, config)
+
+
+@pytest.mark.parametrize(
+    "fueltype, status, with_blocks, n_plants",
+    [
+        ("Hard Coal", ["operating", "operating"], ["Nuclear"], 1),
+        ("Hard Coal", ["operating", "retired"], ["Nuclear"], 2),
+        ("Nuclear", ["operating", "operating"], ["Nuclear"], 2),
+        ("Nuclear", ["operating", "operating"], [], 1),
+    ],
+)
+def test_aggregate_units(fueltype, status, with_blocks, n_plants):
     config = get_config()
     config["clean_name"]["fueltypes_with_blocks"] = with_blocks
     df = pd.DataFrame(
         {
             "Name": "Kraftwerk Musterstadt",
-            "Fueltype": [fueltype, fueltype],
+            "Fueltype": fueltype,
             "Country": "Germany",
             "Capacity": 400.0,
+            "Status": status,
             "lat": 51.0,
             "lon": 10.0,
         }
