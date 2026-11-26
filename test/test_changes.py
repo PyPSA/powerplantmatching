@@ -712,7 +712,7 @@ def test_write_report_index(
         comparison, tmp_path, title="Test report", map_new=map_new, html=False
     )
     assert path == tmp_path / "index.md"
-    index = path.read_text()
+    index = path.read_text(encoding="utf-8")
     assert index.startswith("# Test report\n")
     sections = ["Overview", "Map", "By country", "By fuel type", "Checks"]
     if map_new is None:
@@ -806,7 +806,7 @@ def test_write_report_index(
 )
 def test_write_report_tables(comparison: Comparison, tmp_path: Path, line: str) -> None:
     write_report(comparison, tmp_path, title="Test report")
-    assert line in (tmp_path / "index.md").read_text().splitlines()
+    assert line in (tmp_path / "index.md").read_text(encoding="utf-8").splitlines()
 
 
 SHARE_HEADER = (
@@ -844,7 +844,7 @@ def test_write_report_share_tables(
     # One row per country and fuel type with a share in a version, in the
     # order of the countries and the fuel types of the wide CSV table
     index = write_report(comparison, tmp_path, title="Test report", html=False)
-    (body,) = tab_bodies(index.read_text())[label]
+    (body,) = tab_bodies(index.read_text(encoding="utf-8"))[label]
     assert body.endswith("\n\n" + textwrap.indent(SHARE_HEADER + rows, " " * 4))
 
 
@@ -936,7 +936,7 @@ def test_write_report_html(comparison: Comparison, tmp_path: Path) -> None:
         comparison, tmp_path, title="Old & new", map_new=MapSource(NEW, "new")
     )
     assert path == tmp_path / "report.html"
-    page = path.read_text()
+    page = path.read_text(encoding="utf-8")
     assert "__PPM_" not in page
     assert "<title>Old &amp; new</title>" in page
     tabs = len(comparison.by_country) + len(comparison.by_fueltype)
@@ -968,7 +968,7 @@ def test_write_report_figure_pages(comparison: Comparison, tmp_path: Path) -> No
     # A loading message precedes plotly.js and hides once plotly drew its svg
     write_report(comparison, tmp_path, title="Test report", html=False)
     for key in figures(comparison):
-        page = (tmp_path / key).with_suffix(".html").read_text()
+        page = (tmp_path / key).with_suffix(".html").read_text(encoding="utf-8")
         message = page.index('<p id="loading">Loading figure\u2026</p>')
         assert message < page.index("cdn.plot.ly") < page.index("Plotly.newPlot")
         assert "body:has(.main-svg) #loading { display: none; }" in page
@@ -1104,7 +1104,7 @@ def test_change_colors_match_tables(tmp_path: Path) -> None:
     script = Path(_package_data("tables.js")).read_text(encoding="utf-8")
     block = re.search(r"const CLASS_COLORS = \[(.*?)\];", script, re.DOTALL)[1]
     assert re.findall(r'"(#[0-9a-f]{6})"', block) == CLASS_COLORS
-    page = write_map(tmp_path, MapSource(NEW, "new")).read_text()
+    page = write_map(tmp_path, MapSource(NEW, "new")).read_text(encoding="utf-8")
     gain, loss = CLASS_COLORS[-1], CLASS_COLORS[0]
     assert read_map_data(page, "ppm-change-colors") == {"gain": gain, "loss": loss}
 
@@ -1153,10 +1153,9 @@ def test_write_map(
 ) -> None:
     path = write_map(tmp_path / "map", new, old)
     assert path == tmp_path / "map" / "map.html"
-    assert (
-        read_map_data(path.read_text(), "ppm-colors") == get_config()["fuel_to_color"]
-    )
-    data = read_map_data(path.read_text(), "ppm-data")
+    page = path.read_text(encoding="utf-8")
+    assert read_map_data(page, "ppm-colors") == get_config()["fuel_to_color"]
+    data = read_map_data(page, "ppm-data")
     counted = {
         key: {**version, "rows": len(version["rows"])}
         if version is not None and "rows" in version
@@ -1168,7 +1167,8 @@ def test_write_map(
 
 def test_write_map_rows(tmp_path: Path) -> None:
     path = write_map(tmp_path, MapSource(MAP_NEW, "new"))
-    last = read_map_data(path.read_text(), "ppm-data")["new"]["rows"][-1]
+    page = path.read_text(encoding="utf-8")
+    last = read_map_data(page, "ppm-data")["new"]["rows"][-1]
     # NaN is null, and the name with "</script>" stays inside the JSON block
     name = "</script><script>alert(1)</script>"
     assert last == [name, None, "Solar", None, None, None, None, 51.0, 11.0]
