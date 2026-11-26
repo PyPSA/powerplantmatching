@@ -1,0 +1,13 @@
+Fueltype,Complete old [%],Complete new [%],Complete delta [pp]
+Bioenergy,31.7,33.3,1.7
+Geothermal,0.0,0.0,0.0
+Hard Coal,51.0,28.0,-23.0
+Hydro,36.8,51.2,14.4
+Lignite,43.5,44.9,1.4
+Natural Gas,65.0,69.6,4.6
+Nuclear,76.9,76.6,-0.4
+Oil,43.6,43.1,-0.5
+Other,40.1,38.6,-1.5
+Solar,2.6,0.4,-2.1
+Waste,59.3,58.9,-0.4
+Wind,5.0,1.4,-3.6

@@ -50,6 +50,8 @@ dependencies = [
     "tqdm",
     "openpyxl",
     "plotly>=6.9.0",
+    "markdown>=3.6",
+    "pymdown-extensions>=10.0",
     "pre-commit>=4.3.0",
 ]
 
@@ -76,6 +78,7 @@ docs= [
 dev= [
     "pre-commit",
     "pytest",
+    "mkdocs>=1.6",
     "pytest-cov",
     "mypy",
     "types-requests",
@@ -149,5 +152,7 @@ module = [
     "tqdm.*",
     "deprecation.*",
     "cartopy.*",
+    "markdown.*",
+    "plotly.*",
 ]
 ignore_missing_imports = true

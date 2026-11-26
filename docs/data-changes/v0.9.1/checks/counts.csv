@@ -1,0 +1,7 @@
+Check,old,new,delta
+Capacity missing or not positive,38,38,0
+No coordinates,0,0,0
+No country,0,0,0
+DateOut before DateIn,3,3,0
+Repeated entries,0,4336,4336
+Category value not in config,6893,8182,1289

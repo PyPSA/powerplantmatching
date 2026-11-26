@@ -1,0 +1,17 @@
+Category,Value,Only in,Entries,Capacity [GW]
+Fueltype / Technology,Hard Coal / Offshore,old,1,0.011
+Fueltype / Technology,Hard Coal / Onshore,old,1,0.026
+Fueltype / Technology,Hard Coal / Pv,old,2,1.019
+Fueltype / Technology,Hydro / unknown,new,4,0.525
+Fueltype / Technology,Lignite / Run-Of-River,old,1,0.03
+Fueltype / Technology,Natural Gas / not found,new,4,0.211
+Fueltype / Technology,Other / CCGT,new,1,0.125
+Fueltype / Technology,Other / Csp,old,1,0.091
+Fueltype / Technology,Solar / Assumed Pv,old,1,0.03
+Fueltype / Technology,Solar / Csp,old,26,1.973
+Fueltype / Technology,Solar / PV,new,10648,122.94
+Technology,Assumed Pv,old,1,0.03
+Technology,Csp,old,27,2.064
+Technology,PV,new,10648,122.94
+Technology,not found,new,4,0.211
+Technology,unknown,new,4,0.525

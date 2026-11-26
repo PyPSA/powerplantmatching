@@ -1,0 +1,8 @@
+Category,Value,Only in,Entries,Capacity [GW]
+Fueltype / Technology,Lignite / CCGT,new,1,0.164
+Fueltype / Technology,Solar / Assumed Pv,new,1,0.03
+Fueltype / Technology,Solar / Csp,new,26,1.973
+Fueltype / Technology,Solar / Steam Turbine,old,1,0.15
+Fueltype / Technology,Wind / Offshore Floating,old,1,1.2
+Technology,Assumed Pv,new,1,0.03
+Technology,Offshore Floating,old,1,1.2

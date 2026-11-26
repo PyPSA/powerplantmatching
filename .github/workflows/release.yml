@@ -86,6 +86,20 @@ jobs:
         df = pm.powerplants(update=True)
         df.to_csv("powerplants.csv", index_label="id")
 
+        import subprocess
+        previous = subprocess.run(
+            ["git", "describe", "--tags", "--abbrev=0", "${{ github.ref_name }}^"],
+            check=True, capture_output=True, text=True,
+        ).stdout.strip()
+        # 0: same as the previous release, 1: changed, other: git error
+        diff = subprocess.run(
+            ["git", "diff", "--quiet", previous, "--", "powerplants.csv"]
+        ).returncode
+        if diff not in (0, 1):
+            raise RuntimeError(f"git diff against {previous} failed ({diff})")
+        if diff == 1:
+            pm.changes.write_release_report(previous, "${{ github.ref_name }}", new=df)
+
         fig, ax = df.powerplant.plot_map(figsize=(22, 16))
         fig.savefig('docs/powerplants.png')
       shell: python

@@ -1,0 +1,13 @@
+Fueltype,Capacity old [GW],Capacity new [GW],Capacity delta [GW],Capacity delta [%]
+Bioenergy,7.044,7.044,0.0,0.0
+Geothermal,0.766,0.766,0.0,0.0
+Hard Coal,172.914,144.836,-28.078,-16.2
+Hydro,218.672,215.558,-3.114,-1.4
+Lignite,65.839,61.65,-4.188,-6.4
+Natural Gas,191.684,189.779,-1.905,-1.0
+Nuclear,142.634,143.654,1.02,0.7
+Oil,21.382,21.382,0.0,0.0
+Other,2.779,2.779,0.0,0.0
+Solar,13.026,13.026,0.0,0.0
+Waste,2.596,2.596,0.0,0.0
+Wind,62.906,62.904,-0.002,0.0

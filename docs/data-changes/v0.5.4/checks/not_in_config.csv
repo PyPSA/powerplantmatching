@@ -1,0 +1,4 @@
+Category,Value,Entries old,Entries new,Entries delta,Capacity old [GW],Capacity new [GW],Capacity delta [GW]
+Fueltype,Bioenergy,132,97,-35,7.107,5.064,-2.043
+Set,Store,1212,1264,52,165.496,167.382,1.886
+Technology,Csp,13,13,0,1.003,1.003,0.0

@@ -7,6 +7,10 @@ site_url: https://github.com/PyPSA/powerplantmatching
 repo_url: https://github.com/PyPSA/powerplantmatching
 repo_name: PyPSA/powerplantmatching
 edit_uri: edit/master/docs/
+exclude_docs: |
+  hooks.py
+  # Release metadata, read by docs/hooks.py from disk
+  data-changes/*/release.json
 
 nav:
   - Home:
@@ -18,6 +22,8 @@ nav:
       - Custom Config: custom-config.md
     - About:
       - Release Notes: release-notes.md
+      - Data changes:
+        - data-changes/index.md
       - Contributors: contributors.md
       - Citing: citing.md
       - License: license.md
@@ -31,6 +37,11 @@ nav:
     - Core modules: api-core.md
     - Data processing modules: api-data.md
     - Utility modules: api-utils.md
+    - Data change modules: api-changes.md
+
+# Release pages, release list and table script, see docs/hooks.py
+hooks:
+  - docs/hooks.py
 
 # Theme settings
 theme:
@@ -127,6 +138,14 @@ markdown_extensions:
   - pymdownx.caret
   - pymdownx.tilde
 
+
+extra_css:
+  - assets/stylesheets/tables.css
+
+extra_javascript:
+  - https://unpkg.com/tablesort@5.3.0/dist/tablesort.min.js
+  - https://unpkg.com/tablesort@5.3.0/dist/sorts/tablesort.number.min.js
+  - javascripts/tables.js
 
 extra:
   social:

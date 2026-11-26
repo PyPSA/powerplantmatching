@@ -1,0 +1,13 @@
+Fueltype,Entries old,Entries new,Entries delta,Entries delta [%]
+Bioenergy,116,256,140,120.7
+Geothermal,24,25,1,4.2
+Hard Coal,277,338,61,22.0
+Hydro,3835,3857,22,0.6
+Lignite,131,140,9,6.9
+Natural Gas,595,918,323,54.3
+Nuclear,67,105,38,56.7
+Oil,97,84,-13,-13.4
+Other,38,34,-4,-10.5
+Solar,383,10698,10315,2693.2
+Waste,94,93,-1,-1.1
+Wind,1255,5848,4593,366.0

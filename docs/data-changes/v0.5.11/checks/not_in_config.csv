@@ -1,0 +1,11 @@
+Category,Value,Entries old,Entries new,Entries delta,Capacity old [GW],Capacity new [GW],Capacity delta [GW]
+Fueltype,Bioenergy,120,116,-4,7.704,7.044,-0.66
+Set,Store,1278,1267,-11,172.718,170.95,-1.768
+Technology,Assumed Pv,0,1,1,0.0,0.03,0.03
+Technology,Csp,12,27,15,0.957,2.064,1.107
+Technology,Not Found,5,5,0,0.419,0.419,0.0
+Technology,Offshore Floating,1,0,-1,1.2,0.0,-1.2
+Technology,Offshore Hard Mount,26,23,-3,6.739,6.465,-0.274
+Technology,Offshore Mount Unknown,5,7,2,0.259,1.653,1.394
+Technology,Pv,186,196,10,7.945,9.13,1.185
+Technology,Unknown,15,15,0,2.149,2.149,0.0

@@ -1,0 +1,9 @@
+Category,Value,Only in,Entries,Capacity [GW]
+Fueltype / Technology,Lignite / Run-Of-River,old,1,0.03
+Fueltype / Technology,Natural Gas / OCGT,new,1,0.14
+Fueltype / Technology,Natural Gas / Reservoir,new,1,0.044
+Fueltype / Technology,Other / CCGT,old,55,32.734
+Fueltype / Technology,Other / Combustion Engine,new,1,0.042
+Fueltype / Technology,Other / OCGT,old,2,0.283
+Fueltype / Technology,Solar / CSP,new,3,0.15
+Technology,CSP,new,3,0.15

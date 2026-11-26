@@ -14,6 +14,10 @@ SPDX-License-Identifier: MIT
 
 * **Feature:** `pm.powerplants(from_url=...)` now also accepts a release tag starting with `v` (e.g. `"v0.9.0"`) or an http(s) URL of a CSV file.
 
+* **Feature:** The new page [Data changes](data-changes/index.md) lists one page per release with a changed dataset. ([PR #346](https://github.com/PyPSA/powerplantmatching/pull/346))
+
+* **Feature:** Data change reports are also available locally to view differences between local / released versions, see [Run locally](data-changes/index.md#run-locally). ([PR #346](https://github.com/PyPSA/powerplantmatching/pull/346))
+
 * Avoid country conversion warnings for IRENASTAT regional aggregates (`Eurasia` and `Oceania`) while preserving the original dataset. ([PR #336](https://github.com/PyPSA/powerplantmatching/pull/336))
 
 * Deprecate the argument `extend_by_vres` of `pm.powerplants()` and the function `extend_by_VRE()`. Both will be removed in v0.11.0. Wind and solar power plants are already included from GEM and MASTR, and the option added them again from outdated OPSD data (2020). ([#232](https://github.com/PyPSA/powerplantmatching/issues/232))

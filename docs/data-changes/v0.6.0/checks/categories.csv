@@ -1,0 +1,13 @@
+Category,Value,Only in,Entries,Capacity [GW]
+Fueltype,Bioenergy,old,256,20.446
+Fueltype,Biogas,new,66,2.167
+Fueltype,Solid Biomass,new,188,18.045
+Fueltype / Technology,Bioenergy / CCGT,old,2,0.214
+Fueltype / Technology,Bioenergy / Combustion Engine,old,1,0.002
+Fueltype / Technology,Bioenergy / Steam Turbine,old,221,17.465
+Fueltype / Technology,Biogas / CCGT,new,1,0.033
+Fueltype / Technology,Biogas / Combustion Engine,new,1,0.002
+Fueltype / Technology,Biogas / Steam Turbine,new,38,0.615
+Fueltype / Technology,Solid Biomass / CCGT,new,1,0.181
+Fueltype / Technology,Solid Biomass / Pv,new,3,0.112
+Fueltype / Technology,Solid Biomass / Steam Turbine,new,178,16.547

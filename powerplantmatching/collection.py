@@ -126,6 +126,22 @@ def _read_matched(
     return df
 
 
+def matched_data_url(tag: str, config: dict | None = None) -> str:
+    """
+    Return the URL of the matched dataset of a release.
+
+    Parameters
+    ----------
+    tag : str
+        Release tag, e.g. "v0.9.1".
+    config : dict, default None
+        Configuration with the `matched_data_url` template, default `get_config()`.
+    """
+    if config is None:
+        config = get_config()
+    return config["matched_data_url"].format(tag=tag)
+
+
 def powerplants(
     config=None,
     config_update=None,
@@ -235,7 +251,7 @@ def powerplants(
             raise TypeError(f"`from_url` must be bool or str, got {type(from_url)}.")
         if from_url.startswith("v"):
             # Take a specific released dataset
-            url = config["matched_data_url"].format(tag=from_url)
+            url = matched_data_url(from_url, config)
         else:
             # Try to read from arbitrary URL (unsafe?)
             url = from_url
