@@ -25,10 +25,9 @@ from mkdocs.structure.pages import Page
 from packaging.version import Version
 
 from powerplantmatching.changes import RELEASE, read_release, render_release
+from powerplantmatching.core import _package_data
 
-TABLES_JS = (
-    Path(__file__).parents[1] / "powerplantmatching" / "package_data" / "tables.js"
-)
+TABLES_JS = Path(_package_data("tables.js"))
 NAV_SECTION = "Data changes"
 RELEASES_MARKER = "<!-- releases -->"
 RELEASE_HEADING = re.compile(r"^## \[(v\d+\.\d+\.\d+)\].*$", re.MULTILINE)

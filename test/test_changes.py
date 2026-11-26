@@ -446,12 +446,14 @@ def test_compare_status() -> None:
 
 def test_compare_checks() -> None:
     old = pd.concat([entry(), entry(Name="Z", Fueltype="Coal", Technology="ST")])
-    # One entry per check, and a repeat of the first entry
+    # One entry per check, two for the capacity (negative and missing), and a
+    # repeat of the first entry
     new = pd.concat(
         [
             entry(),
             entry(),
             entry(Name="B", Capacity=-1000.0, Set="Storage"),
+            entry(Name="F", Capacity=NAN),
             entry(Name="C", lat=NAN),
             entry(Name="D", Country=None),
             entry(Name="E", DateOut=1999.0),
@@ -460,7 +462,11 @@ def test_compare_checks() -> None:
     checks = compare(old, new).checks
     # Coal and ST of the old version are not in the config
     expected = pd.DataFrame(
-        {"old": [0] * 5 + [1], "new": [1] * 5 + [0], "delta": [1] * 5 + [-1]},
+        {
+            "old": [0] * 5 + [1],
+            "new": [2] + [1] * 4 + [0],
+            "delta": [2] + [1] * 4 + [-1],
+        },
         index=pd.Index(
             [
                 "Capacity missing or not positive",

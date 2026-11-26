@@ -15,8 +15,9 @@ Plot: `figures` draws one interactive plotly figure per table that has a
 builder in `FIGURES`, keyed "<section>/<stem>" (`_key`).
 
 Tables: `write_tables` writes each table as CSV file with plain numbers,
-`read_tables` reads such a folder back into an equal `Comparison`, using the
-schema of `TABLES` (index levels) and `_dtype` (column types).
+`read_tables` reads such a folder back into a `Comparison` with the same
+tables, using the schema of `TABLES` (index levels) and `_dtype` (column
+types).
 
 Render: `render` turns a comparison into the text of the report files,
 without any I/O: an `index.md` for MkDocs and per figure a standalone HTML
@@ -311,7 +312,8 @@ DELTA_TICKS = "+,~g"
 FrameT = TypeVar("FrameT", pd.Series, pd.DataFrame)
 
 
-@dataclass(frozen=True)
+# eq=False: DataFrame fields make `==` raise, so compare by identity
+@dataclass(frozen=True, eq=False)
 class MapSource:
     """
     A version of the matched dataset for the map.
@@ -329,7 +331,8 @@ class MapSource:
     label: str
 
 
-@dataclass(frozen=True)
+# eq=False: DataFrame fields make `==` raise, so compare by identity
+@dataclass(frozen=True, eq=False)
 class Comparison:
     """
     Tables comparing an old and a new version of the matched dataset.

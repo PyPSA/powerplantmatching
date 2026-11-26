@@ -15,9 +15,8 @@ from test_changes import NEW, OLD
 
 from powerplantmatching.changes import RELEASE, compare, render_release, write_tables
 
-SPEC = importlib.util.spec_from_file_location(
-    "hooks", Path(__file__).parents[1] / "docs" / "hooks.py"
-)
+DOCS = Path(__file__).parents[1] / "docs"
+SPEC = importlib.util.spec_from_file_location("hooks", DOCS / "hooks.py")
 hooks = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(hooks)
 
@@ -159,3 +158,9 @@ def test_metadata_of_other_release_raises(config: MkDocsConfig) -> None:
     )
     with pytest.raises(ValueError, match="new release 'v0.9.2' is not the folder"):
         hooks.releases(config.docs_dir)
+
+
+@pytest.mark.parametrize("tag", hooks.releases(DOCS))
+def test_committed_releases_render(tag: str) -> None:
+    """The committed release folders still read with the current table schema."""
+    assert "index.md" in render_release(DOCS / "data-changes" / tag)
