@@ -86,6 +86,13 @@ jobs:
         df = pm.powerplants(update=True)
         df.to_csv("powerplants.csv", index_label="id")
 
+        import subprocess
+        previous = subprocess.run(
+            ["git", "describe", "--tags", "--abbrev=0", "${{ github.ref_name }}^"],
+            check=True, capture_output=True, text=True,
+        ).stdout.strip()
+        pm.changes.write_release_report(previous, "${{ github.ref_name }}", new=df)
+
         fig, ax = df.powerplant.plot_map(figsize=(22, 16))
         fig.savefig('docs/powerplants.png')
       shell: python

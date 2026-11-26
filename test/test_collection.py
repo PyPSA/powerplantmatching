@@ -26,3 +26,13 @@ def test_powerplants_keeps_units_with_same_name(monkeypatch):
     df = pm.powerplants(config=config, update=True, fill_geopositions=False)
 
     assert df.Capacity.sum() == turbines.Capacity.sum()
+
+
+def test_matched_data_url():
+    config = pm.get_config(matched_data_url="https://example.org/{tag}/data.csv")
+    assert collection.matched_data_url("v0.9.1", config) == (
+        "https://example.org/v0.9.1/data.csv"
+    )
+    assert collection.matched_data_url("v0.9.1") == (
+        "https://raw.githubusercontent.com/PyPSA/powerplantmatching/v0.9.1/powerplants.csv"
+    )

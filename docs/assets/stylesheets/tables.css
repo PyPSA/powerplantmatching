@@ -1,0 +1,26 @@
+/*
+SPDX-FileCopyrightText: Contributors to powerplantmatching <https://github.com/pypsa/powerplantmatching>
+
+SPDX-License-Identifier: MIT
+*/
+
+/* Tables with 7 or more columns, e.g. of the data-change reports, fit the
+   content column: no minimum header width (5rem per column in Material) and
+   narrower padding. Headers wrap, cells keep a number on one line. */
+.md-typeset table:not([class]) tr:has(> :nth-child(7)) > * {
+  min-width: 0;
+  padding-inline: 0.5em;
+}
+
+.md-typeset table:not([class]) tr:has(> :nth-child(7)) > td {
+  white-space: nowrap;
+}
+
+/* Descriptions directly below the tables and figures of the data-change
+   reports, see `_notes` in powerplantmatching/changes.py. Figures need the
+   margin-bottom of `IFRAME` there to offset the negative margin-top. */
+.md-typeset p.table-notes {
+  margin-top: -0.5em;
+  font-size: 0.7rem;
+  color: var(--md-default-fg-color--light);
+}

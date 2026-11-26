@@ -1,0 +1,610 @@
+<!--
+SPDX-FileCopyrightText: Contributors to powerplantmatching <https://github.com/pypsa/powerplantmatching>
+
+SPDX-License-Identifier: MIT
+-->
+<!doctype html>
+<!--
+Standalone map of the matched dataset, written by
+`powerplantmatching.changes.write_map`. Python fills the two JSON blocks
+below: the fuel type colours and one or two versions ("new", "old"). A
+version either embeds its rows ("columns", "rows") and loads at once, or
+names the URL of a CSV file ("url") that is fetched on a button click.
+
+Sources and their layers: each version is one clustered GeoJSON source
+("new", "old"). Once both versions are loaded, the browser derives the new
+and dropped entries ("added", "dropped", clustered as well) and a grid of
+the capacity change per cell ("grid", recomputed for the visible area on
+each move). The view switch shows one group of sources at a time.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>powerplantmatching map</title>
+    <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" />
+    <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+    <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
+    <style>
+      html, body, #map { height: 100%; margin: 0; }
+      body { font: 13px/1.4 system-ui, sans-serif; }
+      #panel {
+        position: absolute; top: 10px; left: 10px; z-index: 1;
+        max-height: calc(100% - 40px); max-width: 280px; overflow-y: auto;
+        background: rgba(255, 255, 255, 0.95); padding: 8px 10px;
+        border-radius: 4px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+      }
+      #panel .version { margin-bottom: 4px; }
+      #panel .error { color: #b00020; }
+      #views { margin: 6px 0; }
+      #views label { display: block; }
+      #legend { margin-top: 6px; }
+      #legend div { display: flex; align-items: center; gap: 6px; }
+      #legend span { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+      #legend span.cell { border-radius: 0; }
+      #legend canvas { width: 14px; height: 14px; flex: none; }
+      #legend p { margin: 4px 0 0; color: #455a64; }
+      .maplibregl-popup-content { font: 12px/1.4 system-ui, sans-serif; }
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+    <div id="panel"><div id="versions"></div><div id="views"></div><div id="legend"></div></div>
+    <script type="application/json" id="ppm-colors">__PPM_COLORS__</script>
+    <script type="application/json" id="ppm-data">__PPM_DATA__</script>
+    <script>
+      const COLORS = JSON.parse(document.getElementById("ppm-colors").textContent);
+      const DATA = JSON.parse(document.getElementById("ppm-data").textContent);
+      const FALLBACK_COLOR = "#999999";
+      // Gain and loss, as in package_data/tables.js
+      const POSITIVE = "33, 102, 172"; // blue
+      const NEGATIVE = "179, 88, 6"; // orange
+      // Same columns as MAP_COLUMNS in changes.py
+      const TEXT_COLUMNS = ["Name", "Country", "Fueltype", "Technology"];
+      const COLUMNS = [...TEXT_COLUMNS, "Capacity", "DateIn", "DateOut", "lat", "lon"];
+      const FUEL_COLOR = ["match", ["get", "Fueltype"], ...Object.entries(COLORS).flat(), FALLBACK_COLOR];
+      // Per point source: versions as fuel-coloured filled points (new) and
+      // rings (old), changes as icons (see drawIcon). Clusters in one colour each.
+      const STYLES = {
+        new: {
+          cluster: "#37474f",
+          clusterText: "#ffffff",
+          point: {
+            type: "circle",
+            paint: {
+              "circle-radius": 5,
+              "circle-color": FUEL_COLOR,
+              "circle-stroke-color": "#ffffff",
+              "circle-stroke-width": 1,
+            },
+          },
+        },
+        old: {
+          cluster: "#b0bec5",
+          clusterText: "#263238",
+          point: {
+            type: "circle",
+            paint: {
+              "circle-radius": 6,
+              "circle-opacity": 0,
+              "circle-stroke-color": FUEL_COLOR,
+              "circle-stroke-width": 2,
+            },
+          },
+        },
+        added: {
+          cluster: `rgb(${POSITIVE})`,
+          clusterText: "#ffffff",
+          point: { type: "symbol", layout: { "icon-image": "added", "icon-allow-overlap": true } },
+        },
+        dropped: {
+          cluster: `rgb(${NEGATIVE})`,
+          clusterText: "#ffffff",
+          point: { type: "symbol", layout: { "icon-image": "dropped", "icon-allow-overlap": true } },
+        },
+      };
+      // Sources shown per view. Each source has the layers `${source}-${suffix}`.
+      const VIEWS = {
+        versions: { label: "Versions", sources: ["new", "old"] },
+        changes: { label: "Entry changes", sources: ["added", "dropped"] },
+        capacity: { label: "Capacity change", sources: ["grid"] },
+      };
+      const LAYERS = { points: ["points", "clusters", "count"], grid: ["cells"] };
+      const loaded = {}; // version key -> GeoJSON of the loaded versions
+      const labels = {}; // source -> label in popups
+      const shown = { new: true, old: true }; // checkbox state of the versions
+      let view = "versions";
+      let changes = null; // { added, dropped } features, once both versions are loaded
+      let gridMax = 0; // largest |delta| of the current grid in MW
+
+      // Fixed start view of the whole world around Europe. Loading a version
+      // keeps the view.
+      const map = new maplibregl.Map({
+        container: "map",
+        style: "https://tiles.openfreemap.org/styles/positron",
+        center: [10, 30],
+        zoom: 0.5,
+      });
+      map.addControl(new maplibregl.NavigationControl(), "top-right");
+
+      // Columns and rows (embedded, or parsed from a CSV with the header in
+      // row 0) to GeoJSON points. Rows without coordinates are skipped.
+      function toGeoJSON(columns, rows) {
+        const index = Object.fromEntries(
+          COLUMNS.map((column) => {
+            const i = columns.indexOf(column);
+            if (i < 0) throw new Error(`Column ${column} is missing.`);
+            return [column, i];
+          })
+        );
+        const features = [];
+        for (const row of rows) {
+          const lat = row[index.lat];
+          const lon = row[index.lon];
+          if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+          const properties = {};
+          for (const column of COLUMNS) {
+            const value = row[index[column]] ?? null;
+            properties[column] = TEXT_COLUMNS.includes(column) && value !== null ? String(value) : value;
+          }
+          features.push({ type: "Feature", geometry: { type: "Point", coordinates: [lon, lat] }, properties });
+        }
+        return { type: "FeatureCollection", features };
+      }
+
+      function parseCsv(url) {
+        return new Promise((resolve, reject) =>
+          Papa.parse(url, {
+            download: true,
+            header: false,
+            dynamicTyping: true,
+            worker: true,
+            skipEmptyLines: true,
+            complete: (result) =>
+              result.errors.length
+                ? reject(new Error(`${url}: ${result.errors[0].message} (row ${result.errors[0].row})`))
+                : resolve(result.data),
+            error: (error) => reject(new Error(`${url}: ${error.message ?? error}`)),
+          })
+        );
+      }
+
+      // Icon of the change symbols on a canvas, so the page needs no image
+      // files: a filled triangle for new entries, a cross for dropped ones,
+      // both with a white outline.
+      function drawIcon(name, size) {
+        const canvas = document.createElement("canvas");
+        canvas.width = canvas.height = size;
+        const ctx = canvas.getContext("2d");
+        const s = size / 16; // drawn on a 16 x 16 grid
+        ctx.lineJoin = "round";
+        if (name === "added") {
+          ctx.beginPath();
+          ctx.moveTo(8 * s, 2 * s);
+          ctx.lineTo(14.5 * s, 13.5 * s);
+          ctx.lineTo(1.5 * s, 13.5 * s);
+          ctx.closePath();
+          ctx.lineWidth = 2 * s;
+          ctx.strokeStyle = "#ffffff";
+          ctx.stroke();
+          ctx.fillStyle = `rgb(${POSITIVE})`;
+          ctx.fill();
+        } else {
+          ctx.beginPath();
+          ctx.moveTo(3.5 * s, 3.5 * s);
+          ctx.lineTo(12.5 * s, 12.5 * s);
+          ctx.moveTo(12.5 * s, 3.5 * s);
+          ctx.lineTo(3.5 * s, 12.5 * s);
+          ctx.lineCap = "round";
+          for (const [width, color] of [[5 * s, "#ffffff"], [2.5 * s, `rgb(${NEGATIVE})`]]) {
+            ctx.lineWidth = width;
+            ctx.strokeStyle = color;
+            ctx.stroke();
+          }
+        }
+        return canvas;
+      }
+
+      // One clustered source and three layers per point source
+      function addPoints(key, geojson, label, before) {
+        const style = STYLES[key];
+        map.addSource(key, {
+          type: "geojson",
+          data: geojson,
+          cluster: true,
+          clusterRadius: 50,
+          clusterMaxZoom: 11,
+          clusterProperties: { capacity: ["+", ["coalesce", ["get", "Capacity"], 0]] },
+        });
+        const layers = [
+          { id: `${key}-points`, filter: ["!", ["has", "point_count"]], ...style.point },
+          {
+            id: `${key}-clusters`,
+            type: "circle",
+            filter: ["has", "point_count"],
+            paint: {
+              "circle-color": style.cluster,
+              "circle-opacity": 0.8,
+              "circle-radius": ["step", ["get", "point_count"], 12, 100, 16, 1000, 22, 10000, 28],
+            },
+          },
+          {
+            id: `${key}-count`,
+            type: "symbol",
+            filter: ["has", "point_count"],
+            layout: {
+              "text-field": ["get", "point_count_abbreviated"],
+              "text-font": ["Noto Sans Regular"],
+              "text-size": 11,
+            },
+            paint: { "text-color": style.clusterText },
+          },
+        ];
+        for (const layer of layers) map.addLayer({ ...layer, source: key }, before);
+        labels[key] = label;
+      }
+
+      // Old layers sit below new ones
+      function addVersion(key, geojson) {
+        const before = key === "old" && map.getLayer("new-points") ? "new-points" : undefined;
+        addPoints(key, geojson, DATA[key].label, before);
+        loaded[key] = geojson;
+        updateVisibility();
+      }
+
+      // Entry identity across versions: name, country, fuel type and position
+      // rounded to 4 decimals (about 10 m), so a renamed or moved plant is
+      // dropped and new. Keys are multisets: of k old and m new entries with
+      // one key, min(k, m) match and the surplus is dropped (k > m) or new
+      // (m > k).
+      function entryKey(p) {
+        return JSON.stringify([p.Name, p.Country, p.Fueltype, Math.round(p.lat * 1e4), Math.round(p.lon * 1e4)]);
+      }
+
+      function entryChanges(old, current) {
+        const unmatched = new Map(); // key -> old features not matched yet
+        for (const feature of old.features) {
+          const key = entryKey(feature.properties);
+          const list = unmatched.get(key);
+          if (list) list.push(feature);
+          else unmatched.set(key, [feature]);
+        }
+        const added = current.features.filter((feature) => !unmatched.get(entryKey(feature.properties))?.pop());
+        const dropped = [...unmatched.values()].flat();
+        return { added, dropped };
+      }
+
+      // Grid cell size in degrees, 11.25 degrees at zoom 0 and halved per
+      // integer zoom level, i.e. 16 to 32 px on screen
+      function cellSize() {
+        return 11.25 / 2 ** Math.floor(map.getZoom());
+      }
+
+      // Capacity per grid cell in the visible area (plus one cell), as old,
+      // new and delta in MW. Cells are aligned to 0/0, so they stay fixed
+      // when panning. Entries without capacity count as 0. The view bounds
+      // can lie outside -180..180 (across the antimeridian or in another
+      // world copy), so longitudes are compared modulo 360. Cells keep
+      // coordinates in -180..180, MapLibre draws them in every world copy.
+      function capacityGrid() {
+        const size = cellSize();
+        const bounds = map.getBounds();
+        const [west, south] = [bounds.getWest() - size, bounds.getSouth() - size];
+        const [east, north] = [bounds.getEast() + size, bounds.getNorth() + size];
+        const inView = (lon) => east - west >= 360 || (((lon - west) % 360) + 360) % 360 <= east - west;
+        const cells = new Map(); // "i,j" -> [old, new]
+        for (const [index, key] of ["old", "new"].entries()) {
+          for (const { properties: p } of loaded[key].features) {
+            if (p.lat < south || p.lat > north || !inView(p.lon)) continue;
+            const id = `${Math.floor(p.lon / size)},${Math.floor(p.lat / size)}`;
+            const cell = cells.get(id) ?? [0, 0];
+            cell[index] += Number.isFinite(p.Capacity) ? p.Capacity : 0;
+            cells.set(id, cell);
+          }
+        }
+        gridMax = Math.max(0, ...[...cells.values()].map(([o, n]) => Math.abs(n - o)));
+        const features = [...cells].map(([id, [o, n]]) => {
+          const [x0, y0] = id.split(",").map((i) => Number(i) * size);
+          const [x1, y1] = [x0 + size, y0 + size];
+          const delta = n - o;
+          // Shading as in tables.js: alpha by sqrt(|delta| / max)
+          const alpha = gridMax === 0 ? 0 : 0.6 * Math.sqrt(Math.abs(delta) / gridMax);
+          return {
+            type: "Feature",
+            geometry: { type: "Polygon", coordinates: [[[x0, y0], [x1, y0], [x1, y1], [x0, y1], [x0, y0]]] },
+            properties: { old: o, new: n, delta, color: `rgba(${delta >= 0 ? POSITIVE : NEGATIVE}, ${alpha})` },
+          };
+        });
+        return { type: "FeatureCollection", features };
+      }
+
+      function updateGrid() {
+        if (view === "capacity") {
+          map.getSource("grid").setData(capacityGrid());
+          showLegend();
+        }
+      }
+
+      // Derived sources, added once both versions are loaded
+      function addComparison() {
+        changes = entryChanges(loaded.old, loaded.new);
+        addPoints("added", { type: "FeatureCollection", features: changes.added }, `New in ${DATA.new.label}`);
+        addPoints("dropped", { type: "FeatureCollection", features: changes.dropped }, `Dropped from ${DATA.old.label}`);
+        map.addSource("grid", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+        map.addLayer(
+          {
+            id: "grid-cells",
+            type: "fill",
+            source: "grid",
+            paint: { "fill-color": ["get", "color"], "fill-outline-color": "rgba(0, 0, 0, 0.15)" },
+          },
+          "added-points"
+        );
+        map.on("moveend", updateGrid);
+        for (const input of document.querySelectorAll("#views input")) input.disabled = false;
+        document.querySelector("#views p").remove();
+        updateVisibility();
+      }
+
+      function layersOf(source) {
+        return LAYERS[source === "grid" ? "grid" : "points"].map((suffix) => `${source}-${suffix}`);
+      }
+
+      // Sources of the current view, versions only if their box is checked
+      function visibleSources() {
+        return VIEWS[view].sources.filter((source) => map.getSource(source) && (shown[source] ?? true));
+      }
+
+      function updateVisibility() {
+        const visible = visibleSources();
+        for (const { sources } of Object.values(VIEWS)) {
+          for (const source of sources.filter((s) => map.getSource(s))) {
+            for (const layer of layersOf(source)) {
+              map.setLayoutProperty(layer, "visibility", visible.includes(source) ? "visible" : "none");
+            }
+          }
+        }
+      }
+
+      function legendRow(legend, marker, text) {
+        const row = document.createElement("div");
+        row.append(marker, text);
+        legend.append(row);
+      }
+
+      function swatch(color, className) {
+        const span = document.createElement("span");
+        span.style.background = color;
+        if (className) span.className = className;
+        return span;
+      }
+
+      function note(legend, text) {
+        const p = document.createElement("p");
+        p.textContent = text;
+        legend.append(p);
+      }
+
+      // Numbers independent of the browser locale: "." as decimal separator,
+      // U+202F (narrow no-break space) as thousands separator
+      const formatNumber = (value, digits) =>
+        value.toLocaleString("en-US", { maximumFractionDigits: digits }).replaceAll(",", "\u202F");
+      const formatMW = (value) => formatNumber(value, 1);
+
+      // Legend of the current view: fuel type colours, change symbols with
+      // their counts, or the colour scale of the grid
+      function showLegend() {
+        const legend = document.getElementById("legend");
+        legend.replaceChildren();
+        if (view === "changes") {
+          const { added, dropped } = changes;
+          legendRow(legend, drawIcon("added", 28), `New: ${formatNumber(added.length, 0)} entries`);
+          legendRow(legend, drawIcon("dropped", 28), `Dropped: ${formatNumber(dropped.length, 0)} entries`);
+          note(
+            legend,
+            `New entries are in ${DATA.new.label} but not in ${DATA.old.label}, dropped ones the other way round. ` +
+              "Entries are the same if name, country, fuel type and position (4 decimals) are equal, " +
+              "so a renamed or moved plant is dropped and new."
+          );
+          return;
+        }
+        if (view === "capacity") {
+          legendRow(legend, swatch(`rgba(${POSITIVE}, 0.6)`, "cell"), "Gain (new > old)");
+          legendRow(legend, swatch(`rgba(${NEGATIVE}, 0.6)`, "cell"), "Loss (new < old)");
+          note(
+            legend,
+            `Capacity of ${DATA.new.label} minus ${DATA.old.label} per cell of ${Number(cellSize().toPrecision(4))}°. ` +
+              `The strongest colour is the largest change in view, ±${formatMW(gridMax)} MW. ` +
+              "Hover or click a cell for its values."
+          );
+          return;
+        }
+        const fuels = new Set();
+        for (const geojson of Object.values(loaded)) {
+          for (const feature of geojson.features) fuels.add(feature.properties.Fueltype);
+        }
+        for (const fuel of [...fuels].sort()) legendRow(legend, swatch(COLORS[fuel] ?? FALLBACK_COLOR), fuel ?? "n/a");
+      }
+
+      // The version boxes only apply to the versions view
+      function setView(key) {
+        view = key;
+        hover.remove();
+        for (const box of document.querySelectorAll("#versions input")) box.disabled = key !== "versions";
+        updateVisibility();
+        updateGrid();
+        showLegend();
+      }
+
+      // View switch, enabled once both versions are loaded
+      function setupViews() {
+        const element = document.getElementById("views");
+        element.append("View:");
+        for (const [key, { label }] of Object.entries(VIEWS)) {
+          const input = document.createElement("input");
+          input.type = "radio";
+          input.name = "view";
+          input.value = key;
+          input.checked = key === view;
+          input.disabled = key !== "versions";
+          input.addEventListener("change", () => setView(key));
+          const text = document.createElement("label");
+          text.append(input, ` ${label}`);
+          element.append(text);
+        }
+        const hint = document.createElement("p");
+        hint.textContent = "Load both versions to compare them.";
+        element.append(hint);
+      }
+
+      function showCheckbox(element, key, label) {
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.checked = true;
+        checkbox.addEventListener("change", () => {
+          shown[key] = checkbox.checked;
+          updateVisibility();
+        });
+        const text = document.createElement("label");
+        text.append(checkbox, ` ${label} (${key === "new" ? "filled" : "rings"})`);
+        element.replaceChildren(text);
+      }
+
+      function showError(element, error) {
+        console.error(error);
+        const message = document.createElement("div");
+        message.className = "error";
+        message.textContent = String(error.message ?? error);
+        element.append(message);
+      }
+
+      function versionLoaded(element, key, geojson) {
+        addVersion(key, geojson);
+        showCheckbox(element, key, DATA[key].label);
+        if (loaded.new && loaded.old) addComparison();
+        showLegend();
+      }
+
+      // Panel row per version: embedded versions load at once, URL versions on click
+      function setupVersions() {
+        for (const name of ["added", "dropped"]) {
+          map.addImage(name, drawIcon(name, 32).getContext("2d").getImageData(0, 0, 32, 32), { pixelRatio: 2 });
+        }
+        if (DATA.old !== null) setupViews();
+        for (const key of ["new", "old"]) {
+          const version = DATA[key];
+          if (version === null) continue;
+          const element = document.createElement("div");
+          element.className = "version";
+          document.getElementById("versions").append(element);
+          if (version.url === undefined) {
+            try {
+              versionLoaded(element, key, toGeoJSON(version.columns, version.rows));
+            } catch (error) {
+              showError(element, error);
+            }
+            continue;
+          }
+          const button = document.createElement("button");
+          button.textContent = `Load ${version.label}`;
+          button.addEventListener("click", async () => {
+            button.disabled = true;
+            button.textContent = `Loading ${version.label} ...`;
+            element.querySelector(".error")?.remove();
+            try {
+              const rows = await parseCsv(version.url);
+              versionLoaded(element, key, toGeoJSON(rows[0], rows.slice(1)));
+            } catch (error) {
+              button.disabled = false;
+              button.textContent = `Load ${version.label}`;
+              showError(element, error);
+            }
+          });
+          element.append(button);
+        }
+        showLegend();
+      }
+
+      function field(parent, name, value) {
+        const line = document.createElement("div");
+        const term = document.createElement("b");
+        term.textContent = `${name}: `;
+        line.append(term, value === null || value === undefined ? "n/a" : String(value));
+        parent.append(line);
+      }
+
+      function interactiveLayers() {
+        return visibleSources().flatMap((source) => layersOf(source).filter((layer) => !layer.endsWith("-count")));
+      }
+
+      // Topmost point, cluster or grid cell under the cursor, if any
+      function featureAt(point) {
+        return map.queryRenderedFeatures(point, { layers: interactiveLayers() })[0];
+      }
+
+      // Old, new and delta capacity of a grid cell
+      function cellContent({ old, new: current, delta }) {
+        const content = document.createElement("div");
+        field(content, DATA.old.label, `${formatMW(old)} MW`);
+        field(content, DATA.new.label, `${formatMW(current)} MW`);
+        field(content, "Delta", `${delta >= 0 ? "+" : ""}${formatMW(delta)} MW`);
+        return content;
+      }
+
+      const hover = new maplibregl.Popup({ closeButton: false, closeOnClick: false });
+      map.on("mouseout", () => hover.remove());
+
+      // Hover shows the totals of a cluster or the capacities of a grid cell
+      map.on("mousemove", (event) => {
+        const feature = featureAt(event.point);
+        map.getCanvas().style.cursor = feature ? "pointer" : "";
+        if (feature?.source === "grid") {
+          hover.setLngLat(event.lngLat).setDOMContent(cellContent(feature.properties)).addTo(map);
+          return;
+        }
+        if (!feature || !feature.properties.cluster) {
+          hover.remove();
+          return;
+        }
+        const { point_count: count, capacity } = feature.properties;
+        const content = document.createElement("div");
+        field(content, labels[feature.source], `${formatNumber(count, 0)} entries, ${formatNumber(capacity / 1000, 1)} GW`);
+        hover.setLngLat(feature.geometry.coordinates).setDOMContent(content).addTo(map);
+      });
+
+      // Click zooms into a cluster or shows the details of an entry. On a
+      // grid cell it shows the hover popup, for touch screens without hover.
+      map.on("click", async (event) => {
+        const feature = featureAt(event.point);
+        if (!feature) {
+          hover.remove();
+          return;
+        }
+        if (feature.source === "grid") {
+          hover.setLngLat(event.lngLat).setDOMContent(cellContent(feature.properties)).addTo(map);
+          return;
+        }
+        if (feature.properties.cluster) {
+          const zoom = await map.getSource(feature.source).getClusterExpansionZoom(feature.properties.cluster_id);
+          map.easeTo({ center: feature.geometry.coordinates, zoom });
+          return;
+        }
+        const p = feature.properties;
+        const content = document.createElement("div");
+        const title = document.createElement("b");
+        title.textContent = labels[feature.source];
+        content.append(title);
+        field(content, "Name", p.Name);
+        field(content, "Country", p.Country);
+        field(content, "Fuel type", p.Fueltype);
+        field(content, "Technology", p.Technology);
+        field(content, "Capacity", typeof p.Capacity === "number" ? `${formatNumber(p.Capacity, 3)} MW` : null);
+        field(content, "DateIn", p.DateIn);
+        field(content, "DateOut", p.DateOut);
+        new maplibregl.Popup().setLngLat(feature.geometry.coordinates).setDOMContent(content).addTo(map);
+      });
+
+      map.on("load", setupVersions);
+    </script>
+  </body>
+</html>

@@ -9,6 +9,7 @@ path = [
     "docs/assets/images/powerplants.png",
     "docs/powerplants.png",
     "docs/examples/example.ipynb",
+    "docs/data-changes/v*/**",
 ]
 SPDX-FileCopyrightText = "Contributors to powerplantmatching <https://github.com/pypsa/powerplantmatching>"
 SPDX-License-Identifier = "CC-BY-4.0"
