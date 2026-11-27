@@ -1,9 +1,0 @@
-Category,Value,Only in,Entries,Capacity [GW]
-Fueltype / Technology,Hard Coal / Offshore,new,1,0.011
-Fueltype / Technology,Hard Coal / Onshore,new,1,0.026
-Fueltype / Technology,Hard Coal / Pv,new,2,1.019
-Fueltype / Technology,Lignite / Run-Of-River,new,1,0.03
-Fueltype / Technology,Wind / Offshore Hard Mount,old,23,6.465
-Fueltype / Technology,Wind / Offshore Mount Unknown,old,7,1.653
-Technology,Offshore Hard Mount,old,23,6.465
-Technology,Offshore Mount Unknown,old,7,1.653

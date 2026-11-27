@@ -39,7 +39,7 @@ nav:
     - Utility modules: api-utils.md
     - Data change modules: api-changes.md
 
-# Release pages, release list and table script, see docs/hooks.py
+# Release pages of docs/data-changes, see docs/hooks.py
 hooks:
   - docs/hooks.py
 
@@ -138,14 +138,6 @@ markdown_extensions:
   - pymdownx.caret
   - pymdownx.tilde
 
-
-extra_css:
-  - assets/stylesheets/tables.css
-
-extra_javascript:
-  - https://unpkg.com/tablesort@5.3.0/dist/tablesort.min.js
-  - https://unpkg.com/tablesort@5.3.0/dist/sorts/tablesort.number.min.js
-  - javascripts/tables.js
 
 extra:
   social:

@@ -1,7 +1,0 @@
-Category,Value,Only in,Entries,Capacity [GW]
-Fueltype / Technology,Lignite / CCGT,old,1,0.164
-Fueltype / Technology,Lignite / Onshore,new,1,0.02
-Fueltype / Technology,Natural Gas / Onshore,new,1,0.023
-Fueltype / Technology,Natural Gas / Pv,new,2,0.02
-Fueltype / Technology,Oil / Pv,new,1,0.001
-Fueltype / Technology,Wind / PV,new,2,0.008

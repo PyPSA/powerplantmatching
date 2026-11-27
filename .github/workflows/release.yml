@@ -98,7 +98,7 @@ jobs:
         if diff not in (0, 1):
             raise RuntimeError(f"git diff against {previous} failed ({diff})")
         if diff == 1:
-            pm.changes.write_release_report(previous, "${{ github.ref_name }}", new=df)
+            pm.changes.write_release(previous, "${{ github.ref_name }}", new=df)
 
         fig, ax = df.powerplant.plot_map(figsize=(22, 16))
         fig.savefig('docs/powerplants.png')

@@ -1,0 +1,645 @@
+Dimension,Group,Fueltype,Capacity old,Capacity new,Entries old,Entries new,Complete old,Complete new
+Check,Capacity missing or not positive,Hydro,0.0,0.0,28,28,0,0
+Check,Capacity missing or not positive,Hydrogen Storage,0.0,0.0,9,9,0,0
+Check,Capacity missing or not positive,Natural Gas,0.0,0.0,1,1,0,0
+Check,Category value not in config,Battery,31314.782,32527.896,4837,6116,4132,5384
+Check,Category value not in config,Hard Coal,495.0,495.0,4,4,4,4
+Check,Category value not in config,Heat Storage,1727.94,1727.94,41,41,0,0
+Check,Category value not in config,Hydro,162924.161,163422.911,1871,1881,1764,1773
+Check,Category value not in config,Hydrogen Storage,44.41,44.41,68,68,1,1
+Check,Category value not in config,Mechanical Storage,10.0,10.0,5,5,0,0
+Check,Category value not in config,Natural Gas,925.5,925.5,4,4,4,4
+Check,Category value not in config,Oil,364.0,364.0,2,2,1,1
+Check,Category value not in config,Solar,2498.72,2498.72,50,50,47,47
+Check,Category value not in config,Solid Biomass,86.0,86.0,2,2,0,0
+Check,Category value not in config,Waste,30.0,30.0,2,2,1,1
+Check,Category value not in config,Wind,302.3,302.3,7,7,7,7
+Check,DateOut before DateIn,Natural Gas,268.115,268.115,2,2,2,2
+Check,DateOut before DateIn,Solar,0.24,0.24,1,1,0,0
+Check,Repeated entries,Battery,0.0,11.676,0,72,0,72
+Check,Repeated entries,Biogas,0.0,455.83,0,1211,0,1207
+Check,Repeated entries,Hydro,0.0,55.791,0,154,0,154
+Check,Repeated entries,Natural Gas,0.0,208.519,0,846,0,837
+Check,Repeated entries,Oil,0.0,286.227,0,683,0,680
+Check,Repeated entries,Other,0.0,2.244,0,7,0,1
+Check,Repeated entries,Solar,0.0,320.891,0,1031,0,170
+Check,Repeated entries,Solid Biomass,0.0,11.745,0,54,0,48
+Check,Repeated entries,Waste,0.0,2.293,0,7,0,5
+Check,Repeated entries,Wind,0.0,528.2,0,271,0,271
+Country,Albania,Battery,24.0,24.0,1,1,0,0
+Country,Albania,Hydro,2079.366,2079.366,30,30,16,16
+Country,Albania,Solar,451.5,454.2,16,17,16,17
+Country,Albania,Wind,150.0,150.0,1,1,0,0
+Country,Austria,Battery,73.92,73.92,6,6,2,2
+Country,Austria,Hard Coal,1471.0,1471.0,5,5,4,4
+Country,Austria,Hydro,14924.9,15952.9,175,177,167,169
+Country,Austria,Hydrogen Storage,5.16,5.16,4,4,0,0
+Country,Austria,Lignite,522.0,522.0,2,2,0,0
+Country,Austria,Natural Gas,4789.0,4789.0,17,17,15,15
+Country,Austria,Oil,230.0,230.0,2,2,2,2
+Country,Austria,Solar,635.3,926.4,81,168,81,168
+Country,Austria,Solid Biomass,132.0,132.0,7,7,0,0
+Country,Austria,Waste,123.0,123.0,5,5,2,2
+Country,Austria,Wind,3396.6,3396.6,94,94,94,94
+Country,Belgium,Battery,291.2,291.2,14,14,0,0
+Country,Belgium,Hard Coal,2865.0,2865.0,9,9,4,4
+Country,Belgium,Heat Storage,5.0,5.0,1,1,0,0
+Country,Belgium,Hydro,1380.01,1380.01,13,13,10,10
+Country,Belgium,Natural Gas,7074.8,7074.8,27,27,22,22
+Country,Belgium,Nuclear,6219.0,6219.0,8,8,8,8
+Country,Belgium,Oil,159.6,159.6,8,8,0,0
+Country,Belgium,Solar,508.6,975.3,57,145,57,145
+Country,Belgium,Solid Biomass,398.0,398.0,5,5,2,2
+Country,Belgium,Waste,322.4,322.4,10,10,2,2
+Country,Belgium,Wind,4434.2,4509.2,92,94,86,88
+Country,Bosnia and Herzegovina,Hydro,2333.5,2363.5,16,17,16,17
+Country,Bosnia and Herzegovina,Lignite,2090.0,2090.0,5,5,5,5
+Country,Bosnia and Herzegovina,Solar,589.1,689.5,33,58,32,57
+Country,Bosnia and Herzegovina,Wind,435.0,435.0,7,7,7,7
+Country,Bulgaria,Battery,1397.7,1397.7,15,15,0,0
+Country,Bulgaria,Hard Coal,2704.0,2704.0,6,6,3,3
+Country,Bulgaria,Hydro,2902.74,2902.74,30,30,20,20
+Country,Bulgaria,Lignite,3765.0,6057.0,7,9,4,4
+Country,Bulgaria,Natural Gas,761.0,761.0,6,6,5,5
+Country,Bulgaria,Nuclear,3840.0,3840.0,6,6,6,6
+Country,Bulgaria,Solar,2696.2,3921.0,171,336,170,335
+Country,Bulgaria,Wind,608.0,608.0,17,17,17,17
+Country,Croatia,Battery,1.0,1.0,1,1,0,0
+Country,Croatia,Geothermal,56.1,56.1,3,3,3,3
+Country,Croatia,Hard Coal,342.0,342.0,1,1,1,1
+Country,Croatia,Hydro,2153.972,2153.972,22,22,21,21
+Country,Croatia,Natural Gas,350.8,350.8,3,3,3,3
+Country,Croatia,Oil,1070.0,1070.0,4,4,4,4
+Country,Croatia,Solar,209.1,391.6,20,58,18,56
+Country,Croatia,Wind,967.0,1140.0,25,28,22,25
+Country,Czechia,Battery,42.99,42.99,8,8,0,0
+Country,Czechia,Hard Coal,1548.0,1548.0,11,11,9,9
+Country,Czechia,Hydro,1841.567,1841.567,9,9,9,9
+Country,Czechia,Lignite,9380.1,9380.1,25,25,21,21
+Country,Czechia,Natural Gas,1928.0,1928.0,12,12,11,11
+Country,Czechia,Nuclear,4164.0,4164.0,6,6,6,6
+Country,Czechia,Solar,1988.8,2941.7,384,599,383,598
+Country,Czechia,Solid Biomass,110.0,110.0,2,2,0,0
+Country,Czechia,Waste,30.2,30.2,2,2,1,1
+Country,Czechia,Wind,151.0,151.0,7,7,7,7
+Country,Denmark,Battery,155.87,155.87,14,14,1,1
+Country,Denmark,Hard Coal,5055.0,5055.0,10,10,8,8
+Country,Denmark,Heat Storage,6.2,6.2,2,2,0,0
+Country,Denmark,Hydrogen Storage,0.18,0.18,3,3,0,0
+Country,Denmark,Natural Gas,1513.2,1513.2,12,12,11,11
+Country,Denmark,Oil,196.0,196.0,2,2,2,2
+Country,Denmark,Solar,3039.7,3383.9,121,210,121,210
+Country,Denmark,Solid Biomass,1781.0,1781.0,10,10,4,4
+Country,Denmark,Waste,153.0,153.0,4,4,0,0
+Country,Denmark,Wind,4628.5,5343.5,112,116,110,114
+Country,Estonia,Battery,135.5,135.5,3,3,0,0
+Country,Estonia,Natural Gas,207.0,207.0,1,1,1,1
+Country,Estonia,Oil,251.1,251.1,1,1,1,1
+Country,Estonia,Solar,930.3,1414.6,51,152,49,150
+Country,Estonia,Solid Biomass,80.0,80.0,3,3,0,0
+Country,Estonia,Wind,737.8,737.8,17,17,17,17
+Country,Finland,Battery,300.6,300.6,17,17,0,0
+Country,Finland,Biogas,535.44,535.44,16,16,0,0
+Country,Finland,Hard Coal,3920.2,3920.2,16,16,11,11
+Country,Finland,Heat Storage,625.22,625.22,19,19,0,0
+Country,Finland,Hydro,3198.62,3198.62,110,110,74,74
+Country,Finland,Hydrogen Storage,1.31,1.31,2,2,0,0
+Country,Finland,Lignite,150.0,150.0,1,1,0,0
+Country,Finland,Natural Gas,1684.8,1684.8,13,13,8,8
+Country,Finland,Nuclear,4622.0,4622.0,5,5,5,5
+Country,Finland,Oil,1463.2,1463.2,18,18,5,5
+Country,Finland,Solar,631.9,631.9,32,32,26,26
+Country,Finland,Solid Biomass,3737.8,3737.8,34,34,1,1
+Country,Finland,Waste,128.0,128.0,3,3,1,1
+Country,Finland,Wind,9325.0,9380.0,138,140,136,138
+Country,France,Battery,693.4,693.4,32,32,2,2
+Country,France,Biogas,31.039,31.039,1,1,0,0
+Country,France,Geothermal,1.7,1.7,1,1,1,1
+Country,France,Hard Coal,7283.0,7283.0,13,13,9,9
+Country,France,Heat Storage,9.0,9.0,1,1,0,0
+Country,France,Hydro,23074.369,23074.369,230,230,223,223
+Country,France,Hydrogen Storage,1.76,1.76,4,4,0,0
+Country,France,Lignite,1243.0,1243.0,2,2,1,1
+Country,France,Natural Gas,9457.7,9457.7,45,45,36,36
+Country,France,Nuclear,71777.0,71777.0,70,70,70,70
+Country,France,Oil,2200.0,2200.0,18,18,13,13
+Country,France,Solar,13198.1,13724.9,1508,1625,1494,1610
+Country,France,Solid Biomass,450.2,450.2,10,10,2,2
+Country,France,Waste,208.5,208.5,6,6,5,5
+Country,France,Wind,28038.5,28415.8,1090,1112,1029,1048
+Country,Germany,Battery,14861.812,16013.926,4273,5548,4103,5355
+Country,Germany,Biogas,3259.92,7984.854,7559,20954,7456,20719
+Country,Germany,Geothermal,52.5,52.5,11,11,10,10
+Country,Germany,Hard Coal,39895.435,40035.824,97,100,73,75
+Country,Germany,Heat Storage,1.0,1.0,2,2,0,0
+Country,Germany,Hydro,12263.808,12591.975,2484,3518,2473,3507
+Country,Germany,Hydrogen Storage,20.92,20.92,18,18,0,0
+Country,Germany,Lignite,20976.708,20976.923,51,52,49,50
+Country,Germany,Natural Gas,46098.206,50657.24,8504,13950,8332,13669
+Country,Germany,Nuclear,27431.0,27431.0,36,36,36,36
+Country,Germany,Oil,8034.569,9570.256,2556,4581,2540,4549
+Country,Germany,Other,1002.248,1143.397,118,152,79,94
+Country,Germany,Solar,58817.653,74510.771,113859,186139,32427,53440
+Country,Germany,Solid Biomass,1077.847,1229.297,534,943,445,816
+Country,Germany,Waste,3325.489,3539.943,256,329,235,301
+Country,Germany,Wind,32189.254,135275.692,10946,41638,10946,41638
+Country,Greece,Battery,73.0,73.0,2,2,0,0
+Country,Greece,Hydro,4000.3,4000.3,19,19,18,18
+Country,Greece,Hydrogen Storage,0.15,0.15,4,4,0,0
+Country,Greece,Lignite,5938.0,5938.0,8,8,6,6
+Country,Greece,Natural Gas,8239.3,8239.3,12,12,10,10
+Country,Greece,Oil,1436.0,1436.0,7,7,5,5
+Country,Greece,Solar,10253.4,12096.7,1289,1672,940,1306
+Country,Greece,Waste,24.0,24.0,1,1,1,1
+Country,Greece,Wind,6442.0,6620.0,343,349,314,320
+Country,Hungary,Battery,193.6,193.6,8,8,0,0
+Country,Hungary,Geothermal,3.4,3.4,1,1,1,1
+Country,Hungary,Hard Coal,485.0,485.0,4,4,1,1
+Country,Hungary,Hydro,47.7,47.7,4,4,4,4
+Country,Hungary,Hydrogen Storage,3.0,3.0,2,2,0,0
+Country,Hungary,Lignite,1224.0,1224.0,3,3,3,3
+Country,Hungary,Natural Gas,3113.5,3113.5,16,16,15,15
+Country,Hungary,Nuclear,2027.0,2027.0,4,4,4,4
+Country,Hungary,Oil,451.0,451.0,3,3,3,3
+Country,Hungary,Solar,2946.5,4068.3,402,566,400,564
+Country,Hungary,Solid Biomass,303.6,303.6,4,4,3,3
+Country,Hungary,Waste,24.0,24.0,1,1,1,1
+Country,Hungary,Wind,319.0,319.0,10,10,10,10
+Country,Ireland,Battery,818.5,818.5,21,21,4,4
+Country,Ireland,Hard Coal,915.0,915.0,1,1,1,1
+Country,Ireland,Hydro,552.0,552.0,6,6,6,6
+Country,Ireland,Lignite,135.0,135.0,1,1,0,0
+Country,Ireland,Natural Gas,5674.1,5923.1,19,20,14,14
+Country,Ireland,Oil,2335.6,2335.6,7,7,3,3
+Country,Ireland,Solar,1540.7,1540.7,41,41,29,29
+Country,Ireland,Solid Biomass,38.4,38.4,1,1,1,1
+Country,Ireland,Waste,85.0,85.0,2,2,2,2
+Country,Ireland,Wind,4742.75,4783.55,133,135,125,127
+Country,Italy,Battery,1640.37,1640.37,50,50,0,0
+Country,Italy,Biogas,46.0,46.0,1,1,0,0
+Country,Italy,Geothermal,834.0,834.0,23,23,22,22
+Country,Italy,Hard Coal,11000.0,11000.0,15,15,14,14
+Country,Italy,Heat Storage,9.52,9.52,2,2,0,0
+Country,Italy,Hydro,22846.428,22959.428,364,367,211,212
+Country,Italy,Hydrogen Storage,1.25,1.25,5,5,0,0
+Country,Italy,Natural Gas,52713.0,52713.0,112,112,107,107
+Country,Italy,Nuclear,1472.0,1472.0,4,4,4,4
+Country,Italy,Oil,2285.0,2285.0,12,12,6,6
+Country,Italy,Solar,6353.9,6505.9,260,263,72,73
+Country,Italy,Solid Biomass,232.88,232.88,8,8,1,1
+Country,Italy,Waste,376.1,376.1,7,7,0,0
+Country,Italy,Wind,10031.0,10473.5,280,288,221,227
+Country,Kosovo,Hydro,65.2,65.2,2,2,1,1
+Country,Kosovo,Lignite,1480.0,1480.0,1,1,1,1
+Country,Kosovo,Solar,153.5,166.9,2,4,2,4
+Country,Kosovo,Wind,135.0,135.0,2,2,2,2
+Country,Latvia,Battery,111.22,111.22,7,7,0,0
+Country,Latvia,Hydro,1536.0,1536.0,3,3,3,3
+Country,Latvia,Natural Gas,929.0,1087.0,2,3,2,3
+Country,Latvia,Solar,758.5,810.3,65,74,62,71
+Country,Latvia,Solid Biomass,23.0,23.0,1,1,0,0
+Country,Latvia,Wind,100.0,100.0,3,3,3,3
+Country,Lithuania,Battery,226.0,226.0,3,3,0,0
+Country,Lithuania,Hydro,1001.0,1001.0,2,2,2,2
+Country,Lithuania,Natural Gas,1508.0,1508.0,4,4,4,4
+Country,Lithuania,Nuclear,2600.0,2600.0,2,2,2,2
+Country,Lithuania,Solar,787.4,871.6,90,107,90,107
+Country,Lithuania,Solid Biomass,80.0,80.0,1,1,0,0
+Country,Lithuania,Waste,64.0,64.0,3,3,1,1
+Country,Lithuania,Wind,2801.0,2801.0,24,24,22,22
+Country,Luxembourg,Hydro,1294.0,1294.0,1,1,1,1
+Country,Luxembourg,Solar,96.1,101.1,21,22,1,1
+Country,Luxembourg,Solid Biomass,2.8,2.8,1,1,0,0
+Country,Luxembourg,Waste,15.0,15.0,1,1,0,0
+Country,Luxembourg,Wind,131.6,131.6,8,8,8,8
+Country,Moldova,Hard Coal,1400.0,1400.0,1,1,1,1
+Country,Moldova,Hydro,64.0,64.0,2,2,2,2
+Country,Moldova,Natural Gas,3688.0,3688.0,3,3,2,2
+Country,Moldova,Solar,127.2,165.7,34,42,34,42
+Country,Montenegro,Hydro,654.36,654.36,3,3,2,2
+Country,Montenegro,Lignite,225.0,225.0,1,1,1,1
+Country,Montenegro,Solar,23.3,26.1,3,5,2,4
+Country,Montenegro,Wind,173.0,173.0,3,3,3,3
+Country,Netherlands,Battery,390.7,390.7,30,30,1,1
+Country,Netherlands,Biogas,160.0,160.0,3,3,0,0
+Country,Netherlands,Hard Coal,7765.0,7765.0,7,7,5,5
+Country,Netherlands,Heat Storage,22.5,22.5,1,1,0,0
+Country,Netherlands,Hydrogen Storage,1.36,1.36,2,2,0,0
+Country,Netherlands,Mechanical Storage,3.0,3.0,1,1,0,0
+Country,Netherlands,Natural Gas,17672.5,17803.5,43,44,42,43
+Country,Netherlands,Nuclear,575.0,575.0,2,2,2,2
+Country,Netherlands,Oil,107.0,107.0,1,1,0,0
+Country,Netherlands,Solar,6320.5,7366.1,409,538,403,532
+Country,Netherlands,Solid Biomass,717.0,717.0,8,8,1,1
+Country,Netherlands,Waste,696.2,696.2,10,10,2,2
+Country,Netherlands,Wind,10644.4,12865.4,155,162,130,136
+Country,North Macedonia,Battery,40.0,40.0,2,2,0,0
+Country,North Macedonia,Hydro,578.2,578.2,10,10,10,10
+Country,North Macedonia,Lignite,824.0,824.0,2,2,2,2
+Country,North Macedonia,Natural Gas,220.0,220.0,1,1,1,1
+Country,North Macedonia,Oil,198.0,198.0,1,1,1,1
+Country,North Macedonia,Solar,406.9,558.9,47,75,46,74
+Country,North Macedonia,Wind,546.0,546.0,5,5,2,2
+Country,Norway,Battery,10.72,11.92,6,7,0,0
+Country,Norway,Hydro,32142.88,33491.23,965,981,965,981
+Country,Norway,Hydrogen Storage,2.61,2.61,4,4,1,1
+Country,Norway,Natural Gas,943.4,943.4,5,5,4,4
+Country,Norway,Solar,33.1,35.8,8,9,8,9
+Country,Norway,Wind,6284.0,6294.0,57,58,53,54
+Country,Poland,Battery,235.76,235.76,7,7,0,0
+Country,Poland,Hard Coal,24657.6,25320.6,49,52,39,40
+Country,Poland,Hydro,2262.907,2262.907,36,36,29,29
+Country,Poland,Lignite,10485.0,11729.0,7,8,5,5
+Country,Poland,Natural Gas,8974.0,8974.0,32,32,29,29
+Country,Poland,Solar,9316.5,9324.5,2382,2384,38,38
+Country,Poland,Solid Biomass,771.4,771.4,9,9,1,1
+Country,Poland,Waste,16.0,16.0,1,1,0,0
+Country,Poland,Wind,10332.5,10670.5,223,233,202,210
+Country,Portugal,Battery,58.1,58.1,8,8,1,1
+Country,Portugal,Geothermal,24.0,24.0,2,2,2,2
+Country,Portugal,Hard Coal,2028.0,2028.0,3,3,2,2
+Country,Portugal,Hydro,8396.15,8486.15,133,134,133,134
+Country,Portugal,Hydrogen Storage,1.01,1.01,2,2,0,0
+Country,Portugal,Mechanical Storage,1.0,1.0,2,2,0,0
+Country,Portugal,Natural Gas,4268.0,4268.0,12,12,10,10
+Country,Portugal,Oil,465.5,465.5,5,5,3,3
+Country,Portugal,Solar,3971.984,3995.784,171,175,157,161
+Country,Portugal,Solid Biomass,439.59,439.59,16,16,14,14
+Country,Portugal,Waste,107.4,107.4,15,15,14,14
+Country,Portugal,Wind,6681.77,7079.37,244,272,243,270
+Country,Romania,Battery,843.86,843.86,16,16,0,0
+Country,Romania,Hard Coal,1705.0,1705.0,5,5,3,3
+Country,Romania,Hydro,7119.69,7710.69,119,120,76,77
+Country,Romania,Lignite,6104.0,6104.0,13,13,10,10
+Country,Romania,Natural Gas,5829.8,5829.8,18,18,17,17
+Country,Romania,Nuclear,1411.0,1411.0,2,2,2,2
+Country,Romania,Oil,210.0,210.0,2,2,2,2
+Country,Romania,Solar,3457.5,4804.3,187,389,182,384
+Country,Romania,Solid Biomass,30.0,30.0,1,1,0,0
+Country,Romania,Wind,6211.2,6211.2,51,51,45,45
+Country,Serbia,Hydro,3552.3,3656.3,15,17,13,15
+Country,Serbia,Lignite,3517.0,4817.0,4,5,4,4
+Country,Serbia,Natural Gas,594.0,594.0,3,3,3,3
+Country,Serbia,Solar,184.5,199.2,29,33,29,33
+Country,Serbia,Solid Biomass,7.2,7.2,2,2,0,0
+Country,Serbia,Waste,30.0,30.0,1,1,1,1
+Country,Serbia,Wind,670.1,670.1,9,9,7,7
+Country,Slovakia,Battery,5.3,5.3,1,1,0,0
+Country,Slovakia,Geothermal,6.0,6.0,1,1,1,1
+Country,Slovakia,Hard Coal,989.0,989.0,3,3,2,2
+Country,Slovakia,Hydro,2455.73,2456.483,30,32,30,31
+Country,Slovakia,Lignite,548.0,548.0,3,3,1,1
+Country,Slovakia,Natural Gas,1076.0,1076.0,8,8,8,8
+Country,Slovakia,Nuclear,3965.0,3965.0,9,9,9,9
+Country,Slovakia,Solar,294.4,900.4,67,176,66,175
+Country,Slovenia,Battery,62.6,62.6,6,6,0,0
+Country,Slovenia,Hard Coal,124.0,124.0,1,1,1,1
+Country,Slovenia,Hydro,1216.095,1216.095,25,25,24,24
+Country,Slovenia,Lignite,1480.0,1480.0,2,2,2,2
+Country,Slovenia,Natural Gas,604.0,604.0,3,3,3,3
+Country,Slovenia,Nuclear,727.0,727.0,1,1,1,1
+Country,Slovenia,Solar,56.3,93.6,26,35,26,35
+Country,Spain,Battery,234.89,292.89,23,24,0,0
+Country,Spain,Hard Coal,11204.6,11204.6,19,19,17,17
+Country,Spain,Heat Storage,1049.5,1049.5,13,13,0,0
+Country,Spain,Hydro,18213.823,18216.243,175,178,170,173
+Country,Spain,Hydrogen Storage,3.47,3.47,8,8,0,0
+Country,Spain,Lignite,2729.0,2729.0,7,7,5,5
+Country,Spain,Natural Gas,27830.4,27830.4,61,61,60,60
+Country,Spain,Nuclear,8524.0,8524.0,10,10,10,10
+Country,Spain,Oil,1083.6,1083.6,11,11,6,6
+Country,Spain,Solar,40113.2,43963.0,1487,1905,1422,1834
+Country,Spain,Solid Biomass,611.1,611.1,13,13,3,3
+Country,Spain,Waste,230.25,230.25,6,6,1,1
+Country,Spain,Wind,30786.9,32763.1,751,793,668,701
+Country,Sweden,Battery,763.46,764.46,43,44,0,0
+Country,Sweden,Hard Coal,291.0,291.0,2,2,2,2
+Country,Sweden,Hydro,15308.58,15308.58,190,190,165,165
+Country,Sweden,Natural Gas,798.0,798.0,3,3,1,1
+Country,Sweden,Nuclear,11452.0,11452.0,13,13,13,13
+Country,Sweden,Oil,2789.0,2789.0,13,13,6,6
+Country,Sweden,Solar,682.1,682.1,99,99,98,98
+Country,Sweden,Solid Biomass,3185.6,3185.6,40,40,5,5
+Country,Sweden,Waste,452.1,452.1,11,11,1,1
+Country,Sweden,Wind,16127.8,18698.8,259,269,256,266
+Country,Switzerland,Battery,73.5,73.5,6,6,0,0
+Country,Switzerland,Biogas,11.0,11.0,1,1,0,0
+Country,Switzerland,Hydro,17899.016,18248.626,532,542,531,541
+Country,Switzerland,Hydrogen Storage,0.0,0.0,1,1,0,0
+Country,Switzerland,Mechanical Storage,1.0,1.0,1,1,0,0
+Country,Switzerland,Natural Gas,98.8,98.8,2,2,1,1
+Country,Switzerland,Nuclear,3492.0,3492.0,6,6,6,6
+Country,Switzerland,Solar,93.2,96.7,48,49,48,49
+Country,Switzerland,Solid Biomass,76.0,76.0,4,4,0,0
+Country,Switzerland,Waste,212.5,212.5,10,10,5,5
+Country,Switzerland,Wind,55.0,55.0,3,3,3,3
+Country,Ukraine,Battery,201.0,201.0,2,2,0,0
+Country,Ukraine,Hard Coal,23346.0,23346.0,20,20,20,20
+Country,Ukraine,Hydro,6600.7,6600.7,10,10,10,10
+Country,Ukraine,Natural Gas,3659.1,4359.1,10,11,10,11
+Country,Ukraine,Nuclear,17635.0,17635.0,19,19,19,19
+Country,Ukraine,Solar,5687.7,5687.7,103,103,78,78
+Country,Ukraine,Wind,566.7,566.7,14,14,13,13
+Country,United Kingdom,Battery,7364.21,7365.01,213,214,18,18
+Country,United Kingdom,Biogas,101.5,101.5,6,6,0,0
+Country,United Kingdom,Geothermal,2.0,2.0,1,1,0,0
+Country,United Kingdom,Hard Coal,35856.6,35856.6,25,25,16,16
+Country,United Kingdom,Hydro,4761.9,4761.9,106,106,60,60
+Country,United Kingdom,Hydrogen Storage,2.23,2.23,9,9,0,0
+Country,United Kingdom,Mechanical Storage,5.0,5.0,1,1,0,0
+Country,United Kingdom,Natural Gas,39795.3,39795.3,108,108,79,79
+Country,United Kingdom,Nuclear,19137.0,19137.0,35,35,35,35
+Country,United Kingdom,Oil,616.8,616.8,8,8,7,7
+Country,United Kingdom,Solar,13686.698,13742.798,1246,1260,1120,1134
+Country,United Kingdom,Solid Biomass,4154.2,4154.2,32,32,2,2
+Country,United Kingdom,Waste,2073.05,2073.05,60,60,13,13
+Country,United Kingdom,Wind,37044.192,39634.792,755,789,684,718
+Set,CHP,Biogas,2662.321,6688.982,6105,17222,6038,17072
+Set,CHP,Geothermal,8.8,8.8,2,2,2,2
+Set,CHP,Hard Coal,48604.158,49192.158,144,147,130,131
+Set,CHP,Hydro,42.45,42.5,4,5,4,5
+Set,CHP,Lignite,32516.619,32516.834,94,95,83,84
+Set,CHP,Natural Gas,113351.607,117870.613,8228,13169,8087,12947
+Set,CHP,Nuclear,268.0,268.0,1,1,1,1
+Set,CHP,Oil,8984.733,9021.133,213,345,207,338
+Set,CHP,Other,677.381,709.623,67,79,55,62
+Set,CHP,Solar,41.391,41.451,3,4,3,4
+Set,CHP,Solid Biomass,1608.286,1743.682,430,767,350,659
+Set,CHP,Waste,2215.247,2362.999,156,186,147,176
+Set,CHP,Wind,56.0,56.0,1,1,1,1
+Set,PP,Biogas,1168.039,1866.312,1471,3749,1418,3647
+Set,PP,Geothermal,970.9,970.9,41,41,38,38
+Set,PP,Hard Coal,120832.777,120833.166,121,123,112,114
+Set,PP,Hydro,47528.079,51014.579,3845,4909,3576,4638
+Set,PP,Lignite,37111.189,37111.189,44,44,37,37
+Set,PP,Natural Gas,138235.599,139264.628,835,1343,775,1255
+Set,PP,Nuclear,190802.0,190802.0,237,237,237,237
+Set,PP,Oil,12341.536,13840.823,2433,4326,2401,4279
+Set,PP,Other,324.867,433.773,51,73,24,32
+Set,PP,Solar,190424.924,221153.483,124823,199538,40206,63625
+Set,PP,Solid Biomass,11063.351,11079.405,205,277,135,197
+Set,PP,Waste,3381.492,3448.194,186,229,140,177
+Set,PP,Wind,235528.465,350775.904,15870,46743,15477,46332
+Set,Storage,Battery,10.0,10.0,1,1,0,0
+Set,Storage,Hydro,8227.121,8227.121,151,151,151,151
+Set,Storage,Solar,35.0,35.0,1,1,1,1
+Set,Store,Battery,31314.782,32527.896,4837,6116,4132,5384
+Set,Store,Hard Coal,495.0,495.0,4,4,4,4
+Set,Store,Heat Storage,1727.94,1727.94,41,41,0,0
+Set,Store,Hydro,162924.161,163422.911,1871,1881,1764,1773
+Set,Store,Hydrogen Storage,44.41,44.41,68,68,1,1
+Set,Store,Mechanical Storage,10.0,10.0,5,5,0,0
+Set,Store,Natural Gas,925.5,925.5,4,4,4,4
+Set,Store,Oil,364.0,364.0,2,2,1,1
+Set,Store,Solar,444.62,444.62,20,20,17,17
+Set,Store,Solid Biomass,86.0,86.0,2,2,0,0
+Set,Store,Waste,30.0,30.0,2,2,1,1
+Set,Store,Wind,302.3,302.3,7,7,7,7
+Set,n/a,Biogas,314.539,314.539,11,11,0,0
+Set,n/a,Hard Coal,16918.5,17133.5,54,55,0,0
+Set,n/a,Lignite,3188.0,8024.0,7,11,0,0
+Set,n/a,Natural Gas,9580.0,9829.0,50,51,0,0
+Set,n/a,Oil,3891.7,3891.7,31,31,0,0
+Set,n/a,Solar,95.4,95.4,2,2,0,0
+Set,n/a,Solid Biomass,5681.98,5681.98,109,109,0,0
+Set,n/a,Waste,3069.45,3069.45,71,71,0,0
+Source,BEYONDCOAL,Hard Coal,163763.435,164351.435,237,240,215,216
+Source,BEYONDCOAL,Hydro,30.0,30.0,1,1,1,1
+Source,BEYONDCOAL,Lignite,68998.462,68998.462,106,106,91,91
+Source,BEYONDCOAL,Natural Gas,4768.92,4768.92,12,12,12,12
+Source,BEYONDCOAL,Nuclear,515.0,515.0,1,1,1,1
+Source,BEYONDCOAL,Solar,11.0,11.0,1,1,1,1
+Source,BEYONDCOAL,Solid Biomass,151.0,151.0,1,1,0,0
+Source,EESI,Battery,19507.55,19631.49,814,834,270,285
+Source,EESI,Hard Coal,495.0,495.0,4,4,4,4
+Source,EESI,Heat Storage,1727.94,1727.94,41,41,0,0
+Source,EESI,Hydro,58066.745,58066.745,153,153,153,153
+Source,EESI,Hydrogen Storage,44.41,44.41,68,68,1,1
+Source,EESI,Mechanical Storage,10.0,10.0,5,5,0,0
+Source,EESI,Natural Gas,1032.5,1032.5,6,6,6,6
+Source,EESI,Oil,464.0,464.0,3,3,2,2
+Source,EESI,Solar,436.12,436.12,19,19,16,16
+Source,EESI,Solid Biomass,86.0,86.0,2,2,0,0
+Source,EESI,Waste,30.0,30.0,2,2,1,1
+Source,EESI,Wind,273.3,273.3,6,6,6,6
+Source,ENTSOE,Battery,401.3,401.3,2,2,0,0
+Source,ENTSOE,Geothermal,120.0,120.0,1,1,1,1
+Source,ENTSOE,Hard Coal,71468.3,71468.3,87,87,84,84
+Source,ENTSOE,Hydro,115640.883,115640.883,429,429,426,426
+Source,ENTSOE,Lignite,42870.0,42870.0,38,38,36,36
+Source,ENTSOE,Natural Gas,149986.747,149986.747,254,254,252,252
+Source,ENTSOE,Nuclear,100749.0,100749.0,92,92,92,92
+Source,ENTSOE,Oil,6348.1,6348.1,27,27,24,24
+Source,ENTSOE,Solar,4784.398,4784.398,26,26,23,23
+Source,ENTSOE,Solid Biomass,6775.0,6775.0,20,20,7,7
+Source,ENTSOE,Waste,301.9,301.9,3,3,3,3
+Source,ENTSOE,Wind,27928.6,27928.6,159,159,157,157
+Source,GEM,Battery,126.439,126.439,5,5,5,5
+Source,GEM,Biogas,334.539,334.539,12,12,1,1
+Source,GEM,Geothermal,979.7,979.7,43,43,40,40
+Source,GEM,Hard Coal,180371.135,180784.135,291,293,221,222
+Source,GEM,Hydro,185597.409,188424.409,1251,1266,1241,1256
+Source,GEM,Lignite,69324.162,74160.162,101,105,88,88
+Source,GEM,Natural Gas,235905.731,237640.731,748,754,679,684
+Source,GEM,Nuclear,191070.0,191070.0,238,238,238,238
+Source,GEM,Oil,19155.51,19155.51,124,124,84,84
+Source,GEM,Solar,153815.184,169329.903,12950,15446,9777,12244
+Source,GEM,Solid Biomass,17708.026,17708.026,217,217,42,42
+Source,GEM,Waste,6575.53,6609.53,177,178,72,73
+Source,GEM,Wind,197410.7,209571.7,4763,4944,4426,4589
+Source,GEO,Battery,49.0,49.0,1,1,1,1
+Source,GEO,Hard Coal,113511.9,113709.9,127,128,124,125
+Source,GEO,Hydro,103753.875,104775.275,518,521,515,518
+Source,GEO,Lignite,59044.0,59044.0,61,61,59,59
+Source,GEO,Natural Gas,124347.749,124478.749,193,194,193,194
+Source,GEO,Nuclear,783.0,783.0,2,2,2,2
+Source,GEO,Oil,866.0,866.0,5,5,5,5
+Source,GEO,Solar,654.8,654.8,13,13,13,13
+Source,GEO,Solid Biomass,680.4,680.4,5,5,4,4
+Source,GEO,Waste,164.376,164.376,4,4,4,4
+Source,GEO,Wind,12.0,12.0,1,1,1,1
+Source,GHR,Hydro,189716.858,189806.858,2456,2457,2214,2215
+Source,GHR,Hydrogen Storage,0.05,0.05,1,1,1,1
+Source,GHR,Wind,41.0,41.0,2,2,2,2
+Source,GPD,Battery,572.28,572.28,21,21,5,5
+Source,GPD,Biogas,570.44,570.44,17,17,0,0
+Source,GPD,Geothermal,144.0,144.0,3,3,3,3
+Source,GPD,Hard Coal,76105.4,76105.4,84,84,81,81
+Source,GPD,Heat Storage,6.0,6.0,1,1,0,0
+Source,GPD,Hydro,99959.431,100049.431,978,979,886,887
+Source,GPD,Lignite,9902.0,9902.0,15,15,13,13
+Source,GPD,Mechanical Storage,5.0,5.0,1,1,0,0
+Source,GPD,Natural Gas,135214.85,135214.85,222,222,211,211
+Source,GPD,Oil,7176.6,7176.6,44,44,23,23
+Source,GPD,Solar,25881.116,26107.016,1909,1947,1823,1861
+Source,GPD,Solid Biomass,4246.09,4246.09,67,67,22,22
+Source,GPD,Waste,1677.65,1677.65,65,65,29,29
+Source,GPD,Wind,43579.012,44489.912,1154,1168,1097,1111
+Source,JRC,Hydro,193106.788,194233.568,2784,2798,2542,2554
+Source,JRC,Hydrogen Storage,0.05,0.05,1,1,1,1
+Source,JRC,Solar,8.5,8.5,1,1,1,1
+Source,JRC,Wind,41.0,41.0,2,2,2,2
+Source,MASTR,Battery,14848.212,16000.326,4272,5547,4102,5354
+Source,MASTR,Biogas,3258.82,7983.754,7558,20953,7455,20718
+Source,MASTR,Hard Coal,23237.135,23237.524,55,57,55,57
+Source,MASTR,Hydro,13522.648,14138.815,2487,3522,2477,3512
+Source,MASTR,Lignite,20311.708,20311.923,48,49,47,48
+Source,MASTR,Natural Gas,40879.306,45385.34,8471,13916,8300,13636
+Source,MASTR,Nuclear,8114.0,8114.0,6,6,6,6
+Source,MASTR,Oil,7312.069,8847.756,2550,4575,2534,4543
+Source,MASTR,Other,1002.248,1143.397,118,152,79,94
+Source,MASTR,Solar,58346.253,74039.371,113806,186086,32376,53389
+Source,MASTR,Solid Biomass,945.147,1096.597,528,937,442,813
+Source,MASTR,Waste,2693.489,2907.943,245,318,232,298
+Source,MASTR,Wind,32189.254,135275.692,10946,41638,10946,41638
+Source,OPSD,Battery,184.0,193.0,9,10,8,9
+Source,OPSD,Biogas,571.54,571.54,18,18,1,1
+Source,OPSD,Hard Coal,77237.505,77237.505,105,105,104,104
+Source,OPSD,Heat Storage,6.0,6.0,1,1,0,0
+Source,OPSD,Hydro,131412.507,131449.64,2182,2199,2100,2116
+Source,OPSD,Hydrogen Storage,0.05,0.05,1,1,1,1
+Source,OPSD,Lignite,39904.396,39904.396,47,47,46,46
+Source,OPSD,Natural Gas,96494.727,97571.327,319,324,305,310
+Source,OPSD,Nuclear,105208.0,105208.0,97,97,97,97
+Source,OPSD,Oil,8924.245,8924.245,65,65,46,46
+Source,OPSD,Other,14.0,14.0,1,1,1,1
+Source,OPSD,Solar,57.685,57.685,5,5,5,5
+Source,OPSD,Solid Biomass,8379.859,8379.859,54,54,18,18
+Source,OPSD,Waste,2807.928,2851.228,87,89,70,72
+Source,OPSD,Wind,93.5,93.5,2,2,2,2
+Source,OSM,Battery,4878.914,4886.714,145,147,112,114
+Source,OSM,Biogas,12.224,12.224,5,5,5,5
+Source,OSM,Geothermal,62.4,62.4,8,8,8,8
+Source,OSM,Hard Coal,50048.1,50048.1,63,63,62,62
+Source,OSM,Hydro,112644.48,112687.83,1548,1555,1530,1537
+Source,OSM,Lignite,11106.189,11106.189,16,16,16,16
+Source,OSM,Natural Gas,68598.224,68763.435,168,173,168,173
+Source,OSM,Nuclear,35370.0,35370.0,35,35,35,35
+Source,OSM,Oil,4029.475,4029.475,20,20,20,20
+Source,OSM,Solar,28711.389,28909.052,1138,1154,1115,1131
+Source,OSM,Solid Biomass,3816.672,3817.772,53,54,42,43
+Source,OSM,Waste,1755.011,1763.011,75,76,68,69
+Source,OSM,Wind,99286.212,100081.212,2690,2701,2560,2569
+Status,operating,Battery,10826.899,11382.633,4101,5333,3936,5145
+Status,operating,Biogas,3194.072,7577.205,7011,19489,6916,19271
+Status,operating,Geothermal,928.7,928.7,38,38,38,38
+Status,operating,Hard Coal,58952.865,59365.865,103,105,89,90
+Status,operating,Hydro,211158.995,215079.516,5559,6604,5451,6495
+Status,operating,Hydrogen Storage,0.05,0.05,1,1,1,1
+Status,operating,Lignite,58859.733,61761.948,89,92,78,79
+Status,operating,Natural Gas,234314.119,239387.935,8010,12738,7832,12481
+Status,operating,Nuclear,126330.0,126330.0,127,127,127,127
+Status,operating,Oil,19137.471,20580.385,2486,4311,2447,4258
+Status,operating,Other,674.255,803.448,104,134,67,79
+Status,operating,Solar,157274.562,186477.528,121076,195555,40070,63436
+Status,operating,Solid Biomass,16765.278,16891.021,624,946,381,669
+Status,operating,Waste,7706.894,7911.408,368,437,263,325
+Status,operating,Wind,206248.751,288769.127,13268,37570,13262,37564
+Status,planned,Battery,7166.624,7749.42,188,198,152,162
+Status,planned,Biogas,137.739,224.446,62,115,60,113
+Status,planned,Geothermal,26.0,26.0,2,2,2,2
+Status,planned,Hydro,839.414,839.601,4,6,4,6
+Status,planned,Natural Gas,5996.069,6301.097,44,56,41,52
+Status,planned,Nuclear,3440.0,3440.0,1,1,1,1
+Status,planned,Solar,3814.242,3881.15,270,309,81,89
+Status,planned,Solid Biomass,204.36,204.36,9,9,5,5
+Status,planned,Waste,119.8,119.8,4,4,1,1
+Status,planned,Wind,10741.5,40416.867,1612,6221,1612,6221
+Status,retired,Battery,125.288,138.873,45,78,44,77
+Status,retired,Biogas,200.148,455.242,492,1356,480,1335
+Status,retired,Hard Coal,127860.57,128250.959,219,223,157,159
+Status,retired,Hydro,1145.743,1154.335,40,66,40,66
+Status,retired,Lignite,13806.075,15740.075,55,57,42,42
+Status,retired,Natural Gas,16910.018,17328.208,1032,1742,993,1673
+Status,retired,Nuclear,61300.0,61300.0,110,110,110,110
+Status,retired,Oil,3453.098,3545.871,162,362,162,360
+Status,retired,Other,327.993,339.949,14,18,12,15
+Status,retired,Solar,128.981,165.427,319,488,76,122
+Status,retired,Solid Biomass,888.479,914.185,104,191,99,182
+Status,retired,Waste,490.195,500.135,26,30,24,28
+Status,retired,Wind,3715.273,6138.268,611,2555,611,2555
+Status,undated,Battery,13205.97,13266.97,504,508,0,0
+Status,undated,Biogas,612.94,612.94,22,22,0,0
+Status,undated,Geothermal,25.0,25.0,3,3,0,0
+Status,undated,Hard Coal,37.0,37.0,1,1,0,0
+Status,undated,Heat Storage,1727.94,1727.94,41,41,0,0
+Status,undated,Hydro,5577.659,5633.659,268,270,0,0
+Status,undated,Hydrogen Storage,44.36,44.36,67,67,0,0
+Status,undated,Lignite,150.0,150.0,1,1,0,0
+Status,undated,Mechanical Storage,10.0,10.0,5,5,0,0
+Status,undated,Natural Gas,4872.5,4872.5,31,31,0,0
+Status,undated,Oil,2991.4,2991.4,31,31,0,0
+Status,undated,Solar,29823.549,31245.849,3184,3213,0,0
+Status,undated,Solid Biomass,581.5,581.5,9,9,0,0
+Status,undated,Waste,379.3,379.3,17,17,0,0
+Status,undated,Wind,15181.242,15809.942,387,405,0,0
+Technology,CAES,Mechanical Storage,1.0,1.0,1,1,0,0
+Technology,CCGT,Biogas,80.538,91.955,50,93,49,92
+Technology,CCGT,Hard Coal,1042.7,1042.7,4,4,3,3
+Technology,CCGT,Natural Gas,214174.532,215914.543,873,1091,823,1041
+Technology,CCGT,Oil,4345.04,4345.155,44,46,34,36
+Technology,CCGT,Solid Biomass,2399.31,2400.41,38,39,38,39
+Technology,CCGT,Waste,1071.945,1072.245,53,55,53,55
+Technology,CSP,Solar,388.725,390.125,11,12,9,10
+Technology,Combustion Engine,Biogas,3171.204,7832.235,7350,20481,7350,20481
+Technology,Combustion Engine,Hydro,0.05,0.15,1,3,1,3
+Technology,Combustion Engine,Natural Gas,3986.846,5756.042,7580,12516,7580,12516
+Technology,Combustion Engine,Oil,2900.814,4430.153,2494,4501,2494,4501
+Technology,Combustion Engine,Other,1.434,2.418,5,7,5,7
+Technology,Combustion Engine,Solar,0.0,0.06,0,1,0,1
+Technology,Combustion Engine,Solid Biomass,121.222,204.765,347,702,347,702
+Technology,Combustion Engine,Waste,21.274,29.909,68,110,68,110
+Technology,Csp,Solar,2074.0,2074.0,31,31,31,31
+Technology,Fe,Battery,10.0,10.0,1,1,0,0
+Technology,Flywheel,Mechanical Storage,4.0,4.0,3,3,0,0
+Technology,Laes,Mechanical Storage,5.0,5.0,1,1,0,0
+Technology,Li,Battery,21826.388,23025.651,4352,5578,4063,5286
+Technology,Li,Waste,20.0,20.0,1,1,1,1
+Technology,Molten Salt,Heat Storage,1069.42,1069.42,17,17,0,0
+Technology,NaNiCl,Battery,1.25,1.25,2,2,0,0
+Technology,NaS,Battery,48.89,49.676,12,17,8,13
+Technology,NiCd,Battery,8.977,9.395,20,22,20,22
+Technology,OCGT,Biogas,9.102,23.956,42,101,42,101
+Technology,OCGT,Lignite,29.0,29.0,1,1,1,1
+Technology,OCGT,Natural Gas,2403.508,2492.635,144,276,144,276
+Technology,OCGT,Oil,1869.675,1869.675,15,15,15,15
+Technology,OCGT,Waste,0.075,0.3,1,3,1,3
+Technology,Offshore,Wind,36814.48,54133.943,143,2034,138,2029
+Technology,Onshore,Solar,33.7,33.7,3,3,2,2
+Technology,Onshore,Wind,198954.285,296882.261,15727,44709,15347,44311
+Technology,PV,Battery,54.0,54.0,2,2,2,2
+Technology,PV,Solar,161024.599,180605.764,43359,66806,40178,63596
+Technology,PV,Solid Biomass,576.6,576.6,5,5,5,5
+Technology,Pb,Battery,125.367,132.491,41,64,39,61
+Technology,Pumped Storage,Hydro,63442.56,64183.06,186,188,183,185
+Technology,Reservoir,Hydro,108915.522,110967.752,2010,2078,1903,1970
+Technology,Reservoir,Hydrogen Storage,0.05,0.05,1,1,1,1
+Technology,Reservoir,Solar,0.516,0.516,5,5,5,5
+Technology,Run-Of-River,Hydro,44857.837,46050.054,3544,4546,3408,4409
+Technology,Steam Turbine,Biogas,5.276,11.692,15,45,15,45
+Technology,Steam Turbine,Geothermal,979.7,979.7,43,43,40,40
+Technology,Steam Turbine,Hard Coal,174572.735,174986.124,291,295,243,246
+Technology,Steam Turbine,Lignite,68905.808,73052.023,126,130,119,120
+Technology,Steam Turbine,Natural Gas,39344.617,41367.35,340,395,319,373
+Technology,Steam Turbine,Nuclear,191070.0,191070.0,238,238,238,238
+Technology,Steam Turbine,Oil,15882.127,15882.127,99,99,66,66
+Technology,Steam Turbine,Other,980.542,1115.38,74,87,74,87
+Technology,Steam Turbine,Solar,11.174,11.174,2,2,2,2
+Technology,Steam Turbine,Solid Biomass,1319.878,1354.412,95,110,95,110
+Technology,Steam Turbine,Waste,3072.742,3276.913,166,186,165,185
+Technology,Steam Turbine,Wind,5.6,5.6,2,2,0,0
+Technology,V,Battery,4.12,4.12,5,5,0,0
+Technology,n/a,Battery,9245.79,9251.314,403,426,0,0
+Technology,n/a,Biogas,878.78,909.996,130,262,0,0
+Technology,n/a,Hard Coal,11235.0,11625.0,28,30,0,0
+Technology,n/a,Heat Storage,658.52,658.52,24,24,0,0
+Technology,n/a,Hydro,1505.842,1506.095,130,131,0,0
+Technology,n/a,Hydrogen Storage,44.36,44.36,67,67,0,0
+Technology,n/a,Lignite,3881.0,4571.0,18,19,0,0
+Technology,n/a,Natural Gas,2183.202,2359.169,180,289,0,0
+Technology,n/a,Oil,584.313,590.546,27,43,0,0
+Technology,n/a,Other,20.272,25.598,39,58,0,0
+Technology,n/a,Solar,27508.62,38654.614,81438,132705,0,0
+Technology,n/a,Solid Biomass,14022.607,14054.879,261,299,0,0
+Technology,n/a,Waste,4510.153,4511.276,126,133,0,0
+Technology,n/a,Wind,112.4,112.4,6,6,0,0

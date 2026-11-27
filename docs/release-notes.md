@@ -14,9 +14,7 @@ SPDX-License-Identifier: MIT
 
 * **Feature:** `pm.powerplants(from_url=...)` now also accepts a release tag starting with `v` (e.g. `"v0.9.0"`) or an http(s) URL of a CSV file.
 
-* **Feature:** The new page [Data changes](data-changes/index.md) lists one page per release with a changed dataset. ([PR #346](https://github.com/PyPSA/powerplantmatching/pull/346))
-
-* **Feature:** Data change reports are also available locally to view differences between local / released versions, see [Run locally](data-changes/index.md#run-locally). ([PR #346](https://github.com/PyPSA/powerplantmatching/pull/346))
+* **Feature:** The new page [Data changes](data-changes/index.md) shows per release how the dataset changed. `pm.changes.compare` compares any two datasets locally. ([PR #346](https://github.com/PyPSA/powerplantmatching/pull/346))
 
 * Avoid country conversion warnings for IRENASTAT regional aggregates (`Eurasia` and `Oceania`) while preserving the original dataset. ([PR #336](https://github.com/PyPSA/powerplantmatching/pull/336))
 

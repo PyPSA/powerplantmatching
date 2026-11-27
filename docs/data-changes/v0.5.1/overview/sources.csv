@@ -1,8 +1,0 @@
-Source,Capacity old [GW],Capacity new [GW],Capacity delta [GW],Capacity delta [%],Entries old,Entries new,Entries delta,Entries delta [%]
-BEYONDCOAL,139.062,139.062,0.0,0.0,234,234,0,0.0
-ENTSOE,597.795,596.811,-0.984,-0.2,1846,1845,-1,-0.1
-GEO,559.08,559.946,0.867,0.2,1083,1086,3,0.3
-GPD,465.107,464.84,-0.267,-0.1,1447,1447,0,0.0
-JRC,191.878,191.597,-0.281,-0.1,3158,3158,0,0.0
-OPSD,581.201,581.341,0.14,0.0,4150,4151,1,0.0
-WIKIPEDIA,118.903,118.903,0.0,0.0,56,56,0,0.0
